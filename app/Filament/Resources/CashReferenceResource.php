@@ -35,7 +35,7 @@ class CashReferenceResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('description'),
+                Tables\Columns\TextColumn::make('description')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
@@ -54,6 +54,11 @@ class CashReferenceResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('viewDetail')
+                    ->label('View Detail')
+                    ->url(fn (CashReference $record): string => CashReferenceResource::getUrl('view', ['record' => $record]))
+                    ->icon('heroicon-o-eye')
+                    ->color('info'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -77,6 +82,7 @@ class CashReferenceResource extends Resource
             'index' => Pages\ListCashReferences::route('/'),
             'create' => Pages\CreateCashReference::route('/create'),
             'edit' => Pages\EditCashReference::route('/{record}/edit'),
+            'view' => Pages\ViewCashReferenceDetail::route('/{record}/detail'),
         ];
     }
 
