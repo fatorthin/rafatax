@@ -18,17 +18,4 @@ class ListCashReports extends ListRecords
             Actions\CreateAction::make(),
         ];
     }
-    
-    public function getFooter(): ?View
-    {
-        $debitTotal = CashReport::sum('debit_amount');
-        $creditTotal = CashReport::sum('credit_amount');
-        $balance = $debitTotal - $creditTotal;
-        
-        return view('filament.resources.cash-report-resource.pages.cash-report-footer', [
-            'debitTotal' => $debitTotal,
-            'creditTotal' => $creditTotal,
-            'balance' => $balance,
-        ]);
-    }
 }

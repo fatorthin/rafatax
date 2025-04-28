@@ -25,7 +25,10 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CashReferenceSeeder::class,
             CoaSeeder::class,
-            ClientSeeder::class,
+            // ClientSeeder::class,
+            MouSeeder::class,
+            InvoiceSeeder::class,
+            CashReportSeeder::class,
         ]);
     }
 }

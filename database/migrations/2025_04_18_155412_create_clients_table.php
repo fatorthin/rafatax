@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('phone');
             $table->string('contact_person');
+            $table->string('npwp');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

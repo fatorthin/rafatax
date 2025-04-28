@@ -37,7 +37,20 @@ class CashReportResource extends Resource
                     ->options(Coa::all()->pluck('name', 'id')),
                 Forms\Components\Select::make('invoice_id')
                     ->required()
+                    ->reactive()
+                    ->afterStateUpdated(function (callable $set, $state) {
+                        if ($state) {
+                            $invoice = Invoice::find($state);
+                            if ($invoice && $invoice->mou_id) {
+                                $set('mou_id', $invoice->mou_id);
+                            }
+                        }
+                    })
                     ->options(Invoice::all()->pluck('invoice_number', 'id')),
+                Forms\Components\Hidden::make('mou_id')
+                    ->required(),
+                Forms\Components\Hidden::make('cost_list_invoice_id')
+                    ->default(null),
                 Forms\Components\TextInput::make('debit_amount')
                     ->required()
                     ->numeric(),    
@@ -81,6 +94,7 @@ class CashReportResource extends Resource
                     ->money('IDR')
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
+                            ->label('Sum of Debit')
                             ->money('IDR')
                     )
                     ->sortable(),
@@ -89,6 +103,24 @@ class CashReportResource extends Resource
                     ->money('IDR')
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
+                            ->label('Sum of Credit')
+                            ->money('IDR')
+                    )
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('balance')
+                    ->label('Balance')
+                    ->money('IDR')
+                    ->getStateUsing(function ($record) {
+                        return $record->debit_amount - $record->credit_amount;
+                    })
+                    ->summarize(
+                        Tables\Columns\Summarizers\Summarizer::make()
+                            ->label('Total Balance')
+                            ->using(function ($query): string {
+                                $totalDebit = $query->sum('debit_amount');
+                                $totalCredit = $query->sum('credit_amount');
+                                return number_format($totalDebit - $totalCredit, 0, ',', '.');
+                            })
                             ->money('IDR')
                     )
                     ->sortable(),
@@ -107,9 +139,66 @@ class CashReportResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('cash_reference_id')
+                    ->label('Cash Reference')
+                    ->relationship('cashReference', 'name'),
+                Tables\Filters\SelectFilter::make('coa_id')
+                    ->label('Chart of Account')
+                    ->relationship('coa', 'name'),
+                Tables\Filters\Filter::make('transaction_month')
+                    ->label('Month')
+                    ->form([
+                        Forms\Components\Select::make('month')
+                            ->label('Month')
+                            ->options([
+                                '1' => 'January',
+                                '2' => 'February',
+                                '3' => 'March',
+                                '4' => 'April',
+                                '5' => 'May',
+                                '6' => 'June',
+                                '7' => 'July',
+                                '8' => 'August',
+                                '9' => 'September',
+                                '10' => 'October',
+                                '11' => 'November',
+                                '12' => 'December',
+                            ]),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['month'],
+                                fn (Builder $query, $month): Builder => $query->whereMonth('transaction_date', $month)
+                            );
+                    }),
+                Tables\Filters\Filter::make('transaction_year')
+                    ->label('Year')
+                    ->form([
+                        Forms\Components\Select::make('year')
+                            ->label('Year')
+                            ->options(function() {
+                                $years = [];
+                                $currentYear = now()->year;
+                                for ($i = $currentYear - 5; $i <= $currentYear; $i++) {
+                                    $years[$i] = $i;
+                                }
+                                return $years;
+                            }),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['year'],
+                                fn (Builder $query, $year): Builder => $query->whereYear('transaction_date', $year)
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
