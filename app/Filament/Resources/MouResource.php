@@ -82,16 +82,16 @@ class MouResource extends Resource
                     ->label('Total MoU Amount')
                     ->money('IDR')
                     ->getStateUsing(function ($record) {
-                        return $record->cost_lists()->sum('amount');
-                    }),
+                        return number_format($record->cost_lists()->sum('amount'), 0, ',', '.');
+                    })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice Amount')
                     ->money('IDR')
                     ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
+                        return number_format(CostListInvoice::where('mou_id', $record->id)
                             ->whereNotNull('invoice_id')
-                            ->sum('amount');
-                    }),
+                            ->sum('amount'), 0, ',', '.');
+                    })->alignEnd(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()

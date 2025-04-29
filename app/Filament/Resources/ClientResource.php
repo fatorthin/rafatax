@@ -37,6 +37,8 @@ class ClientResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('contact_person')
                     ->required(),
+                Forms\Components\TextInput::make('npwp')
+                    ->required(),
             ]);
     }
 

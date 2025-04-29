@@ -27,7 +27,12 @@ class InvoiceResource extends Resource
             ->schema([
                 Forms\Components\Select::make('mou_id')
                     ->label('MoU')
-                    ->options(MoU::all()->pluck('mou_number', 'id'))
+                    ->options(function () {
+                        return MoU::query()
+                            ->select('id', 'mou_number')
+                            ->get()
+                            ->pluck('mou_number', 'id');
+                    })
                     ->searchable()
                     ->required(),
                 Forms\Components\TextInput::make('invoice_number')
@@ -206,7 +211,7 @@ class InvoiceResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ]);
+            ])->defaultSort('invoice_date', 'desc');
     }
 
     public static function getRelations(): array

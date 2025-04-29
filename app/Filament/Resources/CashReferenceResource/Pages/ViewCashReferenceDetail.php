@@ -106,8 +106,7 @@ class ViewCashReferenceDetail extends Page implements HasTable
                                 $totalDebit = $query->sum('debit_amount');
                                 $totalCredit = $query->sum('credit_amount');
                                 return number_format($totalDebit - $totalCredit, 0, ',', '.');
-                            })
-                            ->money('IDR')
+                            })                                                              
                     )
                     ->sortable()
                     ->alignEnd(),

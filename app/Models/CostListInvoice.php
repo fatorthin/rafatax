@@ -5,14 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\LogsActivity;
 
 class CostListInvoice extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, HasFactory, LogsActivity;
 
     protected $table = 'cost_list_invoices';
 
-    protected $fillable = ['mou_id', 'invoice_id', 'coa_id', 'amount', 'description'];
+    protected $fillable = [
+        'invoice_id',
+        'description',
+        'amount',
+        'quantity',
+        'total'
+    ];
 
     public function mou()
     {

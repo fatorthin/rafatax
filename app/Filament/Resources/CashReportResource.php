@@ -91,25 +91,35 @@ class CashReportResource extends Resource
                     ->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('debit_amount')
                     ->numeric()
-                    ->money('IDR')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float)$state, 0, ',', '.');
+                    })
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
                             ->label('Sum of Debit')
-                            ->money('IDR')
+                            ->formatStateUsing(function ($state) {
+                                return number_format((float)$state, 0, ',', '.');
+                            })
                     )
-                    ->sortable(),
+                    ->sortable()->alignEnd(),
                 Tables\Columns\TextColumn::make('credit_amount')
                     ->numeric()
-                    ->money('IDR')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float)$state, 0, ',', '.');
+                    })
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
                             ->label('Sum of Credit')
-                            ->money('IDR')
+                            ->formatStateUsing(function ($state) {
+                                return number_format((float)$state, 0, ',', '.');
+                            })
                     )
-                    ->sortable(),
+                    ->sortable()->alignEnd(),
                 Tables\Columns\TextColumn::make('balance')
                     ->label('Balance')
-                    ->money('IDR')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float)$state, 0, ',', '.');
+                    })
                     ->getStateUsing(function ($record) {
                         return $record->debit_amount - $record->credit_amount;
                     })
@@ -121,9 +131,9 @@ class CashReportResource extends Resource
                                 $totalCredit = $query->sum('credit_amount');
                                 return number_format($totalDebit - $totalCredit, 0, ',', '.');
                             })
-                            ->money('IDR')
+                            
                     )
-                    ->sortable(),
+                    ->sortable()->alignEnd(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime('d-m-Y H:i:s')
                     ->sortable()
@@ -206,7 +216,7 @@ class CashReportResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ]);
+            ])->defaultSort('transaction_date', 'desc');
     }
 
     public static function getRelations(): array
