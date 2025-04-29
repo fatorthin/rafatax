@@ -5,12 +5,14 @@ namespace App\Providers\Filament;
 use App\Filament\Resources\CashReferenceResource;
 use App\Filament\Resources\ClientResource;
 use App\Filament\Resources\CoaResource;
+use App\Filament\Resources\IncomeStatementResource;
 use App\Filament\Resources\InvoiceResource;
 use App\Filament\Resources\MouResource;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\UserResource;
 use App\Filament\Widgets\InvoiceStats;
-use App\Filament\Widgets\MouInvoicesTable;
+use App\Filament\Widgets\MouStats;
+use App\Filament\Widgets\ClientStats;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -46,12 +48,10 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
                 InvoiceStats::class,
-                MouInvoicesTable::class,
+                MouStats::class,
+                ClientStats::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -80,6 +80,10 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Transactions')
                     ->icon('heroicon-o-currency-dollar')
                     ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Reports')
+                    ->icon('heroicon-o-chart-bar')
+                    ->collapsed(),
             ])
             ->resources([
                 UserResource::class,
@@ -89,6 +93,7 @@ class AdminPanelProvider extends PanelProvider
                 CashReferenceResource::class,
                 MouResource::class,
                 InvoiceResource::class,
+                IncomeStatementResource::class,
             ]);
     }
 }

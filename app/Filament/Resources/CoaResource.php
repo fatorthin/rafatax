@@ -31,8 +31,8 @@ class CoaResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('type')
                     ->options([
-                        'Consultant' => 'Consultant',
-                        'PT' => 'PT'
+                        'consultant' => 'Consultant',
+                        'pt' => 'PT'
                     ])
                     ->required(),
             ]);

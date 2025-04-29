@@ -40,126 +40,244 @@ class ListInvoices extends ListRecords
         // Add global event listener for filter changes using JavaScript
         $this->js("
             document.addEventListener('DOMContentLoaded', function() {
+                let lastUrl = location.href;
+                
                 function refreshWidgetWithFilters() {
+                    // Check if URL is the base URL (no query parameters)
+                    if (window.location.search === '') {
+                        console.log('Base URL detected - clearing all filters');
+                        Livewire.dispatch('filter-reset');
+                        return;
+                    }
+                    
                     // Collect all active filters from the URL
                     const urlParams = new URLSearchParams(window.location.search);
                     const tableFilters = {};
                     
-                    // Parse tableFilters from URL
-                    if (urlParams.has('tableFilters[year][value]')) {
-                        tableFilters['year'] = {
-                            'value': urlParams.get('tableFilters[year][value]')
-                        };
+                    // Parse all tableFilters parameters from URL
+                    for (const [key, value] of urlParams.entries()) {
+                        // Match tableFilters[] pattern
+                        const filterMatch = key.match(/tableFilters\\[(.*?)\\](?:\\[(.*?)\\])?/);
+                        if (filterMatch) {
+                            const filterName = filterMatch[1];
+                            const filterField = filterMatch[2] || 'value';
+                            
+                            // Create nested structure if needed
+                            if (!tableFilters[filterName]) {
+                                tableFilters[filterName] = {};
+                            }
+                            
+                            // Special handling for date_range which has nested fields
+                            if (filterName === 'date_range' && filterField !== 'value') {
+                                tableFilters[filterName][filterField] = value;
+                            } else {
+                                // For regular filters with value field
+                                tableFilters[filterName][filterField] = value;
+                            }
+                        }
                     }
                     
-                    if (urlParams.has('tableFilters[month][value]')) {
-                        tableFilters['month'] = {
-                            'value': urlParams.get('tableFilters[month][value]')
-                        };
-                    }
-                    
-                    if (urlParams.has('tableFilters[client][value]')) {
-                        tableFilters['client'] = {
-                            'value': urlParams.get('tableFilters[client][value]')
-                        };
-                    }
-                    
-                    if (urlParams.has('tableFilters[type][value]')) {
-                        tableFilters['type'] = {
-                            'value': urlParams.get('tableFilters[type][value]')
-                        };
-                    }
-                    
-                    if (urlParams.has('tableFilters[invoice_status][value]')) {
-                        tableFilters['invoice_status'] = {
-                            'value': urlParams.get('tableFilters[invoice_status][value]')
-                        };
-                    }
-                    
-                    console.log('Collected filters:', tableFilters);
+                    console.log('Parsed filters from URL:', tableFilters);
                     
                     // Refresh the widget with these filters
                     Livewire.dispatch('filament.widget-refresh', { 
                         widgetId: 'invoice-stats',
                         filters: tableFilters
                     });
+                    
+                    // Also send a direct event to any widgets that listen for table filtered events
+                    Livewire.dispatch('filament.table.filtered', tableFilters);
                 }
                 
-                // Set up mutations observer to detect URL and filter changes
-                const observer = new MutationObserver(function(mutations) {
-                    // When DOM changes, check if it was a filter change
-                    refreshWidgetWithFilters();
+                // Check for URL changes (including hash changes)
+                function checkUrlChange() {
+                    if (location.href !== lastUrl) {
+                        lastUrl = location.href;
+                        console.log('URL changed, refreshing widgets');
+                        
+                        // If URL is now the base URL, dispatch a reset event
+                        if (window.location.search === '') {
+                            console.log('URL reset to base URL - clearing all filters');
+                            Livewire.dispatch('filter-reset');
+                        } else {
+                            setTimeout(refreshWidgetWithFilters, 100);
+                        }
+                    }
+                }
+                
+                // Set up interval to check for URL changes (needed for browser navigation)
+                setInterval(checkUrlChange, 300);
+                
+                // Set up observer for filter panel interactions
+                const filterObserver = new MutationObserver(function(mutations) {
+                    for (const mutation of mutations) {
+                        if (mutation.type === 'attributes' && 
+                            ((mutation.target.classList && mutation.target.classList.contains('fi-dropdown-panel')) ||
+                             (mutation.target.classList && mutation.target.classList.contains('fi-ta-filters')))) {
+                            console.log('Filter panel changed');
+                            setTimeout(refreshWidgetWithFilters, 300);
+                            return;
+                        }
+                    }
                 });
                 
-                // Watch the entire document for changes
-                observer.observe(document.body, { 
+                // Watch for filter panel changes
+                filterObserver.observe(document.body, { 
                     childList: true, 
-                    subtree: true 
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['class', 'style']
                 });
                 
                 // Initial refresh when page loads
+                if (window.location.search === '') {
+                    console.log('Base URL on load - clearing all filters');
+                    Livewire.dispatch('filter-reset');
+                } else {
                 refreshWidgetWithFilters();
+                }
                 
-                // Also listen for filter button clicks
+                // Listen for filter button clicks, reset button clicks, and form submissions
                 document.addEventListener('click', function(event) {
-                    if (event.target && (
-                        event.target.classList.contains('fi-btn') || 
-                        event.target.closest('.fi-btn')
-                    )) {
-                        // Wait for URL to update
-                        setTimeout(refreshWidgetWithFilters, 500);
+                    // Check for filter or reset buttons
+                    if (event.target && event.target.closest) {
+                        const filterButton = event.target.closest('[wire\\\\:click*=\"filterTable\"]');
+                        const resetButton = event.target.closest('[wire\\\\:click*=\"resetTableFilters\"]');
+                        
+                        if (filterButton) {
+                            console.log('Filter button clicked');
+                            setTimeout(refreshWidgetWithFilters, 300);
+                        }
+                        
+                        if (resetButton) {
+                            console.log('Reset button clicked');
+                            setTimeout(function() {
+                                if (window.location.search === '') {
+                                    console.log('URL reset to base - dispatching filter-reset event');
+                                    Livewire.dispatch('filter-reset');
+                                } else {
+                                    refreshWidgetWithFilters();
+                                }
+                            }, 300);
+                        }
                     }
+                });
+                
+                // Listen for URL changes via History API
+                const originalPushState = history.pushState;
+                const originalReplaceState = history.replaceState;
+                
+                history.pushState = function() {
+                    originalPushState.apply(this, arguments);
+                    setTimeout(function() {
+                        if (window.location.search === '') {
+                            Livewire.dispatch('filter-reset');
+                        } else {
+                            refreshWidgetWithFilters();
+                        }
+                    }, 100);
+                };
+                
+                history.replaceState = function() {
+                    originalReplaceState.apply(this, arguments);
+                    setTimeout(function() {
+                        if (window.location.search === '') {
+                            Livewire.dispatch('filter-reset');
+                        } else {
+                            refreshWidgetWithFilters();
+                        }
+                    }, 100);
+                };
+                
+                // Listen for popstate events (back/forward navigation)
+                window.addEventListener('popstate', function() {
+                    setTimeout(function() {
+                        if (window.location.search === '') {
+                            Livewire.dispatch('filter-reset');
+                        } else {
+                            refreshWidgetWithFilters();
+                        }
+                    }, 100);
+                });
+                
+                // Listen for Livewire events
+                document.addEventListener('livewire:initialized', () => {
+                    Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+                        succeed(({ snapshot, effects }) => {
+                            // Check for table-related components or URL changes
+                            if (component.name && 
+                                (component.name.includes('table') || 
+                                 component.name.includes('filter'))) {
+                                console.log('Livewire component updated:', component.name);
+                                setTimeout(function() {
+                                    if (window.location.search === '') {
+                                        Livewire.dispatch('filter-reset');
+                                    } else {
+                                        refreshWidgetWithFilters();
+                                    }
+                                }, 100);
+                            }
+                        });
+                    });
+                    
+                    // Listen for specific Livewire events
+                    Livewire.on('filterApplied', () => {
+                        console.log('Filter applied event received');
+                        setTimeout(refreshWidgetWithFilters, 100);
+                    });
+                    
+                    Livewire.on('filtersReset', () => {
+                        console.log('Filters reset event received');
+                        Livewire.dispatch('filter-reset');
+                    });
                 });
             });
         ");
     }
 
-    // Refresh table when filters are applied
+    // Refresh widget when filters are updated
     public function updatedTableFilters(): void
     {
-        Log::info('Table filters updated, refreshing widget');
-        
         // Get current filters
         $filters = $this->getTableFiltersForm()->getRawState();
-        Log::info('Current filters:', $filters);
         
-        // Refresh widget with these filters
-        $this->dispatch('filament.widget-refresh', [
-            'widgetId' => 'invoice-stats',
-            'filters' => $filters
-        ]);
+        // Dispatch event to refresh widget
+        $this->dispatch('filament.table.filtered', $filters);
     }
     
-    // Reset table when filter is removed
+    // Refresh widget when a filter is removed
     public function removeTableFilter(string $filterName, ?string $field = null, bool $isRemovingAllFilters = false): void
     {
         parent::removeTableFilter($filterName, $field, $isRemovingAllFilters);
-        Log::info("Removing filter: $filterName");
         
-        // Get updated filters
+        // Get updated filters after removal
         $filters = $this->getTableFiltersForm()->getRawState();
-        Log::info('Updated filters after removal:', $filters);
         
-        // Refresh widget with these filters
-        $this->dispatch('filament.widget-refresh', [
-            'widgetId' => 'invoice-stats',
-            'filters' => $filters
-        ]);
+        // Dispatch event to refresh widget
+        $this->dispatch('filament.table.filtered', $filters);
+        
+        // If all filters were removed, also dispatch a filter-reset event
+        if ($isRemovingAllFilters) {
+            $this->dispatch('filter-reset');
+        }
     }
     
-    // Reset table when search query changes
+    // Hook into the reset filters action
+    public function resetTableFilters(): void
+    {
+        parent::resetTableFilters();
+        
+        // After resetting, send the filter-reset event
+        $this->dispatch('filter-reset');
+    }
+    
+    // Refresh widget when search query changes
     public function updatedTableSearch(): void
     {
-        Log::info('Table search updated, refreshing widget');
-        
         // Get current filters
         $filters = $this->getTableFiltersForm()->getRawState();
-        Log::info('Current filters with search:', $filters);
         
-        // Refresh widget with these filters
-        $this->dispatch('filament.widget-refresh', [
-            'widgetId' => 'invoice-stats',
-            'filters' => $filters
-        ]);
+        // Dispatch event to refresh widget
+        $this->dispatch('filament.table.filtered', $filters);
     }
 }

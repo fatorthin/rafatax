@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\CashReferenceResource;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 
 class ViewCashReferenceDetail extends Page implements HasTable
 {
@@ -56,30 +57,60 @@ class ViewCashReferenceDetail extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('description')
                     ->searchable(),
-                TextColumn::make('invoice.invoice_number')
-                    ->label('Invoice No')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('invoice.mou.mou_number')
-                    ->label('MoU No')
-                    ->searchable()
-                    ->sortable(),
+                // TextColumn::make('invoice.invoice_number')
+                //     ->label('Invoice No')
+                //     ->searchable()
+                //     ->sortable(),
+                // TextColumn::make('invoice.mou.mou_number')
+                //     ->label('MoU No')
+                //     ->searchable()
+                //     ->sortable(),
                 TextColumn::make('debit_amount')
                     ->numeric()
-                    ->money('IDR')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    })
                     ->summarize(
                         Sum::make()
-                            ->money('IDR')
+                            ->formatStateUsing(function ($state) {
+                                return number_format((float) $state, 0, ',', '.');
+                            })
                     )
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('credit_amount')
                     ->numeric()
-                    ->money('IDR')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    })
                         ->summarize(
                             Sum::make()
+                                ->formatStateUsing(function ($state) {
+                                    return number_format((float) $state, 0, ',', '.');
+                                })
+                    )
+                    ->sortable()
+                    ->alignEnd(),
+                TextColumn::make('balance')
+                    ->label('Balance')
+                    ->getStateUsing(function ($record) {
+                        return $record->debit_amount - $record->credit_amount;
+                    })
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    })
+                    ->summarize(
+                        Summarizer::make()
+                            ->label('Total Balance')
+                            ->using(function ($query): string {
+                                $totalDebit = $query->sum('debit_amount');
+                                $totalCredit = $query->sum('credit_amount');
+                                return number_format($totalDebit - $totalCredit, 0, ',', '.');
+                            })
                             ->money('IDR')
                     )
-                    ->sortable(),
+                    ->sortable()
+                    ->alignEnd(),
             ])
             ->filters([
                 SelectFilter::make('coa_id')
@@ -134,7 +165,7 @@ class ViewCashReferenceDetail extends Page implements HasTable
             ])
             ->bulkActions([
                 //
-            ]);
+            ])->striped()->defaultSort('transaction_date', 'desc');
     }
     
     protected function getHeaderActions(): array

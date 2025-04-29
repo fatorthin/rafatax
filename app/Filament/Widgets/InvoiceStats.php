@@ -19,48 +19,98 @@ class InvoiceStats extends BaseWidget
     // Filter properties
     public $tableFilters = [];
     
+    protected static ?string $pollingInterval = null;
+    
     protected function getColumns(): int
     {
         return 3;
+    }
+    
+    public function mount(): void
+    {
+        // Get filters from URL on initial load
+        $this->tableFilters = request('tableFilters', []);
+        
+        // Check if URL is clean (no query parameters)
+        $fullUrl = request()->fullUrl();
+        $baseUrl = url()->current();
+        
+        // If URL is base URL with no parameters, reset filters
+        if ($fullUrl === $baseUrl) {
+            $this->tableFilters = [];
+        }
+    }
+    
+    #[On('filament.table.filtered')]
+    public function handleTableFiltered($data): void
+    {
+        // Update filters when table is filtered
+        $this->tableFilters = $data ?? [];
+        $this->dispatch('refresh');
     }
     
     #[On('filament.widget-refresh')]
     public function refresh(?array $params = null): void
     {
         if ($params && isset($params['filters'])) {
-            $this->tableFilters = $params['filters'];
-            Log::info('Widget refreshed with filters:', $this->tableFilters);
+            $this->tableFilters = $params['filters'] ?? [];
         } else {
             // If no filters provided, get from request
             $this->tableFilters = request('tableFilters', []);
-            Log::info('Widget refreshed with request filters:', $this->tableFilters);
         }
         
+        // Check if URL has no parameters - then clear filters
+        $fullUrl = request()->fullUrl();
+        $baseUrl = url()->current();
+        
+        if ($fullUrl === $baseUrl) {
+            $this->tableFilters = [];
+        }
+        
+        $this->dispatch('refresh');
+    }
+    
+    #[On('filter-reset')]
+    public function handleFilterReset(): void
+    {
+        // Clear all filters when filter reset event is received
+        $this->tableFilters = [];
         $this->dispatch('refresh');
     }
     
     protected function getStats(): array
     {
         try {
-            Log::info('InvoiceStats widget refreshing with filters:', $this->tableFilters);
-            
             // Start with a base query
             $query = Invoice::query();
             
-            // Apply filters to query
+            // Apply filters to query if there are any
             if (!empty($this->tableFilters)) {
-                // Year filter
-                if (isset($this->tableFilters['year']) && !empty($this->tableFilters['year']['value'])) {
-                    $year = $this->tableFilters['year']['value'];
-                    $query->whereRaw('YEAR(invoice_date) = ?', [$year]);
-                    Log::info("Applied year filter: $year");
+                // Date range filter (combined year and month)
+                if (isset($this->tableFilters['date_range'])) {
+                    $dateRange = $this->tableFilters['date_range'];
+                    
+                    if (isset($dateRange['year']) && !empty($dateRange['year'])) {
+                        $year = $dateRange['year'];
+                        $query->whereYear('invoice_date', $year);
+                    }
+                    
+                    if (isset($dateRange['month']) && !empty($dateRange['month'])) {
+                        $month = $dateRange['month'];
+                        $query->whereMonth('invoice_date', $month);
+                    }
                 }
                 
-                // Month filter
+                // Backwards compatibility for separate year filter
+                elseif (isset($this->tableFilters['year']) && !empty($this->tableFilters['year']['value'])) {
+                    $year = $this->tableFilters['year']['value'];
+                    $query->whereYear('invoice_date', $year);
+                }
+                
+                // Backwards compatibility for separate month filter
                 if (isset($this->tableFilters['month']) && !empty($this->tableFilters['month']['value'])) {
                     $month = $this->tableFilters['month']['value'];
-                    $query->whereRaw('MONTH(invoice_date) = ?', [$month]);
-                    Log::info("Applied month filter: $month");
+                    $query->whereMonth('invoice_date', $month);
                 }
                 
                 // Client filter
@@ -71,7 +121,6 @@ class InvoiceStats extends BaseWidget
                             $q2->where('id', $client);
                         });
                     });
-                    Log::info("Applied client filter: $client");
                 }
                 
                 // Type filter
@@ -80,20 +129,17 @@ class InvoiceStats extends BaseWidget
                     $query->whereHas('mou', function (Builder $q) use ($type) {
                         $q->where('type', $type);
                     });
-                    Log::info("Applied type filter: $type");
                 }
                 
-                // Status filter - most important for our issue
+                // Status filter
                 if (isset($this->tableFilters['invoice_status']) && !empty($this->tableFilters['invoice_status']['value'])) {
                     $status = $this->tableFilters['invoice_status']['value'];
                     $query->where('invoice_status', $status);
-                    Log::info("Applied status filter: $status");
                 }
             }
             
             // Get the invoice IDs after applying filters
             $invoiceIds = $query->pluck('id')->toArray();
-            Log::info('Found ' . count($invoiceIds) . ' invoices after filtering');
             
             // Calculate stats based on the filtered invoices
             $totalInvoices = count($invoiceIds);

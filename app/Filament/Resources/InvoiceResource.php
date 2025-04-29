@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -39,9 +40,9 @@ class InvoiceResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('invoice_status')
                     ->options([
-                        'Unpaid' => 'Unpaid',
-                        'Paid' => 'Paid',
-                        'Overdue' => 'Overdue',
+                        'unpaid' => 'Unpaid',
+                        'paid' => 'Paid',
+                        'overdue' => 'Overdue',
                     ])
             ]);
     }
@@ -77,10 +78,30 @@ class InvoiceResource extends Resource
                     ->label('Status'),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
-                    ->money('IDR')
+                    ->alignEnd()
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    })
                     ->getStateUsing(function ($record) {
                         return $record->costListInvoices()->sum('amount');
-                    }),
+                    })
+                    ->summarize(
+                        Tables\Columns\Summarizers\Summarizer::make()
+                            ->label('Total')
+                            ->using(function ($query) {
+                                // Get all invoice IDs from the current query
+                                $invoiceIds = $query->pluck('id')->toArray();
+                                
+                                // Calculate total from the cost_list_invoices table
+                                $total = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
+                                    ->sum('amount');
+                                
+                                return $total;
+                            })
+                            ->formatStateUsing(function ($state) {
+                                return 'IDR ' . number_format((float) $state, 0, ',', '.');
+                            })
+                    ),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
@@ -96,29 +117,53 @@ class InvoiceResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                Tables\Filters\SelectFilter::make('month')
-                    ->label('Month')
-                    ->options(
-                        collect(range(1, 12))->mapWithKeys(function ($month) {
-                            return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
-                        })->toArray()
-                    ),
-                Tables\Filters\SelectFilter::make('year')
-                    ->label('Year')
-                    ->options(
-                        Invoice::query()
-                            ->selectRaw('YEAR(invoice_date) as year')
-                            ->distinct()
-                            ->orderBy('year', 'desc')
-                            ->pluck('year', 'year')
-                            ->toArray()
-                    )
+                Tables\Filters\Filter::make('date_range')
+                    ->form([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\Select::make('year')
+                                    ->label('Year')
+                                    ->options(
+                                        Invoice::query()
+                                            ->selectRaw('YEAR(invoice_date) as year')
+                                            ->distinct()
+                                            ->orderBy('year', 'desc')
+                                            ->pluck('year', 'year')
+                                            ->toArray()
+                                    ),
+                                Forms\Components\Select::make('month')
+                                    ->label('Month')
+                                    ->options(
+                                        collect(range(1, 12))->mapWithKeys(function ($month) {
+                                            return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
+                                        })->toArray()
+                                    ),
+                            ]),
+                    ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
-                                $data['value'],
-                                fn (Builder $query, $year): Builder => $query->whereRaw('YEAR(invoice_date) = ?', [$year]),
+                                $data['year'],
+                                fn (Builder $query, $year): Builder => $query->whereYear('invoice_date', $year),
+                            )
+                            ->when(
+                                $data['month'],
+                                fn (Builder $query, $month): Builder => $query->whereMonth('invoice_date', $month),
                             );
+                    })
+                    ->indicator(function (array $data): ?string {
+                        $indicators = [];
+                        
+                        if ($data['month'] ?? null) {
+                            $monthName = \Carbon\Carbon::create()->month($data['month'])->format('F');
+                            $indicators[] = "Month: {$monthName}";
+                        }
+                        
+                        if ($data['year'] ?? null) {
+                            $indicators[] = "Year: {$data['year']}";
+                        }
+                        
+                        return count($indicators) ? implode(' + ', $indicators) : null;
                     }),
                 Tables\Filters\SelectFilter::make('client')
                     ->label('Client')
@@ -128,8 +173,8 @@ class InvoiceResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Type')
                     ->options([
-                        'PT' => 'PT',
-                        'Consultant' => 'Consultant',
+                        'pt' => 'PT',
+                        'consultant' => 'Consultant',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -141,9 +186,9 @@ class InvoiceResource extends Resource
                 Tables\Filters\SelectFilter::make('invoice_status')
                     ->label('Status')
                     ->options([
-                        'Unpaid' => 'Unpaid',
-                        'Paid' => 'Paid',
-                        'Overdue' => 'Overdue',
+                        'unpaid' => 'Unpaid',
+                        'paid' => 'Paid',
+                        'overdue' => 'Overdue',
                     ]),
             ])
             ->actions([

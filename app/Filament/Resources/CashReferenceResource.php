@@ -66,7 +66,7 @@ class CashReferenceResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ]);
+            ])->striped();
     }
 
     public static function getRelations(): array

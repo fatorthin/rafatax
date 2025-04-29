@@ -4,6 +4,7 @@ namespace App\Filament\Resources\InvoiceResource\Pages;
 
 use App\Models\Coa;
 use App\Models\Invoice;
+use App\Models\Client;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\CostListInvoice;
@@ -80,6 +81,8 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
 
     public function table(Table $table): Table
     {
+        $isPaid = $this->invoice->invoice_status === 'paid';
+        
         return $table
             ->query(fn() => CostListInvoice::where('invoice_id', $this->invoice->id))
             ->columns([
@@ -89,8 +92,12 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 TextColumn::make('coa.name')->label('CoA'),
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->money('IDR')
-                    ->summarize(Sum::make()->label('Total Amount')),
+                    ->formatStateUsing(fn ($state) => number_format((float) $state, 0, ',', '.'))
+                    ->summarize(Sum::make()->label('Total Amount')->numeric(
+                        decimalPlaces: 0,
+                        thousandsSeparator: '.',
+                        decimalSeparator: ','
+                    )),
                 TextColumn::make('description')->label('Description'),
             ])
             ->paginated(false)
@@ -99,8 +106,10 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn (CostListInvoice $record): string => InvoiceResource::getUrl('cost-edit', ['record' => $record->id])),
-                \Filament\Tables\Actions\DeleteAction::make(),
+                    ->url(fn (CostListInvoice $record): string => InvoiceResource::getUrl('cost-edit', ['record' => $record->id]))
+                    ->visible(!$isPaid),
+                \Filament\Tables\Actions\DeleteAction::make()
+                    ->visible(!$isPaid),
             ])
             ->bulkActions([
                 //
@@ -109,10 +118,75 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
 
     protected function getHeaderActions(): array
     {
+        $isPaid = $this->invoice->invoice_status === 'paid';
+        
         return [
+            Actions\Action::make('edit_invoice')
+                ->label('Edit Invoice')
+                ->icon('heroicon-o-pencil')
+                ->color('warning')
+                ->url(fn () => InvoiceResource::getUrl('edit', ['record' => $this->invoice->id])),
+                
+            Actions\Action::make('send_whatsapp')
+                ->label('Kirim Invoice')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
+                ->action(function () {
+                    // Get the mou related to this invoice
+                    $mou = $this->invoice->mou;
+                    
+                    if (!$mou) {
+                        $this->notify('error', 'No MoU associated with this invoice!');
+                        return;
+                    }
+                    
+                    // Get client from the mou
+                    $client = $mou->client;
+                    
+                    if (!$client || !$client->phone) {
+                        $this->notify('error', 'Client phone number not found!');
+                        return;
+                    }
+                    
+                    // Clean phone number (remove spaces, dashes, etc)
+                    $phone = preg_replace('/[^0-9]/', '', $client->phone);
+                    
+                    // Add country code if needed
+                    if (substr($phone, 0, 1) === '0') {
+                        $phone = '62' . substr($phone, 1);
+                    } elseif (substr($phone, 0, 2) !== '62') {
+                        $phone = '62' . $phone;
+                    }
+                    
+                    // Calculate total amount
+                    $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)
+                        ->sum('amount');
+                    
+                    // Format as IDR
+                    $formattedAmount = number_format($totalAmount, 0, ',', '.');
+                    
+                    // Create WhatsApp message
+                    $message = "Halo {$client->name},\n\n";
+                    $message .= "Ini adalah invoice untuk layanan kami:\n";
+                    $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
+                    $message .= "Tanggal: {$this->invoice->invoice_date}\n";
+                    $message .= "Jatuh Tempo: {$this->invoice->due_date}\n";
+                    $message .= "Total: Rp {$formattedAmount}\n\n";
+                    $message .= "Terima kasih atas kerjasamanya.";
+                    
+                    // Encode message for URL
+                    $encodedMessage = urlencode($message);
+                    
+                    // Create WhatsApp URL
+                    $whatsappUrl = "https://wa.me/{$phone}?text={$encodedMessage}";
+                    
+                    // Redirect to WhatsApp
+                    return redirect()->away($whatsappUrl);
+                }),
             Actions\CreateAction::make()
                 ->label('Add Cost List')
-                ->url(fn(): string => InvoiceResource::getUrl('cost-create', ['record' => $this->invoice->id])),
+                ->url(fn(): string => InvoiceResource::getUrl('cost-create', ['record' => $this->invoice->id]))
+                ->visible(!$isPaid),
             Actions\Action::make('back')
                 ->label('Back to Invoice List')
                 ->url(InvoiceResource::getUrl('index'))

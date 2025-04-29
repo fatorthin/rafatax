@@ -18,4 +18,9 @@ class Client extends Model
         'contact_person',
         'npwp'
     ];
+    
+    public function mous()
+    {
+        return $this->hasMany(MoU::class);
+    }
 }
