@@ -216,7 +216,9 @@ class CashReportResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ])->defaultSort('transaction_date', 'desc');
+            ])
+            ->defaultSort('transaction_date', 'desc')
+            ->deferLoading();
     }
 
     public static function getRelations(): array

@@ -11,14 +11,14 @@ class CoaFactory extends Factory
 
     public function definition()
     {
-        $types = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
-        $codes = ['1000', '2000', '3000', '4000', '5000'];
+        $types = ['pt', 'consultant'];
+        $codes = ['1000', '2000'];
         
         $typeIndex = array_rand($types);
         
         return [
             'code' => $codes[$typeIndex] . $this->faker->unique()->numerify('###'),
-            'name' => $this->faker->words(3, true) . ' ' . $types[$typeIndex],
+            'name' => $this->faker->words(3, true) . ' ' . ucfirst($types[$typeIndex]),
             'type' => $types[$typeIndex],
         ];
     }

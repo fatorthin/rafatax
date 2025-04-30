@@ -90,6 +90,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->label('No')
                     ->rowIndex(),
                 TextColumn::make('coa.name')->label('CoA'),
+                TextColumn::make('description')->label('Description'),
                 TextColumn::make('amount')
                     ->label('Amount')
                     ->formatStateUsing(fn ($state) => number_format((float) $state, 0, ',', '.'))
@@ -97,8 +98,8 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         decimalPlaces: 0,
                         thousandsSeparator: '.',
                         decimalSeparator: ','
-                    )),
-                TextColumn::make('description')->label('Description'),
+                    ))
+                    ->alignEnd(),
             ])
             ->paginated(false)
             ->filters([

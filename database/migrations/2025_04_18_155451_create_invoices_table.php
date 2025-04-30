@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('invoice_number')->unique();
             $table->date('invoice_date');
             $table->date('due_date');
-            $table->string('invoice_status');
+            $table->enum('invoice_status', ['unpaid', 'paid', 'overdue', 'draft', 'cancelled']);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

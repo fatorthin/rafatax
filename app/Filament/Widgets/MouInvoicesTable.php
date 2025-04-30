@@ -74,10 +74,11 @@ class MouInvoicesTable extends BaseWidget
                     }),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
-                    ->money('IDR')
+                    ->formatStateUsing(fn (string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->getStateUsing(function ($record) {
                         return $record->costListInvoices()->sum('amount');
-                    }),
+                    })
+                    ->alignEnd(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()

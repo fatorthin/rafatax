@@ -211,7 +211,9 @@ class InvoiceResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ])->defaultSort('invoice_date', 'desc');
+            ])
+            ->defaultSort('invoice_date', 'desc')
+            ->deferLoading();
     }
 
     public static function getRelations(): array

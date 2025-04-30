@@ -29,8 +29,10 @@ class CashReportFactory extends Factory
         $debitAmount = $isDebit ? $this->faker->numberBetween(100000, 10000000) : 0;
         $creditAmount = !$isDebit ? $this->faker->numberBetween(100000, 10000000) : 0;
         
-        // Set transaction date within the last year
-        $transactionDate = $this->faker->dateTimeBetween('-1 year', 'now');
+        // Set transaction date between 2020 and now
+        $startDate = Carbon::create(2020, 1, 1);
+        $endDate = Carbon::now();
+        $transactionDate = $this->faker->dateTimeBetween($startDate, $endDate);
         
         // Transaction types
         $types = ['income', 'expense', 'transfer', 'investment', 'loan', 'repayment'];

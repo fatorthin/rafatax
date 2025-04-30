@@ -17,7 +17,7 @@ class InvoiceSeeder extends Seeder
     public function run(): void
     {
         // Get some of the MoUs to attach invoices to
-        $mous = MoU::all()->take(10);
+        $mous = MoU::all()->take(1000);
         $allInvoices = collect();
 
         // If we have MoUs, create invoices for them

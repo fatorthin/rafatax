@@ -21,7 +21,7 @@ class InvoiceFactory extends Factory
             'invoice_number' => 'INV-' . $this->faker->unique()->numerify('######'),
             'invoice_date' => $invoiceDate,
             'due_date' => $dueDate,
-            'invoice_status' => $this->faker->randomElement(['draft', 'sent', 'paid', 'overdue', 'cancelled']),
+            'invoice_status' => $this->faker->randomElement(['unpaid', 'paid', 'overdue', 'draft', 'cancelled']),
         ];
     }
 

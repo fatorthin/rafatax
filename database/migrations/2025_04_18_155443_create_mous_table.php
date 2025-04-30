@@ -17,8 +17,8 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->string('description');
-            $table->string('status')->default('active');
-            $table->string('type');
+            $table->enum('status', ['draft', 'active', 'completed', 'cancelled']);
+            $table->enum('type', ['pt', 'consultant']);
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();

@@ -118,7 +118,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 TextColumn::make('coa.name')->label('CoA'),
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->money('IDR')
+                    ->formatStateUsing(fn (string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->summarize(Sum::make()->label('Total Amount')),
                 TextColumn::make('description')->label('Description'),
             ])
