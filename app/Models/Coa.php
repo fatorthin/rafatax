@@ -17,6 +17,12 @@ class Coa extends Model
         'name',
         'type',
         'description',
-        'status'
+        'status',
+        'group_coa_id'
     ];
+
+    public function groupCoa()
+    {
+        return $this->belongsTo(GroupCoa::class);
+    }
 }

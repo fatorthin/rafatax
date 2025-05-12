@@ -17,9 +17,10 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->string('description');
-            $table->enum('status', ['draft', 'active', 'completed', 'cancelled']);
-            $table->enum('type', ['pt', 'consultant']);
+            $table->enum('status', ['approved', 'unapproved']);
+            $table->enum('type', ['pt', 'kkp']);
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
+            $table->foreignId('category_mou_id')->constrained('category_mous')->onDelete('cascade');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

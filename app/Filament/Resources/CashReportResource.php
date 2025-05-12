@@ -31,26 +31,24 @@ class CashReportResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('cash_reference_id')
                     ->required()
+                    ->default(function() {
+                        return request()->query('cash_reference_id');
+                    })
                     ->options(CashReference::all()->pluck('name', 'id')),
                 Forms\Components\Select::make('coa_id')   
                     ->required()
-                    ->options(Coa::all()->pluck('name', 'id')),
-                Forms\Components\Select::make('invoice_id')
-                    ->required()
-                    ->reactive()
-                    ->afterStateUpdated(function (callable $set, $state) {
-                        if ($state) {
-                            $invoice = Invoice::find($state);
-                            if ($invoice && $invoice->mou_id) {
-                                $set('mou_id', $invoice->mou_id);
-                            }
-                        }
-                    })
-                    ->options(Invoice::all()->pluck('invoice_number', 'id')),
+                    ->searchable()
+                    ->options(function() {
+                        return Coa::all()->mapWithKeys(function ($coa) {
+                            return [$coa->id => $coa->code . ' - ' . $coa->name];
+                        });
+                    }),
+                Forms\Components\Hidden::make('invoice_id')
+                    ->default('0'),
                 Forms\Components\Hidden::make('mou_id')
-                    ->required(),
+                    ->default('0'),
                 Forms\Components\Hidden::make('cost_list_invoice_id')
-                    ->default(null),
+                    ->default('0'),
                 Forms\Components\TextInput::make('debit_amount')
                     ->required()
                     ->numeric(),    
@@ -120,18 +118,60 @@ class CashReportResource extends Resource
                     ->formatStateUsing(function ($state) {
                         return number_format((float)$state, 0, ',', '.');
                     })
-                    ->getStateUsing(function ($record) {
-                        return $record->debit_amount - $record->credit_amount;
+                    ->getStateUsing(function ($record, $column) {
+                        // Get all cash reports for the same cash reference, ordered by date
+                        $cashReports = CashReport::where('cash_reference_id', $record->cash_reference_id)
+                            ->where(function($query) use ($record) {
+                                $query->where('transaction_date', '<', $record->transaction_date)
+                                    ->orWhere(function($q) use ($record) {
+                                        $q->where('transaction_date', '=', $record->transaction_date)
+                                            ->where('id', '<=', $record->id);
+                                    });
+                            })
+                            ->orderBy('transaction_date')
+                            ->orderBy('id')
+                            ->get();
+                        
+                        // Calculate running balance
+                        $balance = 0;
+                        foreach ($cashReports as $report) {
+                            $balance += $report->debit_amount - $report->credit_amount;
+                        }
+                        
+                        return $balance;
                     })
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
-                            ->label('Total Balance')
+                            ->label('Saldo Akhir')
                             ->using(function ($query): string {
-                                $totalDebit = $query->sum('debit_amount');
-                                $totalCredit = $query->sum('credit_amount');
-                                return number_format($totalDebit - $totalCredit, 0, ',', '.');
+                                // Get the last record ID to calculate final balance
+                                $lastRecord = $query->latest('transaction_date')->latest('id')->first();
+                                
+                                if (!$lastRecord) {
+                                    return number_format(0, 0, ',', '.');
+                                }
+                                
+                                // Get all cash reports for this cash reference up to the last record
+                                $cashReports = CashReport::where('cash_reference_id', $lastRecord->cash_reference_id)
+                                    ->where(function($q) use ($lastRecord) {
+                                        $q->where('transaction_date', '<', $lastRecord->transaction_date)
+                                            ->orWhere(function($innerQ) use ($lastRecord) {
+                                                $innerQ->where('transaction_date', '=', $lastRecord->transaction_date)
+                                                    ->where('id', '<=', $lastRecord->id);
+                                            });
+                                    })
+                                    ->orderBy('transaction_date')
+                                    ->orderBy('id')
+                                    ->get();
+                                
+                                // Calculate final balance
+                                $finalBalance = 0;
+                                foreach ($cashReports as $report) {
+                                    $finalBalance += $report->debit_amount - $report->credit_amount;
+                                }
+                                
+                                return number_format($finalBalance, 0, ',', '.');
                             })
-                            
                     )
                     ->sortable()->alignEnd(),
                 Tables\Columns\TextColumn::make('deleted_at')
@@ -217,7 +257,7 @@ class CashReportResource extends Resource
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('transaction_date', 'desc')
+            ->defaultSort('transaction_date', 'asc')
             ->deferLoading();
     }
 

@@ -36,14 +36,14 @@ class MouResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('status')
                     ->options([
-                        'Unpaid' => 'Unpaid',
-                        'Paid' => 'Paid',
+                        'approved' => 'Approved',
+                        'unapproved' => 'Unapproved',
                     ])
                     ->required(),
                 Forms\Components\Select::make('type')
                     ->options([
-                        'PT' => 'PT',
-                        'Consultant' => 'Consultant',
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
                     ])
                     ->required(),
                 Forms\Components\Select::make('client_id')

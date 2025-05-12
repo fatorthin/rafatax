@@ -46,9 +46,13 @@ class InvoiceResource extends Resource
                 Forms\Components\Select::make('invoice_status')
                     ->options([
                         'unpaid' => 'Unpaid',
-                        'paid' => 'Paid',
-                        'overdue' => 'Overdue',
-                    ])
+                        'paid' => 'Paid'
+                    ]),
+                Forms\Components\Select::make('invoice_type')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP'
+                    ]),
             ]);
     }
 
@@ -175,11 +179,11 @@ class InvoiceResource extends Resource
                     ->relationship('mou.client', 'name')
                     ->searchable()
                     ->preload(),
-                Tables\Filters\SelectFilter::make('type')
+                Tables\Filters\SelectFilter::make('invoice_type')
                     ->label('Type')
                     ->options([
                         'pt' => 'PT',
-                        'consultant' => 'Consultant',
+                        'kkp' => 'KKP',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -193,7 +197,6 @@ class InvoiceResource extends Resource
                     ->options([
                         'unpaid' => 'Unpaid',
                         'paid' => 'Paid',
-                        'overdue' => 'Overdue',
                     ]),
             ])
             ->actions([

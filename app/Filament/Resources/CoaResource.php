@@ -12,7 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-
+use App\Models\GroupCoa;
 class CoaResource extends Resource
 {
     protected static ?string $model = Coa::class;
@@ -31,7 +31,7 @@ class CoaResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('type')
                     ->options([
-                        'consultant' => 'Consultant',
+                        'kkp' => 'KKP',
                         'pt' => 'PT'
                     ])
                     ->required(),
@@ -46,6 +46,8 @@ class CoaResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('groupCoa.name')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('type')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -59,6 +61,14 @@ class CoaResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'kkp' => 'KKP',
+                        'pt' => 'PT'
+                    ]),
+                Tables\Filters\SelectFilter::make('group_coa_id')
+                    ->label('Group COA')
+                    ->options(GroupCoa::all()->pluck('name', 'id'))
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

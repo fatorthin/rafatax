@@ -59,6 +59,11 @@ class CashReferenceResource extends Resource
                     ->url(fn (CashReference $record): string => CashReferenceResource::getUrl('view', ['record' => $record]))
                     ->icon('heroicon-o-eye')
                     ->color('info'),
+                Tables\Actions\Action::make('viewMonthlyDetail')
+                    ->label('View Monthly Detail')
+                    ->url(fn (CashReference $record): string => CashReferenceResource::getUrl('viewMonthly', ['record' => $record]))
+                    ->icon('heroicon-o-calendar')
+                    ->color('success'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -83,6 +88,8 @@ class CashReferenceResource extends Resource
             'create' => Pages\CreateCashReference::route('/create'),
             'edit' => Pages\EditCashReference::route('/{record}/edit'),
             'view' => Pages\ViewCashReferenceDetail::route('/{record}/detail'),
+            'viewMonthly' => Pages\ViewCashReferenceMonthly::route('/{record}/monthly'),
+            'monthDetail' => Pages\ViewCashReferenceMonthDetail::route('/{record}/month-transactions'),
         ];
     }
 

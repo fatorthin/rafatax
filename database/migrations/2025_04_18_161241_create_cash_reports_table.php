@@ -15,10 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('description');
             $table->foreignId('cash_reference_id')->constrained('cash_references')->onDelete('cascade');
-            $table->foreignId('mou_id')->constrained('mous')->onDelete('cascade')->nullable();
+            // $table->foreignId('mou_id')->constrained('mous')->onDelete('cascade')->nullable();
+            $table->string('mou_id')->nullable();
             $table->foreignId('coa_id')->constrained('coa')->onDelete('cascade');
-            $table->foreignId('invoice_id')->constrained('invoices')->onDelete('cascade')->nullable();
-            $table->foreignId('cost_list_invoice_id')->constrained('cost_list_invoices')->onDelete('cascade')->nullable()->change();
+            // $table->foreignId('invoice_id')->constrained('invoices')->onDelete('cascade')->nullable();
+            $table->string('invoice_id')->nullable();
+            // $table->foreignId('cost_list_invoice_id')->constrained('cost_list_invoices')->onDelete('cascade')->nullable()->change();
+            $table->string('cost_list_invoice_id')->nullable();
             $table->string('type')->nullable();
             $table->double('debit_amount');
             $table->double('credit_amount');

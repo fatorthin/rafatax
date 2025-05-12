@@ -21,6 +21,7 @@ class CashReferenceSeeder extends Seeder
             ['name' => 'Mandiri'],
             ['name' => 'Kas Besar'],
             ['name' => 'Kas Kecil'],
+            ['name' => 'AJE'],
         ];
 
         foreach ($references as $reference) {

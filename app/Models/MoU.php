@@ -20,7 +20,8 @@ class MoU extends Model
         'client_id',
         'cash_reference_id',
         'status',
-        'type'
+        'type',
+        'category_mou_id'
     ];
 
     public function client()
@@ -36,5 +37,10 @@ class MoU extends Model
     public function cost_lists()
     {
         return $this->hasMany(CostListMou::class, 'mou_id');
+    }
+
+    public function categoryMou()
+    {
+        return $this->belongsTo(CategoryMou::class);
     }
 }

@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->string('name');
-            $table->enum('type', ['pt', 'consultant']);
+            $table->foreignId('group_coa_id')->constrained('group_coas');
+            $table->enum('type', ['pt', 'kkp']);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

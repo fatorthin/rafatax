@@ -19,11 +19,13 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             CashReferenceSeeder::class,
+            GroupCoaSeeder::class,
             CoaSeeder::class,
+            CategoryMouSeeder::class,
             // ClientSeeder::class,
-            MouSeeder::class,
-            InvoiceSeeder::class,
-            CashReportSeeder::class,
+            // MouSeeder::class,
+            // InvoiceSeeder::class,
+            // CashReportSeeder::class,
         ]);
     }
 }

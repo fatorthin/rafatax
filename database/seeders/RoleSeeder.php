@@ -22,6 +22,14 @@ class RoleSeeder extends Seeder
                 'name' => 'staff',
                 'description' => 'Staff with basic access',
             ],
+            [
+                'name' => 'leader',
+                'description' => 'Leader with limited access',
+            ],
+            [
+                'name' => 'coordinator',
+                'description' => 'Coordinator with limited access',
+            ],
         ];
 
         foreach ($roles as $role) {
