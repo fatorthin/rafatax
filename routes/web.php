@@ -9,6 +9,10 @@ Route::get('/', function () {
     return view('homepage');
 });
 
+Route::get('/test-mou', function () {
+    return view('format-mous.spk-tahunan-pt');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::resource('activity-logs', ActivityLogController::class)->only(['index', 'show']);
     Route::get('activity-logs/filter', [ActivityLogController::class, 'filter'])->name('activity-logs.filter');

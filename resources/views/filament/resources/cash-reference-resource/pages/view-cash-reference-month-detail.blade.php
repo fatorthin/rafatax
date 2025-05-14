@@ -1,32 +1,24 @@
 <x-filament-panels::page>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
-        <div class="px-6 py-4">
-            @php
-                $year = request()->query('year');
-                $month = (int) request()->query('month');
-                $monthName = \Carbon\Carbon::create()->month($month)->format('F');
-                
-                // Calculate previous month's balance
-                $prevMonth = $month - 1;
-                $prevYear = (int)$year;
-                
-                if ($prevMonth === 0) {
-                    $prevMonth = 12;
-                    $prevYear = $prevYear - 1;
-                }
-                
-                $lastDayPrevMonth = \Carbon\Carbon::create($prevYear, $prevMonth)->endOfMonth()->format('Y-m-d');
-                
-                $prevBalance = \App\Models\CashReport::where('cash_reference_id', $record->id)
-                    ->where('transaction_date', '<=', $lastDayPrevMonth)
-                    ->sum(\Illuminate\Support\Facades\DB::raw('debit_amount - credit_amount'));
-            @endphp
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $monthName }} {{ $year }} Transactions - {{ $record->name }}</h2>
-            <div class="mt-2">
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $record->description ?? 'No description available' }}</p>
-            </div>
-        </div>
-    </div>
+    @php
+        $year = request()->query('year');
+        $month = (int) request()->query('month');
+        $monthName = \Carbon\Carbon::create()->month($month)->format('F');
+        
+        // Calculate previous month's balance
+        $prevMonth = $month - 1;
+        $prevYear = (int)$year;
+        
+        if ($prevMonth === 0) {
+            $prevMonth = 12;
+            $prevYear = $prevYear - 1;
+        }
+        
+        $lastDayPrevMonth = \Carbon\Carbon::create($prevYear, $prevMonth)->endOfMonth()->format('Y-m-d');
+        
+        $prevBalance = \App\Models\CashReport::where('cash_reference_id', $record->id)
+            ->where('transaction_date', '<=', $lastDayPrevMonth)
+            ->sum(\Illuminate\Support\Facades\DB::raw('debit_amount - credit_amount'));
+    @endphp
     
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
         <div class="px-6 py-4">

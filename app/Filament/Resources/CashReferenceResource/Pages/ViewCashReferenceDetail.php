@@ -224,7 +224,8 @@ class ViewCashReferenceDetail extends Page implements HasTable
                     })
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                    ->url(fn (CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
@@ -235,7 +236,9 @@ class ViewCashReferenceDetail extends Page implements HasTable
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
                 ]),
-            ])->striped()->defaultSort('transaction_date', 'asc');
+            ])
+            ->striped()
+            ->defaultSort('transaction_date', 'asc');
     }
     
     protected function getHeaderActions(): array

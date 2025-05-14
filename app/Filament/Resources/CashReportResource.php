@@ -43,6 +43,8 @@ class CashReportResource extends Resource
                             return [$coa->id => $coa->code . ' - ' . $coa->name];
                         });
                     }),
+                Forms\Components\DatePicker::make('transaction_date')
+                    ->required(),
                 Forms\Components\Hidden::make('invoice_id')
                     ->default('0'),
                 Forms\Components\Hidden::make('mou_id')
@@ -55,8 +57,6 @@ class CashReportResource extends Resource
                 Forms\Components\TextInput::make('credit_amount')
                     ->required()
                     ->numeric(),
-                Forms\Components\DatePicker::make('transaction_date')
-                    ->required(),
             ]);
     }
 
