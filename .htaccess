@@ -1,0 +1,24 @@
+# Use PHP 8.4
+<IfModule mod_suphp.c>
+    suPHP_ConfigPath /opt/php84/lib
+</IfModule>
+
+<IfModule mod_fcgid.c>
+    AddHandler fcgid-script .php
+    FcgidWrapper /opt/php84/cgi-bin/php .php
+</IfModule>
+
+<IfModule mod_lsapi.c>
+    AddHandler lsapi-script .php
+    Lsapi_backend_path /opt/php84/bin/lsphp
+</IfModule>
+
+# Alternate method
+# AddHandler application/x-httpd-php84 .php
+
+# Redirect to public directory
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [L]
+    RewriteRule (.*) public/$1 [L]
+</IfModule> 
