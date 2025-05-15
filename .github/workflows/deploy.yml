@@ -21,20 +21,8 @@ jobs:
     - name: Install Dependencies
       run: composer install --no-dev --prefer-dist --optimize-autoloader
     
-    - name: Create .env file
-      run: |
-        echo "APP_NAME=RafaTax" > .env
-        echo "APP_ENV=production" >> .env
-        echo "APP_KEY=" >> .env
-        echo "APP_DEBUG=false" >> .env
-        echo "APP_URL=${{ secrets.APP_URL || 'https://rafatax.yourdomain.com' }}" >> .env
-        echo "LOG_CHANNEL=stack" >> .env
-        echo "DB_CONNECTION=mysql" >> .env
-        echo "DB_HOST=${{ secrets.DB_HOST || '127.0.0.1' }}" >> .env
-        echo "DB_PORT=${{ secrets.DB_PORT || '3306' }}" >> .env
-        echo "DB_DATABASE=${{ secrets.DB_DATABASE || 'rafatax' }}" >> .env
-        echo "DB_USERNAME=${{ secrets.DB_USERNAME || 'rafatax_user' }}" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD || 'secret' }}" >> .env
+    - name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
     
     - name: Generate Key
       run: php artisan key:generate --force
@@ -52,16 +40,6 @@ jobs:
     
     - name: Optimize Filament
       run: php artisan filament:optimize
-    
-    - name: Database Migrations
-      if: ${{ secrets.RUN_MIGRATIONS == 'true' }}
-      run: php artisan migrate --force
-      env:
-        DB_HOST: ${{ secrets.DB_HOST }}
-        DB_PORT: ${{ secrets.DB_PORT }}
-        DB_DATABASE: ${{ secrets.DB_DATABASE }}
-        DB_USERNAME: ${{ secrets.DB_USERNAME }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
     
     - name: Optimize Laravel
       run: php artisan optimize 
