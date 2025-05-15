@@ -25,8 +25,12 @@ class ClientResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('code')
+                    ->required()
+                    ->unique(),
                 Forms\Components\TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    ->unique(),
                 Forms\Components\TextInput::make('address')
                     ->required(),
                 Forms\Components\TextInput::make('email')
@@ -39,6 +43,27 @@ class ClientResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('npwp')
                     ->required(),
+                Forms\Components\Select::make('grade')
+                    ->options([
+                        'A' => 'A',
+                        'B' => 'B',
+                        'C1' => 'C1',
+                        'C2' => 'C2',
+                        'D1' => 'D1',
+                        'D2' => 'D2',
+                        'E' => 'E',
+                        'F' => 'F',
+                        'G' => 'G',
+                        'H' => 'H',
+                        'I' => 'I',
+                    ])
+                    ->required(),
+                Forms\Components\Select::make('type')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP'
+                    ])
+                    ->required(),
             ]);
     }
 
@@ -46,6 +71,8 @@ class ClientResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('code')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('address')
@@ -55,6 +82,10 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('contact_person')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('npwp')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('grade')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
@@ -70,10 +101,30 @@ class ClientResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('grade')
+                    ->options([
+                        'A' => 'A',
+                        'B' => 'B',
+                        'C1' => 'C1',
+                        'C2' => 'C2',
+                        'D1' => 'D1',
+                        'D2' => 'D2',
+                        'E' => 'E',
+                        'F' => 'F',
+                        'G' => 'G',
+                        'H' => 'H',
+                        'I' => 'I',
+                    ]),
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP'
+                    ]),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
