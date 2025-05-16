@@ -33,7 +33,7 @@ class GroupCoaResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name'),
+                Tables\Columns\TextColumn::make('name'),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),

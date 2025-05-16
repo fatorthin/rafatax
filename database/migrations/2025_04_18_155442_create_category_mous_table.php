@@ -18,30 +18,6 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes('deleted_at', precision: 0);
         });
-
-        CategoryMou::create([
-            'name' => 'SPT',
-        ], [
-            'name' => 'Bulanan',
-        ], [
-            'name' => 'SP2DK',
-        ], [
-            'name' => 'Pembetulan',
-        ], [
-            'name' => 'Pemerikasaan',
-        ], [
-            'name' => 'Restitusi',
-        ], [
-            'name' => 'Keberatan',
-        ], [
-            'name' => 'Konsultasi',
-        ], [
-            'name' => 'Pembukuan',
-        ], [
-            'name' => 'Pelatihan',
-        ], [
-            'name' => 'Lainnya',
-        ]);
     }
 
     /**
