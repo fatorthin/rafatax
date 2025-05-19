@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Coa;
 use App\Models\MoU;
 use App\Models\Client;
-use App\Models\CashReference;
-use App\Models\Coa;
-use App\Models\CostListMou;
 use App\Models\Invoice;
+use App\Models\CategoryMou;
+use App\Models\CostListMou;
 use App\Models\CostListInvoice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,8 +23,9 @@ class MoUFactory extends Factory
             'start_date' => $this->faker->dateTimeBetween('-1 year', 'now'),
             'end_date' => $this->faker->dateTimeBetween('now', '+2 years'),
             'client_id' => Client::factory(),
-            'status' => $this->faker->randomElement(['draft', 'active', 'completed', 'cancelled']),
-            'type' => $this->faker->randomElement(['pt', 'consultant']),
+            'status' => $this->faker->randomElement(['approved', 'unapproved']),
+            'type' => $this->faker->randomElement(['pt', 'kkp']),
+            'category_mou_id' => CategoryMou::factory(),
         ];
     }
 

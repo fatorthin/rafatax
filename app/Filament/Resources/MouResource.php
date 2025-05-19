@@ -28,11 +28,11 @@ class MouResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('mou_number')->label('MoU Number')
                     ->required(),
+                Forms\Components\TextInput::make('description')
+                        ->required(),
                 Forms\Components\DatePicker::make('start_date')
                     ->required(),
                 Forms\Components\DatePicker::make('end_date')
-                    ->required(),
-                Forms\Components\TextInput::make('description')
                     ->required(),
                 Forms\Components\Select::make('status')
                     ->options([
@@ -49,6 +49,12 @@ class MouResource extends Resource
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
                     ->relationship('client', 'name')
+                    ->searchable()
+                    ->required(),
+                Forms\Components\Select::make('category_mou_id')
+                    ->label('Category MoU')
+                    ->relationship('categoryMou', 'name')
+                    ->searchable()
                     ->required(),
             ]);
     }
@@ -67,7 +73,8 @@ class MouResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_date')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('description')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')

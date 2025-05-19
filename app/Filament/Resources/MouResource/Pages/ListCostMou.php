@@ -100,6 +100,9 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('client.phone')
                             ->label('Contact Number')
                             ->weight('bold'),
+                        TextEntry::make('categoryMou.name')
+                            ->label('Category MoU')
+                            ->weight('bold'),
                     ])
                     ->columns(3)
             ]);
@@ -116,11 +119,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->label('No')
                     ->rowIndex(),
                 TextColumn::make('coa.name')->label('CoA'),
+                TextColumn::make('description')->label('Description'),
                 TextColumn::make('amount')
                     ->label('Amount')
                     ->formatStateUsing(fn (string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->summarize(Sum::make()->label('Total Amount')),
-                TextColumn::make('description')->label('Description'),
             ])
             ->paginated(false)
             ->filters([
@@ -153,6 +156,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             Actions\CreateAction::make()
                 ->label('Add Cost List')
                 ->url(fn(): string => MouResource::getUrl('cost-create', ['record' => $this->mou->id])),
+            Actions\Action::make('export_pdf')
+                ->label('Print PDF MoU')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn() => route('mou.print.view', ['id' => $this->mou->id]))
+                ->openUrlInNewTab(),
             Action::make('back')
                 ->label('Back to MoU List')
                 ->url(MouResource::getUrl('index'))

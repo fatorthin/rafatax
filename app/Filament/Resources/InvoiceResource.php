@@ -40,7 +40,15 @@ class InvoiceResource extends Resource
                     ->maxLength(255)
                     ->unique(Invoice::class, 'invoice_number', fn ($record) => $record),
                 Forms\Components\DatePicker::make('invoice_date')
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        if ($state) {
+                            // Add 3 weeks to the invoice date
+                            $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
+                            $set('due_date', $dueDate);
+                        }
+                    }),
                 Forms\Components\DatePicker::make('due_date')
                     ->required(),
                 Forms\Components\Select::make('invoice_status')

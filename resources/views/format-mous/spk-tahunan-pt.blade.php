@@ -318,6 +318,17 @@
             }
         }
     </style>
+
+    @if(isset($printMode) && $printMode)
+    <script>
+        window.onload = function() {
+            // Delay print dialog sedikit untuk memastikan semua aset sudah terload
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
+    @endif
 </head>
 <body>
     <div class="watermark">
@@ -351,8 +362,8 @@
                         <!-- Header KONTEN (BUKAN GAMBAR HEADER HALAMAN) -->
                         <header class="header">
                             <p class="document-title">Surat Perjanjian Kerja</p>
-                            <p class="document-subtitle">Supervisi Kewajiban Perpajakan Tahun 2025</p>
-                            <p class="document-number">NO: 023/PT.AOK/PK/II/2025</p>
+                            <p class="document-subtitle">Supervisi Kewajiban Perpajakan Tahun {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</p>
+                            <p class="document-number">NO: {{ $mou->mou_number }}</p>
                         </header>
                         
                         <!-- Main Content -->
@@ -362,9 +373,9 @@
                                 
                                 <div class="parties">
                                     <div class="party">
-                                        <p><strong>1. Nama:</strong> KATNO</p>
-                                        <p><strong>Jabatan:</strong> DIREKTUR</p>
-                                        <p><strong>Alamat:</strong> SEKIP RT 004 RW 023 KADIPIRO, BANJARSARI, SURAKARTA</p>
+                                        <p><strong>1. Nama:</strong> {{ $mou->client->name ?? '-' }}</p>
+                                        <p><strong>Jabatan:</strong> {{ $mou->client->position ?? '-' }}</p>
+                                        <p><strong>Alamat:</strong> {{ $mou->client->address ?? '-' }}</p>
                                         <p>dan selanjutnya disebut <strong>PIHAK PERTAMA</strong></p>
                                     </div>
                                     
@@ -431,12 +442,14 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        @foreach($costLists as $i => $cost)
                                         <tr>
-                                            <td>1.</td>
-                                            <td>Supervisi Perpajakan</td>
-                                            <td>Rp 2.000.000,-/Bulanan</td>
-                                            <td>Untuk tahun pajak 2025</td>
+                                            <td>{{ $i+1 }}</td>
+                                            <td>{{ $cost->description }}</td>
+                                            <td>Rp {{ number_format($cost->amount, 0, ',', '.') }}</td>
+                                            <td>{{ $cost->coa->name ?? '-' }}</td>
                                         </tr>
+                                        @endforeach
                                     </tbody>
                                 </table>
                                 
@@ -461,16 +474,16 @@
                             <div class="section">
                                 <h2 class="section-title">Penutup</h2>
                                 <p>Bukti Persetujuan Pihak Pertama mengenai hal-hal tersebut di atas dengan menandatangani duplikat surat ini dan mengembalikannya kepada Pihak Kedua.</p>
-                                <p>Ditandatangani di: Sukoharjo</p>
-                                <p>Pada tanggal 13 Februari 2025</p>
+                                <p>Ditandatangani di: {{ $mou->client->city ?? 'Sukoharjo' }}</p>
+                                <p>Pada tanggal {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
                                 
                                 <div class="signatures">
                                     <div class="signature-box">
                                         <p>Pihak Pertama</p>
                                         <br>
                                         <div class="signature-line"></div>
-                                        <p class="signature-name">KATNO</p>
-                                        <p class="signature-title">DIREKTUR</p>
+                                        <p class="signature-name">{{ $mou->client->name ?? '-' }}</p>
+                                        <p class="signature-title">{{ $mou->client->position ?? '-' }}</p>
                                     </div>
                                     
                                     <div class="signature-box">

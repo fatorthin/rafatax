@@ -14,7 +14,9 @@ class CostListInvoice extends Model
     protected $table = 'cost_list_invoices';
 
     protected $fillable = [
+        'mou_id',
         'invoice_id',
+        'coa_id',
         'description',
         'amount',
         'quantity',

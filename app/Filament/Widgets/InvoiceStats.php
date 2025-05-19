@@ -23,7 +23,7 @@ class InvoiceStats extends BaseWidget
     
     protected function getColumns(): int
     {
-        return 3;
+        return 4;
     }
     
     public function mount(): void
@@ -131,20 +131,33 @@ class InvoiceStats extends BaseWidget
                     });
                 }
                 
-                // Status filter
+                // Status filter - only apply this to the main query if it's not related to the widgets we're showing
                 if (isset($this->tableFilters['invoice_status']) && !empty($this->tableFilters['invoice_status']['value'])) {
                     $status = $this->tableFilters['invoice_status']['value'];
                     $query->where('invoice_status', $status);
                 }
             }
             
-            // Get the invoice IDs after applying filters
-            $invoiceIds = $query->pluck('id')->toArray();
+            // Clone the base query for different stats
+            $totalQuery = clone $query;
+            $paidQuery = clone $query;
+            $unpaidQuery = clone $query;
+            $overdueQuery = clone $query;
             
-            // Calculate stats based on the filtered invoices
-            $totalInvoices = count($invoiceIds);
-            $totalAmount = empty($invoiceIds) ? 0 : CostListInvoice::whereIn('invoice_id', $invoiceIds)->sum('amount');
-            $avgAmount = $totalInvoices > 0 ? ($totalAmount / $totalInvoices) : 0;
+            // Get total invoices count
+            $totalInvoices = $totalQuery->count();
+            
+            // Get paid invoices count
+            $paidInvoices = $paidQuery->where('invoice_status', 'paid')->count();
+            
+            // Get unpaid invoices count
+            $unpaidInvoices = $unpaidQuery->where('invoice_status', 'unpaid')->count();
+            
+            // Get overdue invoices count (due date has passed and still unpaid)
+            $overdueInvoices = $overdueQuery
+                ->where('invoice_status', 'unpaid')
+                ->where('due_date', '<', now()->format('Y-m-d'))
+                ->count();
             
             // Show icon for filtered data
             $icon = !empty($this->tableFilters) ? 'heroicon-o-funnel' : null;
@@ -154,11 +167,17 @@ class InvoiceStats extends BaseWidget
                 Stat::make('Total Invoices', $totalInvoices)
                     ->icon($icon)
                     ->description($description),
-                Stat::make('Total Amount', 'IDR ' . number_format($totalAmount, 0, ',', '.'))
-                    ->icon($icon)
+                Stat::make('Paid Invoices', $paidInvoices)
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
                     ->description($description),
-                Stat::make('Average Amount', 'IDR ' . number_format($avgAmount, 0, ',', '.'))
-                    ->icon($icon)
+                Stat::make('Unpaid Invoices', $unpaidInvoices)
+                    ->icon('heroicon-o-clock')
+                    ->color('danger')
+                    ->description($description),
+                Stat::make('Overdue Invoices', $overdueInvoices)
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('warning')
                     ->description($description),
             ];
         } catch (\Exception $e) {
@@ -166,9 +185,11 @@ class InvoiceStats extends BaseWidget
             return [
                 Stat::make('Total Invoices', 0)
                     ->description('Error loading data'),
-                Stat::make('Total Amount', 'IDR 0')
+                Stat::make('Paid Invoices', 0)
                     ->description('Error loading data'),
-                Stat::make('Average Amount', 'IDR 0')
+                Stat::make('Unpaid Invoices', 0)
+                    ->description('Error loading data'),
+                Stat::make('Overdue Invoices', 0)
                     ->description('Error loading data'),
             ];
         }
