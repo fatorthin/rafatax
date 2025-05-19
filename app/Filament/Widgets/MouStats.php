@@ -2,7 +2,7 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Mou;
+use App\Models\MoU;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
@@ -80,7 +80,7 @@ class MouStats extends BaseWidget
     {
         try {
             // Start with a base query
-            $query = Mou::query();
+            $query = MoU::query();
             
             // Apply filters to query if there are any
             if (!empty($this->tableFilters)) {

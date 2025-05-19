@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MouResource\Pages;
 use App\Filament\Resources\MouResource\RelationManagers;
-use App\Models\Mou;
+use App\Models\MoU;
 use App\Models\CostListInvoice;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MouResource extends Resource
 {
-    protected static ?string $model = Mou::class;
+    protected static ?string $model = MoU::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -124,7 +124,7 @@ class MouResource extends Resource
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Year')
                     ->options(
-                        Mou::query()
+                        MoU::query()
                             ->selectRaw('YEAR(start_date) as year')
                             ->distinct()
                             ->orderBy('year', 'desc')
