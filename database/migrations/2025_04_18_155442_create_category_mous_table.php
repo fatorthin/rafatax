@@ -15,6 +15,8 @@ return new class extends Migration
         Schema::create('category_mous', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('format_mou_pt')->nullable();
+            $table->string('format_mou_kkp')->nullable();
             $table->timestamps();
             $table->softDeletes('deleted_at', precision: 0);
         });

@@ -11,6 +11,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class UserResource extends Resource
 {
@@ -24,7 +26,21 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasRole('admin');
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return false;
+            }
+            
+            if ($user instanceof \App\Models\User) {
+                return $user->hasRole('admin');
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Error in UserResource::canAccess: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public static function form(Form $form): Form

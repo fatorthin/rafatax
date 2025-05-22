@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Perjanjian Kerja - PT Aghnia Oasis Konsultindo</title>
+    <title>Surat Perjanjian Kerja - KKP Antin Okfitasari</title>
     <style>
         * {
             margin: 0;
@@ -340,14 +340,14 @@
         <thead>
             <tr>
                 <td class="header-img-cell">
-                    <img src="{{ asset('images/header.png') }}" alt="Header">
+                    <img src="{{ asset('images/header-kkp.jpg') }}" alt="Header">
                 </td>
             </tr>
         </thead>
         <tfoot>
             <tr>
                 <td class="footer-img-cell">
-                    <img src="{{ asset('images/footer.png') }}" alt="Footer">
+                    <img src="{{ asset('images/footer-kkp.jpg') }}" alt="Footer">
                 </td>
             </tr>
         </tfoot>
@@ -381,13 +381,13 @@
                                     
                                     <div class="party">
                                         <p><strong>2. Nama:</strong> ANTIN OKFITASARI</p>
-                                        <p><strong>Jabatan:</strong> DIREKTUR</p>
+                                        <p><strong>Jabatan:</strong> OWNER KKP ANTIN OKFITASARI (RAFATAX)</p>
                                         <p><strong>Alamat:</strong> DK NAMPAN RT 01 RW 02 MADEGONDO GROGOL SUKOHARJO</p>
                                         <p>dan selanjutnya disebut <strong>PIHAK KEDUA</strong></p>
                                     </div>
                                 </div>
                                 
-                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan {{ $mou->client->name }} Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
+                                 <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan PERORANGAN Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
                             </div>
                             
                             <div class="section">
@@ -403,6 +403,8 @@
                                 
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
+                                    <li>Review Kewajiban Perpajakan Bulanan Tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Review dan Assesor Pembukuan Pajak Bulanan Tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                     <li>Penyusunan SPT Masa dan Tahunan Pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
@@ -418,10 +420,12 @@
                                 
                                 <h3>Laporan yang akan diterbitkan:</h3>
                                 <ol>
+                                    <li>Review dan resume perpajakan Pihak Pertama yang telah berjalan.</li>
+                                    <li>Laporan Masa mulai Januari sampai Desember {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                     <li>Laporan SPT Tahunan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
-                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN 2025 yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
+                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
                             </div>
                             
                             <div class="section">
@@ -464,7 +468,7 @@
                             
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
-                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rinian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
+                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
                             </div>
                             
                             <div class="section">
@@ -487,7 +491,7 @@
                                         <br>
                                         <div class="signature-line"></div>
                                         <p class="signature-name">ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB., BKP.,CATr.ACPA</p>
-                                        <p class="signature-title">DIREKTUR PT AGHNIA OASIS KONSULTINDO (RAFATAX)</p>
+                                        <p class="signature-title">OWNER KKP ANTIN OKFITASARI (RAFATAX)</p>
                                     </div>
                                 </div>
                             </div>

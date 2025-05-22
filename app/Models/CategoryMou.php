@@ -11,7 +11,7 @@ class CategoryMou extends Model
 
     protected $fillable = [
         'name',
+        'format_mou_pt',
+        'format_mou_kkp',
     ];
-    
-    
 }

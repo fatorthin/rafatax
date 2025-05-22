@@ -28,7 +28,7 @@ class ClientResource extends Resource
                 Forms\Components\TextInput::make('code')
                     ->required()
                     ->unique(),
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('company_name')
                     ->required()
                     ->unique(),
                 Forms\Components\TextInput::make('address')
@@ -38,6 +38,8 @@ class ClientResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('phone')
                     ->tel()
+                    ->required(),
+                Forms\Components\TextInput::make('owner_name')
                     ->required(),
                 Forms\Components\TextInput::make('contact_person')
                     ->required(),
@@ -73,13 +75,15 @@ class ClientResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('code')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('company_name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('owner_name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('contact_person')
                     ->searchable(),

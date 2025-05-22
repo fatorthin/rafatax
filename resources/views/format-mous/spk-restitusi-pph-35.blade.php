@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Perjanjian Kerja - PT Aghnia Oasis Konsultindo</title>
+    <title>Surat Perjanjian Kerja Restitusi PPH 35 - PT Aghnia Oasis Konsultindo</title>
     <style>
         * {
             margin: 0;
@@ -369,25 +369,32 @@
                         <!-- Main Content -->
                         <div class="content">
                             <div class="section">
-                                <p>Yang bertanda tangan di bawah ini masing-masing:</p>
-                                
+                                <p>Kepada yang terhormat,</p>
+                               
                                 <div class="parties">
                                     <div class="party">
-                                        <p><strong>1. Nama:</strong> {{ $mou->client->name ?? '-' }}</p>
-                                        <p><strong>Jabatan:</strong> {{ $mou->client->position ?? '-' }}</p>
-                                        <p><strong>Alamat:</strong> {{ $mou->client->address ?? '-' }}</p>
-                                        <p>dan selanjutnya disebut <strong>PIHAK PERTAMA</strong></p>
+                                        <p><strong>Bp / Ibu {{ $mou->client->contact_person ?? '-' }}</strong></p>
+                                        <p><strong>{{ $mou->client->position ?? '-' }}</strong> </p>
+                                        <p><strong>{{ $mou->client->name ?? '-' }}</strong></p>
+                                    </div>
+
+                                    <div class="party">
+                                        <p>D.a. {{ $mou->client->address ?? '-' }}</p>
+                                    </div>
+
+                                    <div class="party">
+                                        <p><strong>PERJANJIAN KERJASAMA PERPAJAKAN/PERIKATAN JASA KONSULTASI PERPAJAKAN  ATAS  RENCANA PEKERJAAN PENYUSUNAN DATA UNTUK RESTITUSI PPH 25 TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</strong></p>
+                                    </div>
+
+                                    <div class="party">
+                                        <p>Dengan hormat,</p>
                                     </div>
                                     
                                     <div class="party">
-                                        <p><strong>2. Nama:</strong> ANTIN OKFITASARI</p>
-                                        <p><strong>Jabatan:</strong> DIREKTUR</p>
-                                        <p><strong>Alamat:</strong> DK NAMPAN RT 01 RW 02 MADEGONDO GROGOL SUKOHARJO</p>
-                                        <p>dan selanjutnya disebut <strong>PIHAK KEDUA</strong></p>
+                                        <p>Kami ucapkan terima kasih atas kesempatan yang Bapak berikan kepada kami. Bersama ini kami sampaikan  PERJANJIAN KERJASAMA untuk perikatan jasa konsultasi perpajakan melalui Restitusi  atas nama  {{ $mou->client->company_name }}  untuk tahun pajak  {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}, dengan pokok-pokok sebagai berikut:</p>
                                     </div>
                                 </div>
                                 
-                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan {{ $mou->client->name }} Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
                             </div>
                             
                             <div class="section">
@@ -403,7 +410,9 @@
                                 
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
-                                    <li>Penyusunan SPT Masa dan Tahunan Pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Penyusunan Data untuk Restitusi PPH 25 tahun {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Pendampingan negoisasi kasus Restitusi PPH 25 ke Kantor Pajak.</li>
+                                    <li>Konsultasi Perpajakan terkait tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
                                 <h3>Prosedur Pelaksanaan:</h3>
@@ -414,14 +423,17 @@
                                     <li>Penerapan kewajiban perpajakan klien yang sudah ada dan tahun sebelumnya.</li>
                                     <li>Permintaan data informasi terkait perpajakan secara berkala.</li>
                                     <li>Review Pembukuan dan supervisi berkala terkait Akuntansi Perpajakan</li>
+                                    <li>Review SPT tahunan yang sudah terlapor</li>
+                                    <li>Penyusunan SPT tahunan {{ $mou->client->company_name }} TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</li>
                                 </ol>
                                 
                                 <h3>Laporan yang akan diterbitkan:</h3>
                                 <ol>
-                                    <li>Laporan SPT Tahunan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Review perpajakan klien yang telah berjalan.</li>
+                                    <li>Pelaporan SPT Tahunan Pembetulan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
-                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN 2025 yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
+                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
                             </div>
                             
                             <div class="section">
@@ -449,7 +461,7 @@
                                     </tbody>
                                 </table>
                                 
-                                <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran yang di sepakati akan di bayarkan setiap bulan berjalan mulai masa pajak masa Januari {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sampai dengan masa pajak Desember {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</em></p>
+                                <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran 10% dari nominal yang di sepakati setelah perjanjian ini di tandatangani dan sisa nya akan di bayarkan setelah pembetulan terlapor.</em></p>
                             </div>
                             
                             <div class="section">
@@ -464,7 +476,7 @@
                             
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
-                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rinian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
+                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk pemeriksaan dan pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
                             </div>
                             
                             <div class="section">

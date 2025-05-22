@@ -27,6 +27,10 @@ class CategoryMouResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\TextInput::make('format_mou_pt')
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('format_mou_kkp')
+                    ->maxLength(255),
             ]);
     }
 
@@ -35,6 +39,8 @@ class CategoryMouResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name'),
+                TextColumn::make('format_mou_pt'),
+                TextColumn::make('format_mou_kkp'),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),

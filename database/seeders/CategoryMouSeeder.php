@@ -15,9 +15,13 @@ class CategoryMouSeeder extends Seeder
     {
         $categoryMous = [
            [
-            'name' => 'SPT',
+            'name' => 'SPT Perusahaan',
         ], [
-            'name' => 'Bulanan',
+            'name' => 'SPT Perorangan',
+        ], [
+            'name' => 'Bulanan Perusahaan',
+        ], [
+            'name' => 'Bulanan Perorangan',
         ], [
             'name' => 'SP2DK',
         ], [

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Perjanjian Kerja - PT Aghnia Oasis Konsultindo</title>
+    <title>Surat Perjanjian Kompilasi SPT Pembetulan - KKP Antin Okfitasari</title>
     <style>
         * {
             margin: 0;
@@ -340,14 +340,14 @@
         <thead>
             <tr>
                 <td class="header-img-cell">
-                    <img src="{{ asset('images/header.png') }}" alt="Header">
+                    <img src="{{ asset('images/header-kkp.png') }}" alt="Header">
                 </td>
             </tr>
         </thead>
         <tfoot>
             <tr>
                 <td class="footer-img-cell">
-                    <img src="{{ asset('images/footer.png') }}" alt="Footer">
+                    <img src="{{ asset('images/footer-kkp.png') }}" alt="Footer">
                 </td>
             </tr>
         </tfoot>
@@ -361,8 +361,8 @@
                         
                         <!-- Header KONTEN (BUKAN GAMBAR HEADER HALAMAN) -->
                         <header class="header">
-                            <p class="document-title">Surat Perjanjian Kerja</p>
-                            <p class="document-subtitle">Supervisi Kewajiban Perpajakan Tahun {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</p>
+                            <p class="document-title">Surat Perjanjian Kompilasi</p>
+                            <p class="document-subtitle">Atas PEMBETULAN SPT</p>
                             <p class="document-number">NO: {{ $mou->mou_number }}</p>
                         </header>
                         
@@ -387,23 +387,27 @@
                                     </div>
                                 </div>
                                 
-                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan {{ $mou->client->name }} Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
+                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan perjanjian kerja sama seperti diatur dalam pasal-pasal Surat Perjanjian Kompilasi melalui Pembetulan SPT tahun pajak {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }} di bawah ini:</p>
                             </div>
                             
                             <div class="section">
                                 <h2 class="section-title">Tujuan dan Ruang Lingkup</h2>
-                                <p>Tujuan perikatan jasa supervisi kewajiban perpajakan ini adalah, Pihak Kedua dapat membantu Pihak Pertama dalam supervisi dan penyusunan kewajiban perpajakan sesuai dengan UU KUP Perpajakan yang berlaku di Indonesia.</p>
-                                <p>Ruang lingkup surat perikatan jasa ini meliputi kegiatan untuk melakukan pekerjaan supervisi kewajiban perpajakan Pihak Pertama, berdasarkan data – data yang kami terima dari Pihak Pertama yang dapat dipertanggung jawabkan sesuai dengan peraturan perundang - undangan dan ketentuan umum perpajakan yang berlaku di Indonesia.</p>
+                                <p>Tujuan Surat Perjanjian Kompilasi atas Pembetulan SPT ini adalah, Pihak Kedua dapat membantu Pihak Pertama dalam penyusunan pembetulan SPT sesuai dengan UU KUP Perpajakan yang berlaku di Indonesia.</p>
+
+                                <p>Ruang lingkup surat perikatan jasa ini meliputi kegiatan untuk melakukan pekerjaan supervisi kewajiban perpajakan dan kompilasi Pembetulan SPT Pihak Pertama, berdasarkan data – data yang kami terima dari Pihak Pertama yang dapat dipertanggung jawabkan sesuai dengan peraturan perundang - undangan dan ketentuan umum perpajakan yang berlaku di Indonesia.</p>
                             </div>
                             
                             <div class="section">
                                 <h2 class="section-title">Prosedur Pelaksanaan</h2>
                                 <p>Untuk kelancaran dan dapat dilaksanakannya pekerjaan jasa tersebut di atas, maka pihak Pertama wajib memberikan informasi, data/dokumen-dokumen secara tertulis atau melalui email yang diperlukan oleh pihak Kedua baik berupa rekap maupun bukti transaksi. Data diberikan oleh pihak Pertama sendiri atau pegawai Pihak Pertama yang telah mendapatkan wewenang dari Pihak Pertama, untuk mewakili Pihak Pertama dalam hal pemberian data/dokumen yang diperlukan oleh Pihak kedua.</p>
+
                                 <p>Apabila data/dokumen-dokumen yang dimaksud tidak tersedia sebagaimana mestinya atau sengaja tidak diberikan oleh pihak Pertama kepada pihak Kedua, maka pihak Kedua tidak bertanggung jawab atas tidak terlaksanannya tugas atas data yang tidak disediakan tersebut.</p>
                                 
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
-                                    <li>Penyusunan SPT Masa dan Tahunan Pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Penyusunan SPT Pembetulan ke satu tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Pendampingan ke Kantor Pajak</li>
+                                    <li>Konsultasi Perpajakan terkait tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
                                 <h3>Prosedur Pelaksanaan:</h3>
@@ -413,15 +417,17 @@
                                     <li>Penerapan Pemahaman SOP Perusahaan terkait penanggung jawab dokumen informasi keuangan/perpajakan.</li>
                                     <li>Penerapan kewajiban perpajakan klien yang sudah ada dan tahun sebelumnya.</li>
                                     <li>Permintaan data informasi terkait perpajakan secara berkala.</li>
-                                    <li>Review Pembukuan dan supervisi berkala terkait Akuntansi Perpajakan</li>
+                                    <li>Review SPT tahunan yang sudah terlapor</li>
+                                    <li>Penyusunan dan Pelaporan SPT Pembetulan {{ $mou->client->name }} tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
                                 <h3>Laporan yang akan diterbitkan:</h3>
                                 <ol>
-                                    <li>Laporan SPT Tahunan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Review dalam bentuk resume kewajiban perpajakan Pihak Pertama yang telah berjalan.</li>
+                                    <li>Laporan SPT tahunan Pembetulan Tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
-                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN 2025 yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
+                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
                             </div>
                             
                             <div class="section">
@@ -449,12 +455,12 @@
                                     </tbody>
                                 </table>
                                 
-                                <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran yang di sepakati akan di bayarkan setiap bulan berjalan mulai masa pajak masa Januari {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sampai dengan masa pajak Desember {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</em></p>
+                                <p><em>Fee belum termasuk PPh yang harus dipotong,dengan rincian pembayaran 10% dari nominal yang di sepakati setelah perjanjian ini di tandatangani dan sisa nya akan di bayarkan setelah pembetulan terlapor.</em></p>
                             </div>
                             
                             <div class="section">
                                 <h2 class="section-title">Jangka Waktu</h2>
-                                <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini ditandatangani oleh kedua belah pihak, sampai dengan bulan Januari 2026</p>
+                                <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini ditandatangani oleh kedua belah pihak, sampai <b>dengan terlapornya SPT Pembetulan</b> .</p>
                             </div>
                             
                             <div class="section">
@@ -464,7 +470,7 @@
                             
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
-                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rinian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
+                                <p>Lingkup pekerjaan hanya terkait dengan kompilasi penyusunan SPT Pembetulan sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
                             </div>
                             
                             <div class="section">
@@ -487,7 +493,7 @@
                                         <br>
                                         <div class="signature-line"></div>
                                         <p class="signature-name">ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB., BKP.,CATr.ACPA</p>
-                                        <p class="signature-title">DIREKTUR PT AGHNIA OASIS KONSULTINDO (RAFATAX)</p>
+                                        <p class="signature-title">OWNER KKP ANTIN OKFITASARI (RAFATAX)</p>
                                     </div>
                                 </div>
                             </div>

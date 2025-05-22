@@ -12,10 +12,11 @@ class Client extends Model
     use SoftDeletes, HasFactory, LogsActivity;
     protected $table = 'clients';
     protected $fillable = [
-        'name',
+        'company_name',
         'email',
         'phone',
         'address',
+        'owner_name',
         'contact_person',
         'npwp'
     ];

@@ -387,7 +387,7 @@
                                     </div>
                                 </div>
                                 
-                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan {{ $mou->client->name }} Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
+                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan PERORANGAN Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
                             </div>
                             
                             <div class="section">
@@ -421,7 +421,7 @@
                                     <li>Laporan SPT Tahunan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
-                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN 2025 yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
+                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
                             </div>
                             
                             <div class="section">
@@ -464,7 +464,7 @@
                             
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
-                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rinian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
+                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak 2025 sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
                             </div>
                             
                             <div class="section">

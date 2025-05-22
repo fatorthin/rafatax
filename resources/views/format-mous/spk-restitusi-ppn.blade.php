@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Perjanjian Kerja - PT Aghnia Oasis Konsultindo</title>
+    <title>Surat Perjanjian Kerja Restitusi PPN - PT Aghnia Oasis Konsultindo</title>
     <style>
         * {
             margin: 0;
@@ -369,30 +369,37 @@
                         <!-- Main Content -->
                         <div class="content">
                             <div class="section">
-                                <p>Yang bertanda tangan di bawah ini masing-masing:</p>
-                                
+                                <p>Kepada yang terhormat,</p>
+                               
                                 <div class="parties">
                                     <div class="party">
-                                        <p><strong>1. Nama:</strong> {{ $mou->client->name ?? '-' }}</p>
-                                        <p><strong>Jabatan:</strong> {{ $mou->client->position ?? '-' }}</p>
-                                        <p><strong>Alamat:</strong> {{ $mou->client->address ?? '-' }}</p>
-                                        <p>dan selanjutnya disebut <strong>PIHAK PERTAMA</strong></p>
+                                        <p><strong>Bp / Ibu {{ $mou->client->owner_name ?? '-' }}</strong></p>
+                                        <p><strong>{{ $mou->client->position ?? '-' }}</strong> </p>
+                                        <p><strong>{{ $mou->client->company_name ?? '-' }}</strong></p>
+                                    </div>
+
+                                    <div class="party">
+                                        <p>D.a. {{ $mou->client->address ?? '-' }}</p>
+                                    </div>
+
+                                    <div class="party">
+                                        <p><strong>PERJANJIAN KERJASAMA PERPAJAKAN/PERIKATAN JASA KONSULTASI PERPAJAKAN  ATAS  JASA PENGURUSAN RESTITUSI PPN TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</strong></p>
+                                    </div>
+
+                                    <div class="party">
+                                        <p>Dengan hormat,</p>
                                     </div>
                                     
                                     <div class="party">
-                                        <p><strong>2. Nama:</strong> ANTIN OKFITASARI</p>
-                                        <p><strong>Jabatan:</strong> DIREKTUR</p>
-                                        <p><strong>Alamat:</strong> DK NAMPAN RT 01 RW 02 MADEGONDO GROGOL SUKOHARJO</p>
-                                        <p>dan selanjutnya disebut <strong>PIHAK KEDUA</strong></p>
+                                        <p>Kami ucapkan terima kasih atas kesempatan yang Bapak berikan kepada kami. Bersama ini kami sampaikan  PERJANJIAN KERJASAMA untuk perikatan jasa konsultasi perpajakan melalui Restitusi  atas nama  {{ $mou->client->company_name }}  untuk tahun pajak  {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}, dengan pokok-pokok sebagai berikut:</p>
                                     </div>
                                 </div>
                                 
-                                <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan {{ $mou->client->name }} Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
                             </div>
                             
                             <div class="section">
                                 <h2 class="section-title">Tujuan dan Ruang Lingkup</h2>
-                                <p>Tujuan perikatan jasa supervisi kewajiban perpajakan ini adalah, Pihak Kedua dapat membantu Pihak Pertama dalam supervisi dan penyusunan kewajiban perpajakan sesuai dengan UU KUP Perpajakan yang berlaku di Indonesia.</p>
+                                <p>Tujuan surat perjanjian atas jasa pengurusan restitusi ini adalah, Pihak Kedua dapat membantu Pihak Pertama dalam penyelesaian restitusi PPN.</p>
                                 <p>Ruang lingkup surat perikatan jasa ini meliputi kegiatan untuk melakukan pekerjaan supervisi kewajiban perpajakan Pihak Pertama, berdasarkan data – data yang kami terima dari Pihak Pertama yang dapat dipertanggung jawabkan sesuai dengan peraturan perundang - undangan dan ketentuan umum perpajakan yang berlaku di Indonesia.</p>
                             </div>
                             
@@ -403,7 +410,9 @@
                                 
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
-                                    <li>Penyusunan SPT Masa dan Tahunan Pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Penyusunan Data untuk Restitusi PPN tahun {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Pendampingan proses pencairan Restitusi PPN  {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                    <li>Konsultasi Perpajakan terkait restitusi PPN tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
                                 </ol>
                                 
                                 <h3>Prosedur Pelaksanaan:</h3>
@@ -411,17 +420,11 @@
                                 <ol>
                                     <li>Penerapan Prinsip Mengenal Pengguna Jasa dan Pemahaman Bisnis Klien.</li>
                                     <li>Penerapan Pemahaman SOP Perusahaan terkait penanggung jawab dokumen informasi keuangan/perpajakan.</li>
-                                    <li>Penerapan kewajiban perpajakan klien yang sudah ada dan tahun sebelumnya.</li>
-                                    <li>Permintaan data informasi terkait perpajakan secara berkala.</li>
-                                    <li>Review Pembukuan dan supervisi berkala terkait Akuntansi Perpajakan</li>
+                                    <li>Penerapan kewajiban perpajakan klien yang sudah ada.</li>
+                                    <li>Review dokumen terkait penugasan.</li>
                                 </ol>
                                 
-                                <h3>Laporan yang akan diterbitkan:</h3>
-                                <ol>
-                                    <li>Laporan SPT Tahunan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
-                                </ol>
-                                
-                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN 2025 yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
+                                <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP atas kewajiban perpajakan TAHUN {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
                             </div>
                             
                             <div class="section">
@@ -449,12 +452,12 @@
                                     </tbody>
                                 </table>
                                 
-                                <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran yang di sepakati akan di bayarkan setiap bulan berjalan mulai masa pajak masa Januari {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sampai dengan masa pajak Desember {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</em></p>
+                                <p><em>Fee belum termasuk PPh yang harus dipotong.</em></p>
                             </div>
                             
                             <div class="section">
                                 <h2 class="section-title">Jangka Waktu</h2>
-                                <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini ditandatangani oleh kedua belah pihak, sampai dengan bulan Januari 2026</p>
+                                <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini ditandatangani oleh kedua belah pihak, sampai dengan cairnya restitusi</p>
                             </div>
                             
                             <div class="section">
@@ -464,7 +467,7 @@
                             
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
-                                <p>Lingkup pekerjaan hanya terkait dengan kewajiban perpajakan tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak termasuk SP2DK, pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang lain</strong>. Adapun jika terdapat pekerjaan di luar rinian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
+                                <p>Lingkup pekerjaan hanya terkait dengan segala jasa pengurusan restitusi PPN tahun pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana disebut dalam prosedur pelaksanaan. Adapun jika terdapat pekerjaan di luar rincian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
                             </div>
                             
                             <div class="section">
