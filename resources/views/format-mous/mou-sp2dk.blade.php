@@ -453,7 +453,7 @@
                                     </tbody>
                                 </table>
                                 
-                                <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran 10% dari nominal yang di sepakati setelah perjanjian ini di tandatangani dan sisa nya akan di bayarkan setelah pembetulan terlapor .</em></p>
+                                <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran 10% dari nominal yang disepakati setelah perjanjian ini di tandatangani dan sisa nya akan di bayarkan setelah pembetulan terlapor.</em></p>
                             </div>
                             
                             <div class="section">
