@@ -6,23 +6,36 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Client extends Model
 {
     use SoftDeletes, HasFactory, LogsActivity;
     protected $table = 'clients';
     protected $fillable = [
+        'code',
         'company_name',
         'email',
         'phone',
         'address',
         'owner_name',
         'contact_person',
-        'npwp'
+        'npwp',
+        'grade',
+        'pph_25_reporting',
+        'pph_21_reporting',
+        'ppn_reporting',
+        'status',
+        'type',
     ];
-    
+
     public function mous()
     {
         return $this->hasMany(MoU::class);
+    }
+
+    public function staff(): BelongsToMany
+    {
+        return $this->belongsToMany(Staff::class);
     }
 }

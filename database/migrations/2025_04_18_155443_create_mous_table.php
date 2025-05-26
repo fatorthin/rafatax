@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('mous', function (Blueprint $table) {
             $table->id();
-            $table->string('mou_number')->unique();
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->string('mou_number')->unique()->required();
+            $table->date('start_date')->required();
+            $table->date('end_date')->required();
             $table->string('description');
             $table->enum('status', ['approved', 'unapproved']);
             $table->enum('type', ['pt', 'kkp']);

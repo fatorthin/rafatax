@@ -12,6 +12,8 @@ class ListCashReports extends ListRecords
 {
     protected static string $resource = CashReportResource::class;
 
+    protected static ?string $title = 'Histori Kas';
+
     protected function getHeaderActions(): array
     {
         return [

@@ -18,6 +18,10 @@ class CategoryMouResource extends Resource
 {
     protected static ?string $model = CategoryMou::class;
 
+    protected static ?string $navigationLabel = 'Referensi Kategori MoU';
+
+    protected static ?string $navigationGroup = 'Referensi';
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form

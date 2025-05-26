@@ -20,6 +20,8 @@ class InvoiceResource extends Resource
     protected static ?string $model = Invoice::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationLabel = 'Daftar Invoice';
 
     public static function form(Form $form): Form
     {
@@ -38,7 +40,7 @@ class InvoiceResource extends Resource
                 Forms\Components\TextInput::make('invoice_number')
                     ->required()
                     ->maxLength(255)
-                    ->unique(Invoice::class, 'invoice_number', fn ($record) => $record),
+                    ->unique(Invoice::class, 'invoice_number', fn($record) => $record),
                 Forms\Components\DatePicker::make('invoice_date')
                     ->required()
                     ->live()
@@ -78,7 +80,7 @@ class InvoiceResource extends Resource
                     ->label('MoU Number')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('mou.client.name')
+                Tables\Columns\TextColumn::make('mou.client.company_name')
                     ->label('Client')
                     ->searchable()
                     ->sortable(),
@@ -91,8 +93,18 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('due_date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('invoice_status')
-                    ->label('Status'),
+                Tables\Columns\SelectColumn::make('invoice_type')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                    ])
+                    ->sortable(),
+                Tables\Columns\SelectColumn::make('invoice_status')
+                    ->options([
+                        'unpaid' => 'Unpaid',
+                        'paid' => 'Paid',
+                    ])
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->alignEnd()
@@ -108,11 +120,11 @@ class InvoiceResource extends Resource
                             ->using(function ($query) {
                                 // Get all invoice IDs from the current query
                                 $invoiceIds = $query->pluck('id')->toArray();
-                                
+
                                 // Calculate total from the cost_list_invoices table
                                 $total = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
                                     ->sum('amount');
-                                
+
                                 return $total;
                             })
                             ->formatStateUsing(function ($state) {
@@ -161,30 +173,30 @@ class InvoiceResource extends Resource
                         return $query
                             ->when(
                                 $data['year'],
-                                fn (Builder $query, $year): Builder => $query->whereYear('invoice_date', $year),
+                                fn(Builder $query, $year): Builder => $query->whereYear('invoice_date', $year),
                             )
                             ->when(
                                 $data['month'],
-                                fn (Builder $query, $month): Builder => $query->whereMonth('invoice_date', $month),
+                                fn(Builder $query, $month): Builder => $query->whereMonth('invoice_date', $month),
                             );
                     })
                     ->indicator(function (array $data): ?string {
                         $indicators = [];
-                        
+
                         if ($data['month'] ?? null) {
                             $monthName = \Carbon\Carbon::create()->month($data['month'])->format('F');
                             $indicators[] = "Month: {$monthName}";
                         }
-                        
+
                         if ($data['year'] ?? null) {
                             $indicators[] = "Year: {$data['year']}";
                         }
-                        
+
                         return count($indicators) ? implode(' + ', $indicators) : null;
                     }),
                 Tables\Filters\SelectFilter::make('client')
                     ->label('Client')
-                    ->relationship('mou.client', 'name')
+                    ->relationship('mou.client', 'company_name')
                     ->searchable()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('invoice_type')
@@ -197,7 +209,7 @@ class InvoiceResource extends Resource
                         return $query
                             ->when(
                                 $data['value'],
-                                fn (Builder $query, $type): Builder => $query->whereHas('mou', fn ($q) => $q->where('type', $type)),
+                                fn(Builder $query, $type): Builder => $query->whereHas('mou', fn($q) => $q->where('type', $type)),
                             );
                     }),
                 Tables\Filters\SelectFilter::make('invoice_status')

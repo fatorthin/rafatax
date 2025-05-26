@@ -2,33 +2,34 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Resources\CashReferenceResource;
-use App\Filament\Resources\ClientResource;
+use Filament\Pages;
+use Filament\Panel;
+use Filament\Widgets;
+use Filament\PanelProvider;
+use App\Filament\Widgets\MouStats;
+use Filament\Support\Colors\Color;
+use App\Filament\Widgets\ClientStats;
+use App\Filament\Widgets\InvoiceStats;
 use App\Filament\Resources\CoaResource;
-use App\Filament\Resources\IncomeStatementResource;
-use App\Filament\Resources\InvoiceResource;
 use App\Filament\Resources\MouResource;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\UserResource;
-use App\Filament\Widgets\InvoiceStats;
-use App\Filament\Widgets\MouStats;
-use App\Filament\Widgets\ClientStats;
+use Filament\Navigation\NavigationGroup;
+use App\Filament\Resources\StaffResource;
+use App\Filament\Resources\ClientResource;
 use Filament\Http\Middleware\Authenticate;
+use App\Filament\Resources\InvoiceResource;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use App\Filament\Resources\CashReferenceResource;
 use Filament\Http\Middleware\AuthenticateSession;
+use App\Filament\Resources\IncomeStatementResource;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationGroup;
-use Filament\Pages;
-use Filament\Panel;
-use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
-use Filament\Widgets;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Session\Middleware\StartSession; 
-use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -70,20 +71,20 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()
-                    ->label('System')
-                    ->icon('heroicon-o-cog')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('Master Data')
-                    ->icon('heroicon-o-document-text')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('Transactions')
+                    ->label('Bagian Keuangan')
                     ->icon('heroicon-o-currency-dollar')
                     ->collapsed(),
                 NavigationGroup::make()
-                    ->label('Reports')
-                    ->icon('heroicon-o-chart-bar')
+                    ->label('Bagian HRD')
+                    ->icon('heroicon-o-users')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Referensi')
+                    ->icon('heroicon-o-rectangle-stack')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('System')
+                    ->icon('heroicon-o-cog')
                     ->collapsed(),
             ])
             ->resources([
@@ -95,6 +96,7 @@ class AdminPanelProvider extends PanelProvider
                 MouResource::class,
                 InvoiceResource::class,
                 IncomeStatementResource::class,
+                StaffResource::class,
             ])
             ->maxContentWidth('full');
     }

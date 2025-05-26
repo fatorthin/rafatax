@@ -19,6 +19,9 @@ class GroupCoaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationLabel = 'Referensi Grup COA';
+    protected static ?string $navigationGroup = 'Referensi';
+
     public static function form(Form $form): Form
     {
         return $form

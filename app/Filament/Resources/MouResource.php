@@ -20,16 +20,19 @@ class MouResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'List of MoUs';
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
+
+    protected static ?string $navigationLabel = 'Daftar MoU';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('mou_number')->label('MoU Number')
+                    ->unique(ignoreRecord: true)
                     ->required(),
                 Forms\Components\TextInput::make('description')
-                        ->required(),
+                    ->required(),
                 Forms\Components\DatePicker::make('start_date')
                     ->required(),
                 Forms\Components\DatePicker::make('end_date')
@@ -77,13 +80,17 @@ class MouResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('description')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->searchable(),
                 Tables\Columns\TextColumn::make('type')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('client.name')
                     ->label('Client Name')
                     ->sortable()
+                    ->searchable(),
+                Tables\Columns\SelectColumn::make('status')
+                    ->options([
+                        'approved' => 'Approved',
+                        'unapproved' => 'Unapproved',
+                    ])
                     ->searchable(),
                 Tables\Columns\TextColumn::make('cost_lists_sum_amount')
                     ->label('Total MoU Amount')

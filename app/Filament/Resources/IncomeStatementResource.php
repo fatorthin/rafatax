@@ -15,13 +15,13 @@ class IncomeStatementResource extends Resource
     protected static ?string $model = CashReport::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
-    
-    protected static ?string $navigationGroup = 'Reports';
-    
-    protected static ?string $navigationLabel = 'Income Statement';
-    
+
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
+
+    protected static ?string $navigationLabel = 'Laporan Laba Rugi';
+
     protected static ?string $modelLabel = 'Income Statement';
-    
+
     protected static ?string $pluralModelLabel = 'Income Statements';
 
     public static function getNavigationBadge(): ?string
@@ -30,7 +30,7 @@ class IncomeStatementResource extends Resource
             ->first()
             ->year_count;
     }
-    
+
     public static function table(Table $table): Table
     {
         return $table
@@ -56,13 +56,13 @@ class IncomeStatementResource extends Resource
             ->actions([
                 Tables\Actions\Action::make('view_monthly')
                     ->label('View Monthly Report')
-                    ->url(fn ($record) => route('filament.admin.resources.income-statements.monthly', ['year' => $record->year]))
+                    ->url(fn($record) => route('filament.admin.resources.income-statements.monthly', ['year' => $record->year]))
                     ->icon('heroicon-o-chart-bar')
                     ->color('success')
                     ->button(),
             ]);
     }
-    
+
     public static function getPages(): array
     {
         return [
@@ -70,4 +70,4 @@ class IncomeStatementResource extends Resource
             'monthly' => Pages\MonthlyIncomeStatement::route('/{year}/monthly'),
         ];
     }
-} 
+}

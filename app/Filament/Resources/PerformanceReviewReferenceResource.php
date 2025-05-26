@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\CoaResource\Pages;
-use App\Filament\Resources\CoaResource\RelationManagers;
-use App\Models\Coa;
+use App\Filament\Resources\PerformanceReviewReferenceResource\Pages;
+use App\Filament\Resources\PerformanceReviewReferenceResource\RelationManagers;
+use App\Models\PerformanceReviewReference;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,29 +12,40 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Models\GroupCoa;
 
-class CoaResource extends Resource
+class PerformanceReviewReferenceResource extends Resource
 {
-    protected static ?string $model = Coa::class;
+    protected static ?string $model = PerformanceReviewReference::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Referensi COA';
     protected static ?string $navigationGroup = 'Referensi';
+    protected static ?string $navigationLabel = 'Referensi Penilaian Kinerja';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('code')
-                    ->required(),
                 Forms\Components\TextInput::make('name')
+                    ->required()
+                    ->label('Nama Referensi'),
+                Forms\Components\TextInput::make('description')
+                    ->label('Deskripsi'),
+                Forms\Components\Select::make('group')
+                    ->options([
+                        'Rispek' => 'Rispek',
+                        'Antusias' => 'Antusias',
+                        'Fatanah' => 'Fatanah',
+                        'Amanah' => 'Amanah',
+                        'Aspek Tanggung Jawab' => 'Aspek Tanggung Jawab',
+                        'Pendidikan' => 'Pendidikan',
+                        'Pengalaman Kerja' => 'Pengalaman Kerja',
+                    ])
                     ->required(),
                 Forms\Components\Select::make('type')
                     ->options([
-                        'kkp' => 'KKP',
-                        'pt' => 'PT'
+                        'Kompetensi Dasar' => 'Kompetensi Dasar',
+                        'Kompetensi Teknis' => 'Kompetensi Teknis',
                     ])
                     ->required(),
             ]);
@@ -44,37 +55,28 @@ class CoaResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('code')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('groupCoa.name')
-                    ->searchable(),
                 Tables\Columns\TextColumn::make('type')
+                    ->label('Tipe'),
+                Tables\Columns\TextColumn::make('group')
+                    ->label('Grup'),
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Nama Referensi')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('description')
+                    ->label('Deskripsi')
+                    ->limit(50),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
+                    ->label('Dibuat Pada')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                Tables\Filters\SelectFilter::make('type')
-                    ->options([
-                        'kkp' => 'KKP',
-                        'pt' => 'PT'
-                    ]),
-                Tables\Filters\SelectFilter::make('group_coa_id')
-                    ->label('Group COA')
-                    ->options(GroupCoa::all()->pluck('name', 'id'))
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(), // Add Delete action here
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -95,9 +97,9 @@ class CoaResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCoas::route('/'),
-            'create' => Pages\CreateCoa::route('/create'),
-            'edit' => Pages\EditCoa::route('/{record}/edit'),
+            'index' => Pages\ListPerformanceReviewReferences::route('/'),
+            'create' => Pages\CreatePerformanceReviewReference::route('/create'),
+            'edit' => Pages\EditPerformanceReviewReference::route('/{record}/edit'),
         ];
     }
 

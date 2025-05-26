@@ -9,8 +9,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -31,11 +29,11 @@ class UserResource extends Resource
             if (!$user) {
                 return false;
             }
-            
+
             if ($user instanceof \App\Models\User) {
                 return $user->hasRole('admin');
             }
-            
+
             return false;
         } catch (\Exception $e) {
             Log::error('Error in UserResource::canAccess: ' . $e->getMessage());
@@ -63,8 +61,8 @@ class UserResource extends Resource
                     ->password()
                     ->maxLength(255)
                     ->visibleOn('edit')
-                    ->dehydrated(fn ($state) => filled($state))
-                    ->dehydrateStateUsing(fn ($state) => bcrypt($state)),
+                    ->dehydrated(fn($state) => filled($state))
+                    ->dehydrateStateUsing(fn($state) => bcrypt($state)),
                 Forms\Components\Select::make('roles')
                     ->multiple()
                     ->relationship('roles', 'name')
@@ -122,4 +120,4 @@ class UserResource extends Resource
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
-} 
+}

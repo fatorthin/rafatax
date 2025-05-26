@@ -22,6 +22,11 @@ return new class extends Migration
             $table->string('contact_person')->nullable();
             $table->string('npwp')->nullable();
             $table->string('grade');
+            $table->boolean('pph_25_reporting')->default(false);
+            $table->boolean('pph_21_reporting')->default(false);
+            $table->boolean('ppn_reporting')->default(false);
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('type', ['pt', 'kkp'])->default('pt');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

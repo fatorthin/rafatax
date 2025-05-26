@@ -19,6 +19,10 @@ class CashReferenceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationLabel = 'Daftar Kas';
+
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
+
     public static function form(Form $form): Form
     {
         return $form
@@ -56,12 +60,12 @@ class CashReferenceResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('viewDetail')
                     ->label('View Detail')
-                    ->url(fn (CashReference $record): string => CashReferenceResource::getUrl('view', ['record' => $record]))
+                    ->url(fn(CashReference $record): string => CashReferenceResource::getUrl('view', ['record' => $record]))
                     ->icon('heroicon-o-eye')
                     ->color('info'),
                 Tables\Actions\Action::make('viewMonthlyDetail')
                     ->label('View Monthly Detail')
-                    ->url(fn (CashReference $record): string => CashReferenceResource::getUrl('viewMonthly', ['record' => $record]))
+                    ->url(fn(CashReference $record): string => CashReferenceResource::getUrl('viewMonthly', ['record' => $record]))
                     ->icon('heroicon-o-calendar')
                     ->color('success'),
             ])

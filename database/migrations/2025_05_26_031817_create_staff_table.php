@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('invoices', function (Blueprint $table) {
+        Schema::create('staff', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('mou_id')->constrained('mous')->onDelete('cascade');
-            $table->string('invoice_number')->unique()->required();
-            $table->date('invoice_date')->required();
-            $table->date('due_date');
-            $table->enum('invoice_status', ['unpaid', 'paid']);
-            $table->enum('invoice_type', ['pt', 'kkp']);
+            $table->string('name');
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->enum('position', ['manager', 'coordinator', 'leader', 'staff'])->default('staff');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('invoices');
+        Schema::dropIfExists('staff');
     }
 };
