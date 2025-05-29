@@ -31,6 +31,7 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('staff')
                 ->onDelete('set null');
+            $table->dateTime('verified_at')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
