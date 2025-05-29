@@ -1,28 +1,24 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\App\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
-use App\Models\ClientReport;
 use Illuminate\Support\Carbon;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\ClientReport as StaffReport;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\ClientReportResource\Pages;
-use App\Filament\Resources\ClientReportResource\RelationManagers;
+use App\Filament\App\Resources\StaffReportResource\Pages;
+use App\Filament\App\Resources\StaffReportResource\RelationManagers;
 
-class ClientReportResource extends Resource
+class StaffReportResource extends Resource
 {
-    protected static ?string $model = ClientReport::class;
+    protected static ?string $model = StaffReport::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
-    protected static ?string $navigationGroup = 'Bagian HRD';
-
-    protected static ?string $navigationLabel = 'Laporan Klien';
 
     public static function form(Form $form): Form
     {
@@ -30,14 +26,22 @@ class ClientReportResource extends Resource
             ->schema([
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
-                    ->relationship('client', 'company_name')
+                    ->relationship(
+                        'client',
+                        'company_name',
+                        fn(Builder $query) => $query
+                            ->whereHas(
+                                'staff',
+                                fn(Builder $q) =>
+                                $q->where('staff_id', auth()->user()->staff_id)
+                            )
+                    )
                     ->required()
+                    ->preload()
                     ->searchable(),
-                Forms\Components\Select::make('staff_id')
+                Forms\Components\Hidden::make('staff_id')
                     ->label('Staff')
-                    ->relationship('staff', 'name')
-                    ->required()
-                    ->searchable(),
+                    ->default(fn() => auth()->user()->staff_id),
                 Forms\Components\DatePicker::make('report_month')
                     ->label('Report Month')
                     ->required(),
@@ -75,15 +79,21 @@ class ClientReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+
             ->columns([
                 Tables\Columns\TextColumn::make('client.company_name')
                     ->label('Client')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('staff.name')
-                    ->label('Staff')
-                    ->searchable()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('report_content')
+                    ->label('Report Content')
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'pph25' => 'PPH 25',
+                        'pph21' => 'PPH 21',
+                        'ppn' => 'PPN',
+                    })
+                    ->sortable()
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('report_month')
                     ->label('Report Month')
                     ->dateTime('M Y')
@@ -92,47 +102,28 @@ class ClientReportResource extends Resource
                     ->label('Report Date')
                     ->dateTime('d/m/Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('report_content')
-                    ->label('Report Content')
-                    ->formatStateUsing(fn($state) => match ($state) {
-                        'pph25' => 'PPH 25',
-                        'pph21' => 'PPH 21',
-                        'ppn' => 'PPN',
-                        default => $state,
-                    })
-                    ->sortable(),
-                Tables\Columns\SelectColumn::make('score')
-                    ->options([
-                        '0' => '0',
-                        '1' => '1',
-                    ])
-                    ->searchable(),
-                Tables\Columns\ToggleColumn::make('is_verified')
-                    ->label('Is Verified')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('verified_by.name')
-                    ->label('Verified By')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created At')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('score')
+                    ->label('Score')
+                    ->alignCenter(),
+                Tables\Columns\IconColumn::make('is_verified')
+                    ->label('Verified')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->alignCenter(),
+
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ])->defaultSort('report_date', 'desc');
+            ]);
     }
 
     public static function getRelations(): array
@@ -145,15 +136,15 @@ class ClientReportResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListClientReports::route('/'),
-            'create' => Pages\CreateClientReport::route('/create'),
-            'edit' => Pages\EditClientReport::route('/{record}/edit'),
+            'index' => Pages\ListStaffReports::route('/'),
+            'create' => Pages\CreateStaffReport::route('/create'),
+            'edit' => Pages\EditStaffReport::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        return parent::getEloquentQuery()->where('staff_id', auth()->user()->staff_id)->whereNull('deleted_at')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

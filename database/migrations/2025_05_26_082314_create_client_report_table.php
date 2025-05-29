@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('staff_id')
                 ->constrained('staff')
                 ->onDelete('cascade');
+            $table->date('report_month');
             $table->date('report_date');
             $table->enum('report_content', [
                 'pph25',

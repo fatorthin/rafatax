@@ -15,6 +15,11 @@ class ClientReport extends Model
         'staff_id',
         'report_date',
         'report_content',
+        'score',
+        'is_verified',
+        'verified_by',
+        'verified_at',
+        'report_month',
     ];
 
     public function client()
