@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\LogsActivity;
-    
+
 class CashReport extends Model
 {
     use SoftDeletes, HasFactory, LogsActivity;
@@ -15,7 +15,7 @@ class CashReport extends Model
 
     protected $fillable = [
         'description',
-        'cash_reference_id',    
+        'cash_reference_id',
         'mou_id',
         'coa_id',
         'invoice_id',
@@ -31,9 +31,9 @@ class CashReport extends Model
         return $this->belongsTo(MoU::class);
     }
 
-    public function coa()           
+    public function coa()
     {
-        return $this->belongsTo(CoA::class);
+        return $this->belongsTo(Coa::class);
     }
 
     public function invoice()
