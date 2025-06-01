@@ -15,6 +15,7 @@ class OvertimeCount extends Model
         'staff_id',
         'overtime_date',
         'overtime_count',
+        'is_verified',
     ];
 
     public function staff()

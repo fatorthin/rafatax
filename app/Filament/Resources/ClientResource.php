@@ -73,15 +73,20 @@ class ClientResource extends Resource
                     ->multiple() // Memungkinkan pemilihan banyak staff
                     ->preload() // Opsional: memuat semua opsi di awal
                     ->searchable(), // Opsional: memungkinkan pencarian staff
-                Forms\Components\Toggle::make('pph_25_reporting')
-                    ->default(false)
-                    ->label('PPh 25 Reporting'),
-                Forms\Components\Toggle::make('pph_21_reporting')
-                    ->default(false)
-                    ->label('PPh 21 Reporting'),
-                Forms\Components\Toggle::make('ppn_reporting')
-                    ->default(false)
-                    ->label('PPN Reporting'),
+                Forms\Components\Fieldset::make('Reporting')
+                    ->label('Reporting Options')
+                    ->columns(3) // Atur jumlah kolom sesuai kebutuhan
+                    ->schema([
+                        Forms\Components\Toggle::make('pph_25_reporting')
+                            ->default(false)
+                            ->label('PPh 25 Reporting'),
+                        Forms\Components\Toggle::make('pph_21_reporting')
+                            ->default(false)
+                            ->label('PPh 21 Reporting'),
+                        Forms\Components\Toggle::make('ppn_reporting')
+                            ->default(false)
+                            ->label('PPN Reporting'),
+                    ]),
             ]);
     }
 

@@ -14,6 +14,7 @@ class LateCount extends Model
         'staff_id',
         'late_count',
         'late_date',
+        'is_verified',
     ];
 
     public function staff()

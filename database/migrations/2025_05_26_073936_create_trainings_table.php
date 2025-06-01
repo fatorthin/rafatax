@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('organizer');
             $table->date('training_date');
             $table->date('expired_date')->nullable();
+            $table->boolean('is_verified')->default(false);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

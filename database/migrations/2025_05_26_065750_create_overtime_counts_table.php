@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('overtime_date');
             $table->double('overtime_count')
                 ->default(0);
+            $table->boolean('is_verified')->default(false);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

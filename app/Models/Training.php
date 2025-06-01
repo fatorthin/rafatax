@@ -13,6 +13,7 @@ class Training extends Model
         'organizer',
         'training_date',
         'expired_date',
+        'is_verified',
     ];
 
     public function staff()
