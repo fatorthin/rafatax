@@ -24,7 +24,6 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Actions\Action;
-use App\Filament\Widgets\MouInvoicesTable;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 {
@@ -41,7 +40,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     public MoU $mou;
 
     public $cost_lists;
-    
+
     public $invoices;
 
     public function mount($record): void
@@ -55,12 +54,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     {
         return 'Detail MoU #' . $this->mou->id;
     }
-    
+
     protected function getHeaderWidgets(): array
     {
         return [];
     }
-    
+
     protected function getFooterWidgets(): array
     {
         return [];
@@ -76,24 +75,28 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('mou_number')
                             ->label('MoU Number')
                             ->weight('bold'),
-                        TextEntry::make('client.name')
+                        TextEntry::make('client.company_name')
                             ->label('Client')
                             ->weight('bold'),
                         TextEntry::make('status')
                             ->label('Status')
                             ->weight('bold')
-                            ->formatStateUsing(fn (string $state): string => ucfirst($state)),
+                            ->formatStateUsing(fn(string $state): string => ucfirst($state)),
                         TextEntry::make('type')
                             ->label('Type')
+                            ->formatStateUsing(fn(string $state): string => match ($state) {
+                                'pt' => 'PT',
+                                'kkp' => 'KKP',
+                            })
                             ->weight('bold'),
                         TextEntry::make('start_date')
                             ->label('Start Date')
                             ->weight('bold')
-                            ->date(),
+                            ->dateTime('d F Y'),
                         TextEntry::make('end_date')
                             ->label('End Date')
                             ->weight('bold')
-                            ->date(),
+                            ->dateTime('d F Y'),
                         TextEntry::make('client.contact_person')
                             ->label('Contact Person')
                             ->weight('bold'),
@@ -122,7 +125,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 TextColumn::make('description')->label('Description'),
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn (string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->summarize(Sum::make()->label('Total Amount')),
             ])
             ->paginated(false)
@@ -131,7 +134,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn (CostListMou $record): string => route('filament.admin.resources.mous.cost-edit', ['record' => $record->id])),
+                    ->url(fn(CostListMou $record): string => route('filament.admin.resources.mous.cost-edit', ['record' => $record->id])),
                 \Filament\Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -169,4 +172,4 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->icon('heroicon-o-arrow-left'),
         ];
     }
-} 
+}

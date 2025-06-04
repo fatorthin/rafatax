@@ -12,7 +12,6 @@ use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ClientReportResource\Pages;
-use App\Filament\Resources\ClientReportResource\RelationManagers;
 
 class ClientReportResource extends Resource
 {
@@ -38,8 +37,10 @@ class ClientReportResource extends Resource
                     ->relationship('staff', 'name')
                     ->required()
                     ->searchable(),
-                Forms\Components\DatePicker::make('report_month')
+                Forms\Components\TextInput::make('report_month')
+                    ->type('month')
                     ->label('Report Month')
+                    ->default(now()->format('Y-m'))
                     ->required(),
                 Forms\Components\DatePicker::make('report_date')
                     ->label('Report Date')
@@ -98,7 +99,6 @@ class ClientReportResource extends Resource
                         'pph25' => 'PPH 25',
                         'pph21' => 'PPH 21',
                         'ppn' => 'PPN',
-                        default => $state,
                     })
                     ->sortable(),
                 Tables\Columns\SelectColumn::make('score')
@@ -109,6 +109,9 @@ class ClientReportResource extends Resource
                     ->searchable(),
                 Tables\Columns\ToggleColumn::make('is_verified')
                     ->label('Is Verified')
+                    ->onIcon('heroicon-o-check-circle')
+                    ->offIcon('heroicon-o-x-circle')
+                    ->onColor('success')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('verified_by.name')
                     ->label('Verified By')

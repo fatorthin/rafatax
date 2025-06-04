@@ -10,6 +10,8 @@ class CreateMou extends CreateRecord
 {
     protected static string $resource = MouResource::class;
 
+    protected static ?string $title = 'Tambah MoU';
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

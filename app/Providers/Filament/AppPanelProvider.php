@@ -24,6 +24,7 @@ class AppPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
+            ->favicon(asset('images/favicon.png'))
             ->default()
             ->login()
             ->id('app')
@@ -63,6 +64,9 @@ class AppPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->emailVerification()
+            ->sidebarCollapsibleOnDesktop()
+            ->maxContentWidth('full');
     }
 }

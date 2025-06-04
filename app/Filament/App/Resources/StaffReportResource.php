@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Models\ClientReport as StaffReport;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\StaffReportResource\Pages;
-use App\Filament\App\Resources\StaffReportResource\RelationManagers;
 
 class StaffReportResource extends Resource
 {
@@ -38,12 +37,36 @@ class StaffReportResource extends Resource
                     )
                     ->required()
                     ->preload()
-                    ->searchable(),
+                    ->searchable()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                        if (!$state) return;
+
+                        // Get client reporting settings
+                        $client = \App\Models\Client::find($state);
+                        if (!$client) return;
+
+                        // Reset report content if the client doesn't have access to the currently selected one
+                        $currentReportContent = $get('report_content');
+                        if ($currentReportContent) {
+                            $hasAccess = match ($currentReportContent) {
+                                'pph25' => $client->pph_25_reporting,
+                                'pph21' => $client->pph_21_reporting,
+                                'ppn' => $client->ppn_reporting,
+                                default => false
+                            };
+                            if (!$hasAccess) {
+                                $set('report_content', null);
+                            }
+                        }
+                    }),
                 Forms\Components\Hidden::make('staff_id')
                     ->label('Staff')
                     ->default(fn() => auth()->user()->staff_id),
-                Forms\Components\DatePicker::make('report_month')
+                Forms\Components\TextInput::make('report_month')
+                    ->type('month')
                     ->label('Report Month')
+                    ->default(now()->format('Y-m'))
                     ->required(),
                 Forms\Components\DatePicker::make('report_date')
                     ->label('Report Date')
@@ -56,11 +79,18 @@ class StaffReportResource extends Resource
                     }),
                 Forms\Components\Select::make('report_content')
                     ->label('Report Content')
-                    ->options([
-                        'pph25' => 'PPH 25',
-                        'pph21' => 'PPH 21',
-                        'ppn' => 'PPN',
-                    ])
+                    ->options(function (Forms\Get $get) {
+                        // Get client and their reporting settings
+                        $client = \App\Models\Client::find($get('client_id'));
+                        if (!$client) return [];
+
+                        $options = [];
+                        if ($client->pph_25_reporting) $options['pph25'] = 'PPH 25';
+                        if ($client->pph_21_reporting) $options['pph21'] = 'PPH 21';
+                        if ($client->ppn_reporting) $options['ppn'] = 'PPN';
+
+                        return $options;
+                    })
                     ->required()
                     ->live()
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
@@ -79,7 +109,6 @@ class StaffReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-
             ->columns([
                 Tables\Columns\TextColumn::make('client.company_name')
                     ->label('Client')
@@ -139,6 +168,7 @@ class StaffReportResource extends Resource
             'index' => Pages\ListStaffReports::route('/'),
             'create' => Pages\CreateStaffReport::route('/create'),
             'edit' => Pages\EditStaffReport::route('/{record}/edit'),
+            'monthly-report' => Pages\StaffClientReport::route('/monthly-report'),
         ];
     }
 

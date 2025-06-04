@@ -82,6 +82,22 @@ class UserResource extends Resource
                     ->badge()
                     ->color('success')
                     ->searchable(),
+                Tables\Columns\ToggleColumn::make('is_verified')
+                    ->label('Verified')
+                    ->toggleable()
+                    ->onIcon('heroicon-o-check-circle')
+                    ->offIcon('heroicon-o-x-circle')
+                    ->onColor('success')
+                    ->sortable()
+                    ->afterStateUpdated(function ($record, $state) {
+                        $record->email_verified_at = $state ? now() : null;
+                        $record->save();
+                    }),
+                Tables\Columns\TextColumn::make('email_verified_at')
+                    ->label('Email Verified At')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

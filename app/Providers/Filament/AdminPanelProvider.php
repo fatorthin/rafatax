@@ -13,6 +13,7 @@ use App\Filament\Widgets\ClientStats;
 use App\Filament\Widgets\InvoiceStats;
 use App\Filament\Resources\CoaResource;
 use App\Filament\Resources\MouResource;
+use App\Http\Middleware\VerifiyIsAdmin;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\UserResource;
 use Filament\Navigation\NavigationGroup;
@@ -39,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->favicon(asset('images/favicon.png'))
             ->sidebarCollapsibleOnDesktop()
+            ->login()
             ->id('admin')
             ->path('admin')
             ->colors([
@@ -71,6 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                VerifiyIsAdmin::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

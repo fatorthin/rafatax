@@ -32,10 +32,11 @@ class LateCountResource extends Resource
                     ->required()
                     ->searchable()
                     ->preload(),
-                Forms\Components\DatePicker::make('late_date')
+                Forms\Components\TextInput::make('late_date')
+                    ->type('month')
                     ->label('Bulan Terlambat')
-                    ->required()
-                    ->default(now()),
+                    ->default(now()->format('Y-m'))
+                    ->required(),
                 Forms\Components\TextInput::make('late_count')
                     ->label('Jumlah Terlambat')
                     ->numeric()
@@ -58,6 +59,13 @@ class LateCountResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('late_count')
                     ->label('Jumlah Terlambat')
+                    ->sortable()
+                    ->alignCenter(),
+                Tables\Columns\ToggleColumn::make('is_verified')
+                    ->label('Terverifikasi')
+                    ->onIcon('heroicon-o-check-circle')
+                    ->offIcon('heroicon-o-x-circle')
+                    ->onColor('success')
                     ->sortable()
                     ->alignCenter(),
                 Tables\Columns\TextColumn::make('created_at')

@@ -61,6 +61,12 @@ class OvertimeCountResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->alignCenter(),
+                Tables\Columns\ToggleColumn::make('is_verified')
+                    ->label('Verifikasi')
+                    ->onIcon('heroicon-o-check-circle')
+                    ->offIcon('heroicon-o-x-circle')
+                    ->onColor('success')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->label('Dibuat Pada')

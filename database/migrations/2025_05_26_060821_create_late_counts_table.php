@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('staff_id')
                 ->constrained('staff')
                 ->onDelete('cascade');
-            $table->date('late_date')->required();
+            $table->string('late_date')->required();
             $table->integer('late_count')->default(0);
             $table->boolean('is_verified')->default(false);
             $table->softDeletes('deleted_at', precision: 0);

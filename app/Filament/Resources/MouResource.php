@@ -51,14 +51,20 @@ class MouResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
-                    ->relationship('client', 'name')
+                    ->relationship('client', 'company_name')
                     ->searchable()
                     ->required(),
                 Forms\Components\Select::make('category_mou_id')
                     ->label('Category MoU')
                     ->relationship('categoryMou', 'name')
                     ->searchable()
+                    ->preload()
                     ->required(),
+                Forms\Components\TextInput::make('percentage_restitution')
+                    ->label('Percentage Restitution (optional)')
+                    ->numeric()
+                    ->default(0)
+                    ->suffix('%'),
             ]);
     }
 
@@ -72,7 +78,7 @@ class MouResource extends Resource
                 Tables\Columns\TextColumn::make('mou_number')->label('MoU Number')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_date')
-                    ->date()
+                    ->dateTime('d/m/Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_date')
                     ->date()
@@ -81,8 +87,12 @@ class MouResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('type')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('client.name')
+                    ->searchable()
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                    }),
+                Tables\Columns\TextColumn::make('client.company_name')
                     ->label('Client Name')
                     ->sortable()
                     ->searchable(),

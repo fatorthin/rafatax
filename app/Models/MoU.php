@@ -21,7 +21,8 @@ class MoU extends Model
         'cash_reference_id',
         'status',
         'type',
-        'category_mou_id'
+        'category_mou_id',
+        'percentage_restitution',
     ];
 
     public function client()
