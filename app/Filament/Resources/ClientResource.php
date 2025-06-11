@@ -2,18 +2,15 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ClientResource\Pages;
-use App\Filament\Resources\ClientResource\RelationManagers;
-use App\Models\Client;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Client;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\ClientResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Models\Staff;
-use Illuminate\Validation\Rule; // Import Rule class
 
 class ClientResource extends Resource
 {
@@ -30,22 +27,33 @@ class ClientResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('code')
+                    ->label('Kode Klien')
                     ->required()
                     ->unique(ignoreRecord: true), // Ignore current record on edit
                 Forms\Components\TextInput::make('company_name')
+                    ->label('Nama Perusahaan')
                     ->required()
                     ->unique(ignoreRecord: true), // Ignore current record on edit
-                Forms\Components\TextInput::make('address')
-                    ->required(),
+                Forms\Components\Textarea::make('address')
+                    ->label('Alamat Perusahaan')
+                    ->rows(3),
                 Forms\Components\TextInput::make('email')
+                    ->label('Email Perusahaan')
                     ->email(),
+                Forms\Components\TextInput::make('contact_person')->required()
+                    ->label('Contact Person'),
                 Forms\Components\TextInput::make('phone')
+                    ->label('No WA Contact Person')
                     ->tel()
                     ->required(),
                 Forms\Components\TextInput::make('owner_name')
+                    ->label('Nama Pimpinan')
                     ->required(),
-                Forms\Components\TextInput::make('contact_person'),
+                Forms\Components\TextInput::make('owner_role')
+                    ->label('Jabatan Pimpinan')
+                    ->required(),
                 Forms\Components\TextInput::make('npwp')
+                    ->label('No NPWP')
                     ->required(),
                 Forms\Components\Select::make('grade')
                     ->options([
@@ -62,13 +70,22 @@ class ClientResource extends Resource
                         'I' => 'I',
                     ])
                     ->required(),
+                Forms\Components\Select::make('jenis_wp')
+                    ->label('Jenis WP')
+                    ->options([
+                        'op' => 'Perseorangan',
+                        'badan' => 'Badan'
+                    ])
+                    ->required(),
                 Forms\Components\Select::make('type')
+                    ->label('Jenis Klien')
                     ->options([
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ])
                     ->required(),
                 Forms\Components\Select::make('staff')
+                    ->label('Staff Penanggung Jawab')
                     ->relationship('staff', 'name') // 'staff' adalah nama relasi, 'name' adalah kolom yang ditampilkan
                     ->multiple() // Memungkinkan pemilihan banyak staff
                     ->preload() // Opsional: memuat semua opsi di awal
@@ -79,10 +96,16 @@ class ClientResource extends Resource
                     ->schema([
                         Forms\Components\Toggle::make('pph_25_reporting')
                             ->default(false)
-                            ->label('PPh 25 Reporting'),
+                            ->label('PPh Pasal 25 Reporting'),
+                        Forms\Components\Toggle::make('pph_23_reporting')
+                            ->default(false)
+                            ->label('PPh Pasal 23 Reporting'),
                         Forms\Components\Toggle::make('pph_21_reporting')
                             ->default(false)
-                            ->label('PPh 21 Reporting'),
+                            ->label('PPh Pasal 21/Basil Reporting'),
+                        Forms\Components\Toggle::make('pph_4_reporting')
+                            ->default(false)
+                            ->label('PPh Pasal 4 Reporting'),
                         Forms\Components\Toggle::make('ppn_reporting')
                             ->default(false)
                             ->label('PPN Reporting'),
@@ -109,12 +132,18 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('owner_name')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('owner_role')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('contact_person')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('npwp')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('jenis_wp')
+                    ->label('Jenis WP')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('grade')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('type')
@@ -123,8 +152,16 @@ class ClientResource extends Resource
                     ->label('PPh 25 Reporting')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('pph_23_reporting')
+                    ->label('PPh 23 Reporting')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('pph_21_reporting')
                     ->label('PPh 21 Reporting')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('pph_4_reporting')
+                    ->label('PPh 4 Reporting')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('ppn_reporting')
@@ -135,7 +172,8 @@ class ClientResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('staff.name')
                     ->label('Staff')
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
@@ -169,6 +207,11 @@ class ClientResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ]),
+                Tables\Filters\SelectFilter::make('jenis_wp')
+                    ->options([
+                        'op' => 'Perseorangan',
+                        'badan' => 'Badan'
+                    ]),
                 Tables\Filters\SelectFilter::make('pph_25_reporting')
                     ->options([
                         true => 'Yes',
@@ -187,6 +230,11 @@ class ClientResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('detail')
+                    ->label('Detail')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn($record) => "/admin/clients/{$record->id}/detail")
+                    ->color('info'),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -212,6 +260,7 @@ class ClientResource extends Resource
             'index' => Pages\ListClients::route('/'),
             'create' => Pages\CreateClient::route('/create'),
             'edit' => Pages\EditClient::route('/{record}/edit'),
+            'detail' => Pages\ClientDetail::route('/{record}/detail'),
         ];
     }
 
