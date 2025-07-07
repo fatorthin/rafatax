@@ -22,10 +22,9 @@ class DatabaseSeeder extends Seeder
             GroupCoaSeeder::class,
             CoaSeeder::class,
             CategoryMouSeeder::class,
-            // ClientSeeder::class,
-            // MouSeeder::class,
-            // InvoiceSeeder::class,
-            // CashReportSeeder::class,
+            PositionReferenceSeeder::class,
+            DepartmentReferenceSeeder::class,
+            JournalBookSeeder::class,
         ]);
     }
 }

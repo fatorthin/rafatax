@@ -18,6 +18,12 @@ class ListCashReports extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            Actions\Action::make('neraca_lajur')
+                ->label('Neraca Lajur Bulanan (KKP)')
+                ->icon('heroicon-o-table-cells')
+                ->color('info')
+                ->url(fn () => static::getResource()::getUrl('neraca-lajur'))
+                ->button(),
         ];
     }
 }

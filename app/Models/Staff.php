@@ -11,9 +11,23 @@ class Staff extends Model
     use SoftDeletes;
     protected $fillable = [
         'name',
+        'birth_place',
+        'birth_date',
+        'address',
         'email',
+        'no_ktp',
         'phone',
-        'position',
+        'no_spk',
+        'jenjang',
+        'jurusan',
+        'university',
+        'no_ijazah',
+        'tmt_training',
+        'periode',
+        'selesai_training',
+        'department_reference_id',
+        'position_reference_id',
+        'is_active',
     ];
 
     public function clients(): BelongsToMany
@@ -24,5 +38,15 @@ class Staff extends Model
     public function trainings()
     {
         return $this->belongsToMany(Training::class, 'training_staff');
+    }
+
+    public function departmentReference()
+    {
+        return $this->belongsTo(DepartmentReference::class, 'department_reference_id');
+    }
+
+    public function positionReference()
+    {
+        return $this->belongsTo(PositionReference::class, 'position_reference_id');
     }
 }

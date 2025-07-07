@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('staff', function (Blueprint $table) {
+        Schema::create('journal_book_references', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->nullable();
-            $table->string('phone')->nullable();
-            $table->enum('position', ['manager', 'coordinator', 'leader', 'staff'])->default('staff');
+            $table->string('name')->unique();
+            $table->string('description')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('staff');
+        Schema::dropIfExists('journal_book_references');
     }
 };

@@ -1,48 +1,52 @@
 <?php
 
-namespace App\Filament\Resources\CashReferenceResource\Pages;
+namespace App\Filament\Resources\JournalBookReferenceResource\Pages;
 
-use Carbon\Carbon;
-use App\Models\Coa;
-use Filament\Actions;
-use App\Models\CashReport;
 use Filament\Tables\Table;
-use App\Models\CashReference;
+use Filament\Actions;
+use Filament\Forms;
+use Illuminate\Support\Carbon;
+use App\Models\JournalBookReport;
 use Filament\Resources\Pages\Page;
+use Illuminate\Support\Facades\DB;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Filters\Filter;
+use App\Models\JournalBookReference;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
-use App\Filament\Resources\CashReferenceResource;
-use Filament\Tables\Columns\Summarizers\Summarizer;
-use Illuminate\Support\Facades\DB;
-use Filament\Tables\Actions\Action;
+use App\Filament\Resources\JournalBookReferenceResource;
+use App\Models\Coa;
 
-class ViewCashReferenceMonthly extends Page implements HasTable
+class ViewJournalBookMonthly extends Page implements HasTable
 {
     use InteractsWithTable;
+    protected static string $resource = JournalBookReferenceResource::class;
 
-    protected static string $resource = CashReferenceResource::class;
+    protected static string $view = 'filament.resources.journal-book-reference-resource.pages.view-journal-book-monthly';
 
-    protected static string $view = 'filament.resources.cash-reference-resource.pages.view-cash-reference-monthly';
-
-    public CashReference $record;
+    public JournalBookReference $record;
 
     public function getTitle(): string
     {
         return 'Monthly Transaction - ' . $this->record->name;
     }
 
+    public function getTableRecordKey($record): string
+    {
+        // Combine year and month as a unique key
+        return "{$record->year}-{$record->month}";
+    }
+
     public function table(Table $table): Table
     {
         return $table
             ->query(
-                CashReport::query()
-                    ->where('cash_reference_id', $this->record->id)
+                JournalBookReport::query()
+                    ->where('journal_book_id', $this->record->id)
                     ->select([
                         DB::raw('YEAR(transaction_date) as year'),
                         DB::raw('MONTH(transaction_date) as month'),
@@ -70,12 +74,12 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                 TextColumn::make('total_debit')
                     ->label('Total Debit')
                     ->formatStateUsing(function ($state) {
-                        return number_format((float) $state, 2, ',', '.');
+                        return number_format((float) $state, 0, ',', '.');
                     })
                     ->summarize(
                         Sum::make()
                             ->formatStateUsing(function ($state) {
-                                return number_format((float) $state, 2, ',', '.');
+                                return number_format((float) $state, 0, ',', '.');
                             })
                     )
                     ->sortable()
@@ -83,29 +87,17 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                 TextColumn::make('total_credit')
                     ->label('Total Credit')
                     ->formatStateUsing(function ($state) {
-                        return number_format((float) $state, 2, ',', '.');
+                        return number_format((float) $state, 0, ',', '.');
                     })
                     ->summarize(
                         Sum::make()
                             ->formatStateUsing(function ($state) {
-                                return number_format((float) $state, 2, ',', '.');
+                                return number_format((float) $state, 0, ',', '.');
                             })
                     )
                     ->sortable()
                     ->alignEnd(),
-                TextColumn::make('monthly_balance')
-                    ->label('Monthly Balance')
-                    ->formatStateUsing(function ($state) {
-                        return number_format((float) $state, 2, ',', '.');
-                    })
-                    ->summarize(
-                        Sum::make()
-                            ->formatStateUsing(function ($state) {
-                                return number_format((float) $state, 2, ',', '.');
-                            })
-                    )
-                    ->sortable()
-                    ->alignEnd(),
+
             ])
             ->filters([
                 Filter::make('year')
@@ -113,7 +105,7 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                         Select::make('year')
                             ->label('Year')
                             ->options(function () {
-                                $years = CashReport::where('cash_reference_id', $this->record->id)
+                                $years = JournalBookReport::where('journal_book_id', $this->record->id)
                                     ->selectRaw('DISTINCT YEAR(transaction_date) as year')
                                     ->orderBy('year', 'desc')
                                     ->pluck('year', 'year')
@@ -135,7 +127,7 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                         // Use query parameters to filter transactions by year and month
                         $year = $record->year;
                         $month = $record->month;
-                        $baseUrl = CashReferenceResource::getUrl('monthDetail', ['record' => $this->record]);
+                        $baseUrl = JournalBookReferenceResource::getUrl('monthDetail', ['record' => $this->record]);
                         return "{$baseUrl}?year={$year}&month={$month}";
                     })
                     ->icon('heroicon-o-eye')
@@ -151,26 +143,48 @@ class ViewCashReferenceMonthly extends Page implements HasTable
         return [
             Actions\Action::make('back')
                 ->label('Back to List')
-                ->url(CashReferenceResource::getUrl('index'))
+                ->url(JournalBookReferenceResource::getUrl('index'))
                 ->color('info')
                 ->icon('heroicon-o-arrow-left'),
             Actions\Action::make('viewAll')
                 ->label('View All Transactions')
-                ->url(CashReferenceResource::getUrl('view', ['record' => $this->record]))
+                ->url(JournalBookReferenceResource::getUrl('view', ['record' => $this->record]))
                 ->color('success')
                 ->icon('heroicon-o-list-bullet'),
-            Actions\Action::make('addTransaction')
-                ->label('Add Transaction')
-                ->url(fn() => route('filament.admin.resources.cash-reports.create', ['cash_reference_id' => $this->record->id]))
-                ->color('primary')
-                ->icon('heroicon-o-plus'),
+            Actions\Action::make('create')
+                ->form([
+                    Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi'),
+                    Forms\Components\Hidden::make('journal_book_id')
+                        ->default($this->record->id),
+                    Forms\Components\Select::make(name: 'coa_id')
+                        ->label('CoA')
+                        ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [
+                            $coa->id => "{$coa->code} - {$coa->name}"
+                        ]))
+                        ->required()
+                        ->searchable(),
+                    Forms\Components\TextInput::make('debit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Debit')
+                        ->default(0),
+                    Forms\Components\TextInput::make('credit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Kredit')
+                        ->default(0),
+                    Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Tanggal Transaksi'),
+                ])
+                ->action(function (array $data): void {
+                    JournalBookReport::create($data);
+                })
+                ->label('Add New Data')
+                ->icon('heroicon-o-plus')
         ];
-    }
-
-    // Generate a unique key for each table record
-    public function getTableRecordKey($record): string
-    {
-        // Combine year and month as a unique key
-        return "{$record->year}-{$record->month}";
     }
 }

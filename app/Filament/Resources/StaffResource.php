@@ -24,32 +24,76 @@ class StaffResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('no_spk')
+                    ->label('No SPK'),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
+                Forms\Components\TextInput::make('birth_place')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\DatePicker::make('birth_date')
+                    ->label('Tanggal Lahir')
+                    ->required(),
+                // Forms\Components\TextInput::make('email')
+                //     ->email()
+                //     ->maxLength(255),
+                Forms\Components\TextInput::make('no_ktp')
+                    ->label('No KTP')
+                    ->maxLength(20),
                 Forms\Components\TextInput::make('phone')
                     ->tel()
-                    ->maxLength(20)
                     ->required(),
-                Forms\Components\Select::make('position')
+                Forms\Components\Textarea::make('address')
+                    ->label('Alamat'),
+                Forms\Components\Select::make('jenjang')
                     ->options([
-                        'manager' => 'Manager',
-                        'staff' => 'Staff',
-                        'coordinator' => 'Coordinator',
-                        'leader' => 'Leader',
+                        'D-3' => 'D-3',
+                        'D-4' => 'D-4',
+                        'S-1' => 'S-1',
+                        'S-2' => 'S-2',
+                        'S-3' => 'S-3',
                     ])
                     ->required(),
+                Forms\Components\TextInput::make('jurusan')
+                    ->label('Jurusan')
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('university')
+                    ->label('Asal Universitas')
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('no_ijazah')
+                    ->label('No Ijazah')
+                    ->maxLength(255),
+                Forms\Components\DatePicker::make('tmt_training')
+                    ->label('TMT Training')
+                    ->required(),
+                Forms\Components\TextInput::make('periode')
+                    ->label('Period')
+                    ->maxLength(255),
+                Forms\Components\DatePicker::make('selesai_training')
+                    ->label('Selesai Training')
+                    ->required(),
+                Forms\Components\Select::make('department_id')
+                    ->relationship('departmentReference', 'name')
+                    ->label('Bagian')
+                    ->required()
+                    ->searchable()
+                    ->preload(),
+                Forms\Components\Select::make('position_id')
+                    ->relationship('positionReference', 'name')
+                    ->label('Jabatan')
+                    ->required()
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\Select::make('clients_id')
                     ->relationship('clients', 'company_name')
                     ->label('Clients')
                     ->multiple()
-                    ->required()
                     ->searchable()
                     ->preload(),
+                Forms\Components\Toggle::make('is_active')
+                    ->label('Aktif')
+                    ->default(true)
             ]);
     }
 
@@ -59,21 +103,48 @@ class StaffResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('birth_place')
+                    ->label('TTL')
+                    ->formatStateUsing(fn($record) => $record->birth_place . ', ' . \Carbon\Carbon::parse($record->birth_date)->format('d-m-Y'))
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
-                // Tables\Columns\TextColumn::make('position')
-                //     ->searchable(),
-                Tables\Columns\SelectColumn::make('position')
-                    ->options([
-                        'manager' => 'Manager',
-                        'staff' => 'Staff',
-                        'coordinator' => 'Coordinator',
-                        'leader' => 'Leader',
-                    ])
+                Tables\Columns\TextColumn::make('departmentReference.name')
+                    ->label('Bagian')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('positionReference.name')
+                    ->label('Jabatan')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('tmt_training')
+                    ->label('TMT Training')
+                    ->dateTime('d-m-Y'),
+                Tables\Columns\TextColumn::make('masa_kerja')
+                    ->label('Masa Kerja (bulan)')
+                    ->getStateUsing(function ($record) {
+                        if (!$record->tmt_training) {
+                            return '-';
+                        }
+                        $start = \Carbon\Carbon::parse($record->tmt_training);
+                        $now = \Carbon\Carbon::now();
+                        $diff = $start->diff($now);
+                        $years = $diff->y;
+                        $months = $diff->m;
+                        $result = '';
+                        if ($years > 0) {
+                            $result .= $years . ' tahun ';
+                        }
+                        $result .= $months . ' bulan';
+                        return trim($result);
+                    }),
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Aktif')
+                    ->onIcon('heroicon-o-check-circle')
+                    ->offIcon('heroicon-o-x-circle')
+                    ->onColor('success')
+                    ->offColor('danger'),
                 Tables\Columns\TextColumn::make('clients.company_name')
                     ->label('Clients')
                     // ->listDistinct()
@@ -86,12 +157,18 @@ class StaffResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation(),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->requiresConfirmation(),
+                Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

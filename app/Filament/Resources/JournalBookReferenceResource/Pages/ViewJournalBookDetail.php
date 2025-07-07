@@ -1,41 +1,42 @@
 <?php
 
-namespace App\Filament\Resources\CashReferenceResource\Pages;
+namespace App\Filament\Resources\JournalBookReferenceResource\Pages;
 
 use App\Models\Coa;
+use Filament\Forms;
 use Filament\Actions;
-use App\Models\CashReport;
-use App\Models\CashReference;
+use Filament\Tables\Table;
+use App\Models\JournalBookReport;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Filters\Filter;
+use App\Models\JournalBookReference;
 use Filament\Forms\Components\Select;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Table;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Tables\Columns\Summarizers\Sum;
-use App\Filament\Resources\CashReferenceResource;
-use Filament\Tables\Columns\Summarizers\Summarizer;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\RestoreAction;
-use Filament\Tables\Actions\ForceDeleteAction;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\ForceDeleteBulkAction;
+use Filament\Tables\Actions\ForceDeleteAction;
 use Filament\Tables\Actions\RestoreBulkAction;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Actions\ForceDeleteBulkAction;
+use App\Filament\Resources\JournalBookReferenceResource;
 
-class ViewCashReferenceDetail extends Page implements HasTable
+class ViewJournalBookDetail extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string $resource = CashReferenceResource::class;
+    protected static string $resource = JournalBookReferenceResource::class;
 
-    protected static string $view = 'filament.resources.cash-reference-resource.pages.view-cash-reference-detail';
+    protected static string $view = 'filament.resources.journal-book-reference-resource.pages.view-journal-book-detail';
 
-    public CashReference $record;
+    public JournalBookReference $record;
 
     public function getTitle(): string
     {
@@ -48,8 +49,8 @@ class ViewCashReferenceDetail extends Page implements HasTable
         $year = request()->query('year');
         $month = request()->query('month');
 
-        $query = CashReport::query()
-            ->where('cash_reference_id', $this->record->id);
+        $query = JournalBookReport::query()
+            ->where('journal_book_id', $this->record->id);
 
         // Apply year and month filters if provided in URL
         if ($year) {
@@ -59,6 +60,8 @@ class ViewCashReferenceDetail extends Page implements HasTable
         if ($month) {
             $query->whereMonth('transaction_date', $month);
         }
+
+        // dd($query);
 
         return $table
             ->query($query)
@@ -79,91 +82,32 @@ class ViewCashReferenceDetail extends Page implements HasTable
                 TextColumn::make('debit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {
-                        return number_format((float) $state, 2, ',', '.');
+                        return number_format((float) $state, 0, ',', '.');
                     })
                     ->summarize(
                         Sum::make()
                             ->formatStateUsing(function ($state) {
-                                return number_format((float) $state, 2, ',', '.');
+                                return number_format((float) $state, 0, ',', '.');
                             })
+                            ->label('Sum of Debit')
                     )
                     ->sortable()
                     ->alignEnd(),
                 TextColumn::make('credit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {
-                        return number_format((float) $state, 2, ',', '.');
+                        return number_format((float) $state, 0, ',', '.');
                     })
                     ->summarize(
                         Sum::make()
                             ->formatStateUsing(function ($state) {
-                                return number_format((float) $state, 2, ',', '.');
+                                return number_format((float) $state, 0, ',', '.');
                             })
+                            ->label('Sum of Credit')
                     )
                     ->sortable()
                     ->alignEnd(),
-                TextColumn::make('balance')
-                    ->label('Balance')
-                    ->formatStateUsing(function ($state) {
-                        return number_format((float)$state, 2, ',', '.');
-                    })
-                    ->getStateUsing(function ($record, $column) {
-                        // Get all cash reports for the same cash reference, ordered by date
-                        $cashReports = CashReport::where('cash_reference_id', $record->cash_reference_id)
-                            ->where(function ($query) use ($record) {
-                                $query->where('transaction_date', '<', $record->transaction_date)
-                                    ->orWhere(function ($q) use ($record) {
-                                        $q->where('transaction_date', '=', $record->transaction_date)
-                                            ->where('id', '<=', $record->id);
-                                    });
-                            })
-                            ->orderBy('transaction_date')
-                            ->orderBy('id')
-                            ->get();
 
-                        // Calculate running balance
-                        $balance = 0;
-                        foreach ($cashReports as $report) {
-                            $balance += $report->debit_amount - $report->credit_amount;
-                        }
-
-                        return $balance;
-                    })
-                    ->summarize(
-                        Summarizer::make()
-                            ->label('Saldo Akhir')
-                            ->using(function ($query): string {
-                                // Get the last record ID to calculate final balance
-                                $lastRecord = $query->latest('transaction_date')->latest('id')->first();
-
-                                if (!$lastRecord) {
-                                    return number_format(2, 0, ',', '.');
-                                }
-
-                                // Get all cash reports for this cash reference up to the last record
-                                $cashReports = CashReport::where('cash_reference_id', $lastRecord->cash_reference_id)
-                                    ->where(function ($q) use ($lastRecord) {
-                                        $q->where('transaction_date', '<', $lastRecord->transaction_date)
-                                            ->orWhere(function ($innerQ) use ($lastRecord) {
-                                                $innerQ->where('transaction_date', '=', $lastRecord->transaction_date)
-                                                    ->where('id', '<=', $lastRecord->id);
-                                            });
-                                    })
-                                    ->orderBy('transaction_date')
-                                    ->orderBy('id')
-                                    ->get();
-
-                                // Calculate final balance
-                                $finalBalance = 0;
-                                foreach ($cashReports as $report) {
-                                    $finalBalance += $report->debit_amount - $report->credit_amount;
-                                }
-
-                                return number_format($finalBalance, 2, ',', '.');
-                            })
-                    )
-                    ->sortable()
-                    ->alignEnd(),
             ])
             ->filters([
                 SelectFilter::make('coa_id')
@@ -211,11 +155,12 @@ class ViewCashReferenceDetail extends Page implements HasTable
                                 $data['year'],
                                 fn(Builder $query, $year): Builder => $query->whereYear('transaction_date', $year)
                             );
-                    })
+                    }),
+                TrashedFilter::make(),
             ])
             ->actions([
                 EditAction::make()
-                    ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
+                    ->url(fn(JournalBookReport $record) => route('filament.admin.resources.journal-book-reports.edit', ['record' => $record])),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
@@ -236,14 +181,43 @@ class ViewCashReferenceDetail extends Page implements HasTable
         return [
             Actions\Action::make('back')
                 ->label('Back to List')
-                ->url(CashReferenceResource::getUrl('index'))
+                ->url(JournalBookReferenceResource::getUrl('index'))
                 ->color('info')
                 ->icon('heroicon-o-arrow-left'),
-            Actions\Action::make('viewMonthly')
-                ->label('Monthly View')
-                ->url(CashReferenceResource::getUrl('viewMonthly', ['record' => $this->record]))
-                ->color('success')
-                ->icon('heroicon-o-calendar'),
+            Actions\Action::make('create')
+                ->form([
+                    Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi'),
+                    Forms\Components\Hidden::make('journal_book_id')
+                        ->default($this->record->id),
+                    Forms\Components\Select::make(name: 'coa_id')
+                        ->label('CoA')
+                        ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [
+                            $coa->id => "{$coa->code} - {$coa->name}"
+                        ]))
+                        ->required()
+                        ->searchable(),
+                    Forms\Components\TextInput::make('debit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Debit')
+                        ->default(0),
+                    Forms\Components\TextInput::make('credit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Kredit')
+                        ->default(0),
+                    Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Tanggal Transaksi'),
+                ])
+                ->action(function (array $data): void {
+                    JournalBookReport::create($data);
+                })
+                ->label('Add New Data')
+                ->icon('heroicon-o-plus')
         ];
     }
 }

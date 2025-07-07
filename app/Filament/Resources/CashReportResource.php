@@ -54,9 +54,13 @@ class CashReportResource extends Resource
                     ->default('0'),
                 Forms\Components\TextInput::make('debit_amount')
                     ->required()
+                    ->label('Debit')
+                    ->default(0)
                     ->numeric(),
                 Forms\Components\TextInput::make('credit_amount')
                     ->required()
+                    ->label('Credit')
+                    ->default(0)
                     ->numeric(),
             ]);
     }
@@ -92,33 +96,33 @@ class CashReportResource extends Resource
                 Tables\Columns\TextColumn::make('debit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {
-                        return number_format((float)$state, 0, ',', '.');
+                        return number_format((float)$state, 2, ',', '.');
                     })
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
                             ->label('Sum of Debit')
                             ->formatStateUsing(function ($state) {
-                                return number_format((float)$state, 0, ',', '.');
+                                return number_format((float)$state, 2, ',', '.');
                             })
                     )
                     ->sortable()->alignEnd(),
                 Tables\Columns\TextColumn::make('credit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {
-                        return number_format((float)$state, 0, ',', '.');
+                        return number_format((float)$state, 2, ',', '.');
                     })
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
                             ->label('Sum of Credit')
                             ->formatStateUsing(function ($state) {
-                                return number_format((float)$state, 0, ',', '.');
+                                return number_format((float)$state, 2, ',', '.');
                             })
                     )
                     ->sortable()->alignEnd(),
                 Tables\Columns\TextColumn::make('balance')
                     ->label('Balance')
                     ->formatStateUsing(function ($state) {
-                        return number_format((float)$state, 0, ',', '.');
+                        return number_format((float)$state, 2, ',', '.');
                     })
                     ->getStateUsing(function ($record, $column) {
                         // Get all cash reports for the same cash reference, ordered by date
@@ -150,7 +154,7 @@ class CashReportResource extends Resource
                                 $lastRecord = $query->latest('transaction_date')->latest('id')->first();
 
                                 if (!$lastRecord) {
-                                    return number_format(0, 0, ',', '.');
+                                    return number_format(2, 0, ',', '.');
                                 }
 
                                 // Get all cash reports for this cash reference up to the last record
@@ -172,7 +176,7 @@ class CashReportResource extends Resource
                                     $finalBalance += $report->debit_amount - $report->credit_amount;
                                 }
 
-                                return number_format($finalBalance, 0, ',', '.');
+                                return number_format($finalBalance, 2, ',', '.');
                             })
                     )
                     ->alignEnd()
@@ -277,6 +281,7 @@ class CashReportResource extends Resource
             'index' => Pages\ListCashReports::route('/'),
             'create' => Pages\CreateCashReport::route('/create'),
             'edit' => Pages\EditCashReport::route('/{record}/edit'),
+            'neraca-lajur' => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
         ];
     }
 
