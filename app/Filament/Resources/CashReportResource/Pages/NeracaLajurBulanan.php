@@ -81,6 +81,16 @@ class NeracaLajurBulanan extends Page implements HasTable
                     $this->month = $data['month'];
                     $this->year = $data['year'];
                 }),
+            Action::make('viewNeraca')
+                ->label('Lihat Laporan Neraca')
+                ->icon('heroicon-o-document-text')
+                ->color('info')
+                ->url(fn () => static::getResource()::getUrl('neraca', ['month' => $this->month, 'year' => $this->year])),
+            Action::make('viewLabaRugi')
+                ->label('Lihat Laporan Laba Rugi')
+                ->icon('heroicon-o-document-text')
+                ->color('info')
+                ->url(fn () => static::getResource()::getUrl('laba-rugi-bulanan', ['month' => $this->month, 'year' => $this->year])),
             Action::make('saveNeracaSetelahAJE')
                 ->label('Simpan Data Neraca')
                 ->icon('heroicon-o-document-check')
@@ -99,6 +109,58 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url(fn () => static::getResource()::getUrl('index')),
+        ];
+    }
+
+    protected function getLabaRugiData()
+    {
+        $data = $this->getTableQuery()->get();
+        $labaRugiData = [];
+        $totalPendapatan = 0;
+        $totalBeban = 0;
+
+        foreach ($data as $row) {
+            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit + 
+                         $row->kas_kecil_debit + $row->bank_debit + 
+                         $row->jurnal_umum_debit;
+            
+            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit + 
+                          $row->kas_kecil_kredit + $row->bank_kredit + 
+                          $row->jurnal_umum_kredit;
+            
+            $selisihSebelumAJE = $totalDebit - $totalKredit;
+            $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
+            
+            // Check if this is a Laba Rugi account
+            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
+                $amount = $selisihSetelahAJE;
+                
+                // Determine if this is pendapatan or beban based on the account code
+                if (preg_match('/^AO-4/', $row->code)) {
+                    // Pendapatan accounts (400 series)
+                    $totalPendapatan += $amount;
+                    $category = 'Pendapatan';
+                } else {
+                    // Beban accounts (500-700 series)
+                    $totalBeban += $amount;
+                    $category = 'Beban';
+                }
+
+                $labaRugiData[] = [
+                    'code' => $row->code,
+                    'name' => $row->name,
+                    'category' => $category,
+                    'amount' => abs($amount),
+                    'is_debit' => $amount > 0
+                ];
+            }
+        }
+
+        return [
+            'items' => $labaRugiData,
+            'totalPendapatan' => abs($totalPendapatan),
+            'totalBeban' => abs($totalBeban),
+            'labaRugiBersih' => abs($totalPendapatan) - abs($totalBeban)
         ];
     }
 
@@ -129,7 +191,9 @@ class NeracaLajurBulanan extends Page implements HasTable
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
                 DB::raw('COALESCE(aje_data.aje_debit, 0) as aje_debit'),
-                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit')
+                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit'),
+                DB::raw('COALESCE(neraca_awal_bulan_depan.neraca_awal_bulan_depan_debit, 0) as neraca_awal_bulan_depan_debit'),
+                DB::raw('COALESCE(neraca_awal_bulan_depan.neraca_awal_bulan_depan_kredit, 0) as neraca_awal_bulan_depan_kredit')
             ])
             ->leftJoin(
                 DB::raw("(
@@ -390,6 +454,22 @@ class NeracaLajurBulanan extends Page implements HasTable
                 'coa.id',
                 '=',
                 'aje_data.coa_id'
+            )
+            ->leftJoin(
+                DB::raw("(
+                    SELECT 
+                        coa_id,
+                        SUM(debit_amount) as neraca_awal_bulan_depan_debit,
+                        SUM(credit_amount) as neraca_awal_bulan_depan_kredit
+                    FROM journal_book_reports 
+                    WHERE transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
+                    AND deleted_at IS NULL
+                    AND journal_book_id = 3
+                    GROUP BY coa_id
+                ) as neraca_awal_bulan_depan"),
+                'coa.id',
+                '=',
+                'neraca_awal_bulan_depan.coa_id'
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')

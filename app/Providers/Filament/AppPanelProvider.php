@@ -25,7 +25,6 @@ class AppPanelProvider extends PanelProvider
     {
         return $panel
             ->favicon(asset('images/favicon.png'))
-            ->default()
             ->login()
             ->id('app')
             ->profile()

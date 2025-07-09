@@ -23,6 +23,6 @@ class Coa extends Model
 
     public function groupCoa()
     {
-        return $this->belongsTo(GroupCoa::class);
+        return $this->belongsTo(GroupCoa::class, 'group_coa_id');
     }
 }

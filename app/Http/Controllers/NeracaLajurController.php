@@ -47,7 +47,7 @@ class NeracaLajurController extends Controller
             // Insert new data
             foreach ($data as $item) {
                 // Only process items that should appear in Neraca (AO-101 to AO-305, including AO-101.1 to AO-101.5 and AO-102.1 to AO-102.5)
-                if (preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5])$/', $item->code)) {
+                if (preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/', $item->code)) {
                     // Calculate Neraca Setelah AJE first
                     $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit + 
                                 $item->kas_kecil_debit + $item->bank_debit + 
