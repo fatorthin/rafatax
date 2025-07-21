@@ -25,10 +25,7 @@ class AppPanelProvider extends PanelProvider
     {
         return $panel
             ->favicon(asset('images/favicon.png'))
-            ->login()
             ->id('app')
-            ->profile()
-            ->registration()
             ->userMenuItems([
                 MenuItem::make()
                     ->label('Admin')

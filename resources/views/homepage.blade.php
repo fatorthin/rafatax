@@ -89,7 +89,7 @@ https://templatemo.com/tm-545-finance-business
                             <a class="nav-link" href="#contactus">Contact Us</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link external" href="/admin">Login</a>
+                            <a class="nav-link external" href="/admin/login">Login</a>
                         </li>
                     </ul>
                 </div>

@@ -6,6 +6,7 @@ use App\Filament\Resources\MouResource\Pages\CostListMou;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\MouPrintViewController;
 use App\Http\Controllers\NeracaLajurController;
+use App\Http\Controllers\DaftarAktivaExportController;
 
 Route::get('/', function () {
     return view('homepage');
@@ -25,3 +26,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/mou/{id}/print-view', [MouPrintViewController::class, 'show'])->name('mou.print.view');
+Route::get('/daftar-aktiva/export/{bulan}/{tahun}', [DaftarAktivaExportController::class, 'export'])->name('daftar-aktiva.export');

@@ -37,9 +37,6 @@ class ClientResource extends Resource
                 Forms\Components\Textarea::make('address')
                     ->label('Alamat Perusahaan')
                     ->rows(3),
-                Forms\Components\TextInput::make('email')
-                    ->label('Email Perusahaan')
-                    ->email(),
                 Forms\Components\TextInput::make('contact_person')->required()
                     ->label('Contact Person'),
                 Forms\Components\TextInput::make('phone')
@@ -109,6 +106,9 @@ class ClientResource extends Resource
                         Forms\Components\Toggle::make('ppn_reporting')
                             ->default(false)
                             ->label('PPN Reporting'),
+                        Forms\Components\Toggle::make('spt_reporting')
+                            ->default(false)
+                            ->label('SPT Tahunan Reporting'),
                     ]),
             ]);
     }
@@ -124,9 +124,6 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('email')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('owner_name')
@@ -138,16 +135,20 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('contact_person')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('npwp')
+                Tables\Columns\TextColumn::make('npwp') 
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('jenis_wp')
                     ->label('Jenis WP')
+                    ->formatStateUsing(fn ($state) => $state === 'op' ? 'Perseorangan' : 'Badan')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('grade')
-                    ->searchable(),
+                    ->searchable()
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('type')
-                    ->searchable(),
+                    ->searchable()
+                    ->alignCenter()
+                    ->formatStateUsing(fn ($state) => $state === 'pt' ? 'PT' : 'KKP'),
                 Tables\Columns\IconColumn::make('pph_25_reporting')
                     ->label('PPh 25 Reporting')
                     ->boolean()
@@ -168,21 +169,19 @@ class ClientResource extends Resource
                     ->label('PPN Reporting')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('spt_reporting')
+                    ->label('SPT Tahunan Reporting')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
-                    ->searchable(),
+                    ->searchable()
+                    ->badge()
+                    ->color(fn ($state) => $state === 'active' ? 'success' : 'danger'),
                 Tables\Columns\TextColumn::make('staff.name')
                     ->label('Staff')
                     ->searchable()
                     ->wrap(),
                 Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

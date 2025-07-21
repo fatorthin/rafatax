@@ -2,34 +2,31 @@
 
 namespace App\Providers;
 
-use App\Models\ActivityLog;
-use App\Policies\ActivityLogPolicy;
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use App\Http\Responses\LoginResponse;
+use App\Http\Responses\LogoutResponse;
+use Illuminate\Support\ServiceProvider;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 
 class AuthServiceProvider extends ServiceProvider
 {
-    /**
-     * The model to policy mappings for the application.
-     *
-     * @var array<class-string, class-string>
-     */
-    protected $policies = [
-        ActivityLog::class => ActivityLogPolicy::class,
-    ];
-
-    /**
-     * Register services.
-     */
     public function register(): void
     {
-        //
+        // Register the custom login response
+        $this->app->singleton(
+            LoginResponseContract::class,
+            LoginResponse::class
+        );
+
+        // Register the custom logout response
+        $this->app->singleton(
+            LogoutResponseContract::class,
+            LogoutResponse::class
+        );
     }
 
-    /**
-     * Bootstrap services.
-     */
     public function boot(): void
     {
-        $this->registerPolicies();
+        //
     }
 }

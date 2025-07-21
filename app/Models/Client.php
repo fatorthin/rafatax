@@ -15,7 +15,6 @@ class Client extends Model
     protected $fillable = [
         'code',
         'company_name',
-        'email',
         'phone',
         'address',
         'owner_name',
@@ -29,6 +28,7 @@ class Client extends Model
         'pph_21_reporting',
         'pph_4_reporting',
         'ppn_reporting',
+        'spt_reporting',
         'status',
         'type',
     ];
