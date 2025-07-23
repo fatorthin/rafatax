@@ -9,7 +9,7 @@ use App\Http\Controllers\NeracaLajurController;
 use App\Http\Controllers\DaftarAktivaExportController;
 
 Route::get('/', function () {
-    return view('homepage');
+    return redirect('/admin');
 });
 
 Route::get('/test-mou', function () {
