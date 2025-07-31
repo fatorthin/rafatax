@@ -75,7 +75,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
         $tahun = $this->tahun;
         
         return $table
-            ->query(DaftarAktivaTetap::query())
+            ->query(DaftarAktivaTetap::query()->where('status', 'aktif'))
             ->striped()
             ->columns([
                 TextColumn::make('deskripsi')
@@ -90,7 +90,18 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                 TextColumn::make('harga_perolehan')
                     ->label('Harga Perolehan')
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
-                    ->alignEnd(),
+                    ->alignEnd()    
+                    ->summarize(
+                        Tables\Columns\Summarizers\Summarizer::make()
+                            ->using(function ($query) use ($bulan, $tahun) {
+                                $aktivaIds = $query->pluck('id');
+                                return DaftarAktivaTetap::whereIn('id', $aktivaIds)->sum('harga_perolehan');
+                            })
+                            ->formatStateUsing(function ($state) {
+                                return number_format($state, 0, ',', '.');
+                            })
+                            ->label('Total Harga Perolehan')
+                    ),  
                 TextColumn::make('tarif_penyusutan')
                     ->label('Tarif (%)')
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.').'%')

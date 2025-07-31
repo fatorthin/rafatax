@@ -53,6 +53,14 @@ class DaftarAktivaTetapResource extends Resource
                     ->label('Tarif Penyusutan (%)')
                     ->numeric()
                     ->required(),
+                Forms\Components\Select::make('status')
+                    ->label('Status')
+                    ->options([
+                        'aktif' => 'Aktif',
+                        'nonaktif' => 'Nonaktif',   
+                    ])
+                    ->default('aktif')
+                    ->required(),
             ]);
     }
 
@@ -146,6 +154,14 @@ class DaftarAktivaTetapResource extends Resource
                             })
                             ->label('Total Nilai Buku')
                     ),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->alignCenter()
+                    ->badge()
+                    ->color(fn ($state) => $state == 'aktif' ? 'success' : 'danger')
+                    ->formatStateUsing(function ($record) {
+                        return $record->status == 'aktif' ? 'Aktif' : 'Nonaktif';
+                    }), 
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),

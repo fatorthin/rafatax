@@ -13,6 +13,7 @@ class DaftarAktivaTetap extends Model
         'tahun_perolehan',
         'harga_perolehan',
         'tarif_penyusutan',
+        'status',
     ];
     
 }
