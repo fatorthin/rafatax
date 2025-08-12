@@ -34,6 +34,10 @@ class PositionReferenceResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->nullable()
                     ->maxLength(1000),
+                Forms\Components\TextInput::make('salary')
+                    ->label('Tunjangan Jabatan')
+                    ->numeric()
+                    ->default(0),   
             ])->columns([
                 'sm' => 1,
                 'md' => 2,
@@ -49,6 +53,12 @@ class PositionReferenceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)
+                    ->sortable(),   
+                Tables\Columns\TextColumn::make('salary')
+                    ->label('Tunjangan Jabatan')
+                    ->numeric()
+                    ->alignEnd()
+                    ->formatStateUsing(fn($record) => number_format($record->salary, 0, ',', '.'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -60,6 +70,7 @@ class PositionReferenceResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -36,7 +36,9 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('position_references')
                 ->onDelete('set null'); // Foreign key to position_references table
+            $table->enum('position_status', ['tetap', 'plt/kontrak', 'magang'])->default('tetap'); // Added position_status field
             $table->boolean('is_active')->default(true); // Added is_active field
+            $table->double('salary')->nullable(); // Added salary field
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

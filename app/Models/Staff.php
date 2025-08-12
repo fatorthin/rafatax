@@ -28,6 +28,8 @@ class Staff extends Model
         'department_reference_id',
         'position_reference_id',
         'is_active',
+        'salary',
+        'position_status',
     ];
 
     public function clients(): BelongsToMany

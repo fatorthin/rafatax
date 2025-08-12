@@ -160,7 +160,7 @@ class DaftarAktivaTetapResource extends Resource
                     ->badge()
                     ->color(fn ($state) => $state == 'aktif' ? 'success' : 'danger')
                     ->formatStateUsing(function ($record) {
-                        return $record->status == 'aktif' ? 'Aktif' : 'Nonaktif';
+                        return $record->status == 'aktif' ? 'Aktif' : 'Non Aktif';
                     }), 
             ])
             ->filters([

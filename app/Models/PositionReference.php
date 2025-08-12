@@ -13,6 +13,7 @@ class PositionReference extends Model
 
     protected $fillable = [
         'name',
-        'description'
+        'description',
+        'salary',
     ];
 }

@@ -35,9 +35,6 @@ class StaffResource extends Resource
                 Forms\Components\DatePicker::make('birth_date')
                     ->label('Tanggal Lahir')
                     ->required(),
-                // Forms\Components\TextInput::make('email')
-                //     ->email()
-                //     ->maxLength(255),
                 Forms\Components\TextInput::make('no_ktp')
                     ->label('No KTP')
                     ->maxLength(20),
@@ -92,8 +89,20 @@ class StaffResource extends Resource
                     ->searchable()
                     ->preload(),
                 Forms\Components\Toggle::make('is_active')
-                    ->label('Aktif')
-                    ->default(true)
+                    ->label('Aktif')    
+                    ->default(true),
+                Forms\Components\TextInput::make('salary')
+                    ->label('Gaji')
+                    ->numeric()
+                    ->default(0),
+                Forms\Components\Select::make('position_status')
+                    ->label('Status Jabatan')
+                    ->options([
+                        'tetap' => 'Tetap',
+                        'plt/kontrak' => 'PLT/Kontrak',
+                        'magang' => 'Magang',
+                    ])
+                    ->required(),
             ]);
     }
 
@@ -114,9 +123,6 @@ class StaffResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('departmentReference.name')
                     ->label('Bagian')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('positionReference.name')
-                    ->label('Jabatan')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tmt_training')
                     ->label('TMT Training')
@@ -147,17 +153,25 @@ class StaffResource extends Resource
                     ->offColor('danger'),
                 Tables\Columns\TextColumn::make('clients.company_name')
                     ->label('Clients')
-                    // ->listDistinct()
+                    ->wrap()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('salary')
+                    ->label('Gaji Pokok')
+                    ->formatStateUsing(fn($record) => number_format($record->salary, 0, ',', '.'))  
+                    ->alignEnd()
+                    ->sortable(),  
+                Tables\Columns\TextColumn::make('positionReference.name')
+                    ->label('Jabatan')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
+                Tables\Columns\SelectColumn::make('position_status')
+                    ->label('Status Jabatan')
+                    ->options([
+                        'tetap' => 'Tetap',
+                        'plt/kontrak' => 'PLT/Kontrak',
+                        'magang' => 'Magang',
+                    ])
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -176,7 +190,9 @@ class StaffResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->recordUrl(null)
+            ->recordAction(null);
     }
 
     public static function getRelations(): array

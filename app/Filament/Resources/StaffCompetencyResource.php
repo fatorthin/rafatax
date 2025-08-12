@@ -56,19 +56,19 @@ class StaffCompetencyResource extends Resource
                 Tables\Columns\TextColumn::make('date_of_expiry')
                     ->dateTime('d-m-Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('date_of_expiry')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(function ($record) {
-                        return $record->date_of_expiry >= now()->format('Y-m-d') 
+                    ->getStateUsing(function ($record) {
+                        return $record->date_of_expiry >= now()->format('Y-m-d')
                             ? 'Masih Berlaku'
                             : 'Perlu Diupdate';
                     })
-                    ->color(fn ($record) => 
-                        $record->date_of_expiry >= now()->format('Y-m-d')
+                    ->color(function ($record) {
+                        return $record->date_of_expiry >= now()->format('Y-m-d')
                             ? 'success'
-                            : 'danger'
-                    ),
+                            : 'danger';
+                    }),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
