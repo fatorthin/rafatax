@@ -18,6 +18,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use App\Http\Middleware\RedirectAdminToAdminPanel;
 
 class AppPanelProvider extends PanelProvider
 {
@@ -26,12 +27,12 @@ class AppPanelProvider extends PanelProvider
         return $panel
             ->favicon(asset('images/favicon.png'))
             ->id('app')
+            ->login()
             ->userMenuItems([
                 MenuItem::make()
-                    ->label('Admin')
-                    ->icon('heroicon-o-cog')
-                    ->url('/admin')
-                    ->visible(fn() => auth()->user()->hasRole('admin')),
+                    ->label('Profile')
+                    ->icon('heroicon-o-user')
+                    ->url('/app/profile'),
             ])
             ->path('app')
             ->colors([
@@ -41,11 +42,15 @@ class AppPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/App/Pages'), for: 'App\\Filament\\App\\Pages')
             ->pages([
                 Pages\Dashboard::class,
+                \App\Filament\App\Pages\Profile::class,
             ])
             ->discoverWidgets(in: app_path('Filament/App/Widgets'), for: 'App\\Filament\\App\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
+                \App\Filament\App\Widgets\CashReportOverview::class,
+                \App\Filament\App\Widgets\MouOverview::class,
+                \App\Filament\App\Widgets\CashReferenceOverview::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -57,6 +62,7 @@ class AppPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                RedirectAdminToAdminPanel::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

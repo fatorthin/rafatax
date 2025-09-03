@@ -13,11 +13,7 @@ class CashReference extends Model
     protected $table = 'cash_references';
     protected $fillable = [
         'name',
-        'description',
-        'reference_number',
-        'amount',
-        'date',
-        'type'
+        'description'
     ];
 
     public function cashReports()

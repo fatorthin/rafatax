@@ -7,10 +7,40 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\MouPrintViewController;
 use App\Http\Controllers\NeracaLajurController;
 use App\Http\Controllers\DaftarAktivaExportController;
+use App\Http\Controllers\Auth\LoginController;
 
-Route::get('/', function () {
-    return redirect('/admin');
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+// Redirect / to public homepage or desired location
+// Route::get('/', fn () => view('welcome'));
+
+// Unified login entry: /login -> app panel login
+Route::get('/login', function () {
+    return redirect('/app/login');
 });
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+});
+
+// Redirect root ke app panel jika sudah login
+Route::get('/home', function () {
+    return redirect('/app');
+})->middleware('auth');
 
 Route::get('/test-mou', function () {
     return view('format-mous.spk-tahunan-pt');

@@ -102,15 +102,4 @@
         </div>
     </x-filament::card>
 
-    {{-- Debug info --}}
-    @if (config('app.debug'))
-        <x-filament::card class="mt-4">
-            <div class="text-sm text-gray-600">
-                <p>Debug Info:</p>
-                <p>Bulan: {{ $this->bulan }}</p>
-                <p>Tahun: {{ $this->tahun }}</p>
-                <p>Periode: {{ $this->periode }}</p>
-            </div>
-        </x-filament::card>
-    @endif
 </x-filament-panels::page>
