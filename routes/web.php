@@ -24,6 +24,9 @@ use App\Http\Controllers\Auth\LoginController;
 // Route::get('/', fn () => view('welcome'));
 
 // Unified login entry: /login -> app panel login
+Route::get('/', function () {
+    return redirect('/login');
+});
 Route::get('/login', function () {
     return redirect('/app/login');
 });
