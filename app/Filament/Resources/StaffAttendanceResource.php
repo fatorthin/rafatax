@@ -13,7 +13,7 @@ use Filament\Forms\Components\Fieldset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\StaffAttendanceResource\Pages;
-use App\Filament\Resources\StaffAttendanceResource\RelationManagers;
+use Filament\Actions\Action;
 
 class StaffAttendanceResource extends Resource
 {
@@ -219,6 +219,7 @@ class StaffAttendanceResource extends Resource
     {
         return [
             'index' => Pages\ManageStaffAttendances::route('/'),
+            'view-attendance-monthly' => Pages\ViewAttendanceMonthly::route('/monthly'),
         ];
     }
 
@@ -228,5 +229,15 @@ class StaffAttendanceResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getHeaderActions(): array
+    {
+        return [
+            Action::make('view-attendance-monthly')
+                ->label('Laporan Presensi Bulanan')
+                ->url(fn (): string => static::getUrl('view-attendance-monthly'))
+                ->color('success'),
+        ];  
     }
 }

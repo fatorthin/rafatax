@@ -14,6 +14,7 @@ class ManageStaffAttendances extends ManageRecords
     {
         return [
             Actions\CreateAction::make(),
+            ...StaffAttendanceResource::getHeaderActions(),
         ];
     }
 }

@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DaftarAktivaTetapResource\Pages;
-use App\Filament\Resources\DaftarAktivaTetapResource\RelationManagers;
 
 class DaftarAktivaTetapResource extends Resource
 {

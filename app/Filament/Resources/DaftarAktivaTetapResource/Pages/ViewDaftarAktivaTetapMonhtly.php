@@ -4,21 +4,16 @@ namespace App\Filament\Resources\DaftarAktivaTetapResource\Pages;
 
 use Carbon\Carbon;
 use Filament\Tables;
-use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Actions\Action;
 use App\Models\DaftarAktivaTetap;
 use Filament\Resources\Pages\Page;
 use App\Models\DepresiasiAktivaTetap;
-use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\DatePicker;
-use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\DaftarAktivaTetapResource;
-use Filament\Support\Exceptions\Halt;
-use Illuminate\Support\Facades\Storage;
 
 class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
 {

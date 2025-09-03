@@ -1,11 +1,24 @@
-@import 'tailwindcss';
+@import "tailwindcss/preflight";
+@tailwind utilities;
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+/* Custom styles untuk Filament modal */
+.filter-period-action {
+    @apply bg-primary-600 hover:bg-primary-700 text-white;
+}
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* Debug styles */
+.debug-info {
+    @apply bg-gray-100 p-4 rounded-lg border border-gray-300;
+}
+
+/* Ensure modal is visible */
+.filament-modal {
+    z-index: 9999 !important;
+}
+
+/* Fix untuk modal yang tidak muncul */
+[data-filament-modal] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
