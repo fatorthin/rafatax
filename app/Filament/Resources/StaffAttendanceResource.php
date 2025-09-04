@@ -44,6 +44,7 @@ class StaffAttendanceResource extends Resource
                         'izin' => 'Izin',
                         'cuti' => 'Cuti',
                         'alfa' => 'Alfa',
+                        'halfday' => 'Tengah Hari',
                     ])
                     ->required(),
                 Forms\Components\TimePicker::make('jam_masuk')
@@ -145,6 +146,8 @@ class StaffAttendanceResource extends Resource
                             return 'info';
                         } elseif ($state == 'alfa') {
                             return 'danger';
+                        } elseif ($state == 'halfday') {
+                            return 'warning';
                         }
                     })      
                     ->formatStateUsing(function ($state) {
@@ -158,6 +161,8 @@ class StaffAttendanceResource extends Resource
                             return 'Cuti';
                         } elseif ($state == 'alfa') {
                             return 'Alfa';
+                        } elseif ($state == 'halfday') {
+                            return 'Tengah Hari';
                         }   
                     })  
                     ->sortable(),

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('staff_id')->constrained('staff')->onDelete('cascade')->onUpdate('cascade');   
             $table->date('tanggal');
-            $table->enum('status', ['masuk', 'sakit', 'izin', 'cuti', 'alfa']);
+            $table->enum('status', ['masuk', 'sakit', 'izin', 'cuti', 'alfa', 'halfday']);
             $table->boolean('is_late')->default(false);
             $table->boolean('is_visit_solo')->default(false);
             $table->boolean('is_visit_luar_solo')->default(false);

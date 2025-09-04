@@ -18,6 +18,8 @@ use App\Filament\Resources\StaffResource;
 use App\Filament\Resources\ClientResource;
 use Filament\Http\Middleware\Authenticate;
 use App\Filament\Resources\InvoiceResource;
+use App\Filament\Resources\PayrollResource;
+use App\Http\Middleware\AdminAccessMiddleware;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use App\Filament\Resources\CashReferenceResource;
@@ -28,7 +30,6 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use App\Http\Middleware\AdminAccessMiddleware;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -97,6 +98,7 @@ class AdminPanelProvider extends PanelProvider
                 MouResource::class,
                 InvoiceResource::class,
                 StaffResource::class,
+                PayrollResource::class,
             ])
             ->maxContentWidth('full');
     }
