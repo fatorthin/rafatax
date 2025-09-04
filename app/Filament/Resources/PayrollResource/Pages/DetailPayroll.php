@@ -19,6 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Infolists\Components\Section;
 use App\Filament\Resources\PayrollResource;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 
@@ -150,6 +151,12 @@ class DetailPayroll extends Page implements HasTable
         return $table
             ->query(PayrollDetail::query()->where('payroll_id', $this->record->id))
             ->columns([
+                TextColumn::make('index')
+                    ->label('No')
+                    ->state(fn ($record, $rowLoop) => $rowLoop->iteration)
+                    ->alignCenter()
+                    ->sortable(),
+                    
                 TextColumn::make('staff.name')
                     ->label('Nama Staff')
                     ->sortable(),
@@ -174,26 +181,32 @@ class DetailPayroll extends Page implements HasTable
 
                 TextColumn::make('sick_leave_count')
                     ->label('Sakit')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('halfday_count')
                     ->label('Tengah Hari')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('leave_count')
                     ->label('Ijin')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('overtime_count')
                     ->label('Lembur')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('visit_solo_count')
                     ->label('T. Solo')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('visit_luar_solo_count')
                     ->label('T. Luar Solo')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('bonus_lembur')
@@ -223,43 +236,43 @@ class DetailPayroll extends Page implements HasTable
                     ->sortable(),
 
                 TextInputColumn::make('cut_bpjs_kesehatan')
-                    ->label('Cut BPJS Kesehatan')
+                    ->label('Pot. BPJS Kesehatan')
                     ->alignEnd()
                     ->sortable(),
 
                 TextInputColumn::make('cut_bpjs_ketenagakerjaan')
-                    ->label('Cut BPJS Ketenagakerjaan')
+                    ->label('Pot. BPJS Ketenagakerjaan')
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('cut_sakit')
-                    ->label('Cut Sakit')
+                    ->label('Pot. Sakit')
                     ->getStateUsing(fn ($record) => $record->sick_leave_count * 0.5 * $record->salary / 25)
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('cut_tengah_hari')
-                    ->label('Cut Tengah Hari')
+                    ->label('Pot. Tengah Hari')
                     ->getStateUsing(fn ($record) => $record->halfday_count * 0.5 * $record->salary / 25)
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('cut_ijin')
-                    ->label('Cut Ijin')
+                    ->label('Pot. Ijin')
                     ->getStateUsing(fn ($record) => $record->leave_count * $record->salary / 25)
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextInputColumn::make('cut_lain')
-                    ->label('Cut Lain')
+                    ->label('Pot. Lain')
                     ->alignEnd()
                     ->sortable(),
 
                 TextInputColumn::make('cut_hutang')
-                    ->label('Cut Hutang')
+                    ->label('Pot. Hutang')
                     ->alignEnd()
                     ->sortable(),
 
@@ -271,7 +284,7 @@ class DetailPayroll extends Page implements HasTable
                     ->sortable(),
 
                 TextColumn::make('total_cut')
-                    ->label('Total Cut')
+                    ->label('Total Pot.')
                     ->getStateUsing(fn ($record) => $record->cut_bpjs_kesehatan + $record->cut_bpjs_ketenagakerjaan + $record->cut_lain + $record->cut_hutang + ($record->sick_leave_count * 0.5 * $record->salary / 25) + ($record->halfday_count * 0.5 * $record->salary / 25) + ($record->leave_count * $record->salary / 25))
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
@@ -282,7 +295,18 @@ class DetailPayroll extends Page implements HasTable
                     ->getStateUsing(fn ($record) => $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * 10000) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25))
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize(
+                        Summarizer::make()
+                            ->label('Total:')
+                            ->using(function ($query) {
+                                $records = $query->get();
+                                $total = $records->sum(function ($record) {
+                                    return $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * 10000) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
+                                });
+                                return 'Rp ' . number_format($total, 0, ',', '.');
+                            })
+                    ),
             ])
             ->paginated(false)
             ->striped();

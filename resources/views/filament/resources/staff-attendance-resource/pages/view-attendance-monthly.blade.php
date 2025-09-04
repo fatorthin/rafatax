@@ -143,6 +143,12 @@
                 border-color: #fde68a;
             }
 
+            .status-halfday {
+                background: #fffbeb;
+                color: #854d0e;
+                border-color: #fde68a;
+            }
+
             .status-cuti {
                 background: #ecfeff;
                 color: #0e7490;
@@ -179,6 +185,84 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+            }
+
+            /* Badge container */
+            .badge-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 2px;
+                margin-top: 4px;
+                justify-content: center;
+            }
+
+            /* Badge styles */
+            .info-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                font-size: 8px;
+                font-weight: 700;
+                color: white;
+                position: relative;
+                cursor: help;
+                transition: all 0.2s ease;
+            }
+
+            .info-badge:hover {
+                transform: scale(1.1);
+            }
+
+            .badge-late {
+                background: #ef4444;
+                /* red-500 */
+            }
+
+            .badge-visit-solo {
+                background: #3b82f6;
+                /* blue-500 */
+            }
+
+            .badge-visit-luar {
+                background: #10b981;
+                /* emerald-500 */
+            }
+
+            /* Tooltip styles */
+            .tooltip {
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #1f2937;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+                white-space: nowrap;
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s ease;
+                margin-bottom: 4px;
+            }
+
+            .tooltip::after {
+                content: '';
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 4px solid transparent;
+                border-top-color: #1f2937;
+            }
+
+            .info-badge:hover .tooltip {
+                opacity: 1;
+                visibility: visible;
             }
         </style>
 
@@ -239,6 +323,7 @@
                                                 'masuk' => 'status-masuk',
                                                 'sakit' => 'status-sakit',
                                                 'izin' => 'status-izin',
+                                                'halfday' => 'status-halfday',
                                                 'cuti' => 'status-cuti',
                                                 'alfa' => 'status-alfa',
                                                 default => 'status-default',
@@ -248,6 +333,30 @@
                                         <div class="time-text">Masuk: <span class="value">{{ $jamMasuk }}</span>
                                         </div>
                                         <div class="time-text">Pulang: <span class="value">{{ $jamPulang }}</span>
+                                        </div>
+
+                                        <!-- Badge container untuk informasi tambahan -->
+                                        <div class="badge-container">
+                                            @if ($attendance->is_late)
+                                                <div class="info-badge badge-late">
+                                                    !
+                                                    <div class="tooltip">Terlambat</div>
+                                                </div>
+                                            @endif
+
+                                            @if ($attendance->is_visit_solo)
+                                                <div class="info-badge badge-visit-solo">
+                                                    S
+                                                    <div class="tooltip">Visit Solo</div>
+                                                </div>
+                                            @endif
+
+                                            @if ($attendance->is_visit_luar_solo)
+                                                <div class="info-badge badge-visit-luar">
+                                                    L
+                                                    <div class="tooltip">Visit Luar Solo</div>
+                                                </div>
+                                            @endif
                                         </div>
                                     @else
                                         <span class="text-gray-300">-</span>
