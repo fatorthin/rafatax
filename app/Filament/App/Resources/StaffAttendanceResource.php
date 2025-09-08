@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\StaffAttendanceResource\Pages;
 use Filament\Actions\Action;
 use App\Traits\HasPermissions;
+use Filament\Forms\Get;
+use Closure;
 
 class StaffAttendanceResource extends Resource
 {
@@ -42,7 +44,26 @@ class StaffAttendanceResource extends Resource
                     ->required(),
                 Forms\Components\DatePicker::make('tanggal')
                     ->label('Tanggal')
-                    ->required(),   
+                    ->required()
+                    ->rules([
+                        function (Get $get, ?StaffAttendance $record) {
+                            return function (string $attribute, $value, Closure $fail) use ($get, $record) {
+                                $staffId = $get('staff_id');
+                                if (!$staffId || !$value) {
+                                    return;
+                                }
+                                $query = StaffAttendance::query()
+                                    ->where('staff_id', $staffId)
+                                    ->whereDate('tanggal', $value);
+                                if ($record && $record->exists) {
+                                    $query->where('id', '!=', $record->id);
+                                }
+                                if ($query->exists()) {
+                                    $fail('Kehadiran untuk staff ini pada tanggal tersebut sudah ada.');
+                                }
+                            };
+                        },
+                    ]),
                 Forms\Components\Select::make('status')
                     ->label('Status Kehadiran')
                     ->options([
@@ -106,6 +127,16 @@ class StaffAttendanceResource extends Resource
                 Forms\Components\Textarea::make('keterangan')
                     ->label('Keterangan')
                     ->maxLength(255),
+                Forms\Components\TextInput::make('visit_solo_count')
+                    ->label('Visit Solo')
+                    ->numeric()
+                    ->suffix('Kali')
+                    ->default(0),
+                Forms\Components\TextInput::make('visit_luar_solo_count')
+                    ->label('Visit Luar Solo')
+                    ->numeric()
+                    ->suffix('Kali')
+                    ->default(0),
             ]);
     }
 
