@@ -9,6 +9,7 @@ use App\Http\Controllers\NeracaLajurController;
 use App\Http\Controllers\DaftarAktivaExportController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ExportAttendanceController;
+use App\Http\Controllers\ExportPayrollController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,3 +64,9 @@ Route::get('/mou/{id}/print-view', [MouPrintViewController::class, 'show'])->nam
 Route::get('/daftar-aktiva/export/{bulan}/{tahun}', [DaftarAktivaExportController::class, 'export'])->name('daftar-aktiva.export');
 Route::get('/exports/attendance/monthly', [ExportAttendanceController::class, 'exportMonthly'])
     ->name('exports.attendance.monthly');
+
+Route::get('/exports/payroll/{payroll}/excel', [ExportPayrollController::class, 'exportDetailExcel'])
+    ->name('exports.payroll.excel');
+
+Route::get('/exports/payroll-detail/{detail}/payslip', [ExportPayrollController::class, 'payslipPdf'])
+    ->name('exports.payroll.payslip');

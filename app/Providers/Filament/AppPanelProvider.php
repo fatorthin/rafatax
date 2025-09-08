@@ -27,6 +27,7 @@ class AppPanelProvider extends PanelProvider
         return $panel
             ->favicon(asset('images/favicon.png'))
             ->id('app')
+            ->brandName('Rafatax App')
             ->login()
             ->userMenuItems([
                 MenuItem::make()

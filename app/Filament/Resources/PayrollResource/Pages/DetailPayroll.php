@@ -79,6 +79,12 @@ class DetailPayroll extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('export_excel')
+                ->label('Export Excel')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('success')
+                ->url(fn () => route('exports.payroll.excel', ['payroll' => $this->record->id]))
+                ->openUrlInNewTab(false),
             Actions\Action::make('cut_off')
                 ->label('Cut Off Payroll')
                 ->icon('heroicon-o-scissors')
@@ -109,8 +115,8 @@ class DetailPayroll extends Page implements HasTable
                                 ->whereMonth('tanggal', $month);
 
                             $overtimeCount = (int) (clone $attendanceQuery)->sum('durasi_lembur');
-                            $visitSoloCount = (int) (clone $attendanceQuery)->where('is_visit_solo', true)->count();
-                            $visitLuarSoloCount = (int) (clone $attendanceQuery)->where('is_visit_luar_solo', true)->count();
+                            $visitSoloCount = (int) (clone $attendanceQuery)->sum('visit_solo_count');
+                            $visitLuarSoloCount = (int) (clone $attendanceQuery)->sum('visit_luar_solo_count');
                             $sickLeaveCount = (int) (clone $attendanceQuery)->where('status', 'sakit')->count();
                             $halfdayCount = (int) (clone $attendanceQuery)->where('status', 'halfday')->count();
                             $leaveCount = (int) (clone $attendanceQuery)->whereIn('status', ['izin', 'alfa', 'cuti'])->count();
@@ -225,7 +231,7 @@ class DetailPayroll extends Page implements HasTable
 
                 TextColumn::make('bonus_visit_luar_solo')
                     ->label('Bonus Visit Luar Solo')
-                    ->getStateUsing(fn ($record) => $record->visit_luar_solo_count * 10000)
+                    ->getStateUsing(fn ($record) => $record->visit_luar_solo_count * 15000)
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
@@ -309,6 +315,13 @@ class DetailPayroll extends Page implements HasTable
                     ),
             ])
             ->paginated(false)
-            ->striped();
+            ->striped()
+            ->actions([
+                \Filament\Tables\Actions\Action::make('slip_pdf')
+                    ->label('Slip PDF')
+                    ->icon('heroicon-o-document-text')
+                    ->url(fn ($record) => route('exports.payroll.payslip', ['detail' => $record->id]))
+                    ->openUrlInNewTab(false),
+            ]);
     }
 }
