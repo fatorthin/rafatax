@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\StaffAttendanceResource\Pages;
+namespace App\Filament\App\Resources\StaffAttendanceResource\Pages;
 
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -8,7 +8,7 @@ use App\Models\StaffAttendance;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
-use App\Filament\Resources\StaffAttendanceResource;
+use App\Filament\App\Resources\StaffAttendanceResource;
 
 class ViewAttendanceMonthly extends Page
 {

@@ -17,8 +17,8 @@ return new class extends Migration
             $table->date('tanggal');
             $table->enum('status', ['masuk', 'sakit', 'izin', 'cuti', 'alfa', 'halfday']);
             $table->boolean('is_late')->default(false);
-            $table->boolean('is_visit_solo')->default(false);
-            $table->boolean('is_visit_luar_solo')->default(false);
+            $table->double('visit_solo_count')->default(false);
+            $table->double('visit_luar_solo_count')->default(false);
             $table->time('jam_masuk')->nullable();
             $table->time('jam_pulang')->nullable();
             $table->double('durasi_lembur')->nullable();

@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources;
 use App\Filament\App\Resources\MouResource\Pages;
 use App\Models\MoU;
 use App\Models\CostListInvoice;
+use App\Traits\HasPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MouResource extends Resource
 {
+    use HasPermissions;
     protected static ?string $model = MoU::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';

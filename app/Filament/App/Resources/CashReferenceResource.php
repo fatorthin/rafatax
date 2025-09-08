@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources;
 
 use App\Filament\App\Resources\CashReferenceResource\Pages;
 use App\Models\CashReference;
+use App\Traits\HasPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CashReferenceResource extends Resource
 {
+    use HasPermissions;
     protected static ?string $model = CashReference::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\App\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
@@ -12,18 +12,25 @@ use Filament\Resources\Resource;
 use Filament\Forms\Components\Fieldset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\StaffAttendanceResource\Pages;
+use App\Filament\App\Resources\StaffAttendanceResource\Pages;
 use Filament\Actions\Action;
+use App\Traits\HasPermissions;
 
 class StaffAttendanceResource extends Resource
 {
+    use HasPermissions;
+    
     protected static ?string $model = StaffAttendance::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
 
-    protected static ?string $navigationGroup = 'Bagian HRD';
+    protected static ?string $navigationGroup = 'HRD';
 
     protected static ?string $navigationLabel = 'Presensi Karyawan';
+
+    protected static ?string $modelLabel = 'Presensi';
+
+    protected static ?string $pluralModelLabel = 'Presensi Karyawan';
 
     public static function form(Form $form): Form
     {
@@ -84,22 +91,21 @@ class StaffAttendanceResource extends Resource
                     ->suffix('Jam')
                     ->numeric()
                     ->default(0), 
-                Forms\Components\TextInput::make('visit_solo_count')
-                    ->label('Visit Solo')
-                    ->numeric()
-                    ->suffix('Kali')
-                    ->default(0),
-                Forms\Components\TextInput::make('visit_luar_solo_count')
-                    ->label('Visit Luar Solo')
-                    ->numeric()
-                    ->suffix('Kali')
-                    ->default(0),
+                Fieldset::make('Cheklist Keterlambatan dan Visit Client')
+                    ->schema([
+                    Forms\Components\Checkbox::make('is_late')
+                        ->label('Terlambat')
+                        ->default(false),   
+                    Forms\Components\Checkbox::make('is_visit_solo')
+                        ->label('Visit Solo')
+                        ->default(false),
+                    Forms\Components\Checkbox::make('is_visit_luar_solo')
+                        ->label('Visit Luar Solo')
+                        ->default(false),
+                    ]),
                 Forms\Components\Textarea::make('keterangan')
                     ->label('Keterangan')
                     ->maxLength(255),
-                Forms\Components\Checkbox::make('is_late')
-                    ->label('Terlambat')
-                    ->default(false),   
             ]);
     }
 
@@ -214,7 +220,9 @@ class StaffAttendanceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageStaffAttendances::route('/'),
+            'index' => Pages\ListStaffAttendances::route('/'),
+            'create' => Pages\CreateStaffAttendance::route('/create'),
+            'edit' => Pages\EditStaffAttendance::route('/{record}/edit'),
             'view-attendance-monthly' => Pages\ViewAttendanceMonthly::route('/monthly'),
         ];
     }

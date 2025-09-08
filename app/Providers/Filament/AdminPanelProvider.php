@@ -11,6 +11,7 @@ use App\Filament\Widgets\ClientStats;
 use App\Filament\Widgets\InvoiceStats;
 use App\Filament\Resources\CoaResource;
 use App\Filament\Resources\MouResource;
+use App\Filament\Resources\PermissionResource;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\UserResource;
 use Filament\Navigation\NavigationGroup;
@@ -92,6 +93,7 @@ class AdminPanelProvider extends PanelProvider
             ->resources([
                 UserResource::class,
                 RoleResource::class,
+                PermissionResource::class,
                 ClientResource::class,
                 CoaResource::class,
                 CashReferenceResource::class,

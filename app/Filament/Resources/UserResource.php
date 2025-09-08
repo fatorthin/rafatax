@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Traits\HasPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class UserResource extends Resource
 {
+    use HasPermissions;
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
@@ -24,21 +26,19 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        try {
-            $user = Auth::user();
-            if (!$user) {
-                return false;
-            }
-
-            if ($user instanceof \App\Models\User) {
-                return $user->hasRole('admin');
-            }
-
-            return false;
-        } catch (\Exception $e) {
-            Log::error('Error in UserResource::canAccess: ' . $e->getMessage());
+        $user = auth()->user();
+        
+        if (!$user) {
             return false;
         }
+
+        // Admin selalu memiliki akses
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        // Check if user has view permission for user resource
+        return $user->hasPermission('user.view');
     }
 
     public static function form(Form $form): Form

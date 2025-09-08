@@ -6,6 +6,7 @@ use App\Filament\App\Resources\CashReportResource\Pages;
 use App\Models\CashReport;
 use App\Models\CashReference;
 use App\Models\Coa;
+use App\Traits\HasPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CashReportResource extends Resource
 {
+    use HasPermissions;
     protected static ?string $model = CashReport::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

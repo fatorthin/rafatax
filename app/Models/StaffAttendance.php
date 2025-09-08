@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class StaffAttendance extends Model
 {
     use SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'staff_id',
@@ -18,8 +20,8 @@ class StaffAttendance extends Model
         'jam_masuk',
         'jam_pulang',  
         'durasi_lembur',
-        'is_visit_solo',
-        'is_visit_luar_solo',
+        'visit_solo_count',
+        'visit_luar_solo_count',
         'keterangan',
     ];  
 

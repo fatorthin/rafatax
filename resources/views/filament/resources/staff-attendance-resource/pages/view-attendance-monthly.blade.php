@@ -201,10 +201,11 @@
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                width: 16px;
-                height: 16px;
-                border-radius: 50%;
-                font-size: 8px;
+                min-width: 18px;
+                height: 18px;
+                padding: 0 6px;
+                border-radius: 9999px;
+                font-size: 10px;
                 font-weight: 700;
                 color: white;
                 position: relative;
@@ -303,7 +304,7 @@
                             $isWeekend = $dateObj->isWeekend();
                         @endphp
                         <tr class="{{ $isWeekend ? 'is-weekend' : '' }}">
-                            <td class="sticky-col-1 w-44 date-cell">
+                            <td class="sticky-col-1 w-44 date-cell text-center">
                                 <div class="day-name">{{ $dayName }}</div>
                                 <div class="day-number">{{ $dayNumber }}</div>
                             </td>
@@ -340,21 +341,24 @@
                                             @if ($attendance->is_late)
                                                 <div class="info-badge badge-late">
                                                     !
-                                                    <div class="tooltip">Terlambat</div>
+                                                    <div class="tooltip">{{ $attendance->keterangan ?: 'Terlambat' }}
+                                                    </div>
                                                 </div>
                                             @endif
 
-                                            @if ($attendance->is_visit_solo)
+                                            @if (!empty($attendance->visit_solo_count) && (int) $attendance->visit_solo_count > 0)
                                                 <div class="info-badge badge-visit-solo">
-                                                    S
-                                                    <div class="tooltip">Visit Solo</div>
+                                                    {{ (int) $attendance->visit_solo_count }}
+                                                    <div class="tooltip">{{ $attendance->keterangan ?: 'Visit Solo' }}
+                                                    </div>
                                                 </div>
                                             @endif
 
-                                            @if ($attendance->is_visit_luar_solo)
+                                            @if (!empty($attendance->visit_luar_solo_count) && (int) $attendance->visit_luar_solo_count > 0)
                                                 <div class="info-badge badge-visit-luar">
-                                                    L
-                                                    <div class="tooltip">Visit Luar Solo</div>
+                                                    {{ (int) $attendance->visit_luar_solo_count }}
+                                                    <div class="tooltip">
+                                                        {{ $attendance->keterangan ?: 'Visit Luar Solo' }}</div>
                                                 </div>
                                             @endif
                                         </div>
