@@ -112,21 +112,6 @@ class StaffAttendanceResource extends Resource
                     ->suffix('Jam')
                     ->numeric()
                     ->default(0), 
-                Fieldset::make('Cheklist Keterlambatan dan Visit Client')
-                    ->schema([
-                    Forms\Components\Checkbox::make('is_late')
-                        ->label('Terlambat')
-                        ->default(false),   
-                    Forms\Components\Checkbox::make('is_visit_solo')
-                        ->label('Visit Solo')
-                        ->default(false),
-                    Forms\Components\Checkbox::make('is_visit_luar_solo')
-                        ->label('Visit Luar Solo')
-                        ->default(false),
-                    ]),
-                Forms\Components\Textarea::make('keterangan')
-                    ->label('Keterangan')
-                    ->maxLength(255),
                 Forms\Components\TextInput::make('visit_solo_count')
                     ->label('Visit Solo')
                     ->numeric()
@@ -137,6 +122,13 @@ class StaffAttendanceResource extends Resource
                     ->numeric()
                     ->suffix('Kali')
                     ->default(0),
+                Forms\Components\Textarea::make('keterangan')
+                    ->label('Keterangan')
+                    ->maxLength(255),
+                Forms\Components\Checkbox::make('is_late')
+                    ->label('Terlambat')
+                    ->default(false),
+               
             ]);
     }
 
