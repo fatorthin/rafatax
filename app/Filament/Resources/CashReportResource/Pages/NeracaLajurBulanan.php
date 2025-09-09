@@ -32,7 +32,7 @@ class NeracaLajurBulanan extends Page implements HasTable
 
     protected static string $resource = CashReportResource::class;
     protected static string $view = 'filament.resources.cash-report-resource.pages.neraca-lajur-bulanan';
-    
+
     protected static ?string $title = 'Neraca Lajur Bulanan (KKP)';
     protected static ?string $navigationLabel = 'Neraca Lajur Bulanan (KKP)';
 
@@ -43,7 +43,7 @@ class NeracaLajurBulanan extends Page implements HasTable
 
     public function mount(): void
     {
-        $this->month = 1;
+        $this->month = now()->month;
         $this->year = now()->year;
     }
 
@@ -57,10 +57,18 @@ class NeracaLajurBulanan extends Page implements HasTable
                     Select::make('month')
                         ->label('Bulan')
                         ->options([
-                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-                            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                            1 => 'Januari',
+                            2 => 'Februari',
+                            3 => 'Maret',
+                            4 => 'April',
+                            5 => 'Mei',
+                            6 => 'Juni',
+                            7 => 'Juli',
+                            8 => 'Agustus',
+                            9 => 'September',
+                            10 => 'Oktober',
+                            11 => 'November',
+                            12 => 'Desember'
                         ])
                         ->default($this->month)
                         ->required(),
@@ -85,17 +93,17 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->label('Lihat Laporan Neraca')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
-                ->url(fn () => static::getResource()::getUrl('neraca', ['month' => $this->month, 'year' => $this->year])),
+                ->url(fn() => static::getResource()::getUrl('neraca', ['month' => $this->month, 'year' => $this->year])),
             Action::make('viewLabaRugi')
                 ->label('Lihat Laporan Laba Rugi')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
-                ->url(fn () => static::getResource()::getUrl('laba-rugi-bulanan', ['month' => $this->month, 'year' => $this->year])),
+                ->url(fn() => static::getResource()::getUrl('laba-rugi-bulanan', ['month' => $this->month, 'year' => $this->year])),
             Action::make('saveNeracaSetelahAJE')
                 ->label('Simpan Data Neraca')
                 ->icon('heroicon-o-document-check')
                 ->color('success')
-                ->url(fn () => url('/neraca-lajur/save-cutoff?month=' . $this->month . '&year=' . $this->year)),
+                ->url(fn() => url('/neraca-lajur/save-cutoff?month=' . $this->month . '&year=' . $this->year)),
             Action::make('export')
                 ->label('Export Excel')
                 ->icon('heroicon-o-arrow-down-tray')
@@ -108,7 +116,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url(fn () => static::getResource()::getUrl('index')),
+                ->url(fn() => static::getResource()::getUrl('index')),
         ];
     }
 
@@ -120,21 +128,21 @@ class NeracaLajurBulanan extends Page implements HasTable
         $totalBeban = 0;
 
         foreach ($data as $row) {
-            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit + 
-                         $row->kas_kecil_debit + $row->bank_debit + 
-                         $row->jurnal_umum_debit;
-            
-            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit + 
-                          $row->kas_kecil_kredit + $row->bank_kredit + 
-                          $row->jurnal_umum_kredit;
-            
+            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
+                $row->kas_kecil_debit + $row->bank_debit +
+                $row->jurnal_umum_debit;
+
+            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit +
+                $row->kas_kecil_kredit + $row->bank_kredit +
+                $row->jurnal_umum_kredit;
+
             $selisihSebelumAJE = $totalDebit - $totalKredit;
             $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
-            
+
             // Check if this is a Laba Rugi account
             if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
                 $amount = $selisihSetelahAJE;
-                
+
                 // Determine if this is pendapatan or beban based on the account code
                 if (preg_match('/^AO-4/', $row->code)) {
                     // Pendapatan accounts (400 series)
@@ -169,7 +177,7 @@ class NeracaLajurBulanan extends Page implements HasTable
         // Start date of previous month
         $startOfPreviousMonth = Carbon::create($this->year, $this->month, 1)->subMonth()->startOfMonth();
         $endOfPreviousMonth = Carbon::create($this->year, $this->month, 1)->subMonth()->endOfMonth();
-        
+
         // Current month date range
         $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
@@ -481,10 +489,18 @@ class NeracaLajurBulanan extends Page implements HasTable
     public function getTitle(): string
     {
         $monthName = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         return 'Neraca Lajur Bulanan (KKP) - ' . $monthName[$this->month] . ' ' . $this->year;
@@ -572,7 +588,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                         $kasKecilDebit += $cash->credit;
                         $kasKecilKredit += $cash->debit;
                     }
-                } elseif (in_array($cash->cash_reference_id, [1,2,3,4,5])) { // Bank
+                } elseif (in_array($cash->cash_reference_id, [1, 2, 3, 4, 5])) { // Bank
                     $bankDebit += $cash->debit;
                     $bankKredit += $cash->credit;
                 }
@@ -650,14 +666,14 @@ class NeracaLajurBulanan extends Page implements HasTable
         $subHeaders = ['Debit', 'Kredit'];
         $cols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T'];
         foreach ($cols as $col) {
-            $sheet->setCellValue($col.'4', $subHeaders[0]);
-            $sheet->setCellValue(chr(ord($col)+1).'4', $subHeaders[1]);
+            $sheet->setCellValue($col . '4', $subHeaders[0]);
+            $sheet->setCellValue(chr(ord($col) + 1) . '4', $subHeaders[1]);
         }
 
         // Merge cells
         $sheet->mergeCells('A3:A4');
         foreach ($cols as $col) {
-            $sheet->mergeCells($col.'3:'.chr(ord($col)+1).'3');
+            $sheet->mergeCells($col . '3:' . chr(ord($col) + 1) . '3');
         }
 
         // Apply header styling
@@ -671,7 +687,7 @@ class NeracaLajurBulanan extends Page implements HasTable
 
         // Get data with simplified query - limit records to avoid timeout
         $data = $this->getDataForExport();
-        
+
         if ($data->isEmpty()) {
             $sheet->setCellValue('A5', 'Tidak ada data untuk periode ini');
             $sheet->mergeCells('A5:U5');
@@ -682,7 +698,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 // Calculate values
                 $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit + $item->kas_kecil_debit + $item->bank_debit + $item->jurnal_umum_debit;
                 $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit + $item->kas_kecil_kredit + $item->bank_kredit + $item->jurnal_umum_kredit;
-                
+
                 $selisihSebelumAJE = $totalDebit - $totalKredit;
                 $neracaSebelumAJEDebit = max(0, $selisihSebelumAJE);
                 $neracaSebelumAJEKredit = max(0, -$selisihSebelumAJE);
@@ -702,47 +718,47 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $labaRugiKredit = $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
 
                 // Set data in cells
-                $sheet->setCellValue('A'.$row, $item->code.' '.$item->name);
-                $sheet->setCellValue('B'.$row, $item->neraca_awal_debit);
-                $sheet->setCellValue('C'.$row, $item->neraca_awal_kredit);
-                $sheet->setCellValue('D'.$row, $item->kas_besar_debit);
-                $sheet->setCellValue('E'.$row, $item->kas_besar_kredit);
-                $sheet->setCellValue('F'.$row, $item->kas_kecil_debit);
-                $sheet->setCellValue('G'.$row, $item->kas_kecil_kredit);
-                $sheet->setCellValue('H'.$row, $item->bank_debit);
-                $sheet->setCellValue('I'.$row, $item->bank_kredit);
-                $sheet->setCellValue('J'.$row, $item->jurnal_umum_debit);
-                $sheet->setCellValue('K'.$row, $item->jurnal_umum_kredit);
-                $sheet->setCellValue('L'.$row, $neracaSebelumAJEDebit);
-                $sheet->setCellValue('M'.$row, $neracaSebelumAJEKredit);
-                $sheet->setCellValue('N'.$row, $item->aje_debit);
-                $sheet->setCellValue('O'.$row, $item->aje_kredit);
-                $sheet->setCellValue('P'.$row, $neracaSetelahAJEDebit);
-                $sheet->setCellValue('Q'.$row, $neracaSetelahAJEKredit);
-                $sheet->setCellValue('R'.$row, $neracaDebit);
-                $sheet->setCellValue('S'.$row, $neracaKredit);
-                $sheet->setCellValue('T'.$row, $labaRugiDebit);
-                $sheet->setCellValue('U'.$row, $labaRugiKredit);
+                $sheet->setCellValue('A' . $row, $item->code . ' ' . $item->name);
+                $sheet->setCellValue('B' . $row, $item->neraca_awal_debit);
+                $sheet->setCellValue('C' . $row, $item->neraca_awal_kredit);
+                $sheet->setCellValue('D' . $row, $item->kas_besar_debit);
+                $sheet->setCellValue('E' . $row, $item->kas_besar_kredit);
+                $sheet->setCellValue('F' . $row, $item->kas_kecil_debit);
+                $sheet->setCellValue('G' . $row, $item->kas_kecil_kredit);
+                $sheet->setCellValue('H' . $row, $item->bank_debit);
+                $sheet->setCellValue('I' . $row, $item->bank_kredit);
+                $sheet->setCellValue('J' . $row, $item->jurnal_umum_debit);
+                $sheet->setCellValue('K' . $row, $item->jurnal_umum_kredit);
+                $sheet->setCellValue('L' . $row, $neracaSebelumAJEDebit);
+                $sheet->setCellValue('M' . $row, $neracaSebelumAJEKredit);
+                $sheet->setCellValue('N' . $row, $item->aje_debit);
+                $sheet->setCellValue('O' . $row, $item->aje_kredit);
+                $sheet->setCellValue('P' . $row, $neracaSetelahAJEDebit);
+                $sheet->setCellValue('Q' . $row, $neracaSetelahAJEKredit);
+                $sheet->setCellValue('R' . $row, $neracaDebit);
+                $sheet->setCellValue('S' . $row, $neracaKredit);
+                $sheet->setCellValue('T' . $row, $labaRugiDebit);
+                $sheet->setCellValue('U' . $row, $labaRugiKredit);
 
                 $row++;
             }
 
             // Add totals
             $totalRow = $row;
-            $sheet->setCellValue('A'.$totalRow, 'Total');
-            $sheet->getStyle('A'.$totalRow.':U'.$totalRow)->applyFromArray($headerStyle);
-            
+            $sheet->setCellValue('A' . $totalRow, 'Total');
+            $sheet->getStyle('A' . $totalRow . ':U' . $totalRow)->applyFromArray($headerStyle);
+
             // Calculate totals
             $columns = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
             foreach ($columns as $col) {
-                $sheet->setCellValue($col.$totalRow, '=SUM('.$col.'5:'.$col.($totalRow-1).')');
+                $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
             }
 
             // Apply borders and number format
-            $sheet->getStyle('A5:U'.($totalRow-1))->applyFromArray([
+            $sheet->getStyle('A5:U' . ($totalRow - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
             ]);
-            $sheet->getStyle('B5:U'.$totalRow)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('B5:U' . $totalRow)->getNumberFormat()->setFormatCode('#,##0');
         }
 
         // Auto-size columns
@@ -752,20 +768,20 @@ class NeracaLajurBulanan extends Page implements HasTable
 
         // Prepare download
         $filename = 'neraca-lajur-bulanan-' . strtolower(Carbon::create($this->year, $this->month, 1)->format('F-Y')) . '.xlsx';
-        
+
         // Clear output buffer
         while (ob_get_level()) {
             ob_end_clean();
         }
-        
+
         // Set headers
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="'.$filename.'"');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-        
+
         // Save and output
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
     }
-} 
+}
