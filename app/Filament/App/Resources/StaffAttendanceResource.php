@@ -21,7 +21,7 @@ use Closure;
 class StaffAttendanceResource extends Resource
 {
     use HasPermissions;
-    
+
     protected static ?string $model = StaffAttendance::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
@@ -111,7 +111,7 @@ class StaffAttendanceResource extends Resource
                     ->label('Durasi Lembur')
                     ->suffix('Jam')
                     ->numeric()
-                    ->default(0), 
+                    ->default(0),
                 Forms\Components\TextInput::make('visit_solo_count')
                     ->label('Visit Solo')
                     ->numeric()
@@ -128,13 +128,14 @@ class StaffAttendanceResource extends Resource
                 Forms\Components\Checkbox::make('is_late')
                     ->label('Terlambat')
                     ->default(false),
-               
+
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('tanggal', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('staff.name')
                     ->label('Nama')
@@ -145,17 +146,17 @@ class StaffAttendanceResource extends Resource
                     ->formatStateUsing(function ($state) {
                         return \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('l, d M Y');
                     })
-                    ->sortable(),   
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('jam_masuk')
                     ->label('Jam Masuk')
                     ->dateTime('H:i')
-                    ->alignCenter() 
+                    ->alignCenter()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('jam_pulang')
                     ->label('Jam Pulang')
                     ->dateTime('H:i')
                     ->alignCenter()
-                    ->sortable(),   
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('durasi_lembur')
                     ->label('Durasi Lembur')
                     ->alignCenter()
@@ -179,7 +180,7 @@ class StaffAttendanceResource extends Resource
                         } elseif ($state == 'halfday') {
                             return 'warning';
                         }
-                    })      
+                    })
                     ->formatStateUsing(function ($state) {
                         if ($state == 'masuk') {
                             return 'Masuk';
@@ -193,25 +194,25 @@ class StaffAttendanceResource extends Resource
                             return 'Alfa';
                         } elseif ($state == 'halfday') {
                             return 'Tengah Hari';
-                        }   
-                    })  
+                        }
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('is_late')
-                    ->label('Terlambat')    
+                    ->label('Terlambat')
                     ->sortable()
-                    ->alignCenter() 
+                    ->alignCenter()
                     ->badge()
                     ->color(function ($state) {
                         return $state ? 'danger' : 'success';
                     })
                     ->formatStateUsing(function ($state) {
                         return $state ? 'Ya' : 'Tidak';
-                    }),   
+                    }),
                 Tables\Columns\TextColumn::make('visit_solo_count')
                     ->label('Visit Solo')
                     ->alignCenter()
                     ->badge()
-                    ->sortable(), 
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('visit_luar_solo_count')
                     ->label('Visit Luar Solo')
                     ->alignCenter()
@@ -221,7 +222,7 @@ class StaffAttendanceResource extends Resource
                     ->label('Keterangan')
                     ->wrap()
                     ->sortable(),
-                ])
+            ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
@@ -263,8 +264,8 @@ class StaffAttendanceResource extends Resource
         return [
             Action::make('view-attendance-monthly')
                 ->label('Laporan Presensi Bulanan')
-                ->url(fn (): string => static::getUrl('view-attendance-monthly'))
+                ->url(fn(): string => static::getUrl('view-attendance-monthly'))
                 ->color('success'),
-        ];  
+        ];
     }
 }
