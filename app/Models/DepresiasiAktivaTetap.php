@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 class DepresiasiAktivaTetap extends Model
 {
     use SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'daftar_aktiva_tetap_id',
