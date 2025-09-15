@@ -17,6 +17,7 @@
     
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold">Histori Transaksi Kas/Bank</h2>
+        @if(filament()->getCurrentPanel()->getId() === 'admin')
         <div class="space-x-2">
             <a href="{{ route('filament.admin.resources.cash-reports.create', ['cash_reference_id' => $record->id]) }}" 
                class="filament-button filament-button-size-sm inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors focus:outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2rem] px-3 text-sm text-white shadow focus:ring-white border-transparent bg-primary-600 hover:bg-primary-500 focus:bg-primary-700 focus:ring-offset-primary-700">
@@ -26,6 +27,7 @@
                 <span>Tambah Transaksi</span>
             </a>
         </div>
+        @endif
     </div>
     
     {{ $this->table }}

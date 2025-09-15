@@ -11,7 +11,7 @@ trait HasPermissions
     public static function canCreate(): bool
     {
         $user = auth()->user();
-        
+
         if (!$user || $user->hasRole('admin')) {
             return true;
         }
@@ -26,7 +26,7 @@ trait HasPermissions
     public static function canEdit($record): bool
     {
         $user = auth()->user();
-        
+
         if (!$user || $user->hasRole('admin')) {
             return true;
         }
@@ -41,7 +41,7 @@ trait HasPermissions
     public static function canDelete($record): bool
     {
         $user = auth()->user();
-        
+
         if (!$user || $user->hasRole('admin')) {
             return true;
         }
@@ -53,7 +53,7 @@ trait HasPermissions
     /**
      * Get resource name from class name
      */
-    protected static function getResourceName(): string
+    public static function getResourceName(): string
     {
         $className = class_basename(static::class);
         // Remove 'Resource' suffix and convert to kebab-case
@@ -67,7 +67,7 @@ trait HasPermissions
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        
+
         if (!$user) {
             return false;
         }
@@ -79,7 +79,7 @@ trait HasPermissions
 
         // Get resource name from class
         $resourceName = static::getResourceName();
-        
+
         // Check if user has view permission for this resource
         return $user->hasPermission($resourceName . '.view');
     }

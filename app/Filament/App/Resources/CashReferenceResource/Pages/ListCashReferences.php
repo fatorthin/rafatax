@@ -15,8 +15,8 @@ class ListCashReferences extends ListRecords
         return [
             Actions\CreateAction::make()
                 ->label('Tambah Kas')
-                ->icon('heroicon-o-plus'),
+                ->icon('heroicon-o-plus')
+                ->visible(fn() => static::getResource()::canCreate()),
         ];
     }
 }
-
