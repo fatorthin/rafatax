@@ -45,6 +45,7 @@ class StaffResource extends Resource
                     ->label('Alamat'),
                 Forms\Components\Select::make('jenjang')
                     ->options([
+                        'SMA' => 'SMA/SMK',
                         'D-3' => 'D-3',
                         'D-4' => 'D-4',
                         'S-1' => 'S-1',
@@ -89,7 +90,7 @@ class StaffResource extends Resource
                     ->searchable()
                     ->preload(),
                 Forms\Components\Toggle::make('is_active')
-                    ->label('Aktif')    
+                    ->label('Aktif')
                     ->default(true),
                 Forms\Components\TextInput::make('salary')
                     ->label('Gaji')
@@ -158,9 +159,9 @@ class StaffResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('salary')
                     ->label('Gaji Pokok')
-                    ->formatStateUsing(fn($record) => number_format($record->salary, 0, ',', '.'))  
+                    ->formatStateUsing(fn($record) => number_format($record->salary, 0, ',', '.'))
                     ->alignEnd()
-                    ->sortable(),  
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('positionReference.name')
                     ->label('Jabatan')
                     ->searchable(),
