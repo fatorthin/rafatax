@@ -37,6 +37,10 @@ class CoaResource extends Resource
                         'pt' => 'PT'
                     ])
                     ->required(),
+                Forms\Components\Select::make('group_coa_id')
+                    ->label('Group COA')
+                    ->options(GroupCoa::all()->pluck('name', 'id'))
+                    ->required(),
             ]);
     }
 

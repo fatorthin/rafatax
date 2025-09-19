@@ -34,6 +34,20 @@ class CashReportResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informasi Transaksi')
                     ->schema([
+                        Forms\Components\DatePicker::make('transaction_date')
+                            ->label('Tanggal Transaksi')
+                            ->required()
+                            ->default(now()),
+                        Forms\Components\Select::make('coa_id')
+                            ->label('Chart of Account')
+                            ->required()
+                            ->searchable()
+                            ->options(function () {
+                                return Coa::all()->mapWithKeys(function ($coa) {
+                                    return [$coa->id => $coa->code . ' - ' . $coa->name];
+                                });
+                            })
+                            ->placeholder('Pilih chart of account'),
                         Forms\Components\TextInput::make('description')
                             ->label('Deskripsi')
                             ->required()
@@ -48,21 +62,6 @@ class CashReportResource extends Resource
                             })
                             ->options(CashReference::all()->pluck('name', 'id'))
                             ->placeholder('Pilih referensi kas'),
-                        Forms\Components\Select::make('coa_id')
-                            ->label('Chart of Account')
-                            ->required()
-                            ->searchable()
-                            ->options(function () {
-                                return Coa::all()->mapWithKeys(function ($coa) {
-                                    return [$coa->id => $coa->code . ' - ' . $coa->name];
-                                });
-                            })
-                            ->placeholder('Pilih chart of account'),
-                        Forms\Components\DatePicker::make('transaction_date')
-                            ->label('Tanggal Transaksi')
-                            ->required()
-                            ->default(now())
-                            ->displayFormat('d/m/Y'),
                     ])
                     ->columns(2),
 
