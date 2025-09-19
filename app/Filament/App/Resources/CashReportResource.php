@@ -47,12 +47,7 @@ class CashReportResource extends Resource
                                     return [$coa->id => $coa->code . ' - ' . $coa->name];
                                 });
                             })
-                            ->placeholder('Pilih chart of account'),
-                        Forms\Components\TextInput::make('description')
-                            ->label('Deskripsi')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('Masukkan deskripsi transaksi'),
+                            ->placeholder('Pilih chart of account'), 
                         Forms\Components\Select::make('cash_reference_id')
                             ->label('Referensi Kas')
                             ->required()
@@ -62,6 +57,11 @@ class CashReportResource extends Resource
                             })
                             ->options(CashReference::all()->pluck('name', 'id'))
                             ->placeholder('Pilih referensi kas'),
+                        Forms\Components\TextInput::make('description')
+                            ->label('Deskripsi')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('Masukkan deskripsi transaksi'),
                     ])
                     ->columns(2),
 
