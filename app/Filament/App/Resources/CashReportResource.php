@@ -88,20 +88,6 @@ class CashReportResource extends Resource
                     ])
                     ->columns(2)
                     ->description('Masukkan jumlah debit atau credit (salah satu harus diisi)'),
-
-                Forms\Components\Section::make('Informasi Tambahan')
-                    ->schema([
-                        Forms\Components\Hidden::make('invoice_id')
-                            ->default('0'),
-                        Forms\Components\Hidden::make('mou_id')
-                            ->default('0'),
-                        Forms\Components\Hidden::make('cost_list_invoice_id')
-                            ->default('0'),
-                        Forms\Components\Hidden::make('type')
-                            ->default('manual'),
-                    ])
-                    ->collapsed()
-                    ->collapsible(),
             ]);
     }
 
