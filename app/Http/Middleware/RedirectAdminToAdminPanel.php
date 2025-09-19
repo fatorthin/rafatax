@@ -21,8 +21,8 @@ class RedirectAdminToAdminPanel
             }
 
             if (!$isAdmin && method_exists($user, 'roles')) {
-                $names = $user->roles()->pluck('name')->map(fn ($n) => strtolower($n))->all();
-                foreach (['admin','administrator','superadmin','super-admin'] as $r) {
+                $names = $user->roles()->pluck('name')->map(fn($n) => strtolower($n))->all();
+                foreach (['admin', 'administrator', 'superadmin', 'super-admin'] as $r) {
                     if (in_array($r, $names, true)) {
                         $isAdmin = true;
                         break;

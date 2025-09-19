@@ -61,7 +61,7 @@ class ActivityLogResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('user.name')
                     ->label('User')
-                    ->formatStateUsing(fn ($state, $record) => $record->user?->name ?? 'System')
+                    ->formatStateUsing(fn($state, $record) => $record->user?->name ?? 'System')
                     ->disabled(),
                 Forms\Components\TextInput::make('action')
                     ->disabled(),
@@ -96,7 +96,7 @@ class ActivityLogResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('action')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'create' => 'success',
                         'update' => 'warning',
                         'delete' => 'danger',
@@ -107,7 +107,7 @@ class ActivityLogResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('model_type')
                     ->label('Model')
-                    ->formatStateUsing(fn ($state) => class_basename($state))
+                    ->formatStateUsing(fn($state) => class_basename($state))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('model_id')
@@ -134,6 +134,7 @@ class ActivityLogResource extends Resource
                         'App\\Models\\CashReport' => 'Cash Report',
                         'App\\Models\\CashReference' => 'Cash Reference',
                         'App\\Models\\Coa' => 'CoA',
+                        'App\\Models\\StaffAttendance' => 'Staff Attendance',
                     ]),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
@@ -144,11 +145,11 @@ class ActivityLogResource extends Resource
                         return $query
                             ->when(
                                 $data['created_from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['created_until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
                     }),
             ])

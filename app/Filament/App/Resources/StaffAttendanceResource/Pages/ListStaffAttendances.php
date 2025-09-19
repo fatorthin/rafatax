@@ -13,12 +13,13 @@ class ListStaffAttendances extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->visible(fn() => static::getResource()::canCreate()),
             Actions\Action::make('view-attendance-monthly')
                 ->label('Laporan Presensi Bulanan')
                 ->icon('heroicon-o-calendar')
                 ->color('success')
-                ->url(fn (): string => static::getResource()::getUrl('view-attendance-monthly')),
+                ->url(fn(): string => static::getResource()::getUrl('view-attendance-monthly')),
         ];
     }
 }

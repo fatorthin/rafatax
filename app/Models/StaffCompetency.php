@@ -5,11 +5,13 @@ namespace App\Models;
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 
 class StaffCompetency extends Model
 {
     use SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'staff_id',

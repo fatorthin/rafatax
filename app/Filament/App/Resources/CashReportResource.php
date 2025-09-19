@@ -69,7 +69,6 @@ class CashReportResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('debit_amount')
                             ->label('Debit')
-                            ->required()
                             ->default(0)
                             ->numeric()
                             ->prefix('Rp ')
@@ -79,7 +78,6 @@ class CashReportResource extends Resource
                             ->helperText('Harus diisi jika credit kosong'),
                         Forms\Components\TextInput::make('credit_amount')
                             ->label('Credit')
-                            ->required()
                             ->default(0)
                             ->numeric()
                             ->prefix('Rp ')
@@ -110,7 +108,7 @@ class CashReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('transaction_date', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('cashReference.name')
                     ->label('Referensi Kas')

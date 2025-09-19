@@ -109,9 +109,6 @@ class CashReferenceResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->label('Lihat')
-                    ->icon('heroicon-o-eye'),
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
                     ->icon('heroicon-o-pencil'),
@@ -171,4 +168,3 @@ class CashReferenceResource extends Resource
             ->latest('created_at');
     }
 }
-

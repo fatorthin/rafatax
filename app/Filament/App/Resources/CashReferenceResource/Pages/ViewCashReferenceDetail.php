@@ -227,6 +227,14 @@ class ViewCashReferenceDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('addTransaction')
+                ->label('Tambah Transaksi')
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->visible(fn() => \App\Filament\App\Resources\CashReportResource::canCreate())
+                ->url(fn() => \App\Filament\App\Resources\CashReportResource::getUrl('create', [
+                    'cash_reference_id' => $this->record->id
+                ])),
             Actions\Action::make('back')
                 ->label('Back to List')
                 ->url(CashReferenceResource::getUrl('index'))

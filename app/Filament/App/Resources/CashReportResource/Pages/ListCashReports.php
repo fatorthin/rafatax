@@ -15,7 +15,8 @@ class ListCashReports extends ListRecords
         return [
             Actions\CreateAction::make()
                 ->label('Tambah Laporan Kas')
-                ->icon('heroicon-o-plus'),
+                ->icon('heroicon-o-plus')
+                ->visible(fn() => static::getResource()::canCreate()),
         ];
     }
 }
