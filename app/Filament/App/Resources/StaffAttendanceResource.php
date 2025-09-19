@@ -64,17 +64,7 @@ class StaffAttendanceResource extends Resource
                             };
                         },
                     ]),
-                Forms\Components\Select::make('status')
-                    ->label('Status Kehadiran')
-                    ->options([
-                        'masuk' => 'Masuk',
-                        'sakit' => 'Sakit',
-                        'izin' => 'Izin',
-                        'cuti' => 'Cuti',
-                        'alfa' => 'Alfa',
-                        'halfday' => 'Tengah Hari',
-                    ])
-                    ->required(),
+                
                 Forms\Components\TimePicker::make('jam_masuk')
                     ->label('Jam Masuk')
                     ->required()
@@ -107,6 +97,17 @@ class StaffAttendanceResource extends Resource
                             $set('durasi_lembur', 0);
                         }
                     }),
+                Forms\Components\Select::make('status')
+                    ->label('Status Kehadiran')
+                    ->options([
+                        'masuk' => 'Masuk',
+                        'sakit' => 'Sakit',
+                        'izin' => 'Izin',
+                        'cuti' => 'Cuti',
+                        'alfa' => 'Alfa',
+                        'halfday' => 'Tengah Hari',
+                    ])
+                    ->required(),
                 Forms\Components\TextInput::make('durasi_lembur')
                     ->label('Durasi Lembur')
                     ->suffix('Jam')
