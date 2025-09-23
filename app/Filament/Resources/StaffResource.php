@@ -117,9 +117,6 @@ class StaffResource extends Resource
                     ->label('TTL')
                     ->formatStateUsing(fn($record) => $record->birth_place . ', ' . \Carbon\Carbon::parse($record->birth_date)->format('d-m-Y'))
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('departmentReference.name')

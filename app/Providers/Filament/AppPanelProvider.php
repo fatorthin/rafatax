@@ -45,13 +45,9 @@ class AppPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
                 \App\Filament\App\Pages\Profile::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/App/Widgets'), for: 'App\\Filament\\App\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
-                \App\Filament\App\Widgets\CashReportOverview::class,
-                \App\Filament\App\Widgets\MouOverview::class,
-                \App\Filament\App\Widgets\CashReferenceOverview::class,
             ])
             ->middleware([
                 EncryptCookies::class,
