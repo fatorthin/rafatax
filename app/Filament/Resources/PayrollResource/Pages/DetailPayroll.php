@@ -239,16 +239,19 @@ class DetailPayroll extends Page implements HasTable
                 TextInputColumn::make('bonus_lain')
                     ->label('Bonus Lain')
                     ->alignEnd()
+                    ->numeric()
                     ->sortable(),
 
                 TextInputColumn::make('cut_bpjs_kesehatan')
                     ->label('Pot. BPJS Kesehatan')
                     ->alignEnd()
+                    ->numeric()
                     ->sortable(),
 
                 TextInputColumn::make('cut_bpjs_ketenagakerjaan')
                     ->label('Pot. BPJS Ketenagakerjaan')
                     ->alignEnd()
+                    ->numeric()
                     ->sortable(),
 
                 TextColumn::make('cut_sakit')
