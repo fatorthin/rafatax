@@ -45,7 +45,9 @@ class StaffAttendanceResource extends Resource
                 Forms\Components\DatePicker::make('tanggal')
                     ->label('Tanggal')
                     ->required()
-                    ->format('d-m-Y')
+                    ->native(false)
+                    ->displayFormat('d-m-Y')
+                    ->format('Y-m-d')
                     ->rules([
                         function (Get $get, ?StaffAttendance $record) {
                             return function (string $attribute, $value, Closure $fail) use ($get, $record) {
