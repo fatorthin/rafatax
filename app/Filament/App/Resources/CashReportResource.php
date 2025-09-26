@@ -37,6 +37,7 @@ class CashReportResource extends Resource
                         Forms\Components\DatePicker::make('transaction_date')
                             ->label('Tanggal Transaksi')
                             ->required()
+                            ->format('d-m-Y')
                             ->default(now()),
                         Forms\Components\Select::make('coa_id')
                             ->label('Chart of Account')
@@ -47,7 +48,7 @@ class CashReportResource extends Resource
                                     return [$coa->id => $coa->code . ' - ' . $coa->name];
                                 });
                             })
-                            ->placeholder('Pilih chart of account'), 
+                            ->placeholder('Pilih chart of account'),
                         Forms\Components\Select::make('cash_reference_id')
                             ->label('Referensi Kas')
                             ->required()
