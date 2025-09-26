@@ -48,6 +48,7 @@ class StaffAttendanceResource extends Resource
                     ->native(false)
                     ->displayFormat('d-m-Y')
                     ->format('Y-m-d')
+                    ->default(now())
                     ->rules([
                         function (Get $get, ?StaffAttendance $record) {
                             return function (string $attribute, $value, Closure $fail) use ($get, $record) {
