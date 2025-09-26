@@ -262,7 +262,7 @@ class PayrollDetailResource extends Resource
                     ->alignEnd()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('cut_hutang')
-                    ->label('Cut Hutang')   
+                    ->label('Cut Hutang')
                     ->formatStateUsing(function ($state) {
                         return number_format($state, 0, ',', '.');
                     })
@@ -336,6 +336,9 @@ class PayrollDetailResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            ->whereHas('payroll', function (Builder $query) {
+                $query->whereNull('deleted_at');
+            });
     }
 }

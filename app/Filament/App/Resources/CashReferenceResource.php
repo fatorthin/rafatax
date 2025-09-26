@@ -112,11 +112,6 @@ class CashReferenceResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
                     ->icon('heroicon-o-pencil'),
-                Tables\Actions\Action::make('viewTransactions')
-                    ->label('Transaksi')
-                    ->icon('heroicon-o-currency-dollar')
-                    ->color('success')
-                    ->url(fn(CashReference $record): string => route('filament.app.resources.cash-references.transactions', ['record' => $record])),
                 Tables\Actions\Action::make('viewDetail')
                     ->label('Detail')
                     ->icon('heroicon-o-eye')
@@ -154,7 +149,6 @@ class CashReferenceResource extends Resource
             'viewMonthly' => Pages\ViewCashReferenceMonthly::route('/{record}/monthly'),
             'monthDetail' => Pages\ViewCashReferenceMonthDetail::route('/{record}/month-transactions'),
             'edit' => Pages\EditCashReference::route('/{record}/edit'),
-            'transactions' => Pages\ViewCashReferenceTransactions::route('/{record}/transactions'),
         ];
     }
 

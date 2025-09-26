@@ -114,7 +114,7 @@ class DetailPayroll extends Page implements HasTable
                                 ->whereYear('tanggal', $year)
                                 ->whereMonth('tanggal', $month);
 
-                            $overtimeCount = (int) (clone $attendanceQuery)->sum('durasi_lembur');
+                            $overtimeCount = (float) (clone $attendanceQuery)->sum('durasi_lembur');
                             $visitSoloCount = (int) (clone $attendanceQuery)->sum('visit_solo_count');
                             $visitLuarSoloCount = (int) (clone $attendanceQuery)->sum('visit_luar_solo_count');
                             $sickLeaveCount = (int) (clone $attendanceQuery)->where('status', 'sakit')->count();
