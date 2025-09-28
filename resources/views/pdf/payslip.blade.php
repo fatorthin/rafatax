@@ -75,6 +75,10 @@
             <td><strong>Jabatan</strong></td>
             <td>: {{ optional(optional($detail->staff)->positionReference)->name ?? '-' }}</td>
         </tr>
+        <tr>
+            <td><strong>TMT Training</strong></td>
+            <td>: {{ date('d-m-Y', strtotime($detail->staff->tmt_training)) }}</td>
+        </tr>
     </table>
 
     <div class="section-title">Komponen Gaji</div>
@@ -158,7 +162,25 @@
         </tr>
     </table>
 
-    <p class="muted">Dokumen ini dibuat otomatis oleh sistem.</p>
+    <table>
+        <tr>
+            <td><strong>Dokumen ini dibuat oleh Bagian Finance.</strong></td>
+
+        </tr>
+        <tr>
+            <td></td>
+            <td class="center">
+                <strong>Mengetahui </strong><br>
+                <strong>Direktur </strong><br>
+                <br>
+                <br>
+                <br>
+                <strong>Antin Okfitasari</strong>
+            </td>
+        </tr>
+
+    </table>
+
 </body>
 
 </html>

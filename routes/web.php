@@ -10,6 +10,7 @@ use App\Http\Controllers\DaftarAktivaExportController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ExportAttendanceController;
 use App\Http\Controllers\ExportPayrollController;
+use App\Http\Controllers\PayrollWhatsAppController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,7 +55,7 @@ Route::get('/test-mou', function () {
 Route::middleware(['auth'])->group(function () {
     Route::resource('activity-logs', ActivityLogController::class)->only(['index', 'show']);
     Route::get('activity-logs/filter', [ActivityLogController::class, 'filter'])->name('activity-logs.filter');
-    
+
     // Neraca Lajur Export & Save
     Route::get('/neraca-lajur/export', [NeracaLajurController::class, 'export'])->name('neraca-lajur.export');
     Route::get('/neraca-lajur/save-cutoff', [NeracaLajurController::class, 'saveCutOff'])->name('neraca-lajur.save-cutoff');
@@ -70,3 +71,11 @@ Route::get('/exports/payroll/{payroll}/excel', [ExportPayrollController::class, 
 
 Route::get('/exports/payroll-detail/{detail}/payslip', [ExportPayrollController::class, 'payslipPdf'])
     ->name('exports.payroll.payslip');
+
+Route::post('/payroll-detail/{detail}/send-whatsapp', [PayrollWhatsAppController::class, 'sendPayslip'])
+    ->name('payroll.send-whatsapp')
+    ->middleware('auth');
+
+Route::post('/payroll-detail/{detail}/send-whatsapp-pdf', [PayrollWhatsAppController::class, 'sendPayslipWithPdf'])
+    ->name('payroll.send-whatsapp-pdf')
+    ->middleware('auth');

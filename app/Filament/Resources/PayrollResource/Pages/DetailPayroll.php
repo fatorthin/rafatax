@@ -22,6 +22,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Illuminate\Support\Facades\Http;
 
 class DetailPayroll extends Page implements HasTable
 {
@@ -148,6 +149,54 @@ class DetailPayroll extends Page implements HasTable
                         ->send();
 
                     $this->redirect(PayrollResource::getUrl('detail', ['record' => $this->record]));
+                }),
+            Actions\Action::make('send_all_whatsapp_pdf')
+                ->label('Kirim Semua PDF ke WA')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('info')
+                ->requiresConfirmation()
+                ->modalHeading('Kirim Semua Slip Gaji PDF via WhatsApp')
+                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp?')
+                ->modalSubmitActionLabel('Kirim Semua PDF')
+                ->action(function () {
+                    $details = PayrollDetail::with('staff')
+                        ->where('payroll_id', $this->record->id)
+                        ->whereHas('staff', function ($query) {
+                            $query->whereNotNull('phone')->where('phone', '!=', '');
+                        })
+                        ->get();
+
+                    $successCount = 0;
+                    $failCount = 0;
+
+                    foreach ($details as $detail) {
+                        try {
+                            // Panggil controller langsung
+                            $controller = new \App\Http\Controllers\PayrollWhatsAppController(
+                                new \App\Services\WablasService()
+                            );
+
+                            $response = $controller->sendPayslipWithPdf($detail);
+                            $data = $response->getData(true);
+
+                            if ($data['success']) {
+                                $successCount++;
+                            } else {
+                                $failCount++;
+                            }
+
+                            // Delay 2 detik antar pengiriman untuk menghindari rate limit
+                            sleep(2);
+                        } catch (\Exception $e) {
+                            $failCount++;
+                        }
+                    }
+
+                    Notification::make()
+                        ->title('Selesai!')
+                        ->body("Berhasil mengirim {$successCount} slip gaji PDF. Gagal: {$failCount}")
+                        ->success()
+                        ->send();
                 }),
         ];
     }
@@ -327,6 +376,88 @@ class DetailPayroll extends Page implements HasTable
                     ->icon('heroicon-o-document-text')
                     ->url(fn($record) => route('exports.payroll.payslip', ['detail' => $record->id]))
                     ->openUrlInNewTab(false),
+
+                \Filament\Tables\Actions\Action::make('send_whatsapp')
+                    ->label('Kirim WhatsApp')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Slip Gaji via WhatsApp')
+                    ->modalDescription(fn($record) => "Apakah Anda yakin ingin mengirim slip gaji untuk {$record->staff->name} ke nomor {$record->staff->phone}?")
+                    ->modalSubmitActionLabel('Kirim')
+                    ->action(function ($record) {
+                        try {
+                            // Panggil controller langsung
+                            $controller = new \App\Http\Controllers\PayrollWhatsAppController(
+                                new \App\Services\WablasService()
+                            );
+
+                            $response = $controller->sendPayslip($record);
+                            $data = $response->getData(true);
+
+                            if ($data['success']) {
+                                Notification::make()
+                                    ->title('Berhasil!')
+                                    ->body('Slip gaji berhasil dikirim ke WhatsApp')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Gagal!')
+                                    ->body($data['message'])
+                                    ->danger()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Error!')
+                                ->body('Terjadi kesalahan saat mengirim slip gaji: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->visible(fn($record) => !empty($record->staff->phone)),
+
+                \Filament\Tables\Actions\Action::make('send_whatsapp_pdf')
+                    ->label('Kirim PDF ke WA')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Slip Gaji PDF via WhatsApp')
+                    ->modalDescription(fn($record) => "Apakah Anda yakin ingin mengirim slip gaji PDF untuk {$record->staff->name} ke nomor {$record->staff->phone}?")
+                    ->modalSubmitActionLabel('Kirim PDF')
+                    ->action(function ($record) {
+                        try {
+                            // Panggil controller langsung
+                            $controller = new \App\Http\Controllers\PayrollWhatsAppController(
+                                new \App\Services\WablasService()
+                            );
+
+                            $response = $controller->sendPayslipWithPdf($record);
+                            $data = $response->getData(true);
+
+                            if ($data['success']) {
+                                Notification::make()
+                                    ->title('Berhasil!')
+                                    ->body('Slip gaji PDF berhasil dikirim ke WhatsApp')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Gagal!')
+                                    ->body($data['message'])
+                                    ->danger()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Error!')
+                                ->body('Terjadi kesalahan saat mengirim slip gaji PDF: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->visible(fn($record) => !empty($record->staff->phone)),
             ]);
     }
 }
