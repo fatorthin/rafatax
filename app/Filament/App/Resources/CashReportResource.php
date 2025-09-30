@@ -34,6 +34,15 @@ class CashReportResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informasi Transaksi')
                     ->schema([
+                        Forms\Components\Select::make('cash_reference_id')
+                            ->label('Referensi Kas')
+                            ->required()
+                            ->searchable()
+                            ->default(function () {
+                                return request()->query('cash_reference_id');
+                            })
+                            ->options(CashReference::all()->pluck('name', 'id'))
+                            ->placeholder('Pilih referensi kas'),
                         Forms\Components\DatePicker::make('transaction_date')
                             ->label('Tanggal Transaksi')
                             ->required()
@@ -51,15 +60,6 @@ class CashReportResource extends Resource
                                 });
                             })
                             ->placeholder('Pilih chart of account'),
-                        Forms\Components\Select::make('cash_reference_id')
-                            ->label('Referensi Kas')
-                            ->required()
-                            ->searchable()
-                            ->default(function () {
-                                return request()->query('cash_reference_id');
-                            })
-                            ->options(CashReference::all()->pluck('name', 'id'))
-                            ->placeholder('Pilih referensi kas'),
                         Forms\Components\TextInput::make('description')
                             ->label('Deskripsi')
                             ->required()

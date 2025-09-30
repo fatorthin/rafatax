@@ -40,7 +40,7 @@ class StaffAttendanceResource extends Resource
             ->schema([
                 Forms\Components\Select::make('staff_id')
                     ->label('Staff')
-                    ->options(Staff::all()->pluck('name', 'id'))
+                    ->options(Staff::where('is_active', true)->pluck('name', 'id'))
                     ->required(),
                 Forms\Components\DatePicker::make('tanggal')
                     ->label('Tanggal')
