@@ -214,7 +214,8 @@ class DetailPayroll extends Page implements HasTable
 
                 TextColumn::make('staff.name')
                     ->label('Nama Staff')
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
 
                 TextColumn::make('salary')
                     ->label('Gaji Pokok')
@@ -371,6 +372,12 @@ class DetailPayroll extends Page implements HasTable
             ->paginated(false)
             ->striped()
             ->actions([
+                \Filament\Tables\Actions\Action::make('edit')
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil')
+                    ->url(fn($record) => route('filament.admin.resources.payroll-details.edit', ['record' => $record->id]))
+                    ->openUrlInNewTab(false),
+
                 \Filament\Tables\Actions\Action::make('slip_pdf')
                     ->label('Slip PDF')
                     ->icon('heroicon-o-document-text')
