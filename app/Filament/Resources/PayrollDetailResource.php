@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\PayrollDetailResource\Pages;
 use App\Filament\Resources\PayrollDetailResource\RelationManagers;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class PayrollDetailResource extends Resource
 {
@@ -41,72 +43,120 @@ class PayrollDetailResource extends Resource
                     ->label('Salary')
                     ->prefix('Rp')
                     ->numeric()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('bonus_position')
                     ->label('Bonus Position')
                     ->prefix('Rp')
                     ->numeric()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('bonus_competency')
                     ->label('Bonus Competency')
                     ->prefix('Rp')
                     ->numeric()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('overtime_count')
                     ->label('Overtime Count')
                     ->numeric()
                     ->suffix('Jam')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('visit_solo_count')
                     ->label('Visit Solo Count')
                     ->numeric()
                     ->suffix('Kali')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('visit_luar_solo_count')
                     ->label('Visit Luar Solo Count')
                     ->numeric()
                     ->suffix('Kali')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('sick_leave_count')
                     ->label('Sick Leave Count')
                     ->numeric()
                     ->suffix('Kali')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('halfday_count')
                     ->label('Halfday Count')
                     ->numeric()
                     ->suffix('Kali')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('leave_count')
                     ->label('Leave Count')
                     ->numeric()
                     ->suffix('Kali')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('bonus_lain')
                     ->label('Bonus Lain')
                     ->numeric()
                     ->prefix('Rp')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('cut_bpjs_kesehatan')
                     ->label('Cut BPJS Kesehatan')
                     ->numeric()
                     ->prefix('Rp')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('cut_bpjs_ketenagakerjaan')
                     ->label('Cut BPJS Ketenagakerjaan')
                     ->numeric()
                     ->prefix('Rp')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('cut_lain')
@@ -114,14 +164,78 @@ class PayrollDetailResource extends Resource
                     ->numeric()
                     ->default(0)
                     ->prefix('Rp')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->required(),
                 Forms\Components\TextInput::make('cut_hutang')
                     ->label('Cut Hutang')
                     ->numeric()
                     ->prefix('Rp')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
                     ->default(0)
                     ->required(),
+                Forms\Components\TextInput::make('total_salary_display')
+                    ->label('Total Salary (otomatis)')
+                    ->prefix('Rp')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->afterStateHydrated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    }),
             ]);
+    }
+
+    private static function computeTotalSalary(Get $get): float
+    {
+        $salary = (int) ($get('salary') ?? 0);
+        $bonusPosition = (int) ($get('bonus_position') ?? 0);
+        $bonusCompetency = (int) ($get('bonus_competency') ?? 0);
+        $overtimeCount = (int) ($get('overtime_count') ?? 0);
+        $visitSoloCount = (int) ($get('visit_solo_count') ?? 0);
+        $visitLuarSoloCount = (int) ($get('visit_luar_solo_count') ?? 0);
+        $bonusLain = (int) ($get('bonus_lain') ?? 0);
+        $cutBpjsKes = (int) ($get('cut_bpjs_kesehatan') ?? 0);
+        $cutBpjsKetenaga = (int) ($get('cut_bpjs_ketenagakerjaan') ?? 0);
+        $cutLain = (int) ($get('cut_lain') ?? 0);
+        $cutHutang = (int) ($get('cut_hutang') ?? 0);
+        $sickLeave = (int) ($get('sick_leave_count') ?? 0);
+        $halfday = (int) ($get('halfday_count') ?? 0);
+        $leave = (int) ($get('leave_count') ?? 0);
+
+        $bonusOvertime = $overtimeCount * 10000;
+        $bonusVisitSolo = $visitSoloCount * 10000;
+        $bonusVisitLuarSolo = $visitLuarSoloCount * 15000;
+
+        $cutSakit = $sickLeave * 0.5 * ($salary / 25);
+        $cutTengahHari = $halfday * 0.5 * ($salary / 25);
+        $cutIjin = $leave * ($salary / 25);
+
+        $total = $salary
+            + $bonusPosition
+            + $bonusCompetency
+            + $bonusOvertime
+            + $bonusVisitSolo
+            + $bonusVisitLuarSolo
+            + $bonusLain
+            - $cutBpjsKes
+            - $cutBpjsKetenaga
+            - $cutLain
+            - $cutHutang
+            - $cutSakit
+            - $cutTengahHari
+            - $cutIjin;
+
+        return $total;
+    }
+
+    private static function formatCurrency(int $amount): string
+    {
+        return number_format($amount, 0, ',', '.');
     }
 
     public static function table(Table $table): Table
