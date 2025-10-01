@@ -155,9 +155,6 @@ class CashReferenceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ])
             ->withCount('cashReports')
             ->latest('created_at');
     }
