@@ -62,6 +62,7 @@ class ViewCashReferenceDetail extends Page implements HasTable
             ->query($query)
             ->columns([
                 TextColumn::make('transaction_date')
+                    ->label('Tanggal Transaksi')
                     ->dateTime('d-M-Y')
                     ->sortable(),
                 TextColumn::make('coa.code')

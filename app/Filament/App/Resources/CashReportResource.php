@@ -204,10 +204,16 @@ class CashReportResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('cash_reference_id')
                     ->label('Referensi Kas')
-                    ->relationship('cashReference', 'name'),
+                    ->options(function () {
+                        return CashReference::withoutTrashed()->pluck('name', 'id');
+                    }),
                 Tables\Filters\SelectFilter::make('coa_id')
                     ->label('Chart of Account')
-                    ->relationship('coa', 'name'),
+                    ->options(function () {
+                        return Coa::withoutTrashed()->get()->mapWithKeys(function ($coa) {
+                            return [$coa->id => $coa->code . ' - ' . $coa->name];
+                        });
+                    }),
                 Tables\Filters\Filter::make('transaction_month')
                     ->label('Bulan')
                     ->form([
@@ -299,9 +305,6 @@ class CashReportResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return parent::getEloquentQuery();
     }
 }
