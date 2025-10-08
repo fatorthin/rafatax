@@ -9,12 +9,14 @@ class WablasService
     private $token;
     private $secretKey;
     private $baseUrl;
+    private $authHeaderStyle;
 
     public function __construct()
     {
         $this->token = config('services.wablas.token');
         $this->secretKey = config('services.wablas.secret_key');
         $this->baseUrl = config('services.wablas.base_url', 'https://texas.wablas.com/api');
+        $this->authHeaderStyle = config('services.wablas.auth_header', 'concat'); // concat|token|bearer
     }
 
     public function sendMessage(string $phone, string $message): array
@@ -27,7 +29,7 @@ class WablasService
         ];
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            "Authorization: {$this->token}.{$this->secretKey}",
+            $this->buildAuthHeader(),
         ]);
 
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
@@ -36,6 +38,8 @@ class WablasService
         curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/send-message");
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -55,13 +59,15 @@ class WablasService
 
         Log::info('Wablas API Response', [
             'http_code' => $httpCode,
-            'response' => $response
+            'response' => $response,
+            'raw' => $result,
         ]);
 
         return [
             'success' => $httpCode === 200,
             'message' => $response['message'] ?? 'Unknown response',
-            'data' => $response
+            'data' => $response,
+            'http_code' => $httpCode,
         ];
     }
 
@@ -85,7 +91,7 @@ class WablasService
         ];
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            "Authorization: {$this->token}.{$this->secretKey}",
+            $this->buildAuthHeader(),
         ]);
 
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
@@ -94,6 +100,8 @@ class WablasService
         curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/send-document");
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 60);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -113,13 +121,15 @@ class WablasService
 
         Log::info('Wablas Document API Response', [
             'http_code' => $httpCode,
-            'response' => $response
+            'response' => $response,
+            'raw' => $result,
         ]);
 
         return [
             'success' => $httpCode === 200,
             'message' => $response['message'] ?? 'Unknown response',
-            'data' => $response
+            'data' => $response,
+            'http_code' => $httpCode,
         ];
     }
 
@@ -156,5 +166,21 @@ class WablasService
         $caption = "📄 Slip Gaji {$staffName} - {$period}";
 
         return $this->sendDocument($phone, $pdfPath, $filename, $caption);
+    }
+
+    private function buildAuthHeader(): string
+    {
+        // Beberapa instance Wablas memakai format yang berbeda untuk Authorization
+        // concat: "Authorization: {token}.{secretKey}"
+        // token:  "Authorization: {token}"
+        // bearer: "Authorization: Bearer {token}"
+        $style = strtolower((string) $this->authHeaderStyle);
+        if ($style === 'bearer') {
+            return "Authorization: Bearer {$this->token}";
+        }
+        if ($style === 'token') {
+            return "Authorization: {$this->token}";
+        }
+        return "Authorization: {$this->token}.{$this->secretKey}";
     }
 }
