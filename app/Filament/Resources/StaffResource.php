@@ -173,6 +173,10 @@ class StaffResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\Filter::make('is_active')
+                    ->label('Staff Aktif')
+                    ->query(fn(Builder $query): Builder => $query->where('is_active', true))
+                    ->default()
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -189,6 +193,7 @@ class StaffResource extends Resource
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
+            ->defaultSort('name', 'asc')
             ->recordUrl(null)
             ->recordAction(null);
     }

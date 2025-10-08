@@ -29,6 +29,7 @@ return new class extends Migration
             $table->boolean('pph_21_reporting')->default(false);
             $table->boolean('pph_4_reporting')->default(false);
             $table->boolean('ppn_reporting')->default(false);
+            $table->boolean('spt_reporting')->default(false);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->enum('type', ['pt', 'kkp'])->default('pt');
             $table->softDeletes('deleted_at', precision: 0);
