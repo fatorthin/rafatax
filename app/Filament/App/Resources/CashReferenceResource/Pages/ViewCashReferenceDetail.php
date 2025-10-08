@@ -209,7 +209,57 @@ class ViewCashReferenceDetail extends Page implements HasTable
             ])
             ->actions([
                 EditAction::make()
-                    ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
+                    ->form([
+                        \Filament\Forms\Components\Select::make('cash_reference_id')
+                            ->label('Referensi Kas')
+                            ->required()
+                            ->searchable()
+                            ->options(\App\Models\CashReference::all()->pluck('name', 'id'))
+                            ->placeholder('Pilih referensi kas'),
+                        \Filament\Forms\Components\DatePicker::make('transaction_date')
+                            ->label('Tanggal Transaksi')
+                            ->required()
+                            ->native(false)
+                            ->displayFormat('d-m-Y')
+                            ->format('Y-m-d'),
+                        \Filament\Forms\Components\Select::make('coa_id')
+                            ->label('Chart of Account')
+                            ->required()
+                            ->searchable()
+                            ->options(function () {
+                                return \App\Models\Coa::all()->mapWithKeys(function ($coa) {
+                                    return [$coa->id => $coa->code . ' - ' . $coa->name];
+                                });
+                            })
+                            ->placeholder('Pilih chart of account'),
+                        \Filament\Forms\Components\TextInput::make('description')
+                            ->label('Deskripsi')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('Masukkan deskripsi transaksi'),
+                        \Filament\Forms\Components\TextInput::make('debit_amount')
+                            ->label('Jumlah Debit')
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->placeholder('0'),
+                        \Filament\Forms\Components\TextInput::make('credit_amount')
+                            ->label('Jumlah Kredit')
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->placeholder('0'),
+                    ])
+                    ->action(function (CashReport $record, array $data): void {
+                        $record->update($data);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Berhasil')
+                            ->body('Data transaksi berhasil diperbarui.')
+                            ->success()
+                            ->send();
+                    })
+                    ->modalHeading('Edit Transaksi')
+                    ->modalSubmitActionLabel('Simpan Perubahan')
+                    ->modalCancelActionLabel('Batal'),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),

@@ -22,6 +22,18 @@ class EditCashReport extends EditRecord
 
     protected function getRedirectUrl(): string
     {
+        // Jika ada parameter return_to, redirect ke URL tersebut
+        $returnTo = request()->query('return_to');
+        if ($returnTo) {
+            return $returnTo;
+        }
+
+        // Jika ada referer dari halaman detail CashReference, redirect ke sana
+        $referer = request()->header('referer');
+        if ($referer && str_contains($referer, 'cash-references')) {
+            return $referer;
+        }
+
         return $this->getResource()::getUrl('index');
     }
 
