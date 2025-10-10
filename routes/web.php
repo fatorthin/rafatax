@@ -2,15 +2,15 @@
 
 
 use Illuminate\Support\Facades\Route;
-use App\Filament\Resources\MouResource\Pages\CostListMou;
-use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\MouPrintViewController;
-use App\Http\Controllers\NeracaLajurController;
-use App\Http\Controllers\DaftarAktivaExportController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\ExportAttendanceController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\NeracaLajurController;
+use App\Http\Controllers\MouPrintViewController;
 use App\Http\Controllers\ExportPayrollController;
 use App\Http\Controllers\PayrollWhatsAppController;
+use App\Http\Controllers\ExportAttendanceController;
+use App\Http\Controllers\DaftarAktivaExportController;
+use App\Filament\Resources\MouResource\Pages\CostListMou;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,9 +27,12 @@ use App\Http\Controllers\PayrollWhatsAppController;
 // Route::get('/', fn () => view('welcome'));
 
 // Unified login entry: /login -> app panel login
+
+
 Route::get('/', function () {
     return redirect('/login');
 });
+
 Route::get('/login', function () {
     return redirect('/app/login');
 });

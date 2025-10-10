@@ -160,7 +160,7 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                 ->icon('heroicon-o-list-bullet'),
             Actions\Action::make('addTransaction')
                 ->label('Add Transaction')
-                ->url(fn() => route('filament.admin.resources.cash-reports.create', ['cash_reference_id' => $this->record->id]))
+                ->url(fn() => route('filament.app.resources.cash-reports.create', ['cash_reference_id' => $this->record->id]))
                 ->color('primary')
                 ->icon('heroicon-o-plus'),
         ];

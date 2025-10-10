@@ -200,6 +200,11 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
                 // No actions needed here
                 \Filament\Tables\Actions\EditAction::make()
                     ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
+                \Filament\Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation()
+                    ->color('danger')
+                    ->icon('heroicon-o-trash'),
+
             ])
             ->striped()
             ->defaultSort('transaction_date', 'asc')

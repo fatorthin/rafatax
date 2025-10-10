@@ -29,14 +29,21 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
 
     public CashReference $record;
 
+    // TAMBAHKAN DUA PROPERTI DI BAWAH INI
+    public $year;
+    public $month;
+
+    // TAMBAHKAN MOUNT METHOD DI BAWAH INI
+    public function mount(): void
+    {
+        $this->year = (int) request()->query('year');
+        $this->month = (int) request()->query('month');
+    }
+
     public function getTitle(): string
     {
-        $year = request()->query('year');
-        $month = (int) request()->query('month');
-
-        $monthName = Carbon::create()->month($month)->format('F');
-
-        return "Transactions - {$this->record->name} - {$monthName} {$year}";
+        $monthName = Carbon::create()->month($this->month)->format('F');
+        return "Transactions - {$this->record->name} - {$monthName} {$this->year}";
     }
 
     protected function getPreviousMonthBalance(): float
@@ -182,6 +189,7 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
                     ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
+
             ])
             ->striped()
             ->defaultSort('transaction_date', 'asc')
@@ -213,7 +221,7 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
                 ->icon('heroicon-o-list-bullet'),
             Actions\Action::make('addTransaction')
                 ->label('Add Transaction')
-                ->url(fn() => route('filament.admin.resources.cash-reports.create', ['cash_reference_id' => $this->record->id]))
+                ->url(fn() => route('filament.app.resources.cash-reports.create', ['cash_reference_id' => $this->record->id]))
                 ->color('primary')
                 ->icon('heroicon-o-plus'),
         ];
