@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportPayrollController extends Controller
@@ -25,11 +25,28 @@ class ExportPayrollController extends Controller
 
         // Header columns
         $headers = [
-            'No', 'Nama', 'Gaji Pokok', 'TUNJAB', 'TUNKOMP',
-            'Sakit', 'Tengah Hari', 'Ijin', 'Lembur', 'T. Solo', 'T. Luar Solo',
-            'Bonus Lembur', 'Bonus Visit Solo', 'Bonus Visit Luar', 'Bonus Lain',
-            'Pot. BPJS Kes', 'Pot. BPJS TK', 'Pot. Lain', 'Pot. Hutang',
-            'Total Bonus', 'Total Pot.', 'Total Gaji'
+            'No',
+            'Nama',
+            'Gaji Pokok',
+            'TUNJAB',
+            'TUNKOMP',
+            'Sakit',
+            'Tengah Hari',
+            'Ijin',
+            'Lembur',
+            'T. Solo',
+            'T. Luar Solo',
+            'Bonus Lembur',
+            'Bonus Visit Solo',
+            'Bonus Visit Luar',
+            'Bonus Lain',
+            'Pot. BPJS Kes',
+            'Pot. BPJS TK',
+            'Pot. Lain',
+            'Pot. Hutang',
+            'Total Bonus',
+            'Total Pot.',
+            'Total Gaji'
         ];
         $col = 1;
         foreach ($headers as $header) {
@@ -116,7 +133,8 @@ class ExportPayrollController extends Controller
         $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
         $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus - $totalPot;
 
-        $pdf = Pdf::loadView('pdf.payslip', [
+
+        $pdf = PDF::loadView('pdf.payslip', [
             'detail' => $detail,
             'bonusLembur' => $bonusLembur,
             'bonusVisitSolo' => $bonusVisitSolo,

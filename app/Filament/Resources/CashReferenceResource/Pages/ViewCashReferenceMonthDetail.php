@@ -197,13 +197,25 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
                 // No additional filters needed here since we're already filtering by month/year
             ])
             ->actions([
-                // No actions needed here
+                // Edit action (link to edit screen)
                 \Filament\Tables\Actions\EditAction::make()
                     ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
-                \Filament\Tables\Actions\DeleteAction::make()
+
+                // Use a custom per-row delete action implemented as a callback.
+                // This avoids Filament's default DeleteAction which can trigger
+                // redirects or route handling that in this page context led to
+                // an invalid/missing `month` query parameter ("month must be
+                // between 0 and 99, -1 given"). The callback deletes the
+                // record directly and lets the table refresh normally.
+                \Filament\Tables\Actions\Action::make('delete')
+                    ->label('Delete')
                     ->requiresConfirmation()
                     ->color('danger')
-                    ->icon('heroicon-o-trash'),
+                    ->icon('heroicon-o-trash')
+                    ->action(function (CashReport $record): void {
+                        // Delete the model directly
+                        $record->delete();
+                    }),
 
             ])
             ->striped()

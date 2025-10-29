@@ -10,6 +10,7 @@ use App\Http\Controllers\ExportPayrollController;
 use App\Http\Controllers\PayrollWhatsAppController;
 use App\Http\Controllers\ExportAttendanceController;
 use App\Http\Controllers\DaftarAktivaExportController;
+use App\Http\Controllers\CashReferenceMonthController;
 use App\Filament\Resources\MouResource\Pages\CostListMou;
 
 /*
@@ -81,4 +82,30 @@ Route::post('/payroll-detail/{detail}/send-whatsapp', [PayrollWhatsAppController
 
 Route::post('/payroll-detail/{detail}/send-whatsapp-pdf', [PayrollWhatsAppController::class, 'sendPayslipWithPdf'])
     ->name('payroll.send-whatsapp-pdf')
+    ->middleware('auth');
+
+// Route untuk panel App
+Route::post('/app/payroll-detail/{detail}/send-wablas', [PayrollWhatsAppController::class, 'sendPayslipWithPdf'])
+    ->name('app.payroll.send-wablas')
+    ->middleware('auth');
+
+// Cash Reference Month Detail - Custom View
+Route::get('/cash-reference/{id}/month-detail', [CashReferenceMonthController::class, 'show'])
+    ->name('cash-reference.month-detail')
+    ->middleware('auth');
+
+Route::post('/cash-reference/{id}/transaction/store', [CashReferenceMonthController::class, 'store'])
+    ->name('cash-reference.transaction.store')
+    ->middleware('auth');
+
+Route::get('/cash-reference/transaction/{transactionId}/edit', [CashReferenceMonthController::class, 'edit'])
+    ->name('cash-reference.transaction.edit')
+    ->middleware('auth');
+
+Route::put('/cash-reference/transaction/{transactionId}/update', [CashReferenceMonthController::class, 'update'])
+    ->name('cash-reference.transaction.update')
+    ->middleware('auth');
+
+Route::delete('/cash-reference/transaction/{transactionId}/delete', [CashReferenceMonthController::class, 'delete'])
+    ->name('cash-reference.transaction.delete')
     ->middleware('auth');

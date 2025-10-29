@@ -77,11 +77,32 @@ class WablasService
 
         // Cek apakah file ada
         if (!file_exists($filePath)) {
+            Log::error('Wablas: File tidak ditemukan', ['path' => $filePath]);
             return [
                 'success' => false,
                 'message' => 'File tidak ditemukan: ' . $filePath
             ];
         }
+
+        // Validasi ukuran file (max 10MB untuk WhatsApp document)
+        $fileSize = filesize($filePath);
+        if ($fileSize > 10 * 1024 * 1024) {
+            Log::error('Wablas: File terlalu besar', [
+                'size' => $fileSize,
+                'max' => '10MB'
+            ]);
+            return [
+                'success' => false,
+                'message' => 'File terlalu besar (max 10MB): ' . round($fileSize / 1024 / 1024, 2) . 'MB'
+            ];
+        }
+
+        Log::info('Wablas: Mengirim dokumen', [
+            'phone' => $phone,
+            'file' => $filename,
+            'size' => $fileSize . ' bytes',
+            'path' => $filePath
+        ]);
 
         // Prepare multipart form data
         $postFields = [
@@ -110,20 +131,32 @@ class WablasService
         curl_close($curl);
 
         if ($error) {
-            Log::error('Wablas Document API Error: ' . $error);
+            Log::error('Wablas Document CURL Error: ' . $error);
             return [
                 'success' => false,
-                'message' => 'Error: ' . $error
+                'message' => 'Error koneksi: ' . $error
             ];
         }
 
         $response = json_decode($result, true);
 
-        Log::info('Wablas Document API Response', [
+        Log::error('Wablas Document API Response', [
             'http_code' => $httpCode,
             'response' => $response,
             'raw' => $result,
+            'phone' => $phone,
+            'file_size' => $fileSize
         ]);
+
+        // Jika gagal, berikan pesan yang lebih informatif
+        if ($httpCode !== 200) {
+            $errorMsg = $response['message'] ?? 'Unknown error';
+            Log::error('Wablas Document API Failed', [
+                'http_code' => $httpCode,
+                'message' => $errorMsg,
+                'response' => $response
+            ]);
+        }
 
         return [
             'success' => $httpCode === 200,
@@ -161,11 +194,63 @@ class WablasService
             return $messageResult;
         }
 
-        // Kirim PDF
+        // Coba kirim PDF via document
         $filename = "Slip_Gaji_{$staffName}_{$period}.pdf";
         $caption = "📄 Slip Gaji {$staffName} - {$period}";
 
-        return $this->sendDocument($phone, $pdfPath, $filename, $caption);
+        $documentResult = $this->sendDocument($phone, $pdfPath, $filename, $caption);
+
+        // Jika gagal kirim document, gunakan fallback: simpan ke public dan kirim link
+        if (!$documentResult['success']) {
+            Log::warning('Document send failed, using fallback method (link)', [
+                'phone' => $phone,
+                'error' => $documentResult['message']
+            ]);
+
+            // Simpan PDF ke public storage
+            $publicPath = public_path('storage/payslips/');
+            if (!file_exists($publicPath)) {
+                mkdir($publicPath, 0755, true);
+            }
+
+            $filename = 'slip_gaji_' . str_replace(' ', '_', $staffName) . '_' . time() . '.pdf';
+            $publicFile = $publicPath . $filename;
+
+            if (!copy($pdfPath, $publicFile)) {
+                Log::error('Failed to copy PDF to public storage');
+                return $documentResult; // Return original error
+            }
+
+            $downloadUrl = url('storage/payslips/' . $filename);
+
+            // Kirim link download via WhatsApp
+            $fallbackMessage = "\n\n⚠️ *UPDATE*\n\n";
+            $fallbackMessage .= "PDF tidak dapat dikirim langsung.\n";
+            $fallbackMessage .= "Silakan download slip gaji Anda di:\n\n";
+            $fallbackMessage .= "🔗 {$downloadUrl}\n\n";
+            $fallbackMessage .= "⏰ Link berlaku 7 hari.\n";
+            $fallbackMessage .= "_Simpan atau screenshot link ini._";
+
+            $linkResult = $this->sendMessage($phone, $fallbackMessage);
+
+            if ($linkResult['success']) {
+                Log::info('Fallback: PDF link sent successfully', [
+                    'phone' => $phone,
+                    'url' => $downloadUrl
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Slip gaji dikirim via link download (fallback mode)',
+                    'fallback' => true,
+                    'download_url' => $downloadUrl
+                ];
+            } else {
+                return $linkResult;
+            }
+        }
+
+        return $documentResult;
     }
 
     private function buildAuthHeader(): string

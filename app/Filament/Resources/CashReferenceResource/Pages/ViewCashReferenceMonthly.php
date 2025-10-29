@@ -132,11 +132,14 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                 Action::make('viewDetails')
                     ->label('View Transactions')
                     ->url(function ($record) {
-                        // Use query parameters to filter transactions by year and month
+                        // Use custom blade view instead of Filament page to avoid month parameter issues
                         $year = $record->year;
                         $month = $record->month;
-                        $baseUrl = CashReferenceResource::getUrl('monthDetail', ['record' => $this->record]);
-                        return "{$baseUrl}?year={$year}&month={$month}";
+                        return route('cash-reference.month-detail', [
+                            'id' => $this->record->id,
+                            'year' => $year,
+                            'month' => $month
+                        ]);
                     })
                     ->icon('heroicon-o-eye')
                     ->color('primary')

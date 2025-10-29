@@ -19,6 +19,10 @@ class PayrollDetailResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationGroup = 'HRD';
+
+    protected static ?string $navigationLabel = 'Histori Payroll';
+
     public static function form(Form $form): Form
     {
         return $form
@@ -33,9 +37,11 @@ class PayrollDetailResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('payroll.name')
                     ->label('Periode Payroll')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('staff.name')
                     ->label('Nama Staff')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('salary')
                     ->label('Gaji Pokok')
@@ -207,7 +213,7 @@ class PayrollDetailResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -15,4 +15,9 @@ class Payroll extends Model
         'name',
         'payroll_date',
     ];
+
+    public function details()
+    {
+        return $this->hasMany(PayrollDetail::class);
+    }
 }

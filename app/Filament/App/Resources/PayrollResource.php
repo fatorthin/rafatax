@@ -19,6 +19,10 @@ class PayrollResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationGroup = 'HRD';
+
+    protected static ?string $navigationLabel = 'Daftar Payroll';
+
     public static function form(Form $form): Form
     {
         return $form
@@ -40,15 +44,15 @@ class PayrollResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                // Tables\Actions\Action::make('detail')
-                //     ->label('Detail')
-                //     ->icon('heroicon-o-eye')
-                //     ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
-                //     ->color('primary'),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\Action::make('detail')
+                    ->label('Detail')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
+                    ->color('primary'),
+                // Tables\Actions\EditAction::make(),
+                // Tables\Actions\DeleteAction::make(),
+                // Tables\Actions\ForceDeleteAction::make(),
+                // Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -63,6 +67,7 @@ class PayrollResource extends Resource
     {
         return [
             'index' => Pages\ManagePayrolls::route('/'),
+            'detail' => Pages\PayrollDetail::route('/{record}/detail'),
         ];
     }
 

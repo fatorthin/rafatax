@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PayrollDetail;
 use App\Services\WablasService;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -75,8 +75,14 @@ class PayrollWhatsAppController extends Controller
     public function sendPayslipWithPdf(PayrollDetail $detail)
     {
         try {
+            Log::info('Starting sendPayslipWithPdf', [
+                'detail_id' => $detail->id,
+                'staff' => $detail->staff->name
+            ]);
+
             // Validasi nomor telepon
             if (!$detail->staff->phone) {
+                Log::warning('No phone number', ['staff' => $detail->staff->name]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Nomor telepon staff tidak tersedia'
@@ -85,6 +91,7 @@ class PayrollWhatsAppController extends Controller
 
             // Format nomor telepon
             $phone = $this->formatPhoneNumber($detail->staff->phone);
+            Log::info('Phone formatted', ['original' => $detail->staff->phone, 'formatted' => $phone]);
 
             // Hitung total gaji
             $totalSalary = $this->calculateTotalSalary($detail);
@@ -93,16 +100,24 @@ class PayrollWhatsAppController extends Controller
             $period = \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F Y');
 
             // Generate PDF
+            Log::info('Generating PDF...');
             $pdfPath = $this->generatePayslipPdf($detail);
 
             if (!$pdfPath) {
+                Log::error('Failed to generate PDF');
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal membuat PDF slip gaji'
                 ], 500);
             }
 
+            Log::info('PDF generated successfully', [
+                'path' => $pdfPath,
+                'size' => filesize($pdfPath) . ' bytes'
+            ]);
+
             // Kirim PDF via WhatsApp
+            Log::info('Sending to Wablas API...');
             $result = $this->wablasService->sendPayslipWithPdf(
                 $phone,
                 $detail->staff->name,
@@ -114,25 +129,51 @@ class PayrollWhatsAppController extends Controller
             // Hapus file PDF temporary
             if (file_exists($pdfPath)) {
                 unlink($pdfPath);
+                Log::info('Temporary PDF deleted');
             }
 
             if ($result['success']) {
+                Log::info('PDF sent successfully via WhatsApp');
+
+                $message = 'Slip gaji PDF berhasil dikirim ke WhatsApp';
+                if (isset($result['fallback']) && $result['fallback']) {
+                    $message = 'Slip gaji dikirim via link download ke WhatsApp';
+                }
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'Slip gaji PDF berhasil dikirim ke WhatsApp'
+                    'message' => $message,
+                    'fallback' => $result['fallback'] ?? false
                 ]);
             } else {
+                Log::error('Failed to send via Wablas', [
+                    'http_code' => $result['http_code'] ?? null,
+                    'message' => $result['message'] ?? 'Unknown error',
+                    'data' => $result['data'] ?? null
+                ]);
+
+                // Pesan error yang lebih spesifik
+                $errorMessage = 'Gagal mengirim slip gaji PDF';
+                if (isset($result['http_code']) && $result['http_code'] == 500) {
+                    $errorMessage .= ': Server Wablas bermasalah. Mungkin device offline atau quota habis.';
+                } elseif (isset($result['message'])) {
+                    $errorMessage .= ': ' . $result['message'];
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal mengirim slip gaji PDF: ' . $result['message']
+                    'message' => $errorMessage
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Error sending payslip PDF via WhatsApp: ' . $e->getMessage());
+            Log::error('Exception in sendPayslipWithPdf', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengirim slip gaji PDF'
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -152,7 +193,7 @@ class PayrollWhatsAppController extends Controller
             $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus - $totalPot;
 
             // Generate PDF
-            $pdf = Pdf::loadView('pdf.payslip', [
+            $pdf = PDF::loadView('pdf.payslip', [
                 'detail' => $detail,
                 'bonusLembur' => $bonusLembur,
                 'bonusVisitSolo' => $bonusVisitSolo,

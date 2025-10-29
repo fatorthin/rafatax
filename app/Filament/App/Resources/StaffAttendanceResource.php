@@ -30,10 +30,6 @@ class StaffAttendanceResource extends Resource
 
     protected static ?string $navigationLabel = 'Presensi Karyawan';
 
-    protected static ?string $modelLabel = 'Presensi';
-
-    protected static ?string $pluralModelLabel = 'Presensi Karyawan';
-
     public static function form(Form $form): Form
     {
         return $form
