@@ -19,7 +19,7 @@ class PayrollResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Daftar Payroll';
+    protected static ?string $navigationLabel = 'Daftar Payroll Gaji';
 
     protected static ?string $navigationGroup = 'Bagian Keuangan';
 
@@ -35,7 +35,7 @@ class PayrollResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('payroll_month')
                             ->label('Bulan')
-                            ->options(collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Carbon\Carbon::create(null, $m, 1)->translatedFormat('F')])->toArray())
+                            ->options(collect(range(1, 12))->mapWithKeys(fn($m) => [$m => \Carbon\Carbon::create(null, $m, 1)->translatedFormat('F')])->toArray())
                             ->required()
                             ->dehydrated(false)
                             ->reactive()
@@ -53,7 +53,7 @@ class PayrollResource extends Resource
                             }),
                         Forms\Components\Select::make('payroll_year')
                             ->label('Tahun')
-                            ->options(collect(range((int) now()->year, (int) now()->year - 5))->mapWithKeys(fn ($y) => [$y => (string) $y])->toArray())
+                            ->options(collect(range((int) now()->year, (int) now()->year - 5))->mapWithKeys(fn($y) => [$y => (string) $y])->toArray())
                             ->required()
                             ->dehydrated(false)
                             ->reactive()
@@ -94,6 +94,25 @@ class PayrollResource extends Resource
                 Tables\Columns\TextColumn::make('payroll_date')
                     ->label('Periode')
                     ->date('F Y'),
+                Tables\Columns\TextColumn::make('total_payroll')
+                    ->label('Total Payroll')
+                    ->getStateUsing(function ($record) {
+                        $details = \App\Models\PayrollDetail::where('payroll_id', $record->id)->get();
+                        $total = $details->sum(function ($d) {
+                            $bonusLembur = $d->overtime_count * 10000;
+                            $bonusVisitSolo = $d->visit_solo_count * 10000;
+                            $bonusVisitLuar = $d->visit_luar_solo_count * 15000;
+                            $cutSakit = $d->sick_leave_count * 0.5 * $d->salary / 25;
+                            $cutHalfday = $d->halfday_count * 0.5 * $d->salary / 25;
+                            $cutIjin = $d->leave_count * $d->salary / 25;
+
+                            return $d->salary + $d->bonus_position + $d->bonus_competency + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain - $d->cut_bpjs_kesehatan - $d->cut_bpjs_ketenagakerjaan - $d->cut_lain - $d->cut_hutang - $cutSakit - $cutHalfday - $cutIjin;
+                        });
+                        return $total;
+                    })
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->alignEnd()
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -102,7 +121,7 @@ class PayrollResource extends Resource
                 Tables\Actions\Action::make('detail')
                     ->label('Detail')
                     ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => static::getUrl('detail', ['record' => $record]))
+                    ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
                     ->color('primary'),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

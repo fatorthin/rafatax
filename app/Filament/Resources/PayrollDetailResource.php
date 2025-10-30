@@ -23,7 +23,7 @@ class PayrollDetailResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Histori Payroll';
+    protected static ?string $navigationLabel = 'Histori Payroll Gaji';
 
     protected static ?string $navigationGroup = 'Bagian Keuangan';
 
