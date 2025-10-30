@@ -120,7 +120,17 @@ class PayrollDetailResource extends Resource
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('leave_count')
-                    ->label('Leave Count')
+                    ->label('Leave/Alfa Count')
+                    ->numeric()
+                    ->suffix('Kali')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
+                    ->default(0)
+                    ->required(),
+                Forms\Components\TextInput::make('cuti_count')
+                    ->label('Cuti Count')
                     ->numeric()
                     ->suffix('Kali')
                     ->live(onBlur: true)

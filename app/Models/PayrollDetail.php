@@ -23,6 +23,7 @@ class PayrollDetail extends Model
         'sick_leave_count',
         'halfday_count',
         'leave_count',
+        'cuti_count',
         'cut_bpjs_kesehatan',
         'cut_bpjs_ketenagakerjaan',
         'cut_lain',

@@ -25,6 +25,7 @@ return new class extends Migration
             $table->double('sick_leave_count')->default(0);
             $table->double('halfday_count')->default(0);
             $table->double('leave_count')->default(0);
+            $table->double('cuti_count')->default(0);
             $table->double('cut_bpjs_kesehatan')->default(0);
             $table->double('cut_bpjs_ketenagakerjaan')->default(0);
             $table->double('cut_lain')->default(0);

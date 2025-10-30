@@ -56,8 +56,11 @@ class DetailPayroll extends Page implements HasTable
                             ->label('Total Halfday')
                             ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('halfday_count')),
                         TextEntry::make('total_leave')
-                            ->label('Total Ijin/Alfa/Cuti')
+                            ->label('Total Ijin/Alfa')
                             ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('leave_count')),
+                        TextEntry::make('total_cuti')
+                            ->label('Total Cuti')
+                            ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('cuti_count')),
                         TextEntry::make('grand_total_salary')
                             ->label('Total Gaji Dibayar')
                             ->state(function () {
@@ -120,7 +123,8 @@ class DetailPayroll extends Page implements HasTable
                             $visitLuarSoloCount = (int) (clone $attendanceQuery)->sum('visit_luar_solo_count');
                             $sickLeaveCount = (int) (clone $attendanceQuery)->where('status', 'sakit')->count();
                             $halfdayCount = (int) (clone $attendanceQuery)->where('status', 'halfday')->count();
-                            $leaveCount = (int) (clone $attendanceQuery)->whereIn('status', ['izin', 'alfa', 'cuti'])->count();
+                            $leaveCount = (int) (clone $attendanceQuery)->whereIn('status', ['izin', 'alfa'])->count();
+                            $cutiCount = (int) (clone $attendanceQuery)->whereIn('status', ['cuti'])->count();
 
                             PayrollDetail::create([
                                 'payroll_id' => $payroll->id,
@@ -134,6 +138,7 @@ class DetailPayroll extends Page implements HasTable
                                 'sick_leave_count' => $sickLeaveCount,
                                 'halfday_count' => $halfdayCount,
                                 'leave_count' => $leaveCount,
+                                'cuti_count' => $cutiCount,
                                 'cut_bpjs_kesehatan' => 0,
                                 'cut_bpjs_ketenagakerjaan' => 0,
                                 'cut_lain' => 0,
@@ -246,7 +251,12 @@ class DetailPayroll extends Page implements HasTable
                     ->sortable(),
 
                 TextColumn::make('leave_count')
-                    ->label('Ijin')
+                    ->label('Ijin/Alfa')
+                    ->alignCenter()
+                    ->sortable(),
+
+                TextColumn::make('cuti_count')
+                    ->label('Cuti')
                     ->alignCenter()
                     ->sortable(),
 
