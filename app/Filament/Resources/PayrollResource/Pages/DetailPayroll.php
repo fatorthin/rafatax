@@ -22,7 +22,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Illuminate\Support\Facades\Http;
 
 class DetailPayroll extends Page implements HasTable
 {
