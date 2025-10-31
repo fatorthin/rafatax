@@ -76,6 +76,10 @@ Route::get('/exports/payroll/{payroll}/excel', [ExportPayrollController::class, 
 Route::get('/exports/payroll-detail/{detail}/payslip', [ExportPayrollController::class, 'payslipPdf'])
     ->name('exports.payroll.payslip');
 
+Route::get('/exports/payroll-bonus-detail/{detail}/slip', [\App\Http\Controllers\PayrollBonusExportController::class, 'downloadSlip'])
+    ->name('exports.payroll-bonus.slip')
+    ->middleware('auth');
+
 Route::post('/payroll-detail/{detail}/send-whatsapp', [PayrollWhatsAppController::class, 'sendPayslip'])
     ->name('payroll.send-whatsapp')
     ->middleware('auth');

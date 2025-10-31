@@ -139,6 +139,13 @@ class DetailPayrollBonus extends Page implements HasTable
             ])
             ->paginated(false)
             ->striped()
-            ->actions([]);
+            ->actions([
+                \Filament\Tables\Actions\Action::make('download_slip')
+                    ->label('Download Slip')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('primary')
+                    ->url(fn($record) => route('exports.payroll-bonus.slip', ['detail' => $record->id]))
+                    ->openUrlInNewTab(false),
+            ]);
     }
 }
