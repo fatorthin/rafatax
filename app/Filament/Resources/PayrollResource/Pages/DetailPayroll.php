@@ -22,6 +22,10 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Bus\Batch;
+use App\Jobs\SendPayslipPdf;
+use Illuminate\Support\Facades\Log;
 
 class DetailPayroll extends Page implements HasTable
 {
@@ -163,6 +167,7 @@ class DetailPayroll extends Page implements HasTable
                 ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp?')
                 ->modalSubmitActionLabel('Kirim Semua PDF')
                 ->action(function () {
+                    // Ambil semua detail yang memiliki nomor WA
                     $details = PayrollDetail::with('staff')
                         ->where('payroll_id', $this->record->id)
                         ->whereHas('staff', function ($query) {
@@ -170,35 +175,47 @@ class DetailPayroll extends Page implements HasTable
                         })
                         ->get();
 
-                    $successCount = 0;
-                    $failCount = 0;
-
-                    foreach ($details as $detail) {
-                        try {
-                            // Panggil controller langsung
-                            $controller = new \App\Http\Controllers\PayrollWhatsAppController(
-                                new \App\Services\WablasService()
-                            );
-
-                            $response = $controller->sendPayslipWithPdf($detail);
-                            $data = $response->getData(true);
-
-                            if ($data['success']) {
-                                $successCount++;
-                            } else {
-                                $failCount++;
-                            }
-
-                            // Delay 2 detik antar pengiriman untuk menghindari rate limit
-                            sleep(2);
-                        } catch (\Exception $e) {
-                            $failCount++;
-                        }
+                    if ($details->isEmpty()) {
+                        Notification::make()
+                            ->title('Tidak ada data untuk dikirim')
+                            ->warning()
+                            ->send();
+                        return;
                     }
 
+                    // Siapkan jobs per staff agar proses berjalan di background (menghindari timeout)
+                    $jobs = [];
+                    foreach ($details as $detail) {
+                        $jobs[] = new SendPayslipPdf($detail->id);
+                    }
+
+                    // Beri peringatan jika queue masih sync (berpotensi timeout)
+                    if (config('queue.default') === 'sync') {
+                        Notification::make()
+                            ->title('Peringatan: Queue belum dikonfigurasi')
+                            ->body('Saat ini koneksi queue adalah "sync" sehingga proses kirim massal tetap berjalan di request dan berpotensi timeout. Disarankan set QUEUE_CONNECTION=database dan jalankan worker.')
+                            ->warning()
+                            ->send();
+                    }
+
+                    // Dispatch sebagai batch agar lebih mudah dimonitor di log
+                    Bus::batch($jobs)
+                        ->name('Kirim semua slip gaji PDF: ' . $this->record->name)
+                        ->onQueue('whatsapp')
+                        ->allowFailures()
+                        ->then(function (Batch $batch) {
+                            Log::info('Batch kirim slip gaji PDF selesai', [
+                                'batch_id' => $batch->id,
+                                'total_jobs' => $batch->totalJobs,
+                                'failed_jobs' => $batch->failedJobs,
+                            ]);
+                        })
+                        ->dispatch();
+
+                    // Beri notifikasi segera, proses jalan di background
                     Notification::make()
-                        ->title('Selesai!')
-                        ->body("Berhasil mengirim {$successCount} slip gaji PDF. Gagal: {$failCount}")
+                        ->title('Pengiriman dimulai')
+                        ->body('Pengiriman slip gaji PDF ke WhatsApp sedang diproses di background untuk ' . $details->count() . ' staff. Anda dapat menutup halaman ini.')
                         ->success()
                         ->send();
                 }),

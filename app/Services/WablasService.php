@@ -71,99 +71,91 @@ class WablasService
         ];
     }
 
-    public function sendDocument(string $phone, string $filePath, string $filename, string $caption = ''): array
+    public function sendDocument($phone, $filePath, $caption = '')
     {
-        $curl = curl_init();
+        try {
+            // Normalize path untuk Windows
+            $normalizedPath = realpath($filePath);
 
-        // Cek apakah file ada
-        if (!file_exists($filePath)) {
-            Log::error('Wablas: File tidak ditemukan', ['path' => $filePath]);
-            return [
-                'success' => false,
-                'message' => 'File tidak ditemukan: ' . $filePath
-            ];
-        }
+            if (!file_exists($normalizedPath)) {
+                Log::error('WAblas: File tidak ditemukan', [
+                    'original_path' => $filePath,
+                    'normalized_path' => $normalizedPath
+                ]);
+                return [
+                    'status' => false,
+                    'message' => 'File tidak ditemukan: ' . $filePath
+                ];
+            }
 
-        // Validasi ukuran file (max 10MB untuk WhatsApp document)
-        $fileSize = filesize($filePath);
-        if ($fileSize > 10 * 1024 * 1024) {
-            Log::error('Wablas: File terlalu besar', [
-                'size' => $fileSize,
-                'max' => '10MB'
+            Log::info('WAblas: Mengirim dokumen', [
+                'phone' => $phone,
+                'file_path' => $normalizedPath,
+                'file_size' => filesize($normalizedPath),
+                'file_exists' => file_exists($normalizedPath),
+                'mime_type' => mime_content_type($normalizedPath)
             ]);
-            return [
-                'success' => false,
-                'message' => 'File terlalu besar (max 10MB): ' . round($fileSize / 1024 / 1024, 2) . 'MB'
+
+            // Coba baca file sebagai binary
+            $fileContent = file_get_contents($normalizedPath);
+            $fileName = basename($normalizedPath);
+
+            // Method 1: Menggunakan CURLFile dengan path absolut
+            $curlFile = new \CURLFile($normalizedPath, 'application/pdf', $fileName);
+
+            $data = [
+                'phone' => $phone,
+                'document' => $curlFile,
+                'caption' => $caption,
+                'secret' => $this->secretKey  // Tambahkan secret key
             ];
-        }
 
-        Log::info('Wablas: Mengirim dokumen', [
-            'phone' => $phone,
-            'file' => $filename,
-            'size' => $fileSize . ' bytes',
-            'path' => $filePath
-        ]);
+            $curl = curl_init();
 
-        // Prepare multipart form data
-        $postFields = [
-            'phone' => $phone,
-            'document' => new \CURLFile($filePath, 'application/pdf', $filename),
-            'caption' => $caption
-        ];
+            curl_setopt_array($curl, [
+                CURLOPT_URL => $this->baseUrl . "/send-document",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => $data,
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: {$this->token}",
+                    "Secret: {$this->secretKey}"
+                ],
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_VERIFYPEER => 0,
+                CURLOPT_VERBOSE => true
+            ]);
 
-        curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            $this->buildAuthHeader(),
-        ]);
+            $result = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            $info = curl_getinfo($curl);
 
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $postFields);
-        curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/send-document");
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 60);
+            curl_close($curl);
 
-        $result = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $error = curl_error($curl);
-
-        curl_close($curl);
-
-        if ($error) {
-            Log::error('Wablas Document CURL Error: ' . $error);
-            return [
-                'success' => false,
-                'message' => 'Error koneksi: ' . $error
-            ];
-        }
-
-        $response = json_decode($result, true);
-
-        Log::error('Wablas Document API Response', [
-            'http_code' => $httpCode,
-            'response' => $response,
-            'raw' => $result,
-            'phone' => $phone,
-            'file_size' => $fileSize
-        ]);
-
-        // Jika gagal, berikan pesan yang lebih informatif
-        if ($httpCode !== 200) {
-            $errorMsg = $response['message'] ?? 'Unknown error';
-            Log::error('Wablas Document API Failed', [
+            Log::info('WAblas: Response send document', [
                 'http_code' => $httpCode,
-                'message' => $errorMsg,
-                'response' => $response
+                'response' => $result,
+                'curl_error' => $error,
+                'curl_info' => $info
             ]);
-        }
 
-        return [
-            'success' => $httpCode === 200,
-            'message' => $response['message'] ?? 'Unknown response',
-            'data' => $response,
-            'http_code' => $httpCode,
-        ];
+            return json_decode($result, true);
+        } catch (\Exception $e) {
+            Log::error('WAblas: Exception saat send document', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'Exception: ' . $e->getMessage()
+            ];
+        }
     }
 
     public function sendPayslipMessage(string $phone, string $staffName, string $period, string $totalSalary): array
@@ -195,16 +187,17 @@ class WablasService
         }
 
         // Coba kirim PDF via document
-        $filename = "Slip_Gaji_{$staffName}_{$period}.pdf";
         $caption = "📄 Slip Gaji {$staffName} - {$period}";
 
-        $documentResult = $this->sendDocument($phone, $pdfPath, $filename, $caption);
+        $documentResult = $this->sendDocument($phone, $pdfPath, $caption);
 
         // Jika gagal kirim document, gunakan fallback: simpan ke public dan kirim link
-        if (!$documentResult['success']) {
+        $documentSuccess = isset($documentResult['status']) && $documentResult['status'] === true;
+
+        if (!$documentSuccess) {
             Log::warning('Document send failed, using fallback method (link)', [
                 'phone' => $phone,
-                'error' => $documentResult['message']
+                'error' => $documentResult['message'] ?? 'Unknown error'
             ]);
 
             // Simpan PDF ke public storage

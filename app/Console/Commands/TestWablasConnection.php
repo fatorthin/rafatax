@@ -56,21 +56,15 @@ class TestWablasConnection extends Command
             $result = $wablas->sendDocument(
                 $phone,
                 $testPdfPath,
-                'test_document.pdf',
                 'Test document from Rafatax'
             );
 
-            if ($result['success']) {
+            if (isset($result['status']) && $result['status']) {
                 $this->info('✓ Document sent successfully!');
-                $this->line('Response: ' . json_encode($result['data'], JSON_PRETTY_PRINT));
+                $this->line('Response: ' . json_encode($result, JSON_PRETTY_PRINT));
             } else {
                 $this->error('✗ Failed to send document');
-                $this->line('Error: ' . $result['message']);
-                $this->line('HTTP Code: ' . ($result['http_code'] ?? 'N/A'));
-
-                if (isset($result['data'])) {
-                    $this->line('API Response: ' . json_encode($result['data'], JSON_PRETTY_PRINT));
-                }
+                $this->line('Response: ' . json_encode($result, JSON_PRETTY_PRINT));
             }
 
             // Cleanup
@@ -87,13 +81,19 @@ class TestWablasConnection extends Command
         try {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML('<h1>Test Document</h1><p>This is a test PDF for Wablas integration.</p>');
 
-            $tempPath = storage_path('app/temp/test_wablas_' . time() . '.pdf');
+            // Generate PDF di folder public untuk test
+            $filename = 'test_wablas_' . time() . '.pdf';
+            $publicPath = public_path('temp');
 
-            if (!file_exists(storage_path('app/temp'))) {
-                mkdir(storage_path('app/temp'), 0755, true);
+            // Pastikan direktori public/temp ada
+            if (!file_exists($publicPath)) {
+                mkdir($publicPath, 0755, true);
             }
 
+            $tempPath = $publicPath . '/' . $filename;
             $pdf->save($tempPath);
+
+            $this->line('PDF saved to public/temp/: ' . $filename);
 
             return $tempPath;
         } catch (\Exception $e) {

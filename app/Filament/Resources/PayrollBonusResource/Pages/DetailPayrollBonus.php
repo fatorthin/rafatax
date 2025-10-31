@@ -140,6 +140,26 @@ class DetailPayrollBonus extends Page implements HasTable
             ->paginated(false)
             ->striped()
             ->actions([
+                \Filament\Tables\Actions\Action::make('view_detail')
+                    ->label('Lihat Detail Bonus')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->modalHeading(fn($record) => 'Detail Bonus - ' . $record->staff->name)
+                    ->modalContent(function ($record) {
+                        $caseProjectDetailIds = $record->case_project_detail_ids ?? [];
+                        $caseProjectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client'])
+                            ->whereIn('id', $caseProjectDetailIds)
+                            ->get();
+
+                        return view('filament.modals.payroll-bonus-detail', [
+                            'record' => $record,
+                            'caseProjectDetails' => $caseProjectDetails,
+                        ]);
+                    })
+                    ->modalWidth('5xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
+
                 \Filament\Tables\Actions\Action::make('download_slip')
                     ->label('Download Slip')
                     ->icon('heroicon-o-document-arrow-down')
