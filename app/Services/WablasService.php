@@ -9,16 +9,18 @@ class WablasService
     private $token;
     private $secretKey;
     private $baseUrl;
-    private $authHeaderStyle;
 
     public function __construct()
     {
         $this->token = config('services.wablas.token');
         $this->secretKey = config('services.wablas.secret_key');
         $this->baseUrl = config('services.wablas.base_url', 'https://texas.wablas.com/api');
-        $this->authHeaderStyle = config('services.wablas.auth_header', 'concat'); // concat|token|bearer
     }
 
+    /**
+     * Kirim pesan teks sederhana
+     * Sesuai dokumentasi: https://texas.wablas.com/documentation/api#single-send-text
+     */
     public function sendMessage(string $phone, string $message): array
     {
         $curl = curl_init();
@@ -28,8 +30,9 @@ class WablasService
             'message' => $message,
         ];
 
+        // Format Authorization sesuai dokumentasi: token.secret_key
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            $this->buildAuthHeader(),
+            "Authorization: {$this->token}.{$this->secretKey}",
         ]);
 
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
@@ -71,6 +74,11 @@ class WablasService
         ];
     }
 
+    /**
+     * Kirim document dari file lokal
+     * Menggunakan endpoint /send-document-from-local sesuai dokumentasi WAblas
+     * https://texas.wablas.com/documentation/api#send-document-local
+     */
     public function sendDocument($phone, $filePath, $caption = '')
     {
         try {
@@ -88,7 +96,7 @@ class WablasService
                 ];
             }
 
-            Log::info('WAblas: Mengirim dokumen', [
+            Log::info('WAblas: Mengirim dokumen dari lokal', [
                 'phone' => $phone,
                 'file_path' => $normalizedPath,
                 'file_size' => filesize($normalizedPath),
@@ -96,38 +104,34 @@ class WablasService
                 'mime_type' => mime_content_type($normalizedPath)
             ]);
 
-            // Coba baca file sebagai binary
+            // Baca file sebagai base64 (sesuai dokumentasi untuk /send-document-from-local)
             $fileContent = file_get_contents($normalizedPath);
             $fileName = basename($normalizedPath);
 
-            // Method 1: Menggunakan CURLFile dengan path absolut
-            $curlFile = new \CURLFile($normalizedPath, 'application/pdf', $fileName);
-
+            // Method dari dokumentasi: encode file sebagai base64
             $data = [
                 'phone' => $phone,
-                'document' => $curlFile,
-                'caption' => $caption,
-                'secret' => $this->secretKey  // Tambahkan secret key
+                'file' => base64_encode($fileContent),
+                'data' => json_encode(['name' => $fileName])
             ];
 
             $curl = curl_init();
 
+            // Format Authorization sesuai dokumentasi: token.secret_key
             curl_setopt_array($curl, [
-                CURLOPT_URL => $this->baseUrl . "/send-document",
+                CURLOPT_URL => $this->baseUrl . "/send-document-from-local",
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
                 CURLOPT_TIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => $data,
+                CURLOPT_POSTFIELDS => http_build_query($data), // x-www-form-urlencoded
                 CURLOPT_HTTPHEADER => [
-                    "Authorization: {$this->token}",
-                    "Secret: {$this->secretKey}"
+                    "Authorization: {$this->token}.{$this->secretKey}"
                 ],
                 CURLOPT_SSL_VERIFYHOST => 0,
-                CURLOPT_SSL_VERIFYPEER => 0,
-                CURLOPT_VERBOSE => true
+                CURLOPT_SSL_VERIFYPEER => 0
             ]);
 
             $result = curl_exec($curl);
@@ -137,14 +141,26 @@ class WablasService
 
             curl_close($curl);
 
-            Log::info('WAblas: Response send document', [
+            Log::info('WAblas: Response send document from local', [
                 'http_code' => $httpCode,
                 'response' => $result,
                 'curl_error' => $error,
-                'curl_info' => $info
+                'content_type' => $info['content_type'] ?? null,
             ]);
 
-            return json_decode($result, true);
+            $response = json_decode($result, true);
+
+            // Cek jika masih error 403, kembalikan dengan flag untuk fallback
+            if ($httpCode === 403 || !($response['status'] ?? false)) {
+                return [
+                    'status' => false,
+                    'message' => $response['message'] ?? 'Failed to send document',
+                    'http_code' => $httpCode,
+                    'use_fallback' => true
+                ];
+            }
+
+            return $response;
         } catch (\Exception $e) {
             Log::error('WAblas: Exception saat send document', [
                 'message' => $e->getMessage(),
@@ -153,7 +169,8 @@ class WablasService
 
             return [
                 'status' => false,
-                'message' => 'Exception: ' . $e->getMessage()
+                'message' => 'Exception: ' . $e->getMessage(),
+                'use_fallback' => true
             ];
         }
     }
@@ -244,21 +261,5 @@ class WablasService
         }
 
         return $documentResult;
-    }
-
-    private function buildAuthHeader(): string
-    {
-        // Beberapa instance Wablas memakai format yang berbeda untuk Authorization
-        // concat: "Authorization: {token}.{secretKey}"
-        // token:  "Authorization: {token}"
-        // bearer: "Authorization: Bearer {token}"
-        $style = strtolower((string) $this->authHeaderStyle);
-        if ($style === 'bearer') {
-            return "Authorization: Bearer {$this->token}";
-        }
-        if ($style === 'token') {
-            return "Authorization: {$this->token}";
-        }
-        return "Authorization: {$this->token}.{$this->secretKey}";
     }
 }

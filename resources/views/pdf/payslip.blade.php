@@ -136,7 +136,7 @@
             <td class="right">{{ number_format($cutHalfday, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <td>Pot. Ijin/Cuti/Alfa ({{ $detail->leave_count }} hari)</td>
+            <td>Pot. Ijin/Alfa ({{ $detail->leave_count }} hari)</td>
             <td class="right">{{ number_format($cutIjin, 0, ',', '.') }}</td>
         </tr>
         <tr>
