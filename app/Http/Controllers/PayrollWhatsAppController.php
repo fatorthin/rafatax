@@ -204,7 +204,7 @@ class PayrollWhatsAppController extends Controller
                 'totalBonus' => $totalBonus,
                 'totalPot' => $totalPot,
                 'totalGaji' => $totalGaji,
-            ])->setPaper('a5', 'portrait');
+            ])->setPaper('a4', 'portrait');
 
             // Simpan ke temporary file
             $filename = 'slip_gaji_' . $detail->id . '_' . time() . '.pdf';

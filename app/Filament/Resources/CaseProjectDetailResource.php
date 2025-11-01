@@ -19,7 +19,7 @@ class CaseProjectDetailResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationGroup = 'Histori Data';
 
     protected static ?string $navigationLabel = 'Histori Tim Proyek Kasus';
 

@@ -17,7 +17,7 @@ use App\Filament\Resources\JournalBookReportResource\RelationManagers;
 class JournalBookReportResource extends Resource
 {
     protected static ?string $model = JournalBookReport::class;
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationGroup = 'Histori Data';
     protected static ?string $navigationLabel = 'Histori Buku Jurnal';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 

@@ -20,8 +20,8 @@ class CashReportResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Histori Kas';
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationLabel = 'Histori Data Kas';
+    protected static ?string $navigationGroup = 'Histori Data';
 
     public static function form(Form $form): Form
     {

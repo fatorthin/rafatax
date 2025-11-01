@@ -14,6 +14,11 @@ class PayrollBonus extends Model
         'description',
         'start_date',
         'end_date',
+        'case_project_ids',
+    ];
+
+    protected $casts = [
+        'case_project_ids' => 'array',
     ];
 
     public function details()

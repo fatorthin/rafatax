@@ -53,6 +53,10 @@ class DetailPayrollBonus extends Page implements HasTable
                         $this->record->end_date
                     ])->where('status', 'open')->pluck('id');
 
+                    // Simpan daftar case_project_id yang di-cut off ke PayrollBonus dalam bentuk array (akan dipersist JSON oleh cast)
+                    $this->record->case_project_ids = $caseProjects->values()->toArray();
+                    $this->record->save();
+
                     // Ambil semua detail dari case project tersebut
                     $caseProjectDetails = CaseProjectDetail::whereIn('case_project_id', $caseProjects)->get();
 
@@ -76,12 +80,13 @@ class DetailPayrollBonus extends Page implements HasTable
                     });
 
                     // Simpan data ke PayrollBonusDetail
+                    // Pastikan menyimpan dalam bentuk array (biarkan Eloquent cast menangani JSON)
                     foreach ($groupedData as $staffId => $data) {
                         PayrollBonusDetail::create([
                             'payroll_bonus_id' => $this->record->id,
                             'staff_id' => $staffId,
                             'amount' => $data['total_bonus'],
-                            'case_project_detail_ids' => json_encode($data['case_project_detail_ids']),
+                            'case_project_detail_ids' => $data['case_project_detail_ids'],
                         ]);
                     }
 
@@ -104,7 +109,39 @@ class DetailPayrollBonus extends Page implements HasTable
                         TextEntry::make('description')->label('Deskripsi'),
                         TextEntry::make('start_date')->label('Tanggal Mulai Cut Off')->date('d-m-Y'),
                         TextEntry::make('end_date')->label('Tanggal Selesai Cut Off')->date('d-m-Y'),
-                    ])->columns(3)
+                        TextEntry::make('total_amount')->label('Total Amount (Rp)')
+                            ->state(function () {
+                                $total = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)
+                                    ->sum('amount');
+                                return 'Rp ' . number_format($total, 0, ',', '.');
+                            }),
+                        TextEntry::make('case_projects')->label('Case Projects')
+                            ->state(function () {
+                                // Ambil daftar case_project_ids dengan aman (tangani kemungkinan string JSON)
+                                $ids = $this->record->case_project_ids ?? [];
+                                if (!is_array($ids)) {
+                                    $decoded = json_decode((string) $ids, true);
+                                    $ids = is_array($decoded) ? $decoded : [];
+                                }
+
+                                if (empty($ids)) {
+                                    return '-';
+                                }
+
+                                // Ambil description dan company_name dari CaseProject dengan relasi client
+                                $projects = CaseProject::with('client')
+                                    ->whereIn('id', $ids)
+                                    ->orderBy('project_date')
+                                    ->get()
+                                    ->map(function ($project) {
+                                        $companyName = $project->client->company_name ?? 'N/A';
+                                        return $project->description . ' (' . $companyName . ')';
+                                    })
+                                    ->toArray();
+
+                                return implode(', ', $projects);
+                            }),
+                    ])->columns(4)
             ]);
     }
 
@@ -146,7 +183,12 @@ class DetailPayrollBonus extends Page implements HasTable
                     ->color('info')
                     ->modalHeading(fn($record) => 'Detail Bonus - ' . $record->staff->name)
                     ->modalContent(function ($record) {
+                        // Pastikan nilai berupa array meskipun data lama tersimpan sebagai string JSON
                         $caseProjectDetailIds = $record->case_project_detail_ids ?? [];
+                        if (!is_array($caseProjectDetailIds)) {
+                            $decoded = json_decode((string) $caseProjectDetailIds, true);
+                            $caseProjectDetailIds = is_array($decoded) ? $decoded : [];
+                        }
                         $caseProjectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client'])
                             ->whereIn('id', $caseProjectDetailIds)
                             ->get();

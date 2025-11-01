@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('payroll_bonus_id')->constrained('payroll_bonuses')->onDelete('cascade');
             $table->foreignId('staff_id')->constrained('staff')->onDelete('cascade');
             $table->double('amount');
-            $table->text('case_project_detail_ids')->nullable();
+            $table->json('case_project_detail_ids')->nullable();
             $table->timestamps();
             $table->softDeletes('deleted_at');
         });

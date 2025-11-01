@@ -22,7 +22,7 @@ class DepresiasiAktivaTetapResource extends Resource
 
     protected static ?string $navigationLabel = 'Histori Depresiasi Aktiva Tetap';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationGroup = 'Histori Data';
 
     public static function form(Form $form): Form
     {
@@ -45,7 +45,7 @@ class DepresiasiAktivaTetapResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('daftarAktivaTetap.deskripsi')
                     ->formatStateUsing(function ($record) {
-                        return $record->daftarAktivaTetap->deskripsi.' ('.$record->daftarAktivaTetap->harga_perolehan.')';
+                        return $record->daftarAktivaTetap->deskripsi . ' (' . $record->daftarAktivaTetap->harga_perolehan . ')';
                     }),
                 Tables\Columns\TextColumn::make('tanggal_penyusutan')
                     ->date('d-m-Y'),

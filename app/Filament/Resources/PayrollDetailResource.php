@@ -25,7 +25,7 @@ class PayrollDetailResource extends Resource
 
     protected static ?string $navigationLabel = 'Histori Payroll Gaji';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationGroup = 'Histori Data';
 
     public static function form(Form $form): Form
     {
