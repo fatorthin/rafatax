@@ -93,6 +93,11 @@ Route::post('/app/payroll-detail/{detail}/send-wablas', [PayrollWhatsAppControll
     ->name('app.payroll.send-wablas')
     ->middleware('auth');
 
+// Download Payroll Slip
+Route::get('/payroll-detail/{detail}/download-slip', [PayrollWhatsAppController::class, 'downloadSlip'])
+    ->name('payroll.download-slip')
+    ->middleware('auth');
+
 // Cash Reference Month Detail - Custom View
 Route::get('/cash-reference/{id}/month-detail', [CashReferenceMonthController::class, 'show'])
     ->name('cash-reference.month-detail')

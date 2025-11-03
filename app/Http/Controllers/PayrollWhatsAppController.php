@@ -266,4 +266,45 @@ class PayrollWhatsAppController extends Controller
             $cutHalfday -
             $cutIjin;
     }
+
+    public function downloadSlip(PayrollDetail $detail)
+    {
+        try {
+            Log::info('Starting downloadSlip for detail ID: ' . $detail->id);
+
+            // Hitung komponen gaji
+            $bonusLembur = $detail->overtime_count * 10000;
+            $bonusVisitSolo = $detail->visit_solo_count * 10000;
+            $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
+            $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;
+            $cutHalfday = $detail->halfday_count * 0.5 * $detail->salary / 25;
+            $cutIjin = $detail->leave_count * $detail->salary / 25;
+            $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain;
+            $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
+            $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus - $totalPot;
+
+            // Generate PDF
+            $pdf = PDF::loadView('pdf.payslip', [
+                'detail' => $detail,
+                'bonusLembur' => $bonusLembur,
+                'bonusVisitSolo' => $bonusVisitSolo,
+                'bonusVisitLuar' => $bonusVisitLuar,
+                'cutSakit' => $cutSakit,
+                'cutHalfday' => $cutHalfday,
+                'cutIjin' => $cutIjin,
+                'totalBonus' => $totalBonus,
+                'totalPot' => $totalPot,
+                'totalGaji' => $totalGaji,
+            ])->setPaper('a4', 'portrait');
+
+            $filename = 'Slip_Gaji_' . str_replace(' ', '_', $detail->staff->name) . '_' . \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F_Y') . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (\Exception $e) {
+            Log::error('Error downloading payslip: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return redirect()->back()->with('error', 'Gagal mengunduh slip gaji: ' . $e->getMessage());
+        }
+    }
 }
