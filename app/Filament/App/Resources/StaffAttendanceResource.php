@@ -226,6 +226,56 @@ class StaffAttendanceResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('staff_id')
+                    ->label('Staff')
+                    ->relationship('staff', 'name'),
+                Tables\Filters\Filter::make('bulan')
+                    ->label('Bulan')
+                    ->form([
+                        Forms\Components\Select::make('bulan')
+                            ->label('Bulan')
+                            ->options([
+                                '1' => 'Januari',
+                                '2' => 'Februari',
+                                '3' => 'Maret',
+                                '4' => 'April',
+                                '5' => 'Mei',
+                                '6' => 'Juni',
+                                '7' => 'Juli',
+                                '8' => 'Agustus',
+                                '9' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
+                            ])
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            !empty($data['bulan']),
+                            fn(Builder $q) => $q->whereMonth('tanggal', (int) $data['bulan'])
+                        );
+                    }),
+                Tables\Filters\Filter::make('tahun')
+                    ->label('Tahun')
+                    ->form([
+                        Forms\Components\Select::make('tahun')
+                            ->label('Tahun')
+                            ->options(function () {
+                                $years = \App\Models\StaffAttendance::query()
+                                    ->selectRaw('YEAR(tanggal) as year')
+                                    ->distinct()
+                                    ->orderBy('year', 'desc')
+                                    ->pluck('year', 'year')
+                                    ->toArray();
+                                return $years;
+                            })
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            !empty($data['tahun']),
+                            fn(Builder $q) => $q->whereYear('tanggal', (int) $data['tahun'])
+                        );
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

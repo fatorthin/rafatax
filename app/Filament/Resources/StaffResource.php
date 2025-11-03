@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class StaffResource extends Resource
 {
     protected static ?string $model = Staff::class;
-    protected static ?string $navigationLabel = 'Daftar Staf';
+    protected static ?string $navigationLabel = 'Daftar Staff';
     protected static ?string $navigationGroup = 'Bagian HRD';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
