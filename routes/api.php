@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\StaffController;
+use App\Http\Controllers\API\ClientController;
 use App\Http\Controllers\API\AuthController;
 
 /*
@@ -24,12 +25,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-// Staff API Resource Routes (protected)
+// Protected API Resource Routes
 Route::middleware('auth:sanctum')->group(function () {
+    // Staff API Routes
     Route::apiResource('staff', StaffController::class);
-});
 
-// Alternative: Jika ingin menggunakan authentication
-// Route::middleware('auth:sanctum')->group(function () {
-//     Route::apiResource('staff', StaffController::class);
-// });
+    // Client API Routes
+    Route::apiResource('clients', ClientController::class);
+
+    // Additional Client Routes for soft deletes
+    Route::post('clients/{id}/restore', [ClientController::class, 'restore']);
+    Route::delete('clients/{id}/force', [ClientController::class, 'forceDelete']);
+});

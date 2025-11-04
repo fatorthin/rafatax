@@ -1,0 +1,1089 @@
+{
+	"info": {
+		"_postman_id": "client-api-rafatax-2025",
+		"name": "Rafatax - Client API",
+		"description": "Complete API testing collection for Client endpoints including authentication, CRUD operations, search, filter, and soft delete features.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "rafatax"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('token');",
+									"    pm.environment.set(\"auth_token\", jsonData.token);",
+									"});",
+									"",
+									"pm.test(\"Response time is less than 2000ms\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get authentication token. Token will be automatically saved to environment variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout and revoke current authentication token."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for login and logout"
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "Get All Clients",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Response has pagination meta\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('meta');",
+									"    pm.expect(jsonData.meta).to.have.property('current_page');",
+									"    pm.expect(jsonData.meta).to.have.property('per_page');",
+									"    pm.expect(jsonData.meta).to.have.property('total');",
+									"});",
+									"",
+									"pm.test(\"Response time is less than 2000ms\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"// Save first client ID for other tests",
+									"if (pm.response.json().data.length > 0) {",
+									"    pm.environment.set(\"client_id\", pm.response.json().data[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients?per_page=15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15",
+									"description": "Items per page"
+								},
+								{
+									"key": "search",
+									"value": "PT",
+									"description": "Search term",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"description": "Filter by status",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "PT",
+									"description": "Filter by type",
+									"disabled": true
+								},
+								{
+									"key": "sort_by",
+									"value": "created_at",
+									"description": "Sort field",
+									"disabled": true
+								},
+								{
+									"key": "sort_direction",
+									"value": "desc",
+									"description": "Sort direction (asc/desc)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of all clients with optional search and filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Clients (with Search)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients?search=PT&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "PT"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Search clients by company name, code, owner name, phone, or NPWP"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Clients (with Filters)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients?status=active&type=PT&grade=A",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "active"
+								},
+								{
+									"key": "type",
+									"value": "PT"
+								},
+								{
+									"key": "grade",
+									"value": "A"
+								}
+							]
+						},
+						"description": "Filter clients by status, type, grade, or jenis_wp"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data object\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData.data).to.be.an('object');",
+									"});",
+									"",
+									"pm.test(\"Response has required fields\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('id');",
+									"    pm.expect(data).to.have.property('code');",
+									"    pm.expect(data).to.have.property('company_name');",
+									"});",
+									"",
+									"pm.test(\"Response has relationships\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('mous');",
+									"    pm.expect(data).to.have.property('staff');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}"
+							]
+						},
+						"description": "Get detailed information of a single client including relationships (MoUs and Staff)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create New Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has data object\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"});",
+									"",
+									"pm.test(\"Client was created with correct data\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('id');",
+									"    pm.expect(data).to.have.property('code');",
+									"    pm.expect(data).to.have.property('company_name');",
+									"    pm.expect(data.code).to.include('TEST');",
+									"});",
+									"",
+									"// Save created client ID for update and delete tests",
+									"pm.environment.set(\"new_client_id\", pm.response.json().data.id);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate unique code",
+									"var timestamp = Date.now();",
+									"pm.environment.set(\"unique_code\", \"TEST-\" + timestamp);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"{{unique_code}}\",\n    \"company_name\": \"PT Test Client Postman\",\n    \"phone\": \"081234567890\",\n    \"address\": \"Jl. Test Postman No. 123\",\n    \"owner_name\": \"Test Owner\",\n    \"owner_role\": \"CEO\",\n    \"contact_person\": \"Test Contact\",\n    \"npwp\": \"12.345.678.9-012.999\",\n    \"jenis_wp\": \"Badan\",\n    \"grade\": \"A\",\n    \"status\": \"active\",\n    \"type\": \"PT\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							]
+						},
+						"description": "Create a new client with all optional fields"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Client (Minimal)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Client created with minimal data\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('id');",
+									"    pm.expect(data).to.have.property('code');",
+									"    pm.expect(data).to.have.property('company_name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate unique code",
+									"var timestamp = Date.now();",
+									"pm.environment.set(\"unique_code_min\", \"MIN-\" + timestamp);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"{{unique_code_min}}\",\n    \"company_name\": \"PT Minimal Client\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							]
+						},
+						"description": "Create a new client with only required fields (code and company_name)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has updated data\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('company_name');",
+									"    pm.expect(data.company_name).to.include('Updated');",
+									"});",
+									"",
+									"pm.test(\"Updated timestamp changed\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('updated_at');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"company_name\": \"PT Test Client Updated\",\n    \"phone\": \"081234567899\",\n    \"status\": \"inactive\",\n    \"address\": \"Jl. Updated Address No. 456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients/{{new_client_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{new_client_id}}"
+							]
+						},
+						"description": "Update an existing client. Can update any field except code (must be unique)."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Client (Soft Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"    pm.expect(jsonData.message).to.include('berhasil dihapus');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients/{{new_client_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{new_client_id}}"
+							]
+						},
+						"description": "Soft delete a client. Can be restored later using restore endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Restore Deleted Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Client restored successfully\", function () {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('deleted_at');",
+									"    pm.expect(data.deleted_at).to.be.null;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients/{{new_client_id}}/restore",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{new_client_id}}",
+								"restore"
+							]
+						},
+						"description": "Restore a soft-deleted client. Only works if client was soft deleted."
+					},
+					"response": []
+				},
+				{
+					"name": "Force Delete Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"    pm.expect(jsonData.message).to.include('permanen');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients/{{new_client_id}}/force",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{new_client_id}}",
+								"force"
+							]
+						},
+						"description": "Permanently delete a client from database. Cannot be restored after this!"
+					},
+					"response": []
+				}
+			],
+			"description": "CRUD operations for Client management"
+		},
+		{
+			"name": "Negative Tests",
+			"item": [
+				{
+					"name": "Get Client - Not Found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Response has error message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients/999999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"999999"
+							]
+						},
+						"description": "Test 404 error when client ID doesn't exist"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Client - Duplicate Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Response has validation errors\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('errors');",
+									"    pm.expect(jsonData.errors).to.have.property('code');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"{{unique_code}}\",\n    \"company_name\": \"Duplicate Code Test\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							]
+						},
+						"description": "Test validation error when trying to create client with duplicate code"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Client - Missing Required Fields",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Response has validation errors\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('errors');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"081234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							]
+						},
+						"description": "Test validation error when required fields (code, company_name) are missing"
+					},
+					"response": []
+				},
+				{
+					"name": "Access Without Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Response has unauthenticated message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							]
+						},
+						"description": "Test 401 error when accessing API without authentication token"
+					},
+					"response": []
+				}
+			],
+			"description": "Negative test cases for error handling"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost/api",
+			"type": "string"
+		},
+		{
+			"key": "admin_email",
+			"value": "admin@example.com",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "password",
+			"type": "string"
+		}
+	]
+}
