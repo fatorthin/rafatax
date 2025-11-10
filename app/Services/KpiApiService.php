@@ -190,13 +190,8 @@ class KpiApiService
                 continue;
             }
 
-            // We store by some unique combination; if table has no external_id column yet, you may add one later.
-            // For now attempt match by description+case_date as fallback.
-            $model = CaseProject::query()->where('description', $item['description'] ?? '')
-                ->where('case_date', $item['case_date'] ?? null)
-                ->first();
-
             $payload = [
+                'external_id' => $externalId,
                 'description' => $item['description'] ?? '',
                 'case_date' => $item['case_date'] ?? null,
                 'status' => $item['status'] ?? 'pending',
@@ -206,17 +201,21 @@ class KpiApiService
             ];
 
             try {
-                if ($model) {
-                    $model->fill($payload);
-                    if ($model->isDirty()) {
-                        $model->save();
+                // Use updateOrCreate with external_id as unique identifier
+                $model = CaseProject::updateOrCreate(
+                    ['external_id' => $externalId],
+                    $payload
+                );
+
+                if ($model->wasRecentlyCreated) {
+                    $created++;
+                } else {
+                    // Check if any field was actually updated
+                    if ($model->wasChanged()) {
                         $updated++;
                     } else {
                         $skipped++;
                     }
-                } else {
-                    CaseProject::create($payload);
-                    $created++;
                 }
             } catch (\Throwable $e) {
                 $skipped++;

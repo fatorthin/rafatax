@@ -11,6 +11,7 @@ class CaseProject extends Model
     use SoftDeletes, LogsActivity;
 
     protected $fillable = [
+        'external_id',
         'description',
         'case_date',
         'status',
