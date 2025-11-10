@@ -12,15 +12,21 @@ class CaseProject extends Model
 
     protected $fillable = [
         'description',
-        'client_id',
-        'budget',
+        'case_date',
         'status',
-        'project_date',
+        'staff_id',
+        'client_id',
+        'link_dokumen',
     ];
 
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class);
     }
 
     public function details()

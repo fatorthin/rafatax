@@ -29,22 +29,10 @@ class CaseProjectResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('description')
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\Select::make('client_id')
-                    ->relationship('client', 'company_name')
-                    ->searchable()
-                    ->preload()
-                    ->required(),
-                Forms\Components\DatePicker::make('project_date')
-                    ->required(),
+                    ->maxLength(255)
+                    ->readonly(),
                 Forms\Components\TextInput::make('budget')
                     ->numeric()
-                    ->required(),
-                Forms\Components\Select::make('status')
-                    ->options([
-                        'open' => 'Open',
-                        'closed' => 'Closed',
-                    ])
                     ->required(),
             ]);
     }
@@ -55,16 +43,11 @@ class CaseProjectResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('client.company_name')->label('Client')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('project_date')->date('d-m-Y')->sortable(),
+                Tables\Columns\TextColumn::make('staff.name')->label('Staff')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('case_date')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('status')->sortable(),
+                Tables\Columns\TextColumn::make('link_dokumen')->label('Link Dokumen')->url(fn($record) => $record->link_dokumen)->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('budget')->formatStateUsing(fn($state) => 'Rp. ' . number_format($state, 0, ',', '.'))->alignEnd()->sortable(),
-                Tables\Columns\TextColumn::make('total_bonus')
-                    ->label('Total Bonus Tim')
-                    ->getStateUsing(function ($record) {
-                        return $record->details()->sum('bonus');
-                    })
-                    ->formatStateUsing(fn($state) => 'Rp. ' . number_format($state, 0, ',', '.'))
-                    ->alignEnd(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -75,16 +58,6 @@ class CaseProjectResource extends Resource
                     ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
                     ->icon('heroicon-o-information-circle'),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
             ]);
     }
 

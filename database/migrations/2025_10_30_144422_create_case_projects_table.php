@@ -14,12 +14,14 @@ return new class extends Migration
         Schema::create('case_projects', function (Blueprint $table) {
             $table->id();
             $table->string('description');
-            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
-            $table->date('project_date');
+            $table->date('case_date');
+            $table->enum('status', ['open', 'in_progress', 'closed'])->default('open');
+            $table->foreignId('staff_id')->constrained()->onDelete('cascade');
+            $table->foreignId('client_id')->constrained()->onDelete('cascade');
+            $table->text('link_dokumen')->nullable();
             $table->double('budget')->default(0);
-            $table->enum('status', ['open', 'closed'])->default('open');
             $table->timestamps();
-            $table->softDeletes('deleted_at');
+            $table->softDeletes();
         });
     }
 
