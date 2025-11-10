@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->onDelete('cascade');
             $table->text('link_dokumen')->nullable();
             $table->double('budget')->default(0);
+            $table->string('external_id')->unique()->nullable()->comment('ID dari sistem KPI');
             $table->timestamps();
             $table->softDeletes();
         });

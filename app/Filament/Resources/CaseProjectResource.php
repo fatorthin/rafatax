@@ -28,11 +28,10 @@ class CaseProjectResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('description')
-                    ->required()
-                    ->maxLength(255)
                     ->readonly(),
                 Forms\Components\TextInput::make('budget')
                     ->numeric()
+                    ->default(0)
                     ->required(),
             ]);
     }

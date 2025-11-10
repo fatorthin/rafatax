@@ -18,6 +18,7 @@ class CaseProject extends Model
         'staff_id',
         'client_id',
         'link_dokumen',
+        'budget'
     ];
 
     public function client()
