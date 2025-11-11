@@ -1,9 +1,4 @@
 <x-filament-panels::page>
-    <x-filament::card>
-        {{ $this->infolist }}
-    </x-filament::card>
-    <x-filament::card>
-        {{ $this->table }}
-    </x-filament::card>
-
+    {{ $this->infolist }}
+    {{ $this->table }}
 </x-filament-panels::page>
