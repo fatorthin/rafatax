@@ -101,7 +101,7 @@ class DetailTim extends Page implements HasTable
                     ->schema([
                         TextEntry::make('description')->label('Deskripsi'),
                         TextEntry::make('client.company_name')->label('Client'),
-                        TextEntry::make('project_date')->label('Tanggal Proyek')->date('d-m-Y'),
+                        TextEntry::make('case_date')->label('Tanggal Proyek')->date('d-m-Y'),
                         TextEntry::make('budget')->label('Anggaran (Rp)')->formatStateUsing(fn($state) => 'Rp. ' . number_format($state, 0, ',', '.')),
                         TextEntry::make('status')->label('Status'),
                     ])->columns(3)

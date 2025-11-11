@@ -48,7 +48,7 @@ class DetailPayrollBonus extends Page implements HasTable
                     PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)->delete();
 
                     // Ambil data case project yang tanggalnya dalam rentang start_date dan end_date
-                    $caseProjects = CaseProject::whereBetween('project_date', [
+                    $caseProjects = CaseProject::whereBetween('case_date', [
                         $this->record->start_date,
                         $this->record->end_date
                     ])->where('status', 'open')->pluck('id');
@@ -131,7 +131,7 @@ class DetailPayrollBonus extends Page implements HasTable
                                 // Ambil description dan company_name dari CaseProject dengan relasi client
                                 $projects = CaseProject::with('client')
                                     ->whereIn('id', $ids)
-                                    ->orderBy('project_date')
+                                    ->orderBy('case_date')
                                     ->get()
                                     ->map(function ($project) {
                                         $companyName = $project->client->company_name ?? 'N/A';
