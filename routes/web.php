@@ -34,6 +34,14 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
+Route::get('/admin/login', function () {
+    return redirect('/login');
+});
+
+Route::get('/app/login', function () {
+    return redirect('/login');
+});
+
 Route::get('/login', function () {
     return redirect('/app/login');
 });

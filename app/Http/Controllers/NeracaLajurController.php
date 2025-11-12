@@ -19,7 +19,7 @@ class NeracaLajurController extends Controller
     {
         $month = $request->get('month', 1);
         $year = $request->get('year', now()->year);
-        
+
         return $this->generateExcel($month, $year);
     }
 
@@ -34,10 +34,10 @@ class NeracaLajurController extends Controller
             // Get data for the current month
             $data = $this->getDataForExport($month, $year);
             // dd($data);
-            
+
             // Get the last day of the current month for transaction date
             $transactionDate = Carbon::create($year, $month, 1)->endOfMonth();
-            
+
             // Delete existing data for this month if any
             JournalBookReport::where('journal_book_id', 3)
                 ->whereYear('transaction_date', $year)
@@ -49,16 +49,16 @@ class NeracaLajurController extends Controller
                 // Only process items that should appear in Neraca (AO-101 to AO-305, including AO-101.1 to AO-101.5 and AO-102.1 to AO-102.5)
                 if (preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/', $item->code)) {
                     // Calculate Neraca Setelah AJE first
-                    $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit + 
-                                $item->kas_kecil_debit + $item->bank_debit + 
-                                $item->jurnal_umum_debit + $item->aje_debit;
-                    
-                    $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit + 
-                                 $item->kas_kecil_kredit + $item->bank_kredit + 
-                                 $item->jurnal_umum_kredit + $item->aje_kredit;
-                    
+                    $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit +
+                        $item->kas_kecil_debit + $item->bank_debit +
+                        $item->jurnal_umum_debit + $item->aje_debit;
+
+                    $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit +
+                        $item->kas_kecil_kredit + $item->bank_kredit +
+                        $item->jurnal_umum_kredit + $item->aje_kredit;
+
                     $selisih = $totalDebit - $totalKredit;
-                    
+
                     // Only save if there's a balance
                     if ($selisih != 0) {
                         JournalBookReport::create([
@@ -76,13 +76,12 @@ class NeracaLajurController extends Controller
             DB::commit();
 
             return redirect()->back()->with('success', 'Data Neraca berhasil disimpan');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
-    
+
     private function generateExcel($month, $year)
     {
         // Disable memory limit and increase execution time
@@ -94,13 +93,21 @@ class NeracaLajurController extends Controller
 
         // Set title
         $monthNames = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
         $title = 'Neraca Lajur Bulanan (KKP) - ' . $monthNames[$month] . ' ' . $year;
-        
+
         $sheet->setCellValue('A1', $title);
         $sheet->mergeCells('A1:U1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
@@ -123,14 +130,14 @@ class NeracaLajurController extends Controller
         $subHeaders = ['Debit', 'Kredit'];
         $cols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T'];
         foreach ($cols as $col) {
-            $sheet->setCellValue($col.'4', $subHeaders[0]);
-            $sheet->setCellValue(chr(ord($col)+1).'4', $subHeaders[1]);
+            $sheet->setCellValue($col . '4', $subHeaders[0]);
+            $sheet->setCellValue(chr(ord($col) + 1) . '4', $subHeaders[1]);
         }
 
         // Merge cells
         $sheet->mergeCells('A3:A4');
         foreach ($cols as $col) {
-            $sheet->mergeCells($col.'3:'.chr(ord($col)+1).'3');
+            $sheet->mergeCells($col . '3:' . chr(ord($col) + 1) . '3');
         }
 
         // Apply header styling
@@ -144,7 +151,7 @@ class NeracaLajurController extends Controller
 
         // Get data
         $data = $this->getDataForExport($month, $year);
-        
+
         if ($data->isEmpty()) {
             $sheet->setCellValue('A5', 'Tidak ada data untuk periode ini');
             $sheet->mergeCells('A5:U5');
@@ -155,7 +162,7 @@ class NeracaLajurController extends Controller
                 // Calculate values
                 $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit + $item->kas_kecil_debit + $item->bank_debit + $item->jurnal_umum_debit;
                 $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit + $item->kas_kecil_kredit + $item->bank_kredit + $item->jurnal_umum_kredit;
-                
+
                 $selisihSebelumAJE = $totalDebit - $totalKredit;
                 $neracaSebelumAJEDebit = max(0, $selisihSebelumAJE);
                 $neracaSebelumAJEKredit = max(0, -$selisihSebelumAJE);
@@ -175,47 +182,47 @@ class NeracaLajurController extends Controller
                 $labaRugiKredit = $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
 
                 // Set data in cells
-                $sheet->setCellValue('A'.$row, $item->code.' '.$item->name);
-                $sheet->setCellValue('B'.$row, $item->neraca_awal_debit);
-                $sheet->setCellValue('C'.$row, $item->neraca_awal_kredit);
-                $sheet->setCellValue('D'.$row, $item->kas_besar_debit);
-                $sheet->setCellValue('E'.$row, $item->kas_besar_kredit);
-                $sheet->setCellValue('F'.$row, $item->kas_kecil_debit);
-                $sheet->setCellValue('G'.$row, $item->kas_kecil_kredit);
-                $sheet->setCellValue('H'.$row, $item->bank_debit);
-                $sheet->setCellValue('I'.$row, $item->bank_kredit);
-                $sheet->setCellValue('J'.$row, $item->jurnal_umum_debit);
-                $sheet->setCellValue('K'.$row, $item->jurnal_umum_kredit);
-                $sheet->setCellValue('L'.$row, $neracaSebelumAJEDebit);
-                $sheet->setCellValue('M'.$row, $neracaSebelumAJEKredit);
-                $sheet->setCellValue('N'.$row, $item->aje_debit);
-                $sheet->setCellValue('O'.$row, $item->aje_kredit);
-                $sheet->setCellValue('P'.$row, $neracaSetelahAJEDebit);
-                $sheet->setCellValue('Q'.$row, $neracaSetelahAJEKredit);
-                $sheet->setCellValue('R'.$row, $neracaDebit);
-                $sheet->setCellValue('S'.$row, $neracaKredit);
-                $sheet->setCellValue('T'.$row, $labaRugiDebit);
-                $sheet->setCellValue('U'.$row, $labaRugiKredit);
+                $sheet->setCellValue('A' . $row, $item->code . ' ' . $item->name);
+                $sheet->setCellValue('B' . $row, $item->neraca_awal_debit);
+                $sheet->setCellValue('C' . $row, $item->neraca_awal_kredit);
+                $sheet->setCellValue('D' . $row, $item->kas_besar_debit);
+                $sheet->setCellValue('E' . $row, $item->kas_besar_kredit);
+                $sheet->setCellValue('F' . $row, $item->kas_kecil_debit);
+                $sheet->setCellValue('G' . $row, $item->kas_kecil_kredit);
+                $sheet->setCellValue('H' . $row, $item->bank_debit);
+                $sheet->setCellValue('I' . $row, $item->bank_kredit);
+                $sheet->setCellValue('J' . $row, $item->jurnal_umum_debit);
+                $sheet->setCellValue('K' . $row, $item->jurnal_umum_kredit);
+                $sheet->setCellValue('L' . $row, $neracaSebelumAJEDebit);
+                $sheet->setCellValue('M' . $row, $neracaSebelumAJEKredit);
+                $sheet->setCellValue('N' . $row, $item->aje_debit);
+                $sheet->setCellValue('O' . $row, $item->aje_kredit);
+                $sheet->setCellValue('P' . $row, $neracaSetelahAJEDebit);
+                $sheet->setCellValue('Q' . $row, $neracaSetelahAJEKredit);
+                $sheet->setCellValue('R' . $row, $neracaDebit);
+                $sheet->setCellValue('S' . $row, $neracaKredit);
+                $sheet->setCellValue('T' . $row, $labaRugiDebit);
+                $sheet->setCellValue('U' . $row, $labaRugiKredit);
 
                 $row++;
             }
 
             // Add totals
             $totalRow = $row;
-            $sheet->setCellValue('A'.$totalRow, 'Total');
-            $sheet->getStyle('A'.$totalRow.':U'.$totalRow)->applyFromArray($headerStyle);
-            
+            $sheet->setCellValue('A' . $totalRow, 'Total');
+            $sheet->getStyle('A' . $totalRow . ':U' . $totalRow)->applyFromArray($headerStyle);
+
             // Calculate totals
             $columns = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
             foreach ($columns as $col) {
-                $sheet->setCellValue($col.$totalRow, '=SUM('.$col.'5:'.$col.($totalRow-1).')');
+                $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
             }
 
             // Apply borders and number format
-            $sheet->getStyle('A5:U'.($totalRow-1))->applyFromArray([
+            $sheet->getStyle('A5:U' . ($totalRow - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
             ]);
-            $sheet->getStyle('B5:U'.$totalRow)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('B5:U' . $totalRow)->getNumberFormat()->setFormatCode('#,##0');
         }
 
         // Auto-size columns
@@ -225,29 +232,29 @@ class NeracaLajurController extends Controller
 
         // Prepare download
         $filename = 'neraca-lajur-bulanan-' . strtolower(Carbon::create($year, $month, 1)->format('F-Y')) . '.xlsx';
-        
+
         // Clear output buffer
         while (ob_get_level()) {
             ob_end_clean();
         }
-        
+
         // Set headers
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="'.$filename.'"');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-        
+
         // Save and output
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
     }
-    
+
     private function getDataForExport($month, $year)
     {
         // Start date of previous month
         $startOfPreviousMonth = Carbon::create($year, $month, 1)->subMonth()->startOfMonth();
         $endOfPreviousMonth = Carbon::create($year, $month, 1)->subMonth()->endOfMonth();
-        
+
         // Current month date range
         $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($year, $month, 1)->endOfMonth();
@@ -303,14 +310,14 @@ class NeracaLajurController extends Controller
                         WHERE cash_reference_id = 6
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
-                        AND coa_id != 75
+                        AND coa_id != 76
                         GROUP BY coa_id
                         
                         UNION ALL
                         
                         -- Special case for AO-101
                         SELECT 
-                            75 as coa_id,
+                            76 as coa_id,
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
@@ -339,14 +346,14 @@ class NeracaLajurController extends Controller
                         WHERE cash_reference_id = 7
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
-                        AND coa_id != 76
+                        AND coa_id != 77
                         GROUP BY coa_id
                         
                         UNION ALL
                         
                         -- Special case for AO-101.1
                         SELECT 
-                            76 as coa_id,
+                            77 as coa_id,
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
@@ -537,4 +544,4 @@ class NeracaLajurController extends Controller
 
         return $query->get();
     }
-} 
+}
