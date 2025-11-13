@@ -15,6 +15,8 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\DaftarAktivaTetapResource;
 
+use function Symfony\Component\Clock\now;
+
 class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
 {
     use InteractsWithTable;
@@ -31,7 +33,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
 
     public function mount()
     {
-        $this->bulan = 1;
+        $this->bulan = request('bulan', date('m'));
         $this->tahun = request('tahun', date('Y'));
         $this->periode = Carbon::create($this->tahun, $this->bulan, 1)->format('Y-m');
     }
@@ -43,17 +45,40 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                 ->label('Pilih Periode')
                 ->icon('heroicon-o-calendar')
                 ->form([
-                    DatePicker::make('periode')
-                        ->label('Pilih Periode')
-                        ->format('Y-m')
-                        ->displayFormat('F Y')
-                        ->default(fn () => Carbon::create($this->tahun, $this->bulan, 1))
+                    \Filament\Forms\Components\Select::make('bulan')
+                        ->label('Bulan')
+                        ->options([
+                            1 => 'Januari',
+                            2 => 'Februari',
+                            3 => 'Maret',
+                            4 => 'April',
+                            5 => 'Mei',
+                            6 => 'Juni',
+                            7 => 'Juli',
+                            8 => 'Agustus',
+                            9 => 'September',
+                            10 => 'Oktober',
+                            11 => 'November',
+                            12 => 'Desember'
+                        ])
+                        ->default($this->bulan)
+                        ->required(),
+                    \Filament\Forms\Components\Select::make('tahun')
+                        ->label('Tahun')
+                        ->options(function () {
+                            $years = [];
+                            $currentYear = now()->year;
+                            for ($i = $currentYear - 5; $i <= $currentYear + 1; $i++) {
+                                $years[$i] = $i;
+                            }
+                            return $years;
+                        })
+                        ->default($this->tahun)
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $date = Carbon::parse($data['periode']);
-                    $this->bulan = $date->format('m');
-                    $this->tahun = $date->format('Y');
+                    $this->bulan = $data['bulan'];
+                    $this->tahun = $data['tahun'];
                 }),
 
             Action::make('export')
@@ -68,7 +93,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
     {
         $bulan = $this->bulan;
         $tahun = $this->tahun;
-        
+
         return $table
             ->query(DaftarAktivaTetap::query()->where('status', 'aktif'))
             ->striped()
@@ -84,8 +109,8 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                     ->alignCenter(),
                 TextColumn::make('harga_perolehan')
                     ->label('Harga Perolehan')
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
-                    ->alignEnd()    
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->alignEnd()
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
@@ -96,10 +121,10 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                                 return number_format($state, 0, ',', '.');
                             })
                             ->label('Total Harga Perolehan')
-                    ),  
+                    ),
                 TextColumn::make('tarif_penyusutan')
                     ->label('Tarif (%)')
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.').'%')
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.') . '%')
                     ->alignCenter(),
                 TextColumn::make('akumulasi_penyusutan_lalu')
                     ->label('Akumulasi Penyusutan Lalu')
@@ -110,7 +135,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
                             ->sum('jumlah_penyusutan');
                     })
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
@@ -130,32 +155,32 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                     ->alignEnd()
                     ->getStateUsing(function ($record) use ($bulan, $tahun) {
                         $tanggal = Carbon::create($tahun, $bulan, 1)->startOfMonth();
-                        
+
                         // Check if asset acquisition date is in the future
                         if ($record->tahun_perolehan > $tanggal) {
                             return 0;
                         }
-                        
+
                         $akumulasiLalu = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
                             ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
                             ->sum('jumlah_penyusutan');
                         return $record->harga_perolehan - $akumulasiLalu;
                     })
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
                                 $tanggal = Carbon::create($tahun, $bulan, 1)->startOfMonth();
                                 $aktivaIds = $query->pluck('id');
-                                
+
                                 // Get total acquisition cost only for assets acquired before or in the current month
                                 $totalHargaPerolehan = $query->where('tahun_perolehan', '<=', $tanggal)
                                     ->sum('harga_perolehan');
-                                
+
                                 $totalAkumulasiLalu = DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
                                     ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
                                     ->sum('jumlah_penyusutan');
-                                    
+
                                 return $totalHargaPerolehan - $totalAkumulasiLalu;
                             })
                             ->formatStateUsing(function ($state) {
@@ -173,7 +198,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->whereBetween('tanggal_penyusutan', [$tanggalAwal, $tanggalAkhir])
                             ->sum('jumlah_penyusutan');
                     })
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
@@ -198,7 +223,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
                             ->sum('jumlah_penyusutan');
                     })
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
@@ -212,7 +237,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                                 return number_format($state, 0, ',', '.');
                             })
                             ->label('Total Akumulasi s/d Bulan Ini')
-                    ),  
+                    ),
                 TextColumn::make('nilai_buku_bulan_ini')
                     ->label('Nilai Buku')
                     ->alignEnd()
@@ -223,7 +248,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->sum('jumlah_penyusutan');
                         return $record->harga_perolehan - $akumulasi;
                     })
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
