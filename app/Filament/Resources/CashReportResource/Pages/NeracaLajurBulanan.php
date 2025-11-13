@@ -4,15 +4,9 @@ namespace App\Filament\Resources\CashReportResource\Pages;
 
 use App\Filament\Resources\CashReportResource;
 use App\Models\Coa;
-use App\Models\CashReport;
-use App\Models\CashReference;
-use App\Models\JournalBookReport;
 use Filament\Resources\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,8 +17,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Illuminate\Support\Facades\Log;
-use Filament\Notifications\Notification;
 
 class NeracaLajurBulanan extends Page implements HasTable
 {
@@ -303,7 +295,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                                 WHERE cref.id IN (1, 2, 3, 4, 5)
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
-                                AND cr.coa_id = 94
+                                AND cr.coa_id = 162
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
@@ -368,7 +360,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                                 WHERE cref.id IN (1, 2, 3, 4, 5)
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
-                                AND cr.coa_id = 94
+                                AND cr.coa_id = 162
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
@@ -481,6 +473,7 @@ class NeracaLajurBulanan extends Page implements HasTable
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
+            ->orderBy('coa.group_coa_id')
             ->orderBy('coa.id');
 
         return $query;

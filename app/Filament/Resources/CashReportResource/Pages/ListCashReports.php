@@ -5,10 +5,10 @@ namespace App\Filament\Resources\CashReportResource\Pages;
 use App\Filament\Resources\CashReportResource;
 use App\Models\CashReport;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\View\View;
 
-class ListCashReports extends ListRecords
+class ListCashReports extends ManageRecords
 {
     protected static string $resource = CashReportResource::class;
 
@@ -22,7 +22,7 @@ class ListCashReports extends ListRecords
                 ->label('Neraca Lajur Bulanan (KKP)')
                 ->icon('heroicon-o-table-cells')
                 ->color('info')
-                ->url(fn () => static::getResource()::getUrl('neraca-lajur'))
+                ->url(fn() => static::getResource()::getUrl('neraca-lajur'))
                 ->button(),
         ];
     }

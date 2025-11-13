@@ -198,7 +198,8 @@ class CashReportResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
                 Tables\Filters\SelectFilter::make('cash_reference_id')
                     ->label('Cash Reference')
-                    ->relationship('cashReference', 'name'),
+                    ->relationship('cashReference', 'name')
+                    ->multiple(),
                 Tables\Filters\SelectFilter::make('coa_id')
                     ->label('Chart of Account')
                     ->relationship('coa', 'name'),
@@ -279,8 +280,6 @@ class CashReportResource extends Resource
     {
         return [
             'index' => Pages\ListCashReports::route('/'),
-            'create' => Pages\CreateCashReport::route('/create'),
-            'edit' => Pages\EditCashReport::route('/{record}/edit'),
             'neraca-lajur' => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
             'neraca' => Pages\Neraca::route('/neraca'),
             'laba-rugi-bulanan' => Pages\LabaRugiBulanan::route('/laba-rugi-bulanan'),
