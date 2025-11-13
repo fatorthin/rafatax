@@ -308,35 +308,35 @@ class NeracaLajurBulanan extends Page implements HasTable
                                 AND cr.coa_id IN (78)
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
-                            WHEN c.code = 'AO-102.01' THEN (
+                            WHEN c.code = 'AO-102.1' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 1
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.02' THEN (
+                            WHEN c.code = 'AO-102.2' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 3
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.03' THEN (
+                            WHEN c.code = 'AO-102.3' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 2
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.04' THEN (
+                            WHEN c.code = 'AO-102.4' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 4
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.05' THEN (
+                            WHEN c.code = 'AO-102.5' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 5
@@ -373,35 +373,35 @@ class NeracaLajurBulanan extends Page implements HasTable
                                 AND cr.coa_id IN (78)
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
-                            WHEN c.code = 'AO-102.01' THEN (
+                            WHEN c.code = 'AO-102.1' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 1
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.02' THEN (
+                            WHEN c.code = 'AO-102.2' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 3
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.03' THEN (
+                            WHEN c.code = 'AO-102.3' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 2
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.04' THEN (
+                            WHEN c.code = 'AO-102.4' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 4
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.05' THEN (
+                            WHEN c.code = 'AO-102.5' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports
                                 WHERE cash_reference_id = 5

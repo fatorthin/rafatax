@@ -103,8 +103,9 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
             ])
             ->actions([
                 // No actions needed here
+                // Provide an edit link to the correct JournalBookReport resource instead of an undefined CashReport route
                 \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn(JournalBookReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
+                    ->url(fn(JournalBookReport $record) => \App\Filament\Resources\JournalBookReportResource::getUrl('edit', ['record' => $record])),
             ])
             ->striped()
             ->defaultSort('transaction_date', 'asc')
