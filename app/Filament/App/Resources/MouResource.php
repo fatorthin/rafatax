@@ -64,14 +64,16 @@ class MouResource extends Resource
                             ->placeholder('Masukkan deskripsi MoU'),
                         Forms\Components\DatePicker::make('start_date')
                             ->label('Tanggal Mulai')
-                            ->format('d/m/Y')
                             ->required()
-                            ->placeholder('Pilih tanggal mulai'),
+                            ->placeholder('Pilih tanggal mulai')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
                         Forms\Components\DatePicker::make('end_date')
                             ->label('Tanggal Berakhir')
                             ->required()
-                            ->format('d/m/Y')
-                            ->placeholder('Pilih tanggal berakhir'),
+                            ->placeholder('Pilih tanggal berakhir')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
                     ])
                     ->columns(2),
 
