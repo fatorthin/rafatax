@@ -2,16 +2,16 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\MouResource\Pages;
-use App\Filament\Resources\MouResource\RelationManagers;
 use App\Models\MoU;
-use App\Models\CostListInvoice;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\CostListInvoice;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\ActionsPosition;
+use App\Filament\Resources\MouResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MouResource extends Resource
@@ -34,9 +34,11 @@ class MouResource extends Resource
                 Forms\Components\TextInput::make('description')
                     ->required(),
                 Forms\Components\DatePicker::make('start_date')
-                    ->required(),
+                    ->required()
+                    ->format('d/m/Y'),
                 Forms\Components\DatePicker::make('end_date')
-                    ->required(),
+                    ->required()
+                    ->format('d/m/Y'),
                 Forms\Components\Select::make('status')
                     ->options([
                         'approved' => 'Approved',
@@ -169,7 +171,7 @@ class MouResource extends Resource
                     ->icon('heroicon-o-eye')
                     ->color('success'),
                 Tables\Actions\DeleteAction::make(),
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
