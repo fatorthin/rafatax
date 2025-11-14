@@ -15,8 +15,6 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\DaftarAktivaTetapResource;
 
-use function Symfony\Component\Clock\now;
-
 class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
 {
     use InteractsWithTable;
@@ -67,7 +65,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                         ->label('Tahun')
                         ->options(function () {
                             $years = [];
-                            $currentYear = now()->year;
+                            $currentYear = date('Y');
                             for ($i = $currentYear - 5; $i <= $currentYear + 1; $i++) {
                                 $years[$i] = $i;
                             }
