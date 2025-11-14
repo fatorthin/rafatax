@@ -9,15 +9,16 @@
                 </div>
                 <div>
                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Deskripsi</p>
-                    <p class="text-base font-semibold text-gray-900 dark:text-white">{{ $record->description ?? '-' }}</p>
+                    <p class="text-base font-semibold text-gray-900 dark:text-white">{{ $record->description ?? '-' }}
+                    </p>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold">Histori Transaksi Kas/Bank</h2>
     </div>
-    
+
     {{ $this->table }}
-</x-filament-panels::page> 
+</x-filament-panels::page>
