@@ -15,7 +15,7 @@ class Neraca extends Page
     protected static string $resource = CashReportResource::class;
 
     protected static string $view = 'filament.resources.cash-report-resource.pages.neraca';
-    
+
     protected static ?string $title = 'Laporan Neraca';
     protected static ?string $navigationLabel = 'Laporan Neraca';
 
@@ -38,10 +38,18 @@ class Neraca extends Page
                     Select::make('month')
                         ->label('Bulan')
                         ->options([
-                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-                            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                            1 => 'Januari',
+                            2 => 'Februari',
+                            3 => 'Maret',
+                            4 => 'April',
+                            5 => 'Mei',
+                            6 => 'Juni',
+                            7 => 'Juli',
+                            8 => 'Agustus',
+                            9 => 'September',
+                            10 => 'Oktober',
+                            11 => 'November',
+                            12 => 'Desember'
                         ])
                         ->default($this->month)
                         ->required(),
@@ -65,12 +73,12 @@ class Neraca extends Page
             Action::make('export')
                 ->label('Export Excel')
                 ->icon('heroicon-o-document-arrow-down')
-                ->action(fn () => $this->exportToExcel()),
+                ->action(fn() => $this->exportToExcel()),
             Action::make('back')
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url(fn () => static::getResource()::getUrl('neraca-lajur')),
+                ->url(fn() => static::getResource()::getUrl('neraca-lajur')),
         ];
     }
 
@@ -114,6 +122,7 @@ class Neraca extends Page
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
+            ->where('coa.id', '!=', 78) // Exclude 'Tidak Terklasifikasi'
             ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010|1011)$'")
             ->orderBy('group_coas.id')
             ->orderBy('coa.id')
@@ -143,14 +152,14 @@ class Neraca extends Page
         ];
 
         foreach ($data as $row) {
-            $amount = preg_match('/^AO-1/', $row->code) ? 
-                $row->debit - $row->credit : 
+            $amount = preg_match('/^AO-1/', $row->code) ?
+                $row->debit - $row->credit :
                 $row->credit - $row->debit;
-            
+
             // Determine if this is aktiva or pasiva based on the account code
             $isAktiva = preg_match('/^AO-1/', $row->code);
             $target = $isAktiva ? 'aktiva' : 'pasiva';
-            
+
             // If we're starting a new group or switching sides (aktiva/pasiva)
             if ($currentGroup !== $row->group_coa_id) {
                 // Add the previous group's total if it exists
@@ -163,20 +172,20 @@ class Neraca extends Page
                         'is_group_total' => true
                     ]);
                 }
-                
+
                 // Start new group
                 $currentGroup = $row->group_coa_id;
                 $currentGroupName = $row->group_name ?? 'Lainnya';
                 $currentGroupTotal = 0;
                 $currentGroupSide = $target; // Set the side for the new group
-                
+
                 // Add group header
                 $neracaData[$target][] = array_merge($defaultItemStructure, [
                     'name' => $currentGroupName,
                     'is_group_header' => true
                 ]);
             }
-            
+
             // Add the account
             $neracaData[$target][] = array_merge($defaultItemStructure, [
                 'code' => $row->code,
@@ -184,7 +193,7 @@ class Neraca extends Page
                 'amount' => abs($amount),
                 'is_negative' => $amount < 0
             ]);
-            
+
             // Update totals
             $currentGroupTotal += $amount;
             if ($isAktiva) {
@@ -343,14 +352,14 @@ class Neraca extends Page
         $totalBeban = 0;
 
         foreach ($data as $row) {
-            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit + 
-                         $row->kas_kecil_debit + $row->bank_debit + 
-                         $row->jurnal_umum_debit + $row->aje_debit;
-            
-            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit + 
-                          $row->kas_kecil_kredit + $row->bank_kredit + 
-                          $row->jurnal_umum_kredit + $row->aje_kredit;
-            
+            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
+                $row->kas_kecil_debit + $row->bank_debit +
+                $row->jurnal_umum_debit + $row->aje_debit;
+
+            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit +
+                $row->kas_kecil_kredit + $row->bank_kredit +
+                $row->jurnal_umum_kredit + $row->aje_kredit;
+
             if (preg_match('/^AO-4/', $row->code)) {
                 // Pendapatan accounts (400 series)
                 $amount = $totalKredit - $totalDebit;
@@ -368,4 +377,4 @@ class Neraca extends Page
             'labaRugiBersih' => $totalPendapatan - $totalBeban
         ];
     }
-} 
+}

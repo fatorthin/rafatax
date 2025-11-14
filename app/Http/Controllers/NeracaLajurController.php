@@ -47,7 +47,8 @@ class NeracaLajurController extends Controller
             // Insert new data
             foreach ($data as $item) {
                 // Only process items that should appear in Neraca (AO-101 to AO-305, including AO-101.1 to AO-101.5 and AO-102.1 to AO-102.5)
-                if (preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/', $item->code)) {
+                // Exclude specifically AO-101.2 from being processed
+                if (preg_match('/^AO-(?!101\.2$)(?:([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/', $item->code)) {
                     // Calculate Neraca Setelah AJE first
                     $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit +
                         $item->kas_kecil_debit + $item->bank_debit +
@@ -378,17 +379,17 @@ class NeracaLajurController extends Controller
                                 WHERE cref.id IN (1, 2, 3, 4, 5)
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
-                                AND cr.coa_id = 94
+                                AND cr.coa_id = 162
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1, 2, 3, 4)
+                                WHERE cref.id IN (1, 2, 3, 4, 5)
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
-                                AND cr.coa_id IN (77, 82)
+                                AND cr.coa_id IN (78)
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (
@@ -443,17 +444,17 @@ class NeracaLajurController extends Controller
                                 WHERE cref.id IN (1, 2, 3, 4, 5)
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
-                                AND cr.coa_id = 94
+                                AND cr.coa_id = 162
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1, 2, 3, 4)
+                                WHERE cref.id IN (1, 2, 3, 4, 5)
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
-                                AND cr.coa_id IN (77, 82)
+                                AND cr.coa_id IN (78)
                                 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (
