@@ -26,6 +26,8 @@ use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\ForceDeleteBulkAction;
 use Filament\Tables\Actions\RestoreBulkAction;
+use Filament\Forms;
+use Filament\Tables\Actions\CreateAction;
 
 class ViewCashReferenceDetail extends Page implements HasTable
 {
@@ -215,7 +217,41 @@ class ViewCashReferenceDetail extends Page implements HasTable
             ])
             ->actions([
                 EditAction::make()
-                    ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
+                    ->form([
+                        Forms\Components\TextInput::make('description')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\Select::make('cash_reference_id')
+                            ->required()
+                            ->label('Cash Reference')
+                            ->options(CashReference::all()->pluck('name', 'id'))
+                            ->disabled(),
+                        Forms\Components\Select::make('coa_id')
+                            ->required()
+                            ->label('Chart of Account')
+                            ->searchable()
+                            ->options(function () {
+                                return Coa::all()->mapWithKeys(function ($coa) {
+                                    return [$coa->id => $coa->code . ' - ' . $coa->name];
+                                });
+                            }),
+                        Forms\Components\DatePicker::make('transaction_date')
+                            ->required()
+                            ->label('Transaction Date'),
+                        Forms\Components\TextInput::make('debit_amount')
+                            ->required()
+                            ->label('Debit Amount')
+                            ->numeric()
+                            ->default(0)
+                            ->prefix('Rp'),
+                        Forms\Components\TextInput::make('credit_amount')
+                            ->required()
+                            ->label('Credit Amount')
+                            ->numeric()
+                            ->default(0)
+                            ->prefix('Rp'),
+                    ])
+                    ->modalWidth('lg'),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
@@ -244,6 +280,52 @@ class ViewCashReferenceDetail extends Page implements HasTable
                 ->url(CashReferenceResource::getUrl('viewMonthly', ['record' => $this->record]))
                 ->color('success')
                 ->icon('heroicon-o-calendar'),
+            Actions\Action::make('create')
+                ->label('Add Transaction')
+                ->form([
+                    Forms\Components\TextInput::make('description')
+                        ->required()
+                        ->maxLength(255),
+                    Forms\Components\Hidden::make('cash_reference_id')
+                        ->default($this->record->id),
+                    Forms\Components\Select::make('coa_id')
+                        ->required()
+                        ->label('Chart of Account')
+                        ->searchable()
+                        ->options(function () {
+                            return Coa::all()->mapWithKeys(function ($coa) {
+                                return [$coa->id => $coa->code . ' - ' . $coa->name];
+                            });
+                        }),
+                    Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Transaction Date')
+                        ->default(now()),
+                    Forms\Components\Hidden::make('invoice_id')
+                        ->default('0'),
+                    Forms\Components\Hidden::make('mou_id')
+                        ->default('0'),
+                    Forms\Components\Hidden::make('cost_list_invoice_id')
+                        ->default('0'),
+                    Forms\Components\TextInput::make('debit_amount')
+                        ->required()
+                        ->label('Debit Amount')
+                        ->numeric()
+                        ->default(0)
+                        ->prefix('Rp'),
+                    Forms\Components\TextInput::make('credit_amount')
+                        ->required()
+                        ->label('Credit Amount')
+                        ->numeric()
+                        ->default(0)
+                        ->prefix('Rp'),
+                ])
+                ->action(function (array $data): void {
+                    CashReport::create($data);
+                })
+                ->modalWidth('lg')
+                ->color('primary')
+                ->icon('heroicon-o-plus'),
         ];
     }
 }

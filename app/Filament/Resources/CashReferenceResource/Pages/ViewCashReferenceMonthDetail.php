@@ -18,6 +18,8 @@ use App\Filament\Resources\CashReferenceResource;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Forms;
+use Filament\Tables\Actions\EditAction;
 
 class ViewCashReferenceMonthDetail extends Page implements HasTable
 {
@@ -197,10 +199,42 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
                 // No additional filters needed here since we're already filtering by month/year
             ])
             ->actions([
-                // Edit action (link to edit screen)
-                \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn(CashReport $record) => route('filament.admin.resources.cash-reports.edit', ['record' => $record])),
-
+                EditAction::make()
+                    ->form([
+                        Forms\Components\TextInput::make('description')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\Select::make('cash_reference_id')
+                            ->required()
+                            ->label('Cash Reference')
+                            ->options(CashReference::all()->pluck('name', 'id'))
+                            ->disabled(),
+                        Forms\Components\Select::make('coa_id')
+                            ->required()
+                            ->label('Chart of Account')
+                            ->searchable()
+                            ->options(function () {
+                                return Coa::all()->mapWithKeys(function ($coa) {
+                                    return [$coa->id => $coa->code . ' - ' . $coa->name];
+                                });
+                            }),
+                        Forms\Components\DatePicker::make('transaction_date')
+                            ->required()
+                            ->label('Transaction Date'),
+                        Forms\Components\TextInput::make('debit_amount')
+                            ->required()
+                            ->label('Debit Amount')
+                            ->numeric()
+                            ->default(0)
+                            ->prefix('Rp'),
+                        Forms\Components\TextInput::make('credit_amount')
+                            ->required()
+                            ->label('Credit Amount')
+                            ->numeric()
+                            ->default(0)
+                            ->prefix('Rp'),
+                    ])
+                    ->modalWidth('lg'),
                 // Use a custom per-row delete action implemented as a callback.
                 // This avoids Filament's default DeleteAction which can trigger
                 // redirects or route handling that in this page context led to
@@ -248,9 +282,50 @@ class ViewCashReferenceMonthDetail extends Page implements HasTable
                 ->url(CashReferenceResource::getUrl('view', ['record' => $this->record]))
                 ->color('success')
                 ->icon('heroicon-o-list-bullet'),
-            Actions\Action::make('addTransaction')
+            Actions\Action::make('create')
                 ->label('Add Transaction')
-                ->url(fn() => route('filament.admin.resources.cash-reports.create', ['cash_reference_id' => $this->record->id]))
+                ->form([
+                    Forms\Components\TextInput::make('description')
+                        ->required()
+                        ->maxLength(255),
+                    Forms\Components\Hidden::make('cash_reference_id')
+                        ->default($this->record->id),
+                    Forms\Components\Select::make('coa_id')
+                        ->required()
+                        ->label('Chart of Account')
+                        ->searchable()
+                        ->options(function () {
+                            return Coa::all()->mapWithKeys(function ($coa) {
+                                return [$coa->id => $coa->code . ' - ' . $coa->name];
+                            });
+                        }),
+                    Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Transaction Date')
+                        ->default(now()),
+                    Forms\Components\Hidden::make('invoice_id')
+                        ->default('0'),
+                    Forms\Components\Hidden::make('mou_id')
+                        ->default('0'),
+                    Forms\Components\Hidden::make('cost_list_invoice_id')
+                        ->default('0'),
+                    Forms\Components\TextInput::make('debit_amount')
+                        ->required()
+                        ->label('Debit Amount')
+                        ->numeric()
+                        ->default(0)
+                        ->prefix('Rp'),
+                    Forms\Components\TextInput::make('credit_amount')
+                        ->required()
+                        ->label('Credit Amount')
+                        ->numeric()
+                        ->default(0)
+                        ->prefix('Rp'),
+                ])
+                ->action(function (array $data): void {
+                    CashReport::create($data);
+                })
+                ->modalWidth('lg')
                 ->color('primary')
                 ->icon('heroicon-o-plus'),
         ];
