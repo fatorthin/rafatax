@@ -10,6 +10,8 @@ use App\Models\CostListMou;
 use App\Models\Invoice;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Contracts\HasForms;
 use App\Filament\Resources\MouResource;
 use Filament\Tables\Columns\TextColumn;
@@ -134,22 +136,26 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn(CostListMou $record): string => route('filament.admin.resources.mous.cost-edit', ['record' => $record->id])),
+                    ->form([
+                        Select::make('coa_id')
+                            ->label('CoA')
+                            ->options(Coa::all()->pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                        TextInput::make('amount')
+                            ->label('Amount')
+                            ->numeric()
+                            ->required()
+                            ->prefix('Rp'),
+                        Textarea::make('description')
+                            ->label('Description')
+                            ->rows(3),
+                    ])
+                    ->modalWidth('lg'),
                 \Filament\Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 //
-            ]);
-    }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Select::make('coa_id')
-                    ->label('Coa')
-                    ->options(Coa::all()->pluck('name', 'id'))
-                    ->searchable(),
             ]);
     }
 
@@ -158,7 +164,28 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
         return [
             Actions\CreateAction::make()
                 ->label('Add Cost List')
-                ->url(fn(): string => MouResource::getUrl('cost-create', ['record' => $this->mou->id])),
+                ->icon('heroicon-o-plus')
+                ->model(CostListMou::class)
+                ->form([
+                    Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(Coa::all()->pluck('name', 'id'))
+                        ->searchable()
+                        ->required(),
+                    TextInput::make('amount')
+                        ->label('Amount')
+                        ->numeric()
+                        ->required()
+                        ->prefix('Rp'),
+                    Textarea::make('description')
+                        ->label('Description')
+                        ->rows(3),
+                ])
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['mou_id'] = $this->mou->id;
+                    return $data;
+                })
+                ->modalWidth('lg'),
             Actions\Action::make('export_pdf')
                 ->label('Print PDF MoU')
                 ->icon('heroicon-o-printer')

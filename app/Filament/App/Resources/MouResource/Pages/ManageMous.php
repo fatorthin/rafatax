@@ -4,9 +4,9 @@ namespace App\Filament\App\Resources\MouResource\Pages;
 
 use App\Filament\App\Resources\MouResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 
-class ListMous extends ListRecords
+class ManageMous extends ManageRecords
 {
     protected static string $resource = MouResource::class;
 
@@ -14,9 +14,9 @@ class ListMous extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('Tambah MoU')
+                ->label('Tambah MoU Baru')
                 ->icon('heroicon-o-plus')
-                ->visible(fn() => static::getResource()::canCreate()),
+                ->modalWidth('2xl'),
         ];
     }
 }

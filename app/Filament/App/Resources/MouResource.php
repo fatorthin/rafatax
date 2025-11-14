@@ -147,7 +147,7 @@ class MouResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'approved' => 'success',
                         'unapproved' => 'warning',
                         default => 'gray',
@@ -220,7 +220,8 @@ class MouResource extends Resource
                     ->icon('heroicon-o-eye'),
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
-                    ->icon('heroicon-o-pencil'),
+                    ->icon('heroicon-o-pencil')
+                    ->modalWidth('2xl'),
                 Tables\Actions\Action::make('viewCostList')
                     ->label('Detail Biaya')
                     ->url(fn($record) => route('filament.app.resources.mous.cost-list', ['record' => $record]))
@@ -249,10 +250,8 @@ class MouResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMous::route('/'),
-            'create' => Pages\CreateMou::route('/create'),
+            'index' => Pages\ManageMous::route('/'),
             'view' => Pages\ViewMou::route('/{record}'),
-            'edit' => Pages\EditMou::route('/{record}/edit'),
             'cost-list' => Pages\ListCostMou::route('/{record}/cost-list'),
         ];
     }

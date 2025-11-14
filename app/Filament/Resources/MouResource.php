@@ -160,11 +160,14 @@ class MouResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->color('info'),
+                Tables\Actions\EditAction::make()
+                    ->color('info')
+                    ->modalWidth('2xl'),
                 Tables\Actions\Action::make('viewCostList')
                     ->label('Detail')
-                    ->url(fn($record) => "/admin/mous/{$record->id}/cost-list") // Change this line
-                    ->icon('heroicon-o-eye'),
+                    ->url(fn($record) => "/admin/mous/{$record->id}/cost-list")
+                    ->icon('heroicon-o-eye')
+                    ->color('success'),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -187,12 +190,8 @@ class MouResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMous::route('/'),
-            'create' => Pages\CreateMou::route('/create'),
-            'edit' => Pages\EditMou::route('/{record}/edit'),
-            'viewCostList' => Pages\ListCostMou::route('/{record}/cost-list'), // Add custom page route
-            'cost-create' => Pages\CreateCostMou::route('/{record}/cost-create'), // Add new cost list creation page
-            'cost-edit' => Pages\EditCostMou::route('/{record}/cost-edit'), // Add cost list edit page
+            'index' => Pages\ManageMous::route('/'),
+            'viewCostList' => Pages\ListCostMou::route('/{record}/cost-list'),
         ];
     }
 
