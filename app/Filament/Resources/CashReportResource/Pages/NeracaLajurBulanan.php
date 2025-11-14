@@ -35,8 +35,9 @@ class NeracaLajurBulanan extends Page implements HasTable
 
     public function mount(): void
     {
-        $this->month = now()->month;
-        $this->year = now()->year;
+        // Get month and year from query parameters, or use current date as default
+        $this->month = request()->query('month', now()->month);
+        $this->year = request()->query('year', now()->year);
     }
 
     protected function getHeaderActions(): array
@@ -80,6 +81,9 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->action(function (array $data): void {
                     $this->month = $data['month'];
                     $this->year = $data['year'];
+
+                    // Redirect to same page with query parameters to persist filter
+                    $this->redirect(static::getResource()::getUrl('neraca-lajur', ['month' => $this->month, 'year' => $this->year]));
                 }),
             Action::make('viewNeraca')
                 ->label('Lihat Laporan Neraca')
@@ -95,15 +99,14 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->label('Simpan Data Neraca')
                 ->icon('heroicon-o-document-check')
                 ->color('success')
-                ->url(fn() => url('/neraca-lajur/save-cutoff?month=' . $this->month . '&year=' . $this->year)),
+                ->url(fn() => url('/neraca-lajur/save-cutoff?month=' . $this->month . '&year=' . $this->year))
+                ->openUrlInNewTab(false),
             Action::make('export')
                 ->label('Export Excel')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->action(function () {
-                    $url = url('/neraca-lajur/export?month=' . $this->month . '&year=' . $this->year);
-                    return redirect()->away($url);
-                }),
+                ->url(fn() => url('/neraca-lajur/export?month=' . $this->month . '&year=' . $this->year))
+                ->openUrlInNewTab(false),
             Action::make('back')
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')
