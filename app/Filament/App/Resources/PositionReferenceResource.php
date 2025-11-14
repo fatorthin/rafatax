@@ -11,9 +11,12 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Traits\HasPermissions;
 
 class PositionReferenceResource extends Resource
 {
+
+    use HasPermissions;
 
     protected static ?string $model = PositionReference::class;
 
@@ -22,6 +25,22 @@ class PositionReferenceResource extends Resource
     protected static ?string $navigationGroup = 'HRD';
 
     protected static ?string $navigationLabel = 'Referensi Jabatan';
+
+    /**
+     * Control sidebar visibility for this resource based on permissions.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
+
+    /**
+     * Guard list page access for non-authorized users.
+     */
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
+    }
 
     public static function form(Form $form): Form
     {

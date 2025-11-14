@@ -12,9 +12,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Traits\HasPermissions;
 
 class StaffResource extends Resource
 {
+    use HasPermissions;
     protected static ?string $model = Staff::class;
 
     protected static ?string $navigationGroup = 'HRD';
@@ -22,6 +24,22 @@ class StaffResource extends Resource
     protected static ?string $navigationLabel = 'Daftar Staf';
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
+
+    /**
+     * Control sidebar visibility for this resource based on permissions.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
+
+    /**
+     * Guard list page access for non-authorized users.
+     */
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
+    }
 
     public static function form(Form $form): Form
     {

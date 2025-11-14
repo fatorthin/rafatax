@@ -28,6 +28,22 @@ class MouResource extends Resource
     protected static ?string $modelLabel = 'MoU';
     protected static ?string $pluralModelLabel = 'Daftar MoU';
 
+    /**
+     * Control sidebar visibility for this resource based on permissions.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
+
+    /**
+     * Guard list page access for non-authorized users.
+     */
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
+    }
+
     public static function form(Form $form): Form
     {
         return $form

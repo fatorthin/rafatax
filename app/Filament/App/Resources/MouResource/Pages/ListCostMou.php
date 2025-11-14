@@ -24,6 +24,9 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Actions;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Auth;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 {
@@ -148,6 +151,67 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 \Filament\Tables\Actions\ViewAction::make()
                     ->label('Lihat')
                     ->icon('heroicon-o-eye'),
+                \Filament\Tables\Actions\Action::make('editCost')
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil')
+                    ->color('primary')
+                    ->visible(fn() => Auth::user()?->hasPermission('mou.edit') ?? false)
+                    ->fillForm(function (CostListMou $record): array {
+                        return [
+                            'coa_id' => $record->coa_id,
+                            'description' => $record->description,
+                            'amount' => $record->amount,
+                        ];
+                    })
+                    ->form([
+                        Select::make('coa_id')
+                            ->label('CoA')
+                            ->options(Coa::all()->pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                        TextInput::make('description')
+                            ->label('Deskripsi')
+                            ->required()
+                            ->maxLength(255),
+                        TextInput::make('amount')
+                            ->label('Jumlah')
+                            ->numeric()
+                            ->minValue(0)
+                            ->required(),
+                    ])
+                    ->action(function (array $data, CostListMou $record) {
+                        $record->update([
+                            'coa_id' => $data['coa_id'],
+                            'description' => $data['description'],
+                            'amount' => $data['amount'],
+                        ]);
+
+                        // Refresh local collections (optional for immediate state)
+                        $this->cost_lists = CostListMou::where('mou_id', $this->mou->id)->get();
+
+                        Notification::make()
+                            ->title('Biaya berhasil diperbarui')
+                            ->success()
+                            ->send();
+                    }),
+                \Filament\Tables\Actions\DeleteAction::make()
+                    ->label('Hapus')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->visible(fn() => Auth::user()?->hasPermission('mou.delete') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Hapus Biaya')
+                    ->modalDescription('Apakah Anda yakin ingin menghapus biaya ini? Tindakan ini tidak dapat dibatalkan.')
+                    ->modalSubmitActionLabel('Ya, Hapus')
+                    ->after(function () {
+                        // Refresh local collections after delete
+                        $this->cost_lists = CostListMou::where('mou_id', $this->mou->id)->get();
+
+                        Notification::make()
+                            ->title('Biaya berhasil dihapus')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 //
@@ -169,6 +233,42 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('createCost')
+                ->label('Tambah Biaya')
+                ->icon('heroicon-o-plus')
+                ->color('success')
+                ->visible(fn() => Auth::user()?->hasAnyPermission(['mou.create', 'mou.edit']) ?? false)
+                ->form([
+                    Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(Coa::all()->pluck('name', 'id'))
+                        ->searchable()
+                        ->required(),
+                    TextInput::make('amount')
+                        ->label('Jumlah')
+                        ->numeric()
+                        ->minValue(0)
+                        ->required(),
+                    TextInput::make('description')
+                        ->label('Deskripsi')
+                        ->maxLength(255),
+                ])
+                ->action(function (array $data) {
+                    CostListMou::create([
+                        'mou_id' => $this->mou->id,
+                        'coa_id' => $data['coa_id'],
+                        'description' => $data['description'],
+                        'amount' => $data['amount'],
+                    ]);
+
+                    // Refresh local collections
+                    $this->cost_lists = CostListMou::where('mou_id', $this->mou->id)->get();
+
+                    Notification::make()
+                        ->title('Biaya berhasil ditambahkan')
+                        ->success()
+                        ->send();
+                }),
             Action::make('back')
                 ->label('Kembali ke Daftar MoU')
                 ->url(MouResource::getUrl('index'))
