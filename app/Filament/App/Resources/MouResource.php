@@ -68,13 +68,15 @@ class MouResource extends Resource
                             ->required()
                             ->placeholder('Pilih tanggal mulai')
                             ->native(false)
-                            ->displayFormat('d/m/Y'),
+                            ->displayFormat('d/m/Y')
+                            ->default('01/01/' . date('Y')),
                         Forms\Components\DatePicker::make('end_date')
                             ->label('Tanggal Berakhir')
                             ->required()
                             ->placeholder('Pilih tanggal berakhir')
                             ->native(false)
-                            ->displayFormat('d/m/Y'),
+                            ->displayFormat('d/m/Y')
+                            ->default('31/12/' . date('Y')),
                     ])
                     ->columns(2),
 

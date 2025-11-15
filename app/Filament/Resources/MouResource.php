@@ -36,11 +36,13 @@ class MouResource extends Resource
                 Forms\Components\DatePicker::make('start_date')
                     ->required()
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-01-01'),
                 Forms\Components\DatePicker::make('end_date')
                     ->required()
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-12-31'),
                 Forms\Components\Select::make('status')
                     ->options([
                         'approved' => 'Approved',
