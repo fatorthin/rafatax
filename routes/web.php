@@ -31,19 +31,7 @@ use App\Filament\Resources\MouResource\Pages\CostListMou;
 
 
 Route::get('/', function () {
-    return redirect('/login');
-});
-
-Route::get('/admin/login', function () {
-    return redirect('/login');
-});
-
-Route::get('/app/login', function () {
-    return redirect('/login');
-});
-
-Route::get('/login', function () {
-    return redirect('/app/login');
+    return redirect('/app');
 });
 
 Route::middleware('guest')->group(function () {

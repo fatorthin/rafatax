@@ -27,6 +27,7 @@ class MouResource extends Resource
     protected static ?string $navigationLabel = 'Daftar MoU';
 
     protected static ?string $modelLabel = 'MoU';
+
     protected static ?string $pluralModelLabel = 'Daftar MoU';
 
     /**
