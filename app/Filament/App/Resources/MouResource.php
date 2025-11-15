@@ -86,6 +86,7 @@ class MouResource extends Resource
                                 'approved' => 'Disetujui',
                                 'unapproved' => 'Belum Disetujui',
                             ])
+                            ->default('approved')
                             ->required()
                             ->placeholder('Pilih status'),
                         Forms\Components\Select::make('type')

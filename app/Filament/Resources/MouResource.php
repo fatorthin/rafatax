@@ -46,12 +46,14 @@ class MouResource extends Resource
                         'approved' => 'Approved',
                         'unapproved' => 'Unapproved',
                     ])
+                    ->default('approved')
                     ->required(),
                 Forms\Components\Select::make('type')
                     ->options([
                         'pt' => 'PT',
                         'kkp' => 'KKP',
                     ])
+                    ->default('pt')
                     ->required(),
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
