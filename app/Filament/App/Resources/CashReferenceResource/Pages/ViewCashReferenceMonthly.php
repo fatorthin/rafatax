@@ -135,8 +135,11 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                     ->url(function ($record) {
                         $year = $record->year;
                         $month = $record->month;
-                        $baseUrl = CashReferenceResource::getUrl('monthDetail', ['record' => $this->record]);
-                        return "{$baseUrl}?year={$year}&month={$month}";
+                        return route('cash-reference.month-detail', [
+                            'id' => $this->record->id,
+                            'year' => $year,
+                            'month' => $month
+                        ]);
                     })
                     ->icon('heroicon-o-eye')
                     ->color('primary')

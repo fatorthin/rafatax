@@ -95,22 +95,18 @@ Route::get('/payroll-detail/{detail}/download-slip', [PayrollWhatsAppController:
     ->middleware('auth');
 
 // Cash Reference Month Detail - Custom View
-Route::get('/cash-reference/{id}/month-detail', [CashReferenceMonthController::class, 'show'])
+Route::get('/cash-reference/{id}/month-detail', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'show'])
     ->name('cash-reference.month-detail')
     ->middleware('auth');
 
-Route::post('/cash-reference/{id}/transaction/store', [CashReferenceMonthController::class, 'store'])
+Route::post('/cash-reference/{id}/transaction/store', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'store'])
     ->name('cash-reference.transaction.store')
     ->middleware('auth');
 
-Route::get('/cash-reference/transaction/{transactionId}/edit', [CashReferenceMonthController::class, 'edit'])
-    ->name('cash-reference.transaction.edit')
-    ->middleware('auth');
-
-Route::put('/cash-reference/transaction/{transactionId}/update', [CashReferenceMonthController::class, 'update'])
+Route::put('/cash-reference/transaction/{transactionId}/update', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'update'])
     ->name('cash-reference.transaction.update')
     ->middleware('auth');
 
-Route::delete('/cash-reference/transaction/{transactionId}/delete', [CashReferenceMonthController::class, 'delete'])
+Route::delete('/cash-reference/{id}/transaction/{transactionId}/delete', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'destroy'])
     ->name('cash-reference.transaction.delete')
     ->middleware('auth');
