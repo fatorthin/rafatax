@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DaftarAktivaTetapResource\Pages;
+use Filament\Tables\Enums\ActionsPosition;
 
 class DaftarAktivaTetapResource extends Resource
 {
@@ -31,7 +32,7 @@ class DaftarAktivaTetapResource extends Resource
             Action::make('monthly')
                 ->label('Laporan Bulanan')
                 ->icon('heroicon-o-calendar')
-                ->url(fn (): string => static::getUrl('monthly'))
+                ->url(fn(): string => static::getUrl('monthly'))
                 ->color('success'),
         ];
     }
@@ -56,7 +57,7 @@ class DaftarAktivaTetapResource extends Resource
                     ->label('Status')
                     ->options([
                         'aktif' => 'Aktif',
-                        'nonaktif' => 'Nonaktif',   
+                        'nonaktif' => 'Nonaktif',
                     ])
                     ->default('aktif')
                     ->required(),
@@ -85,8 +86,8 @@ class DaftarAktivaTetapResource extends Resource
                     ->alignEnd()
                     ->summarize(Sum::make()
                         ->formatStateUsing(function ($state) {
-                                return number_format((float)$state, 0, ',', '.');
-                            })
+                            return number_format((float)$state, 0, ',', '.');
+                        })
                         ->label('Total Harga Perolehan')),
                 Tables\Columns\TextColumn::make('tarif_penyusutan')
                     ->label('Tarif Penyusutan (%)')
@@ -157,10 +158,10 @@ class DaftarAktivaTetapResource extends Resource
                     ->label('Status')
                     ->alignCenter()
                     ->badge()
-                    ->color(fn ($state) => $state == 'aktif' ? 'success' : 'danger')
+                    ->color(fn($state) => $state == 'aktif' ? 'success' : 'danger')
                     ->formatStateUsing(function ($record) {
                         return $record->status == 'aktif' ? 'Aktif' : 'Non Aktif';
-                    }), 
+                    }),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -173,7 +174,7 @@ class DaftarAktivaTetapResource extends Resource
                     ->icon('heroicon-o-eye')
                     ->color('info'),
                 Tables\Actions\DeleteAction::make(),
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -182,8 +183,7 @@ class DaftarAktivaTetapResource extends Resource
                 ]),
             ])
             ->paginated(false)
-            ->recordUrl(fn(DaftarAktivaTetap $record): string => DaftarAktivaTetapResource::getUrl('detail', ['record' => $record]))
-            ->deferLoading();
+            ->recordUrl(fn(DaftarAktivaTetap $record): string => DaftarAktivaTetapResource::getUrl('detail', ['record' => $record]));
     }
 
     public static function getRelations(): array

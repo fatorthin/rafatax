@@ -2,16 +2,17 @@
 
 namespace App\Filament\App\Resources;
 
-use App\Filament\App\Resources\MouResource\Pages;
 use App\Models\MoU;
-use App\Models\CostListInvoice;
-use App\Traits\HasPermissions;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Traits\HasPermissions;
+use App\Models\CostListInvoice;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\ActionsPosition;
+use App\Filament\App\Resources\MouResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MouResource extends Resource
@@ -26,6 +27,7 @@ class MouResource extends Resource
     protected static ?string $navigationLabel = 'Daftar MoU';
 
     protected static ?string $modelLabel = 'MoU';
+
     protected static ?string $pluralModelLabel = 'Daftar MoU';
 
     /**
@@ -64,11 +66,17 @@ class MouResource extends Resource
                         Forms\Components\DatePicker::make('start_date')
                             ->label('Tanggal Mulai')
                             ->required()
-                            ->placeholder('Pilih tanggal mulai'),
+                            ->placeholder('Pilih tanggal mulai')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->default(date('Y') . '-01-01'),
                         Forms\Components\DatePicker::make('end_date')
                             ->label('Tanggal Berakhir')
                             ->required()
-                            ->placeholder('Pilih tanggal berakhir'),
+                            ->placeholder('Pilih tanggal berakhir')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->default(date('Y') . '-12-31'),
                     ])
                     ->columns(2),
 
@@ -80,6 +88,7 @@ class MouResource extends Resource
                                 'approved' => 'Disetujui',
                                 'unapproved' => 'Belum Disetujui',
                             ])
+                            ->default('approved')
                             ->required()
                             ->placeholder('Pilih status'),
                         Forms\Components\Select::make('type')
@@ -243,7 +252,7 @@ class MouResource extends Resource
                     ->url(fn($record) => route('filament.app.resources.mous.cost-list', ['record' => $record]))
                     ->icon('heroicon-o-currency-dollar')
                     ->color('success'),
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()

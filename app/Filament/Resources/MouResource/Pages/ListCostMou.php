@@ -139,7 +139,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->form([
                         Select::make('coa_id')
                             ->label('CoA')
-                            ->options(Coa::all()->pluck('name', 'id'))
+                            ->options(Coa::whereIn('id', [119, 120, 121, 122, 123, 124, 125, 126])->pluck('name', 'id'))
                             ->searchable()
                             ->required(),
                         TextInput::make('amount')
@@ -169,7 +169,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->form([
                     Select::make('coa_id')
                         ->label('CoA')
-                        ->options(Coa::all()->pluck('name', 'id'))
+                        ->options(Coa::whereIn('id', [119, 120, 121, 122, 123, 124, 125, 126])->pluck('name', 'id'))
                         ->searchable()
                         ->required(),
                     TextInput::make('amount')
