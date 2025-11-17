@@ -42,9 +42,9 @@ Route::get('/app/login', function () {
     return redirect('/login');
 });
 
-Route::get('/login', function () {
-    return redirect('/app/login');
-});
+// Route::get('/login', function () {
+//     return redirect('/app/login');
+// });
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
