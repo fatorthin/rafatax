@@ -72,7 +72,7 @@ class DetailAktivaTetap extends Page implements HasTable
                                     });
                             })
                             ->sum('jumlah_penyusutan');
-                        
+
                         $currentSisaNilai = $this->record->harga_perolehan - $previousDepreciations;
                         return number_format($currentSisaNilai, 0, ',', '.');
                     }),
@@ -83,7 +83,7 @@ class DetailAktivaTetap extends Page implements HasTable
                         TextInput::make('jumlah_penyusutan')
                             ->label('Jumlah Penyusutan')
                             ->numeric()
-                            ->default(fn ($record) => $record->jumlah_penyusutan)
+                            ->default(fn($record) => $record->jumlah_penyusutan)
                             ->required(),
                     ])
                     ->modalSubmitActionLabel('Simpan')
@@ -92,7 +92,8 @@ class DetailAktivaTetap extends Page implements HasTable
                         $record->update([
                             'jumlah_penyusutan' => $data['jumlah_penyusutan'],
                         ]);
-                    }), 
+                    }),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->paginated(false);
     }
