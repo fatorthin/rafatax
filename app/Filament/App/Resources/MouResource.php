@@ -228,6 +228,14 @@ class MouResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP',
                     ]),
+                Tables\Filters\SelectFilter::make('client_id')
+                    ->label('Client')
+                    ->relationship('client', 'company_name')
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('category_mou_id')
+                    ->label('Category')
+                    ->relationship('categoryMou', 'name')
+                    ->searchable(),
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Tahun')
                     ->options(

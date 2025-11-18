@@ -139,6 +139,19 @@ class MouResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
+                Tables\Filters\SelectFilter::make('client_id')
+                    ->label('Client')
+                    ->relationship('client', 'company_name')
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('category_mou_id')
+                    ->label('Category')
+                    ->relationship('categoryMou', 'name')
+                    ->searchable(),
                 Tables\Filters\SelectFilter::make('month')
                     ->label('Month')
                     ->options(
@@ -156,11 +169,6 @@ class MouResource extends Resource
                             ->pluck('year', 'year')
                             ->toArray()
                     ),
-                Tables\Filters\SelectFilter::make('type')
-                    ->options([
-                        'PT' => 'PT',
-                        'KKP' => 'KKP',
-                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
