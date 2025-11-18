@@ -35,6 +35,6 @@ class CostListInvoice extends Model
 
     public function coa()
     {
-        return $this->belongsTo(CoA::class);
+        return $this->belongsTo(Coa::class);
     }
 }

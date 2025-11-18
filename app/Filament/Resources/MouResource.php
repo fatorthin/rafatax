@@ -156,15 +156,10 @@ class MouResource extends Resource
                             ->pluck('year', 'year')
                             ->toArray()
                     ),
-                Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'Unpaid' => 'Unpaid',
-                        'Paid' => 'Paid',
-                    ]),
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
                         'PT' => 'PT',
-                        'Consultant' => 'Consultant',
+                        'KKP' => 'KKP',
                     ]),
             ])
             ->actions([
