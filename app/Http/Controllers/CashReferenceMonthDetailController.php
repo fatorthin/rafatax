@@ -88,7 +88,7 @@ class CashReferenceMonthDetailController extends Controller
     {
         $validated = $request->validate([
             'description' => 'required|string|max:255',
-            'coa_id' => 'required|exists:coas,id',
+            'coa_id' => 'required|exists:coa,id',
             'transaction_date' => 'required|date',
             'debit_amount' => 'required|numeric|min:0',
             'credit_amount' => 'required|numeric|min:0',
@@ -126,11 +126,11 @@ class CashReferenceMonthDetailController extends Controller
         return view('cash-reference.edit-transaction', compact('cashReference', 'transaction', 'coaList'));
     }
 
-    public function update($id, $transactionId, Request $request)
+    public function update($transactionId, Request $request)
     {
         $validated = $request->validate([
             'description' => 'required|string|max:255',
-            'coa_id' => 'required|exists:coas,id',
+            'coa_id' => 'required|exists:coa,id',
             'transaction_date' => 'required|date',
             'debit_amount' => 'required|numeric|min:0',
             'credit_amount' => 'required|numeric|min:0',
@@ -143,7 +143,11 @@ class CashReferenceMonthDetailController extends Controller
         $month = Carbon::parse($validated['transaction_date'])->month;
 
         return redirect()
-            ->route('cash-reference.month-detail', ['id' => $id, 'year' => $year, 'month' => $month])
+            ->route('cash-reference.month-detail', [
+                'id' => $transaction->cash_reference_id,
+                'year' => $year,
+                'month' => $month,
+            ])
             ->with('success', 'Transaction updated successfully');
     }
 
