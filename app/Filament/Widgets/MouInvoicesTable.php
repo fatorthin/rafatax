@@ -15,30 +15,30 @@ class MouInvoicesTable extends BaseWidget
     public ?int $mouId = null;
 
     protected int | string | array $columnSpan = 'full';
-    
+
     protected static ?string $heading = 'Invoices for this MoU';
-    
+
     // Property to store computed total value
     protected $totalValue = 0;
-    
+
     protected function getTableQuery(): Builder
     {
         $query = Invoice::query()->when(
             $this->mouId,
-            fn (Builder $query) => $query->where('mou_id', $this->mouId),
-            fn (Builder $query) => $query->whereNull('id')
+            fn(Builder $query) => $query->where('mou_id', $this->mouId),
+            fn(Builder $query) => $query->whereNull('id')
         );
-        
+
         // Calculate total here for footer
         if ($this->mouId) {
             $this->totalValue = CostListInvoice::where('mou_id', $this->mouId)
                 ->whereNotNull('invoice_id')
                 ->sum('amount');
         }
-        
+
         return $query;
     }
-    
+
     public function getTableTotalValue()
     {
         return $this->totalValue;
@@ -49,6 +49,13 @@ class MouInvoicesTable extends BaseWidget
         return $table
             ->query($this->getTableQuery())
             ->heading('Invoices for this MoU')
+            ->headerActions([
+                Tables\Actions\Action::make('createInvoice')
+                    ->label('Create New Invoice')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn() => route('filament.admin.resources.invoices.create', ['mou_id' => $this->mouId]))
+                    ->color('primary'),
+            ])
             ->description('List of all invoices associated with this MoU')
             ->columns([
                 Tables\Columns\TextColumn::make('invoice_number')
@@ -66,7 +73,7 @@ class MouInvoicesTable extends BaseWidget
                 Tables\Columns\TextColumn::make('invoice_status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'Paid' => 'success',
                         'Unpaid' => 'warning',
                         'Overdue' => 'danger',
@@ -74,7 +81,7 @@ class MouInvoicesTable extends BaseWidget
                     }),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn (string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->getStateUsing(function ($record) {
                         return $record->costListInvoices()->sum('amount');
                     })
@@ -82,22 +89,22 @@ class MouInvoicesTable extends BaseWidget
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->url(fn (Invoice $record): string => route('filament.admin.resources.invoices.viewCostList', ['record' => $record->id]))
+                    ->url(fn(Invoice $record): string => route('filament.admin.resources.invoices.viewCostList', ['record' => $record->id]))
                     ->label('View Details')
                     ->icon('heroicon-o-eye')
                     ->color('info'),
             ]);
     }
-    
+
     protected function getFooter(): ?string
     {
         return view('filament.tables.invoice-total-footer', [
             'total' => $this->totalValue,
         ])->render();
     }
-    
-    public static function canView(): bool 
+
+    public static function canView(): bool
     {
         return true;
     }
-} 
+}

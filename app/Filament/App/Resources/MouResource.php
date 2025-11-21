@@ -186,7 +186,7 @@ class MouResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('total_mou_amount')
                     ->label('Total Nilai MoU')
-                    ->money('IDR')
+                    ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
                         $total = $record->cost_lists()->sum('amount');
                         return 'Rp ' . number_format($total, 0, ',', '.');
@@ -195,7 +195,7 @@ class MouResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice')
-                    ->money('IDR')
+                    ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
                         $total = CostListInvoice::where('mou_id', $record->id)
                             ->whereNotNull('invoice_id')

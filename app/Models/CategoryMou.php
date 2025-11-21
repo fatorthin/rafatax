@@ -16,4 +16,9 @@ class CategoryMou extends Model
         'format_mou_pt',
         'format_mou_kkp',
     ];
+
+    public function mous()
+    {
+        return $this->hasMany(MoU::class, 'category_mou_id');
+    }
 }
