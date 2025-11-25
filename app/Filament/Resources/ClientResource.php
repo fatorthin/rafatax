@@ -70,7 +70,7 @@ class ClientResource extends Resource
                 Forms\Components\Select::make('jenis_wp')
                     ->label('Jenis WP')
                     ->options([
-                        'op' => 'Perseorangan',
+                        'perseorangan' => 'Perseorangan',
                         'badan' => 'Badan'
                     ])
                     ->required(),
@@ -135,12 +135,12 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('contact_person')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('npwp') 
+                Tables\Columns\TextColumn::make('npwp')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('jenis_wp')
                     ->label('Jenis WP')
-                    ->formatStateUsing(fn ($state) => $state === 'op' ? 'Perseorangan' : 'Badan')
+                    ->formatStateUsing(fn($state) => $state === 'op' ? 'Perseorangan' : 'Badan')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('grade')
                     ->searchable()
@@ -148,7 +148,7 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->searchable()
                     ->alignCenter()
-                    ->formatStateUsing(fn ($state) => $state === 'pt' ? 'PT' : 'KKP'),
+                    ->formatStateUsing(fn($state) => $state === 'pt' ? 'PT' : 'KKP'),
                 Tables\Columns\IconColumn::make('pph_25_reporting')
                     ->label('PPh 25 Reporting')
                     ->boolean()
@@ -176,7 +176,7 @@ class ClientResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->searchable()
                     ->badge()
-                    ->color(fn ($state) => $state === 'active' ? 'success' : 'danger'),
+                    ->color(fn($state) => $state === 'active' ? 'success' : 'danger'),
                 Tables\Columns\TextColumn::make('staff.name')
                     ->label('Staff')
                     ->searchable()
