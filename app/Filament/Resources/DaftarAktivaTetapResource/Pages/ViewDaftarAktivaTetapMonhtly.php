@@ -93,7 +93,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
         $tahun = $this->tahun;
 
         return $table
-            ->query(DaftarAktivaTetap::query()->where('status', 'aktif'))
+            ->query(DaftarAktivaTetap::query())
             ->striped()
             ->columns([
                 TextColumn::make('deskripsi')
@@ -244,6 +244,12 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                         $akumulasi = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
                             ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
                             ->sum('jumlah_penyusutan');
+
+                        // Jika status non-aktif, tampilkan akumulasi dalam nilai minus
+                        if ($record->status === 'nonaktif') {
+                            return -$akumulasi;
+                        }
+
                         return $record->harga_perolehan - $akumulasi;
                     })
                     ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
@@ -252,11 +258,25 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->using(function ($query) use ($bulan, $tahun) {
                                 $tanggalAkhir = Carbon::create($tahun, $bulan, 1)->endOfMonth();
                                 $aktivaIds = $query->pluck('id');
-                                $totalHargaPerolehan = $query->sum('harga_perolehan');
-                                $totalPenyusutan = DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
-                                    ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
-                                    ->sum('jumlah_penyusutan');
-                                return $totalHargaPerolehan - $totalPenyusutan;
+
+                                // Get all aktiva with their status
+                                $allAktiva = DaftarAktivaTetap::whereIn('id', $aktivaIds)->get();
+
+                                $total = 0;
+                                foreach ($allAktiva as $aktiva) {
+                                    $akumulasi = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $aktiva->id)
+                                        ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
+                                        ->sum('jumlah_penyusutan');
+
+                                    // Jika status non-aktif, hitung sebagai minus akumulasi
+                                    if ($aktiva->status === 'nonaktif') {
+                                        $total += -$akumulasi;
+                                    } else {
+                                        $total += ($aktiva->harga_perolehan - $akumulasi);
+                                    }
+                                }
+
+                                return $total;
                             })
                             ->formatStateUsing(function ($state) {
                                 return number_format($state, 0, ',', '.');
