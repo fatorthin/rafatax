@@ -98,10 +98,12 @@ class NeracaLajurController extends Controller
                         }
                     } else {
                         // Calculate Neraca Setelah AJE for other accounts
+                        // Total Debit termasuk semua transaksi bulan ini DAN AJE
                         $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit +
                             $item->kas_kecil_debit + $item->bank_debit +
                             $item->jurnal_umum_debit + $item->aje_debit;
 
+                        // Total Kredit termasuk semua transaksi bulan ini DAN AJE
                         $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit +
                             $item->kas_kecil_kredit + $item->bank_kredit +
                             $item->jurnal_umum_kredit + $item->aje_kredit;
@@ -109,6 +111,7 @@ class NeracaLajurController extends Controller
                         $selisih = $totalDebit - $totalKredit;
 
                         // Only save if there's a balance
+                        // Nilai yang disimpan sudah termasuk AJE, sehingga akan menjadi Neraca Awal bulan berikutnya
                         if ($selisih != 0) {
                             JournalBookReport::create([
                                 'description' => $item->code . ' - ' . $item->name,
