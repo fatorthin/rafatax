@@ -122,7 +122,7 @@ class Neraca extends Page
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
-            ->where('coa.id', '!=', 78) // Exclude 'Tidak Terklasifikasi'
+            ->whereNotIn('coa.id', [78, 118]) // Exclude 'Tidak Terklasifikasi'
             ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010|1011)$'")
             ->orderBy('group_coas.id')
             ->orderBy('coa.id')
