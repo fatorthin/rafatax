@@ -34,6 +34,10 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
+Route::get('/admin/login', function () {
+    return redirect('/login');
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
@@ -59,6 +63,9 @@ Route::middleware(['auth'])->group(function () {
     // Neraca Lajur Export & Save
     Route::get('/neraca-lajur/export', [NeracaLajurController::class, 'export'])->name('neraca-lajur.export');
     Route::get('/neraca-lajur/save-cutoff', [NeracaLajurController::class, 'saveCutOff'])->name('neraca-lajur.save-cutoff');
+
+    // Neraca Export
+    Route::get('/neraca/export', [\App\Http\Controllers\NeracaController::class, 'export'])->name('neraca.export');
 });
 
 Route::get('/mou/{id}/print-view', [MouPrintViewController::class, 'show'])->name('mou.print.view');

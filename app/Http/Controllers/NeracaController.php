@@ -1,12 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\CashReportResource\Pages;
+namespace App\Http\Controllers;
 
-use App\Filament\Resources\CashReportResource;
+use Illuminate\Http\Request;
 use App\Models\Coa;
-use Filament\Resources\Pages\Page;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -14,231 +11,28 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use PhpOffice\PhpSpreadsheet\Style\Font;
 
-class Neraca extends Page
+class NeracaController extends Controller
 {
-    protected static string $resource = CashReportResource::class;
-
-    protected static string $view = 'filament.resources.cash-report-resource.pages.neraca';
-
-    protected static ?string $title = 'Laporan Neraca';
-    protected static ?string $navigationLabel = 'Laporan Neraca';
-
-    public $month;
-    public $year;
-
-    public function mount(): void
+    public function export(Request $request)
     {
-        $this->month = request('month', now()->month);
-        $this->year = request('year', now()->year);
+        $month = $request->get('month', now()->month);
+        $year = $request->get('year', now()->year);
+
+        return $this->generateExcel($month, $year);
     }
 
-    protected function getHeaderActions(): array
+    private function generateExcel($month, $year)
     {
-        return [
-            Action::make('filter')
-                ->label('Filter Periode')
-                ->icon('heroicon-o-funnel')
-                ->form([
-                    Select::make('month')
-                        ->label('Bulan')
-                        ->options([
-                            1 => 'Januari',
-                            2 => 'Februari',
-                            3 => 'Maret',
-                            4 => 'April',
-                            5 => 'Mei',
-                            6 => 'Juni',
-                            7 => 'Juli',
-                            8 => 'Agustus',
-                            9 => 'September',
-                            10 => 'Oktober',
-                            11 => 'November',
-                            12 => 'Desember'
-                        ])
-                        ->default($this->month)
-                        ->required(),
-                    Select::make('year')
-                        ->label('Tahun')
-                        ->options(function () {
-                            $years = [];
-                            $currentYear = now()->year;
-                            for ($i = $currentYear - 5; $i <= $currentYear + 1; $i++) {
-                                $years[$i] = $i;
-                            }
-                            return $years;
-                        })
-                        ->default($this->year)
-                        ->required(),
-                ])
-                ->action(function (array $data): void {
-                    $this->month = $data['month'];
-                    $this->year = $data['year'];
+        // Disable memory limit and increase execution time
+        ini_set('memory_limit', '1024M');
+        set_time_limit(600);
 
-                    // Redirect dengan query parameter untuk mempertahankan filter
-                    $this->redirect(static::getUrl([
-                        'month' => $this->month,
-                        'year' => $this->year
-                    ]));
-                }),
-            Action::make('export')
-                ->label('Export Excel')
-                ->icon('heroicon-o-document-arrow-down')
-                ->action(fn() => $this->exportToExcel()),
-            Action::make('back')
-                ->label('Kembali')
-                ->icon('heroicon-o-arrow-left')
-                ->color('gray')
-                ->url(fn() => static::getResource()::getUrl('neraca-lajur')),
-        ];
-    }
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-    public function getNeracaData()
-    {
-        // Start date of current month
-        $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
-        $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
-
-        // Get Laba Rugi data first
-        $labaRugiData = $this->getLabaRugiCalculation($startOfCurrentMonth, $endOfCurrentMonth);
-        $sisaDanaTahunBerjalan = $labaRugiData['labaRugiBersih'];
-
-        $data = Coa::query()
-            ->select([
-                'coa.id',
-                'coa.code',
-                'coa.name',
-                'coa.type',
-                'coa.group_coa_id',
-                'group_coas.name as group_name',
-                DB::raw('COALESCE(neraca_data.debit, 0) as debit'),
-                DB::raw('COALESCE(neraca_data.credit, 0) as credit')
-            ])
-            ->leftJoin('group_coas', 'coa.group_coa_id', '=', 'group_coas.id')
-            ->leftJoin(
-                DB::raw("(
-                    SELECT 
-                        coa_id,
-                        SUM(debit_amount) as debit,
-                        SUM(credit_amount) as credit
-                    FROM journal_book_reports 
-                    WHERE transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
-                    AND deleted_at IS NULL
-                    AND journal_book_id = 3
-                    GROUP BY coa_id
-                ) as neraca_data"),
-                'coa.id',
-                '=',
-                'neraca_data.coa_id'
-            )
-            ->where('coa.deleted_at', null)
-            ->where('coa.type', 'kkp')
-            ->whereNotIn('coa.id', [78, 118]) // Exclude 'Tidak Terklasifikasi'
-            ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010|1011)$'")
-            ->orderBy('group_coas.id')
-            ->orderBy('coa.id')
-            ->get();
-
-        $neracaData = [
-            'aktiva' => [],
-            'pasiva' => [],
-            'totalAktiva' => 0,
-            'totalPasiva' => 0
-        ];
-
-        $currentGroup = null;
-        $currentGroupName = '';
-        $currentGroupTotal = 0;
-        $currentGroupSide = null; // Track which side (aktiva/pasiva) the current group belongs to
-
-        // Default array structure for all items
-        $defaultItemStructure = [
-            'code' => '',
-            'name' => '',
-            'amount' => 0,
-            'is_negative' => false,
-            'is_group_header' => false,
-            'is_group_total' => false,
-            'is_sisa_dana' => false
-        ];
-
-        foreach ($data as $row) {
-            $amount = preg_match('/^AO-1/', $row->code) ?
-                $row->debit - $row->credit :
-                $row->credit - $row->debit;
-
-            // Determine if this is aktiva or pasiva based on the account code
-            $isAktiva = preg_match('/^AO-1/', $row->code);
-            $target = $isAktiva ? 'aktiva' : 'pasiva';
-
-            // If we're starting a new group or switching sides (aktiva/pasiva)
-            if ($currentGroup !== $row->group_coa_id) {
-                // Add the previous group's total if it exists
-                if ($currentGroup !== null) {
-                    $previousTarget = $currentGroupSide ?? $target;
-                    $neracaData[$previousTarget][] = array_merge($defaultItemStructure, [
-                        'name' => 'Total ' . $currentGroupName,
-                        'amount' => abs($currentGroupTotal),
-                        'is_negative' => $currentGroupTotal < 0,
-                        'is_group_total' => true
-                    ]);
-                }
-
-                // Start new group
-                $currentGroup = $row->group_coa_id;
-                $currentGroupName = $row->group_name ?? 'Lainnya';
-                $currentGroupTotal = 0;
-                $currentGroupSide = $target; // Set the side for the new group
-
-                // Add group header
-                $neracaData[$target][] = array_merge($defaultItemStructure, [
-                    'name' => $currentGroupName,
-                    'is_group_header' => true
-                ]);
-            }
-
-            // Add the account
-            $neracaData[$target][] = array_merge($defaultItemStructure, [
-                'code' => $row->code,
-                'name' => $row->name,
-                'amount' => abs($amount),
-                'is_negative' => $amount < 0
-            ]);
-
-            // Update totals
-            $currentGroupTotal += $amount;
-            if ($isAktiva) {
-                $neracaData['totalAktiva'] += $amount;
-            } else {
-                $neracaData['totalPasiva'] += $amount;
-            }
-        }
-
-        // Add the last group's total
-        if ($currentGroup !== null && $currentGroupSide !== null) {
-            $neracaData[$currentGroupSide][] = array_merge($defaultItemStructure, [
-                'name' => 'Total ' . $currentGroupName,
-                'amount' => abs($currentGroupTotal),
-                'is_negative' => $currentGroupTotal < 0,
-                'is_group_total' => true
-            ]);
-        }
-
-        // Add Sisa Dana Tahun Berjalan to pasiva
-        $neracaData['pasiva'][] = array_merge($defaultItemStructure, [
-            'name' => 'Sisa (Lebih) Dana Tahun Berjalan',
-            'amount' => abs($sisaDanaTahunBerjalan),
-            'is_negative' => $sisaDanaTahunBerjalan < 0,
-            'is_sisa_dana' => true
-        ]);
-        $neracaData['totalPasiva'] += $sisaDanaTahunBerjalan;
-
-        return $neracaData;
-    }
-
-    public function exportToExcel()
-    {
+        // Set title
         $monthNames = [
             1 => 'Januari',
             2 => 'Februari',
@@ -253,18 +47,15 @@ class Neraca extends Page
             11 => 'November',
             12 => 'Desember'
         ];
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $title = 'LAPORAN NERACA - ' . strtoupper($monthNames[$this->month]) . ' ' . $this->year;
+        $title = 'LAPORAN NERACA - ' . strtoupper($monthNames[$month]) . ' ' . $year;
 
         $sheet->setCellValue('A1', $title);
         $sheet->mergeCells('A1:F1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $neracaData = $this->getNeracaData();
+        // Get Neraca Data
+        $neracaData = $this->getNeracaData($month, $year);
 
         // Headers - Aktiva (Left) and Pasiva (Right)
         $sheet->setCellValue('A3', 'AKTIVA');
@@ -368,9 +159,6 @@ class Neraca extends Page
             ->getStartColor()->setRGB('D0D0D0');
         $sheet->getStyle('F' . $pasivaRow)->getNumberFormat()->setFormatCode('#,##0');
 
-        // Determine the maximum row to apply borders
-        $maxRow = max($aktivaRow, $pasivaRow);
-
         // Apply borders to both sections
         $sheet->getStyle('A3:C' . $aktivaRow)->applyFromArray([
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
@@ -384,14 +172,156 @@ class Neraca extends Page
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $filename = 'neraca-' . strtolower($monthNames[$this->month]) . '-' . $this->year . '.xlsx';
+        // Prepare download
+        $filename = 'neraca-' . strtolower($monthNames[$month]) . '-' . $year . '.xlsx';
 
-        return response()->streamDownload(function () use ($spreadsheet) {
-            $writer = new Xlsx($spreadsheet);
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        // Set headers
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Save and output
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function getNeracaData($month, $year)
+    {
+        // Start date of current month
+        $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
+        $endOfCurrentMonth = Carbon::create($year, $month, 1)->endOfMonth();
+
+        // Get Laba Rugi data first
+        $labaRugiData = $this->getLabaRugiCalculation($startOfCurrentMonth, $endOfCurrentMonth);
+        $sisaDanaTahunBerjalan = $labaRugiData['labaRugiBersih'];
+
+        $data = Coa::query()
+            ->select([
+                'coa.id',
+                'coa.code',
+                'coa.name',
+                'coa.type',
+                'coa.group_coa_id',
+                'group_coas.name as group_name',
+                DB::raw('COALESCE(neraca_data.debit, 0) as debit'),
+                DB::raw('COALESCE(neraca_data.credit, 0) as credit')
+            ])
+            ->leftJoin('group_coas', 'coa.group_coa_id', '=', 'group_coas.id')
+            ->leftJoin(
+                DB::raw("(
+                    SELECT 
+                        coa_id,
+                        SUM(debit_amount) as debit,
+                        SUM(credit_amount) as credit
+                    FROM journal_book_reports 
+                    WHERE transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
+                    AND deleted_at IS NULL
+                    AND journal_book_id = 3
+                    GROUP BY coa_id
+                ) as neraca_data"),
+                'coa.id',
+                '=',
+                'neraca_data.coa_id'
+            )
+            ->where('coa.deleted_at', null)
+            ->where('coa.type', 'kkp')
+            ->whereNotIn('coa.id', [78, 118]) // Exclude 'Tidak Terklasifikasi'
+            ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010|1011)$'")
+            ->orderBy('group_coas.id')
+            ->orderBy('coa.id')
+            ->get();
+
+        $neracaData = [
+            'aktiva' => [],
+            'pasiva' => [],
+            'totalAktiva' => 0,
+            'totalPasiva' => 0
+        ];
+
+        $currentGroup = null;
+        $currentGroupName = '';
+        $currentGroupTotal = 0;
+        $currentGroupSide = null;
+
+        $defaultItemStructure = [
+            'code' => '',
+            'name' => '',
+            'amount' => 0,
+            'is_negative' => false,
+            'is_group_header' => false,
+            'is_group_total' => false,
+            'is_sisa_dana' => false
+        ];
+
+        foreach ($data as $row) {
+            $amount = preg_match('/^AO-1/', $row->code) ?
+                $row->debit - $row->credit :
+                $row->credit - $row->debit;
+
+            $isAktiva = preg_match('/^AO-1/', $row->code);
+            $target = $isAktiva ? 'aktiva' : 'pasiva';
+
+            if ($currentGroup !== $row->group_coa_id) {
+                if ($currentGroup !== null) {
+                    $previousTarget = $currentGroupSide ?? $target;
+                    $neracaData[$previousTarget][] = array_merge($defaultItemStructure, [
+                        'name' => 'Total ' . $currentGroupName,
+                        'amount' => abs($currentGroupTotal),
+                        'is_negative' => $currentGroupTotal < 0,
+                        'is_group_total' => true
+                    ]);
+                }
+
+                $currentGroup = $row->group_coa_id;
+                $currentGroupName = $row->group_name ?? 'Lainnya';
+                $currentGroupTotal = 0;
+                $currentGroupSide = $target;
+
+                $neracaData[$target][] = array_merge($defaultItemStructure, [
+                    'name' => $currentGroupName,
+                    'is_group_header' => true
+                ]);
+            }
+
+            $neracaData[$target][] = array_merge($defaultItemStructure, [
+                'code' => $row->code,
+                'name' => $row->name,
+                'amount' => abs($amount),
+                'is_negative' => $amount < 0
+            ]);
+
+            $currentGroupTotal += $amount;
+            if ($isAktiva) {
+                $neracaData['totalAktiva'] += $amount;
+            } else {
+                $neracaData['totalPasiva'] += $amount;
+            }
+        }
+
+        if ($currentGroup !== null && $currentGroupSide !== null) {
+            $neracaData[$currentGroupSide][] = array_merge($defaultItemStructure, [
+                'name' => 'Total ' . $currentGroupName,
+                'amount' => abs($currentGroupTotal),
+                'is_negative' => $currentGroupTotal < 0,
+                'is_group_total' => true
+            ]);
+        }
+
+        $neracaData['pasiva'][] = array_merge($defaultItemStructure, [
+            'name' => 'Sisa (Lebih) Dana Tahun Berjalan',
+            'amount' => abs($sisaDanaTahunBerjalan),
+            'is_negative' => $sisaDanaTahunBerjalan < 0,
+            'is_sisa_dana' => true
         ]);
+        $neracaData['totalPasiva'] += $sisaDanaTahunBerjalan;
+
+        return $neracaData;
     }
 
     private function getLabaRugiCalculation($startOfCurrentMonth, $endOfCurrentMonth)
@@ -530,11 +460,9 @@ class Neraca extends Page
                 $row->jurnal_umum_kredit + $row->aje_kredit;
 
             if (preg_match('/^AO-4/', $row->code)) {
-                // Pendapatan accounts (400 series)
                 $amount = $totalKredit - $totalDebit;
                 $totalPendapatan += $amount;
             } else {
-                // Beban accounts (500-700 series)
                 $amount = $totalDebit - $totalKredit;
                 $totalBeban += $amount;
             }
