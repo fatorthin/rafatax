@@ -38,6 +38,40 @@ class NeracaLajurController extends Controller
             // Get the last day of the current month for transaction date
             $transactionDate = Carbon::create($year, $month, 1)->endOfMonth();
 
+            // Calculate Laba Rugi selisih for AO-305
+            $totalPendapatan = 0;
+            $totalBeban = 0;
+
+            foreach ($data as $row) {
+                $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
+                    $row->kas_kecil_debit + $row->bank_debit +
+                    $row->jurnal_umum_debit;
+
+                $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit +
+                    $row->kas_kecil_kredit + $row->bank_kredit +
+                    $row->jurnal_umum_kredit;
+
+                $selisihSebelumAJE = $totalDebit - $totalKredit;
+                $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
+
+                // Check if this is a Laba Rugi account
+                if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
+                    $amount = $selisihSetelahAJE;
+
+                    // Determine if this is pendapatan or beban
+                    if (preg_match('/^AO-4/', $row->code)) {
+                        // Pendapatan accounts (400 series)
+                        $totalPendapatan += $amount;
+                    } else {
+                        // Beban accounts (500-700 series)
+                        $totalBeban += $amount;
+                    }
+                }
+            }
+
+            // Calculate Laba Rugi Bersih (selisih)
+            $labaRugiBersih = abs($totalPendapatan) - abs($totalBeban);
+
             // Delete existing data for this month if any
             JournalBookReport::where('journal_book_id', 3)
                 ->whereYear('transaction_date', $year)
@@ -49,27 +83,42 @@ class NeracaLajurController extends Controller
                 // Only process items that should appear in Neraca (AO-101 to AO-305, including AO-101.1 to AO-101.5 and AO-102.1 to AO-102.5)
                 // Exclude specifically AO-101.2 from being processed
                 if (preg_match('/^AO-(?!101\.2$)(?:([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/', $item->code)) {
-                    // Calculate Neraca Setelah AJE first
-                    $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit +
-                        $item->kas_kecil_debit + $item->bank_debit +
-                        $item->jurnal_umum_debit + $item->aje_debit;
+                    // Special handling for AO-305 (id 118)
+                    if ($item->code === 'AO-305' || $item->id == 118) {
+                        // For AO-305, use Laba Rugi Bersih as credit amount
+                        if ($labaRugiBersih != 0) {
+                            JournalBookReport::create([
+                                'description' => $item->code . ' - ' . $item->name,
+                                'journal_book_id' => 3,
+                                'debit_amount' => 0,
+                                'credit_amount' => $labaRugiBersih,
+                                'coa_id' => $item->id,
+                                'transaction_date' => $transactionDate,
+                            ]);
+                        }
+                    } else {
+                        // Calculate Neraca Setelah AJE for other accounts
+                        $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit +
+                            $item->kas_kecil_debit + $item->bank_debit +
+                            $item->jurnal_umum_debit + $item->aje_debit;
 
-                    $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit +
-                        $item->kas_kecil_kredit + $item->bank_kredit +
-                        $item->jurnal_umum_kredit + $item->aje_kredit;
+                        $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit +
+                            $item->kas_kecil_kredit + $item->bank_kredit +
+                            $item->jurnal_umum_kredit + $item->aje_kredit;
 
-                    $selisih = $totalDebit - $totalKredit;
+                        $selisih = $totalDebit - $totalKredit;
 
-                    // Only save if there's a balance
-                    if ($selisih != 0) {
-                        JournalBookReport::create([
-                            'description' => $item->code . ' - ' . $item->name,
-                            'journal_book_id' => 3,
-                            'debit_amount' => max(0, $selisih),
-                            'credit_amount' => max(0, -$selisih),
-                            'coa_id' => $item->id,
-                            'transaction_date' => $transactionDate,
-                        ]);
+                        // Only save if there's a balance
+                        if ($selisih != 0) {
+                            JournalBookReport::create([
+                                'description' => $item->code . ' - ' . $item->name,
+                                'journal_book_id' => 3,
+                                'debit_amount' => max(0, $selisih),
+                                'credit_amount' => max(0, -$selisih),
+                                'coa_id' => $item->id,
+                                'transaction_date' => $transactionDate,
+                            ]);
+                        }
                     }
                 }
             }
