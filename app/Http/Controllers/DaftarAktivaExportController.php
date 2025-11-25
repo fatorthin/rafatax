@@ -48,7 +48,7 @@ class DaftarAktivaExportController extends Controller
         foreach ($data as $item) {
             $tanggal = Carbon::create($tahun, $bulan, 1)->startOfMonth();
             $tanggalAkhir = $tanggal->copy()->endOfMonth();
-            
+
             $akumulasiLalu = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $item->id)
                 ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
                 ->sum('jumlah_penyusutan');
@@ -66,18 +66,24 @@ class DaftarAktivaExportController extends Controller
             $sheet->setCellValue('C' . $row, $item->harga_perolehan);
             $sheet->setCellValue('D' . $row, $item->tarif_penyusutan . '%');
             $sheet->setCellValue('E' . $row, $akumulasiLalu);
-            
+
             // Check if asset was acquired before the selected month
             if ($item->tahun_perolehan < $tanggal) {
                 $nilaiBukuLalu = $item->harga_perolehan - $akumulasiLalu;
             } else {
                 $nilaiBukuLalu = 0;
             }
-            
+
             $sheet->setCellValue('F' . $row, $nilaiBukuLalu);
             $sheet->setCellValue('G' . $row, $penyusutanBulanIni);
             $sheet->setCellValue('H' . $row, $akumulasiSdBulanIni);
-            $sheet->setCellValue('I' . $row, $item->harga_perolehan - $akumulasiSdBulanIni);
+
+            // Jika status non-aktif, tampilkan akumulasi dalam nilai minus
+            if ($item->status === 'nonaktif') {
+                $sheet->setCellValue('I' . $row, -$akumulasiSdBulanIni);
+            } else {
+                $sheet->setCellValue('I' . $row, $item->harga_perolehan - $akumulasiSdBulanIni);
+            }
 
             $row++;
         }
@@ -86,7 +92,7 @@ class DaftarAktivaExportController extends Controller
         $lastRow = $row - 1;
         $sheet->setCellValue('A' . $row, 'Total');
         $sheet->getStyle('A' . $row)->getFont()->setBold(true);
-        
+
         foreach (['C', 'E', 'F', 'G', 'H', 'I'] as $col) {
             $sheet->setCellValue($col . $row, "=SUM({$col}5:{$col}{$lastRow})");
         }
@@ -105,12 +111,12 @@ class DaftarAktivaExportController extends Controller
         // Create response
         $writer = new Xlsx($spreadsheet);
         $filename = 'daftar-aktiva-tetap-' . Carbon::create($tahun, $bulan, 1)->format('F-Y') . '.xlsx';
-        
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-        
+
         $writer->save('php://output');
         exit;
     }
-} 
+}
