@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MouResource\Pages;
 
 use App\Filament\Resources\MouResource;
+use App\Filament\Resources\MouResource\Widgets\MouListStatsOverview;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
@@ -20,6 +21,13 @@ class ManageMous extends ManageRecords
                 ->icon('heroicon-o-plus')
                 ->modalHeading('Add New MoU')
                 ->modalWidth('2xl'),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            MouListStatsOverview::class,
         ];
     }
 }

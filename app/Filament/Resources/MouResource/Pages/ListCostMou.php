@@ -26,6 +26,7 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Actions;
 use Filament\Actions\Action;
+use App\Filament\Resources\MouResource\Widgets\MouStatsOverview;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 {
@@ -59,7 +60,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     protected function getHeaderWidgets(): array
     {
-        return [];
+        return [
+            MouStatsOverview::make([
+                'mouId' => $this->mou->id,
+            ]),
+        ];
     }
 
     protected function getFooterWidgets(): array
