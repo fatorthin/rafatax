@@ -28,7 +28,7 @@ class AppPanelProvider extends PanelProvider
             ->favicon(asset('images/favicon.png'))
             ->id('app')
             ->brandName('Rafatax App')
-            ->login()
+            ->authGuard('web')
             ->userMenuItems([
                 MenuItem::make()
                     ->label('Profile')

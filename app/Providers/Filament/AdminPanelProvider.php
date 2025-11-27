@@ -41,8 +41,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->id('admin')
             ->path('admin')
-            ->login()
-            ->loginRouteSlug('login')
+            ->authGuard('web')
             ->default()
             ->brandName('Rafatax Admin')
             ->colors([
