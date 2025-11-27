@@ -88,14 +88,15 @@
                 background-color: #f5f7fb;
             }
 
-            /* Weekend tint */
-            .is-weekend td {
-                background: #fff7ed;
+            /* Weekend tint (Saturday & Sunday) - light mode: soft red */
+            .sticky-table .is-weekend td {
+                background: #fee2e2 !important;
+                /* red-100 */
             }
 
-            /* amber-50 */
-            .is-weekend td.sticky-col-1 {
-                background: #fff7ed;
+            .sticky-table .is-weekend td.sticky-col-1 {
+                background: #fee2e2 !important;
+                /* red-100 */
             }
 
             /* Sel tanggal */
@@ -264,6 +265,190 @@
             .info-badge:hover .tooltip {
                 opacity: 1;
                 visibility: visible;
+            }
+        </style>
+        <!-- Dark mode overrides to ensure readability -->
+        <style>
+            /* Container card and borders */
+            .dark .table-container {
+                background: #0b0b0d;
+                /* near zinc-950 */
+                border-color: #3f3f46;
+                /* zinc-700 */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+            }
+
+            /* Table base text & dividers */
+            .dark .sticky-table {
+                color: #e5e7eb;
+            }
+
+            .dark .sticky-table th,
+            .dark .sticky-table td {
+                border-bottom-color: #3f3f46;
+                /* zinc-700 */
+                background: #111317;
+                /* deep background for cells */
+                color: #e5e7eb;
+            }
+
+            /* Header styling in dark */
+            .dark .sticky-table thead th {
+                background: linear-gradient(180deg, #3f3f46 0%, #2b2b31 100%);
+                color: #f4f4f5;
+                box-shadow: inset 0 -1px 0 #3f3f46, 0 2px 0 rgba(0, 0, 0, 0.25);
+            }
+
+            /* Sticky first column */
+            .dark .sticky-col-1 {
+                background: #1b1b1f;
+                box-shadow: 2px 0 0 0 #3f3f46;
+            }
+
+            .dark thead th.sticky-col-1 {
+                background: linear-gradient(180deg, #3f3f46 0%, #2b2b31 100%);
+            }
+
+            /* Zebra & hover */
+            .dark .sticky-table tbody tr:nth-child(even) td {
+                background-color: #18181b;
+            }
+
+            .dark .sticky-table tbody tr:hover td {
+                background-color: #334155;
+            }
+
+            .dark .sticky-table tbody tr:nth-child(even) td.sticky-col-1 {
+                background-color: #18181b;
+            }
+
+            .dark .sticky-table tbody tr:hover td.sticky-col-1 {
+                background-color: #334155;
+            }
+
+            /* Weekend tint in dark mode: muted red */
+            .dark .sticky-table .is-weekend td {
+                background: #451717 !important;
+                /* deep red */
+            }
+
+            .dark .sticky-table .is-weekend td.sticky-col-1 {
+                background: #451717 !important;
+            }
+
+            .dark .sticky-table .is-weekend td,
+            .dark .sticky-table .is-weekend .date-cell .day-name,
+            .dark .sticky-table .is-weekend .date-cell .day-number {
+                color: #f4f4f5;
+            }
+
+            /* Date cell text */
+            .dark .date-cell .day-name {
+                color: #c4c4cc;
+            }
+
+            .dark .date-cell .day-number {
+                color: #f4f4f5;
+            }
+
+            /* Chips */
+            .dark .status-masuk {
+                background: #052e25;
+                color: #34d399;
+                border-color: #064e3b;
+            }
+
+            .dark .status-sakit {
+                background: #0b2246;
+                color: #60a5fa;
+                border-color: #1d4ed8;
+            }
+
+            .dark .status-izin {
+                background: #3b2b0b;
+                color: #fbbf24;
+                border-color: #b45309;
+            }
+
+            .dark .status-halfday {
+                background: #3b2b0b;
+                color: #f59e0b;
+                border-color: #b45309;
+            }
+
+            .dark .status-cuti {
+                background: #0a2a31;
+                color: #67e8f9;
+                border-color: #0e7490;
+            }
+
+            .dark .status-alfa {
+                background: #3b0a0a;
+                color: #f87171;
+                border-color: #b91c1c;
+            }
+
+            .dark .status-default {
+                background: #18181b;
+                color: #e5e7eb;
+                border-color: #3f3f46;
+            }
+
+            /* Time text */
+            .dark .time-text {
+                color: #a1a1aa;
+            }
+
+            .dark .time-text .value {
+                color: #f4f4f5;
+            }
+
+            /* Badges */
+            .dark .badge-late {
+                background: #ef4444;
+            }
+
+            .dark .badge-visit-solo {
+                background: #3b82f6;
+            }
+
+            .dark .badge-visit-luar {
+                background: #10b981;
+            }
+
+            /* Tooltip */
+            .dark .tooltip {
+                background: #111827;
+                color: #f4f4f5;
+            }
+
+            .dark .tooltip::after {
+                border-top-color: #111827;
+            }
+
+            /* Print readability in dark mode */
+            @media print {
+
+                .dark .sticky-table th,
+                .dark .sticky-table td {
+                    color: #000;
+                    border-bottom-color: #000;
+                    background: #fff;
+                }
+
+                .dark .sticky-table thead th {
+                    background: #ddd !important;
+                    color: #000 !important;
+                }
+
+                .dark .sticky-col-1 {
+                    background: #f5f5f5 !important;
+                    box-shadow: 2px 0 0 0 #000;
+                }
+
+                .dark .is-weekend td {
+                    background: #ffe8cc !important;
+                }
             }
         </style>
 
