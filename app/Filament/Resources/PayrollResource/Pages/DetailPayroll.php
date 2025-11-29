@@ -6,26 +6,30 @@ use Carbon\Carbon;
 use App\Models\Staff;
 use Filament\Actions;
 use App\Models\Payroll;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Illuminate\Bus\Batch;
 use Filament\Tables\Table;
+use App\Jobs\SendPayslipPdf;
 use App\Models\PayrollDetail;
 use App\Models\StaffAttendance;
 use App\Models\StaffCompetency;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
+use Filament\Forms\Components\Fieldset;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Infolists\Components\Section;
 use App\Filament\Resources\PayrollResource;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Illuminate\Support\Facades\Bus;
-use Illuminate\Bus\Batch;
-use App\Jobs\SendPayslipPdf;
-use Illuminate\Support\Facades\Log;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 
 class DetailPayroll extends Page implements HasTable
 {
@@ -40,6 +44,59 @@ class DetailPayroll extends Page implements HasTable
     public function getTitle(): string
     {
         return 'Detail Payroll - ' . $this->record->name;
+    }
+
+    /**
+     * Hitung total gaji dengan semua komponen
+     */
+    public static function computeTotalSalary($data)
+    {
+        // Handle both array dan Get object dari Filament
+        $getValue = function ($key) use ($data) {
+            if (is_array($data)) {
+                return $data[$key] ?? 0;
+            }
+            // Untuk Get object, gunakan callable
+            return $data($key) ?? 0;
+        };
+
+        $salary = (int) $getValue('salary');
+        $bonusPosition = (int) $getValue('bonus_position');
+        $bonusCompetency = (int) $getValue('bonus_competency');
+        $overtimeCount = (float) $getValue('overtime_count');
+        $visitSoloCount = (int) $getValue('visit_solo_count');
+        $visitLuarSoloCount = (int) $getValue('visit_luar_solo_count');
+        $sickLeaveCount = (int) $getValue('sick_leave_count');
+        $halfdayCount = (int) $getValue('halfday_count');
+        $leaveCount = (int) $getValue('leave_count');
+        $bonusLain = (int) $getValue('bonus_lain');
+        $cutBpjsKesehatan = (int) $getValue('cut_bpjs_kesehatan');
+        $cutBpjsKetenagakerjaan = (int) $getValue('cut_bpjs_ketenagakerjaan');
+        $cutLain = (int) $getValue('cut_lain');
+        $cutHutang = (int) $getValue('cut_hutang');
+
+        // Hitung bonus
+        $bonusLembur = $overtimeCount * 10000;
+        $bonusVisitSolo = $visitSoloCount * 10000;
+        $bonusVisitLuar = $visitLuarSoloCount * 15000;
+
+        // Hitung potongan
+        $cutSakit = $sickLeaveCount * 0.5 * $salary / 25;
+        $cutHalfday = $halfdayCount * 0.5 * $salary / 25;
+        $cutIjin = $leaveCount * $salary / 25;
+
+        // Total
+        $total = $salary + $bonusPosition + $bonusCompetency + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $bonusLain - $cutBpjsKesehatan - $cutBpjsKetenagakerjaan - $cutLain - $cutHutang - $cutSakit - $cutHalfday - $cutIjin;
+
+        return $total;
+    }
+
+    /**
+     * Format nilai ke currency
+     */
+    public static function formatCurrency($value)
+    {
+        return 'Rp ' . number_format((int) $value, 0, ',', '.');
     }
 
     public function infolist(Infolist $infolist): Infolist
@@ -401,8 +458,205 @@ class DetailPayroll extends Page implements HasTable
                 \Filament\Tables\Actions\Action::make('edit')
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')
-                    ->url(fn($record) => route('filament.admin.resources.payroll-details.edit', ['record' => $record->id]))
-                    ->openUrlInNewTab(false),
+                    ->color('primary')
+                    ->fillForm(fn($record) => [
+                        'salary' => $record->salary,
+                        'bonus_position' => $record->bonus_position,
+                        'bonus_competency' => $record->bonus_competency,
+                        'overtime_count' => $record->overtime_count,
+                        'visit_solo_count' => $record->visit_solo_count,
+                        'visit_luar_solo_count' => $record->visit_luar_solo_count,
+                        'sick_leave_count' => $record->sick_leave_count,
+                        'halfday_count' => $record->halfday_count,
+                        'leave_count' => $record->leave_count,
+                        'cuti_count' => $record->cuti_count,
+                        'bonus_lain' => $record->bonus_lain,
+                        'cut_bpjs_kesehatan' => $record->cut_bpjs_kesehatan,
+                        'cut_bpjs_ketenagakerjaan' => $record->cut_bpjs_ketenagakerjaan,
+                        'cut_lain' => $record->cut_lain,
+                        'cut_hutang' => $record->cut_hutang,
+                    ])
+                    ->form([
+                        Fieldset::make('Gaji & Bonus')
+                            ->schema([
+                                TextInput::make('salary')
+                                    ->label('Salary')
+                                    ->prefix('Rp')
+                                    ->numeric()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('bonus_position')
+                                    ->label('Bonus Position')
+                                    ->prefix('Rp')
+                                    ->numeric()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('bonus_competency')
+                                    ->label('Bonus Competency')
+                                    ->prefix('Rp')
+                                    ->numeric()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('bonus_lain')
+                                    ->label('Bonus Lain')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                            ]),
+                        Fieldset::make('Absensi & Visit')
+                            ->schema([
+                                TextInput::make('overtime_count')
+                                    ->label('Overtime Count')
+                                    ->numeric()
+                                    ->suffix('Jam')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('sick_leave_count')
+                                    ->label('Sick Leave Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('halfday_count')
+                                    ->label('Halfday Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('leave_count')
+                                    ->label('Leave/Alfa Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('cuti_count')
+                                    ->label('Cuti Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('visit_solo_count')
+                                    ->label('Visit Solo Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('visit_luar_solo_count')
+                                    ->label('Visit Luar Solo Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                            ]),
+                        Fieldset::make('Potongan Lain')
+                            ->schema([
+                                TextInput::make('cut_bpjs_kesehatan')
+                                    ->label('Cut BPJS Kesehatan')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('cut_bpjs_ketenagakerjaan')
+                                    ->label('Cut BPJS Ketenagakerjaan')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('cut_hutang')
+                                    ->label('Cut Hutang')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('cut_lain')
+                                    ->label('Cut Lain')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->prefix('Rp')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->required(),
+                            ]),
+                        TextInput::make('total_salary_display')
+                            ->label('Total Salary (otomatis)')
+                            ->prefix('Rp')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function (Set $set, Get $get) {
+                                $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                            }),
+                    ])
+
+                    ->modalHeading(fn($record) => "Edit Payroll Gaji - {$record->staff->name}")
+                    ->modalSubmitActionLabel('Simpan')
+                    ->action(function ($record, array $data) {
+                        $record->update($data);
+
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('Data payroll detail berhasil diperbarui')
+                            ->success()
+                            ->send();
+                    }),
 
                 \Filament\Tables\Actions\Action::make('slip_pdf')
                     ->label('Slip PDF')
