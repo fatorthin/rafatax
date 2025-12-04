@@ -54,7 +54,7 @@ class CategoryMouResource extends Resource
                     ->alignCenter()
                     ->sortable(),
                 TextColumn::make('total_cost_list')
-                    ->label('Total Nominal Cost List')
+                    ->label('Total Nominal MoU')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
                         return \App\Models\CostListMou::whereHas('mou', function ($query) use ($record) {
@@ -84,7 +84,7 @@ class CategoryMouResource extends Resource
                     ->label('Lihat MoU')
                     ->url(fn(CategoryMou $record) => CategoryMouResource::getUrl('list-mou', ['record' => $record]))
                     ->icon('heroicon-o-eye')
-                    ->color('primary'),
+                    ->color('success'),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

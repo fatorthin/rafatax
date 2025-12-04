@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
             'primary' => Color::Amber,
             'success' => Color::Green,
             'warning' => Color::Amber,
+            'secondary' => Color::Gray,
         ]);
-    }   
+    }
 }

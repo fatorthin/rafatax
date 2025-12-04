@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NeracaLajurController;
 use App\Http\Controllers\MouPrintViewController;
+use App\Http\Controllers\InvoicePrintController;
 use App\Http\Controllers\ExportPayrollController;
 use App\Http\Controllers\PayrollWhatsAppController;
 use App\Http\Controllers\ExportAttendanceController;
@@ -73,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/mou/{id}/print-view', [MouPrintViewController::class, 'show'])->name('mou.print.view');
+Route::get('/invoices/{id}/pdf', [InvoicePrintController::class, 'download'])->name('invoices.pdf')->middleware('auth');
 Route::get('/daftar-aktiva/export/{bulan}/{tahun}', [DaftarAktivaExportController::class, 'export'])->name('daftar-aktiva.export');
 Route::get('/exports/attendance/monthly', [ExportAttendanceController::class, 'exportMonthly'])
     ->name('exports.attendance.monthly');

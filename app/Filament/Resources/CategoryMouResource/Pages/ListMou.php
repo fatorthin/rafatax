@@ -18,6 +18,7 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Columns\SelectColumn;
 use App\Filament\Resources\CategoryMouResource;
 use Filament\Tables\Concerns\InteractsWithTable;
+use App\Filament\Resources\CategoryMouResource\Widgets\CategoryMouStatsOverview;
 
 class ListMou extends Page implements HasTable
 {
@@ -48,6 +49,15 @@ class ListMou extends Page implements HasTable
 
         return 'Total MoU Amount: Rp ' . number_format($totalMouAmount, 0, ',', '.') .
             ' | Total Invoice Amount: Rp ' . number_format($totalInvoiceAmount, 0, ',', '.');
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            CategoryMouStatsOverview::make([
+                'categoryId' => $this->record->id,
+            ]),
+        ];
     }
 
     public function table(Table $table): Table
