@@ -159,6 +159,7 @@
                             @php $totalPendapatanDisplay += $item['amount']; @endphp
                         @endif
                     @endforeach
+                    {{-- Total Pendapatan (operasional only) --}}
                     <tr class="border-t border-gray-300 font-bold bg-gray-50">
                         <td colspan="2" class="px-4 py-2 text-right">Total Pendapatan</td>
                         <td class="px-4 py-2 text-right">{{ number_format($totalPendapatanDisplay, 0, ',', '.') }}</td>
@@ -168,22 +169,60 @@
                     <tr class="bg-gray-100 mt-4">
                         <td colspan="3" class="px-4 py-2 font-bold">Beban Biaya</td>
                     </tr>
-                    @php $totalBebanDisplay = 0; @endphp
+                    @php
+                        // add regular Beban items
+                        $totalBebanOperasional = 0;
+                    @endphp
                     @foreach ($data['items'] as $item)
                         @if ($item['category'] === 'Beban')
                             <tr class="border-b border-gray-200 hover:bg-gray-50">
                                 <td class="px-4 py-2">{{ $item['code'] }}</td>
                                 <td class="px-4 py-2">{{ $item['name'] }}</td>
-                                <td class="px-4 py-2 text-right">
-                                    {{ formatNumber($item['amount'], $item['is_negative'] ?? false, true) }}</td>
+                                <td class="px-4 py-2 text-right">{{ formatNumber($item['amount'], $item['is_negative'] ?? false, true) }}</td>
                             </tr>
-                            @php $totalBebanDisplay += $item['amount']; @endphp
+                            @php $totalBebanOperasional += $item['amount']; @endphp
                         @endif
                     @endforeach
+
+                    {{-- Total Beban (operasional only) --}}
                     <tr class="border-t border-gray-300 font-bold bg-gray-50">
                         <td colspan="2" class="px-4 py-2 text-right">Total Beban Biaya</td>
-                        <td class="px-4 py-2 text-right">
-                            {{ formatNumber($totalBebanDisplay, $totalBebanDisplay < 0, true) }}</td>
+                        <td class="px-4 py-2 text-right">{{ formatNumber($totalBebanOperasional, $totalBebanOperasional < 0, true) }}</td>
+                    </tr>
+
+                    {{-- Penghasilan / Biaya Luar Usaha (subtotal placed under Beban Biaya) --}}
+                    <tr class="bg-gray-100 mt-4">
+                        <td colspan="3" class="px-4 py-2 font-bold">Penghasilan (Biaya) Luar Usaha</td>
+                    </tr>
+                    @php
+                        $totalPenghasilanLuarDisplay = 0;
+                        $totalBebanLuarDisplay = 0;
+                    @endphp
+                    @foreach ($data['items'] as $item)
+                        @if ($item['category'] === 'Penghasilan (Biaya) Luar Usaha')
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="px-4 py-2">{{ $item['code'] }}</td>
+                                <td class="px-4 py-2">{{ $item['name'] }}</td>
+                                <td class="px-4 py-2 text-right">
+                                    @if(preg_match('/^AO-7/', $item['code']))
+                                        {{-- 7xx -> biaya luar usaha: show like expense --}}
+                                        {{ formatNumber($item['amount'], $item['is_negative'] ?? false, true) }}
+                                        @php $totalBebanLuarDisplay += $item['amount']; @endphp
+                                    @else
+                                        {{-- 6xx -> penghasilan luar usaha: show like pendapatan --}}
+                                        {{ number_format($item['amount'], 0, ',', '.') }}
+                                        @php $totalPenghasilanLuarDisplay += $item['amount']; @endphp
+                                    @endif
+                                </td>
+                            </tr>
+                        @endif
+                    @endforeach
+
+                    {{-- Total Penghasilan (Biaya) Luar Usaha (subtotal) --}}
+                    @php $totalExternalNet = $totalPenghasilanLuarDisplay + $totalBebanLuarDisplay; @endphp
+                    <tr class="border-t border-gray-300 font-bold bg-gray-50">
+                        <td colspan="2" class="px-4 py-2 text-right">Total Penghasilan (Biaya) Luar Usaha</td>
+                        <td class="px-4 py-2 text-right">{{ formatNumber($totalExternalNet, $totalExternalNet < 0, true) }}</td>
                     </tr>
 
                     <!-- Laba/Rugi Bersih -->

@@ -18,7 +18,7 @@ class LabaRugiBulanan extends Page
     protected static string $resource = CashReportResource::class;
 
     protected static string $view = 'filament.resources.cash-report-resource.pages.laba-rugi-bulanan';
-    
+
     protected static ?string $title = 'Laporan Laba Rugi Bulanan';
     protected static ?string $navigationLabel = 'Laporan Laba Rugi Bulanan';
     protected static ?string $slug = 'laba-rugi-bulanan';
@@ -38,7 +38,7 @@ class LabaRugiBulanan extends Page
             Action::make('export')
                 ->label('Export Excel')
                 ->icon('heroicon-o-document-arrow-down')
-                ->action(fn () => $this->exportToExcel()),
+                ->action(fn() => $this->exportToExcel()),
             Action::make('filter')
                 ->label('Filter Periode')
                 ->icon('heroicon-o-funnel')
@@ -46,10 +46,18 @@ class LabaRugiBulanan extends Page
                     Select::make('month')
                         ->label('Bulan')
                         ->options([
-                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-                            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                            1 => 'Januari',
+                            2 => 'Februari',
+                            3 => 'Maret',
+                            4 => 'April',
+                            5 => 'Mei',
+                            6 => 'Juni',
+                            7 => 'Juli',
+                            8 => 'Agustus',
+                            9 => 'September',
+                            10 => 'Oktober',
+                            11 => 'November',
+                            12 => 'Desember'
                         ])
                         ->default($this->month)
                         ->required(),
@@ -74,7 +82,7 @@ class LabaRugiBulanan extends Page
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url(fn () => static::getResource()::getUrl('neraca-lajur')),
+                ->url(fn() => static::getResource()::getUrl('neraca-lajur')),
         ];
     }
 
@@ -83,7 +91,7 @@ class LabaRugiBulanan extends Page
         // Start date of previous month
         $startOfPreviousMonth = Carbon::create($this->year, $this->month, 1)->subMonth()->startOfMonth();
         $endOfPreviousMonth = Carbon::create($this->year, $this->month, 1)->subMonth()->endOfMonth();
-        
+
         // Current month date range
         $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
@@ -214,14 +222,14 @@ class LabaRugiBulanan extends Page
         // dd($data->toArray());
 
         foreach ($data as $row) {
-            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit + 
-                         $row->kas_kecil_debit + $row->bank_debit + 
-                         $row->jurnal_umum_debit + $row->aje_debit;
-            
-            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit + 
-                          $row->kas_kecil_kredit + $row->bank_kredit + 
-                          $row->jurnal_umum_kredit + $row->aje_kredit;
-            
+            $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
+                $row->kas_kecil_debit + $row->bank_debit +
+                $row->jurnal_umum_debit + $row->aje_debit;
+
+            $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit +
+                $row->kas_kecil_kredit + $row->bank_kredit +
+                $row->jurnal_umum_kredit + $row->aje_kredit;
+
             // Check if this is a Laba Rugi account
             if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
                 // Determine if this is pendapatan or beban based on the account code
@@ -230,8 +238,18 @@ class LabaRugiBulanan extends Page
                     $amount = $totalKredit - $totalDebit;
                     $totalPendapatan += $amount;
                     $category = 'Pendapatan';
+                } elseif (preg_match('/^AO-6/', $row->code)) {
+                    // Penghasilan Luar Usaha (600 series) - treated as pendapatan (external income)
+                    $amount = $totalKredit - $totalDebit;
+                    $totalPendapatan += $amount;
+                    $category = 'Penghasilan (Biaya) Luar Usaha';
+                } elseif (preg_match('/^AO-7/', $row->code)) {
+                    // Biaya Luar Usaha (700 series) - treated as beban (external expense)
+                    $amount = $totalDebit - $totalKredit;
+                    $totalBeban += $amount;
+                    $category = 'Penghasilan (Biaya) Luar Usaha';
                 } else {
-                    // Beban accounts (500-700 series)
+                    // Beban accounts (500 series and others)
                     // Untuk beban, jika ada debit maka nilainya minus
                     $amount = $totalDebit - $totalKredit;
                     $totalBeban += $amount;
@@ -248,7 +266,7 @@ class LabaRugiBulanan extends Page
             }
         }
 
-        
+
 
         return [
             'items' => collect($labaRugiData)->sortBy('code'),
@@ -261,14 +279,22 @@ class LabaRugiBulanan extends Page
     public function exportToExcel(): StreamedResponse
     {
         $bulan = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $data = $this->getLabaRugiData();
-        
+
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
@@ -292,68 +318,67 @@ class LabaRugiBulanan extends Page
         // Current row
         $row = 5;
 
-        // Pendapatan Section
+        // Pendapatan Section (operasional)
         $sheet->mergeCells("A{$row}:C{$row}");
         $sheet->setCellValue("A{$row}", 'Pendapatan');
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $sheet->getStyle("A{$row}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F3F4F6');
         $row++;
 
-        $totalPendapatan = 0;
+        $sectionPendapatanTotal = 0;
         foreach ($data['items'] as $item) {
             if ($item['category'] === 'Pendapatan') {
                 $sheet->setCellValue("A{$row}", $item['code']);
                 $sheet->setCellValue("B{$row}", $item['name']);
                 $sheet->setCellValue("C{$row}", $item['amount']);
                 $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
-                $totalPendapatan += $item['amount'];
+                $sectionPendapatanTotal += $item['amount'];
                 $row++;
             }
         }
 
-        // Total Pendapatan
+        // Total Pendapatan (operasional)
         $sheet->mergeCells("A{$row}:B{$row}");
         $sheet->setCellValue("A{$row}", 'Total Pendapatan');
-        $sheet->setCellValue("C{$row}", $totalPendapatan);
+        $sheet->setCellValue("C{$row}", $sectionPendapatanTotal);
         $sheet->getStyle("A{$row}:C{$row}")->getFont()->setBold(true);
         $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
         $row++;
         $row++;
 
-        // Beban Section
+        // Beban Section (operasional)
         $sheet->mergeCells("A{$row}:C{$row}");
         $sheet->setCellValue("A{$row}", 'Beban Biaya');
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $sheet->getStyle("A{$row}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F3F4F6');
         $row++;
 
-        $totalBeban = 0;
+        $sectionBebanTotal = 0;
         foreach ($data['items'] as $item) {
             if ($item['category'] === 'Beban') {
                 $sheet->setCellValue("A{$row}", $item['code']);
                 $sheet->setCellValue("B{$row}", $item['name']);
-                
+
                 // Format negative numbers with parentheses
                 if ($item['is_negative']) {
-                    // $sheet->setCellValue("C{$row}", "(" . abs($item['amount']) . ")");
                     $sheet->setCellValue("C{$row}", $item['amount']);
                     $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0_);(#,##0)');
                 } else {
                     $sheet->setCellValue("C{$row}", $item['amount']);
                     $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
                 }
-                
-                $totalBeban += $item['amount'];
+
+                $sectionBebanTotal += $item['amount'];
                 $row++;
             }
         }
 
-        // Total Beban
+        // Total Beban (operasional)
         $sheet->mergeCells("A{$row}:B{$row}");
         $sheet->setCellValue("A{$row}", 'Total Beban Biaya');
-        $sheet->setCellValue("C{$row}", $totalBeban);
+        $sheet->setCellValue("C{$row}", $sectionBebanTotal);
         $sheet->getStyle("A{$row}:C{$row}")->getFont()->setBold(true);
-        if ($totalBeban < 0) {
+        if ($sectionBebanTotal < 0) {
             $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0_);(#,##0)');
         } else {
             $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
@@ -361,7 +386,45 @@ class LabaRugiBulanan extends Page
         $row++;
         $row++;
 
-        // Laba/Rugi Bersih
+        // Penghasilan / Biaya Luar Usaha Section (6xx / 7xx) - placed after Beban
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $sheet->setCellValue("A{$row}", 'Penghasilan (Biaya) Luar Usaha');
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$row}")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F3F4F6');
+        $row++;
+
+        $sectionPenghasilanLuarTotal = 0;
+        foreach ($data['items'] as $item) {
+            if ($item['category'] === 'Penghasilan (Biaya) Luar Usaha') {
+                $sheet->setCellValue("A{$row}", $item['code']);
+                $sheet->setCellValue("B{$row}", $item['name']);
+
+                if ($item['is_negative']) {
+                    $sheet->setCellValue("C{$row}", $item['amount']);
+                    $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0_);(#,##0)');
+                } else {
+                    $sheet->setCellValue("C{$row}", $item['amount']);
+                    $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
+                }
+
+                $sectionPenghasilanLuarTotal += $item['amount'];
+                $row++;
+            }
+        }
+
+        // Total Penghasilan (Biaya) Luar Usaha (subtotal)
+        $sheet->mergeCells("A{$row}:B{$row}");
+        $sheet->setCellValue("A{$row}", 'Total Penghasilan (Biaya) Luar Usaha');
+        $sheet->setCellValue("C{$row}", $sectionPenghasilanLuarTotal);
+        $sheet->getStyle("A{$row}:C{$row}")->getFont()->setBold(true);
+        if ($sectionPenghasilanLuarTotal < 0) {
+            $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0_);(#,##0)');
+        } else {
+            $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
+        }
+        $row++;
+
+        // Laba/Rugi Bersih (includes operasional + luar usaha)
         $labaRugi = $data['labaRugiBersih'];
         $sheet->mergeCells("A{$row}:B{$row}");
         $sheet->setCellValue("A{$row}", ($labaRugi >= 0 ? 'Laba' : 'Rugi') . ' Bersih');
@@ -377,9 +440,9 @@ class LabaRugiBulanan extends Page
 
         // Create the Excel file
         $writer = new Xlsx($spreadsheet);
-        
+
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
         }, "Laporan_Laba_Rugi_{$bulan[$this->month]}_{$this->year}.xlsx");
     }
-} 
+}
