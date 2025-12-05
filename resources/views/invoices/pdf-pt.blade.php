@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invoice PDF (PT)</title>
+    <style>
+        body {
+            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            font-size: 12px;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .header {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .header img {
+            max-width: 100%;
+            width: 330px;
+        }
+
+        .meta {
+            float: right;
+            text-align: right;
+        }
+
+        .invoice-number {
+            text-align: center;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 8px;
+        }
+
+        th {
+            background: #f5f5f5;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .total-row td {
+            font-weight: bold;
+        }
+
+        .footer-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+
+        .transfer-info {
+            text-align: left;
+            flex: 1;
+        }
+
+        .transfer-info u {
+            text-decoration: underline;
+        }
+
+        .signature-section {
+            text-align: right;
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            @if (!empty($headerImage))
+                <img src="{{ $headerImage }}" alt="Kop Invoice PT">
+            @endif
+            <div class="meta">
+                <div>Sukoharjo, {{ now()->format('d F Y') }}</div>
+                <div>Kepada :</div>
+                <div>
+                    <strong>{{ optional($invoice->mou->client)->name ?? (optional($invoice->mou->client)->company_name ?? '') }}</strong>
+                </div>
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+
+        <h3 class="invoice-number">{{ $invoice->invoice_number ?? 'Invoice' }}</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:60%;">Keterangan</th>
+                    <th style="width:20%;" class="text-right">Nominal</th>
+                    <th style="width:20%;" class="text-right">Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($costLists as $index => $item)
+                    <tr>
+                        <td>{{ $item->description ?? 'Fee' }}</td>
+                        <td class="text-right">{{ number_format($item->amount, 0, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($item->amount, 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+                <tr class="total-row">
+                    <td style="text-align:left;">Terbilang
+                        :<br><em>{{ \App\Helpers\TerbilangHelper::terbilang($costLists->sum('amount')) }}</em></td>
+                    <td class="text-right">TOTAL</td>
+                    <td class="text-right">{{ number_format($costLists->sum('amount'), 0, ',', '.') }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer-section">
+            <div class="transfer-info">
+                <u>TRANSFER VIA</u><br>
+                BCA.IDR<br>
+                A.C : 785 - 1135 - 425<br>
+                A.N : Antin Okfitasari
+            </div>
+            <div class="signature-section">
+                <div>Hormat Kami,</div>
+                <div style="margin-top: 40px;">( Kasir )</div>
+            </div>
+        </div>
+
+        @if (!empty($error))
+            <div style="color: red; margin-top: 12px;">PDF generation error: {{ $error }}</div>
+        @endif
+    </div>
+</body>
+
+</html>

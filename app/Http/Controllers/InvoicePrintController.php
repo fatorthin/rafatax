@@ -14,23 +14,54 @@ class InvoicePrintController extends Controller
         $invoice = Invoice::with(['mou.client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
+        // Choose view based on MoU type (use custom KKP/PT design)
+        $mouType = optional($invoice->mou)->type;
+        $mouTypeNormalized = is_string($mouType) ? strtolower($mouType) : '';
+
+        if ($mouTypeNormalized === 'kkp') {
+            $view = 'invoices.pdf-kkp';
+            $headerImageFile = 'kop-inovice-kkp.png';
+        } elseif ($mouTypeNormalized === 'pt') {
+            $view = 'invoices.pdf-pt';
+            $headerImageFile = 'kop-invoice-pt.png';
+        } else {
+            $view = 'invoices.pdf';
+            $headerImageFile = null;
+        }
+
+        // Convert header image to base64 for PDF embedding
+        $headerImageBase64 = '';
+        if ($headerImageFile) {
+            $headerImagePath = public_path('images/' . $headerImageFile);
+            if (file_exists($headerImagePath)) {
+                $imageData = file_get_contents($headerImagePath);
+                $headerImageBase64 = 'data:image/png;base64,' . base64_encode($imageData);
+            }
+        }
+
+        $viewData = [
+            'invoice' => $invoice,
+            'costLists' => $costLists,
+            'headerImage' => $headerImageBase64,
+        ];
+
         // Attempt to generate PDF using barryvdh/laravel-dompdf
         try {
-            $pdf = Pdf::loadView('invoices.pdf', [
-                'invoice' => $invoice,
-                'costLists' => $costLists,
-            ])->setPaper('a4', 'portrait');
+            $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
 
-            $filename = 'invoice-' . ($invoice->invoice_number ?? $invoice->id) . '.pdf';
+            // Clean invoice number to remove invalid filename characters
+            $invoiceNumberClean = str_replace(
+                ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
+                '-',
+                $invoice->invoice_number ?? $invoice->id
+            );
+            $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
 
             return $pdf->download($filename);
         } catch (\Throwable $e) {
-            // Fallback: render the view in browser if PDF generation fails
-            return view('invoices.pdf', [
-                'invoice' => $invoice,
-                'costLists' => $costLists,
-                'error' => $e->getMessage(),
-            ]);
+            // Fallback: render the selected view in browser if PDF generation fails
+            $viewData['error'] = $e->getMessage();
+            return view($view, $viewData);
         }
     }
 }
