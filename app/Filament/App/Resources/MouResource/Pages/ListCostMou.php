@@ -4,29 +4,30 @@ namespace App\Filament\App\Resources\MouResource\Pages;
 
 use App\Models\Coa;
 use App\Models\MoU;
+use Filament\Actions;
+use App\Models\Invoice;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\CostListMou;
-use App\Models\Invoice;
+use Filament\Actions\Action;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
-use App\Filament\App\Resources\MouResource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Columns\Summarizers\Sum;
-use Filament\Infolists\Infolist;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Contracts\HasInfolists;
-use Filament\Infolists\Concerns\InteractsWithInfolists;
-use Filament\Actions;
-use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Auth;
+use App\Filament\App\Widgets\MouInvoicesTable;
+use Filament\Infolists\Components\Section;
+use App\Filament\App\Resources\MouResource;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Infolists\Contracts\HasInfolists;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Infolists\Concerns\InteractsWithInfolists;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 {
@@ -65,7 +66,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     protected function getFooterWidgets(): array
     {
-        return [];
+        return [
+            MouInvoicesTable::make([
+                'mouId' => $this->mou->id,
+            ]),
+        ];
     }
 
     public function infolist(Infolist $infolist): Infolist
@@ -124,7 +129,6 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
         return $table
             ->query(fn() => CostListMou::where('mou_id', $this->mou->id))
             ->heading('Daftar Biaya')
-            ->description('Detail biaya untuk MoU ini')
             ->columns([
                 TextColumn::make('id')
                     ->label('No')
@@ -148,9 +152,6 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 //
             ])
             ->actions([
-                \Filament\Tables\Actions\ViewAction::make()
-                    ->label('Lihat')
-                    ->icon('heroicon-o-eye'),
                 \Filament\Tables\Actions\Action::make('editCost')
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')

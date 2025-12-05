@@ -17,6 +17,7 @@ use App\Traits\HasPermissions;
 class StaffResource extends Resource
 {
     use HasPermissions;
+
     protected static ?string $model = Staff::class;
 
     protected static ?string $navigationGroup = 'HRD';

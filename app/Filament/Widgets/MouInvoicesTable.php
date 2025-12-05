@@ -16,7 +16,7 @@ class MouInvoicesTable extends BaseWidget
 
     protected int | string | array $columnSpan = 'full';
 
-    protected static ?string $heading = 'Invoices for this MoU';
+    protected static ?string $heading = 'Daftar Invoice MoU';
 
     // Property to store computed total value
     protected $totalValue = 0;
@@ -48,7 +48,7 @@ class MouInvoicesTable extends BaseWidget
     {
         return $table
             ->query($this->getTableQuery())
-            ->heading('Invoices for this MoU')
+            ->heading('Daftar Invoice MoU')
             ->headerActions([
                 Tables\Actions\Action::make('createInvoice')
                     ->label('Create New Invoice')
@@ -56,7 +56,6 @@ class MouInvoicesTable extends BaseWidget
                     ->url(fn() => route('filament.admin.resources.invoices.create', ['mou_id' => $this->mouId]))
                     ->color('primary'),
             ])
-            ->description('List of all invoices associated with this MoU')
             ->columns([
                 Tables\Columns\TextColumn::make('invoice_number')
                     ->label('Invoice Number')
