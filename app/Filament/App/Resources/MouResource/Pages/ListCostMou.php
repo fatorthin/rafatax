@@ -66,11 +66,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     protected function getFooterWidgets(): array
     {
-        return [
-            MouInvoicesTable::make([
-                'mouId' => $this->mou->id,
-            ]),
-        ];
+        return [];
     }
 
     public function infolist(Infolist $infolist): Infolist
@@ -267,6 +263,63 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
                     Notification::make()
                         ->title('Biaya berhasil ditambahkan')
+                        ->success()
+                        ->send();
+                }),
+            Action::make('createInvoice')
+                ->label('Buat Invoice')
+                ->icon('heroicon-o-document-currency-dollar')
+                ->color('info')
+                ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
+                ->form([
+                    Select::make('mou_id')
+                        ->label('MoU')
+                        ->options(function () {
+                            return MoU::query()
+                                ->select('id', 'mou_number')
+                                ->get()
+                                ->pluck('mou_number', 'id');
+                        })
+                        ->searchable()
+                        ->required()
+                        ->default($this->mou->id),
+                    TextInput::make('invoice_number')
+                        ->label('Nomor Invoice')
+                        ->required()
+                        ->maxLength(255)
+                        ->unique(Invoice::class, 'invoice_number'),
+                    \Filament\Forms\Components\DatePicker::make('invoice_date')
+                        ->label('Tanggal Invoice')
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
+                            if ($state) {
+                                $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
+                                $set('due_date', $dueDate);
+                            }
+                        }),
+                    \Filament\Forms\Components\DatePicker::make('due_date')
+                        ->label('Tanggal Jatuh Tempo')
+                        ->required(),
+                    Select::make('invoice_status')
+                        ->label('Status')
+                        ->options([
+                            'unpaid' => 'Belum Dibayar',
+                            'paid' => 'Sudah Dibayar'
+                        ])
+                        ->default('unpaid'),
+                    Select::make('invoice_type')
+                        ->label('Tipe Invoice')
+                        ->options([
+                            'pt' => 'PT',
+                            'kkp' => 'KKP'
+                        ]),
+                ])
+                ->action(function (array $data) {
+                    Invoice::create($data);
+
+                    Notification::make()
+                        ->title('Invoice berhasil dibuat')
                         ->success()
                         ->send();
                 }),

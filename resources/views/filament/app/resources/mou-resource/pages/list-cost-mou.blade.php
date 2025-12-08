@@ -5,5 +5,9 @@
 
         <!-- Cost List Table -->
         {{ $this->table }}
+
+        <div class="rounded-xl">
+            @livewire(App\Filament\App\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])
+        </div>
     </div>
 </x-filament-panels::page>

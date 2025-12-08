@@ -248,9 +248,6 @@ class MouResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->label('Lihat')
-                    ->icon('heroicon-o-eye'),
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')
