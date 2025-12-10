@@ -28,13 +28,18 @@ class ChecklistMouResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('mou_id')
-                    ->relationship('mou', 'id')
+                    ->relationship('mou', 'mou_number')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->mou_number} - {$record->description}")
+                    ->searchable(['mou_number', 'description'])
+                    ->preload()
                     ->required()
-                    ->label('MoU ID'),
+                    ->label('MoU'),
                 Forms\Components\Select::make('invoice_id')
-                    ->relationship('invoice', 'id')
+                    ->relationship('invoice', 'invoice_number')
+                    ->searchable()
+                    ->preload()
                     ->required()
-                    ->label('Invoice ID'),
+                    ->label('Invoice No'),
                 Forms\Components\DatePicker::make('checklist_date')
                     ->required()
                     ->label('Checklist Date'),
@@ -57,8 +62,12 @@ class ChecklistMouResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('mou.id')->label('MoU ID')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('invoice.id')->label('Invoice ID')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('mou.mou_number')
+                    ->label('MoU Number')
+                    ->description(fn ($record) => $record->mou->description ?? '')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('invoice.invoice_number')->label('Invoice No')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('checklist_date')->label('Checklist Date')->sortable(),
                 Tables\Columns\TextColumn::make('status')->label('Status')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('notes')->label('Notes')->limit(50),

@@ -49,13 +49,7 @@ class MouInvoicesTable extends BaseWidget
         return $table
             ->query($this->getTableQuery())
             ->heading('Daftar Invoice MoU')
-            ->headerActions([
-                Tables\Actions\Action::make('createInvoice')
-                    ->label('Create New Invoice')
-                    ->icon('heroicon-o-plus')
-                    ->url(fn() => route('filament.admin.resources.invoices.create', ['mou_id' => $this->mouId]))
-                    ->color('primary'),
-            ])
+            ->headerActions([])
             ->columns([
                 Tables\Columns\TextColumn::make('invoice_number')
                     ->label('Invoice Number')
@@ -73,9 +67,9 @@ class MouInvoicesTable extends BaseWidget
                     ->label('Status')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
-                        'Paid' => 'success',
-                        'Unpaid' => 'warning',
-                        'Overdue' => 'danger',
+                        'paid' => 'success',
+                        'unpaid' => 'warning',
+                        'overdue' => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('total_amount')

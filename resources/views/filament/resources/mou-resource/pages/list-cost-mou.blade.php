@@ -4,6 +4,12 @@
     <div class="space-y-6">
         {{ $this->table }}
 
+        <div class="rounded-xl">
+            @if (in_array($this->mou->category_mou_id, [3, 4]))
+                @livewire(App\Filament\Resources\MouResource\Widgets\ChecklistMouTable::class, ['mouId' => $this->mou->id])
+            @endif
+        </div>
+
         <div>
             <div class="rounded-xl">
                 @livewire(App\Filament\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])
@@ -18,5 +24,7 @@
                 </div>
             </div>
         </div>
+
+
     </div>
 </x-filament-panels::page>

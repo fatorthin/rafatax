@@ -12,6 +12,7 @@ use Filament\Resources\Pages\Page;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Contracts\HasForms;
 use App\Filament\Resources\MouResource;
 use Filament\Tables\Columns\TextColumn;
@@ -202,6 +203,47 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->url(MouResource::getUrl('index'))
                 ->color('primary')
                 ->icon('heroicon-o-arrow-left'),
+            Actions\CreateAction::make('create_invoice')
+                ->label('Create Invoice')
+                ->model(Invoice::class)
+                ->icon('heroicon-o-document-plus')
+                ->form([
+                    TextInput::make('invoice_number')
+                        ->label('Invoice Number')
+                        ->required()
+                        ->unique('invoices', 'invoice_number'),
+                    DatePicker::make('invoice_date')
+                        ->label('Invoice Date')
+                        ->required()
+                        ->default(now()),
+                    DatePicker::make('due_date')
+                        ->label('Due Date')
+                        ->required(),
+                    Select::make('invoice_status')
+                        ->label('Status')
+                        ->options([
+                            'unpaid' => 'Unpaid',
+                            'paid' => 'Paid',
+                        ])
+                        ->default('unpaid')
+                        ->required(),
+                    Select::make('invoice_type')
+                        ->label('Type')
+                        ->options([
+                            'pt' => 'PT',
+                            'kkp' => 'KKP',
+                        ])
+                        ->required(),
+                    Textarea::make('description')
+                        ->label('Description')
+                        ->rows(3),
+                ])
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['mou_id'] = $this->mou->id;
+                    // $data['client_id'] = $this->mou->client_id; // Commented out to be safe based on migration check
+                    return $data;
+                })
+                ->modalWidth('lg'),
         ];
     }
 }
