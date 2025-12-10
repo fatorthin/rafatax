@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('checklist_mous', function (Blueprint $table) {
             $table->id();
             $table->foreignId('mou_id')->constrained('mous')->onDelete('cascade');
-            $table->foreignId('invoice_id')->nullable()->change();
+            $table->foreignId('invoice_id')->nullable();
             $table->date('checklist_date');
             $table->enum('status', ['pending', 'completed', 'overdue'])->default('pending');
             $table->string('notes')->nullable();
