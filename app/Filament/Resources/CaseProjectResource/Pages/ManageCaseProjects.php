@@ -67,6 +67,12 @@ class ManageCaseProjects extends ManageRecords
                         ->success()
                         ->send();
                 }),
+
+                Actions\CreateAction::make()
+                ->label('Add New Case Project')
+                ->icon('heroicon-o-plus')
+                ->modalHeading('Add New Case Project')
+                ->modalWidth('2xl'),
         ];
     }
 }
