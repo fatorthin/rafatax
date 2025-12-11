@@ -208,6 +208,8 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->model(Invoice::class)
                 ->icon('heroicon-o-document-plus')
                 ->form([
+                    \Filament\Forms\Components\Hidden::make('mou_id')
+                        ->default($this->mou->id),
                     TextInput::make('invoice_number')
                         ->label('Invoice Number')
                         ->required()
@@ -237,13 +239,50 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     Textarea::make('description')
                         ->label('Description')
                         ->rows(3),
+                    \Filament\Forms\Components\Section::make('Rincian Biaya')
+                        ->schema([
+                            \Filament\Forms\Components\Repeater::make('costListInvoices')
+                                ->relationship()
+                                ->schema([
+                                    \Filament\Forms\Components\Hidden::make('mou_id')
+                                        ->default($this->mou->id),
+                                    Select::make('coa_id')
+                                        ->label('CoA')
+                                        ->options(Coa::all()->pluck('name', 'id'))
+                                        ->required()
+                                        ->searchable()
+                                        ->columnSpan([
+                                            'md' => 3,
+                                        ]),
+                                    TextInput::make('description')
+                                        ->label('Deskripsi')
+                                        ->required()
+                                        ->columnSpan([
+                                            'md' => 4,
+                                        ]),
+                                    TextInput::make('amount')
+                                        ->label('Harga')
+                                        ->numeric()
+                                        ->required()
+                                        ->columnSpan([
+                                            'md' => 5,
+                                        ]),
+                                ])
+                                ->columns([
+                                    'md' => 12,
+                                ])
+                                ->defaultItems(0)
+                                ->reorderableWithButtons()
+                                ->collapsible()
+                                ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                        ])
                 ])
                 ->mutateFormDataUsing(function (array $data): array {
                     $data['mou_id'] = $this->mou->id;
                     // $data['client_id'] = $this->mou->client_id; // Commented out to be safe based on migration check
                     return $data;
                 })
-                ->modalWidth('lg'),
+                ->modalWidth('7xl'),
         ];
     }
 }

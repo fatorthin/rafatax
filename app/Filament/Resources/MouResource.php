@@ -145,12 +145,14 @@ class MouResource extends Resource
                         'KKP' => 'KKP',
                     ]),
                 Tables\Filters\SelectFilter::make('client_id')
+                    ->preload()
                     ->label('Client')
                     ->relationship('client', 'company_name')
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('category_mou_id')
                     ->label('Category')
                     ->relationship('categoryMou', 'name')
+                    ->preload()
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('month')
                     ->label('Month')

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\MouResource\Widgets;
+namespace App\Filament\App\Resources\MouResource\Widgets;
 
 use Filament\Tables;
 use App\Models\Invoice;
@@ -11,7 +11,7 @@ use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Widgets\TableWidget as BaseWidget;
 
-class ChecklistMouTable extends BaseWidget
+class ChecklistMouWidget extends BaseWidget
 {
     public ?int $mouId = null;
 

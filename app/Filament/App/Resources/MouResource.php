@@ -231,10 +231,12 @@ class MouResource extends Resource
                 Tables\Filters\SelectFilter::make('client_id')
                     ->label('Client')
                     ->relationship('client', 'company_name')
+                    ->preload()
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('category_mou_id')
                     ->label('Category')
                     ->relationship('categoryMou', 'name')
+                    ->preload()
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Tahun')

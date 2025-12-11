@@ -19,8 +19,6 @@ class CostListInvoice extends Model
         'coa_id',
         'description',
         'amount',
-        'quantity',
-        'total'
     ];
 
     public function mou()

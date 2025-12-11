@@ -31,9 +31,11 @@ class InvoiceResource extends Resource
                     ->label('MoU')
                     ->options(function () {
                         return MoU::query()
-                            ->select('id', 'mou_number')
+                            ->select('id', 'mou_number', 'description')
                             ->get()
-                            ->pluck('mou_number', 'id');
+                            ->mapWithKeys(function ($mou) {
+                                return [$mou->id => $mou->mou_number . ' - ' . $mou->description];
+                            });
                     })
                     ->searchable()
                     ->required(),
@@ -63,6 +65,43 @@ class InvoiceResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ]),
+                Forms\Components\Section::make('Rincian Biaya')
+                    ->schema([
+                        Forms\Components\Repeater::make('costListInvoices')
+                            ->relationship()
+                            ->schema([
+                                Forms\Components\Hidden::make('mou_id')
+                                    ->default(fn(Forms\Get $get) => $get('../../mou_id')),
+                                Forms\Components\Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(\App\Models\Coa::all()->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable()
+                                    ->columnSpan([
+                                        'md' => 3,
+                                    ]),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Deskripsi')
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('amount')
+                                    ->label('Harga')
+                                    ->numeric()
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 5,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderableWithButtons()
+                            ->collapsible()
+                            ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                    ])
             ]);
     }
 

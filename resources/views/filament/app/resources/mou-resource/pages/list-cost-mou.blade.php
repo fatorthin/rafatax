@@ -7,7 +7,12 @@
         {{ $this->table }}
 
         <div class="rounded-xl">
+            @livewire(App\Filament\App\Resources\MouResource\Widgets\ChecklistMouWidget::class, ['mouId' => $this->mou->id])
+        </div>
+
+        <div class="rounded-xl">
             @livewire(App\Filament\App\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])
         </div>
+
     </div>
 </x-filament-panels::page>

@@ -1,27 +1,30 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\App\Resources;
 
-use App\Filament\Resources\ChecklistMouResource\Pages;
-use App\Filament\Resources\ChecklistMouResource\RelationManagers;
-use App\Models\ChecklistMou;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\ChecklistMou;
+use App\Traits\HasPermissions;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\App\Resources\ChecklistMouResource\Pages;
+use App\Filament\App\Resources\ChecklistMouResource\RelationManagers;
 
 class ChecklistMouResource extends Resource
 {
+    use HasPermissions;
+
     protected static ?string $model = ChecklistMou::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document-check';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationLabel = 'Daftar Tagihan Bulanan MoU';
 
-    protected static ?string $navigationLabel = 'Daftar Checklist Tagihan MoU';
+    protected static ?string $navigationGroup = 'Keuangan';
 
     public static function form(Form $form): Form
     {
