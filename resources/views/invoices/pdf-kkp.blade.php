@@ -130,18 +130,31 @@
             </tbody>
         </table>
 
-        <div class="footer-section">
-            <div class="signature-section">
-                <div>Hormat Kami,</div>
-                <div style="margin-top: 40px;">( Kasir )</div>
-            </div>
-            <div class="transfer-info">
-                <u>TRANSFER VIA</u><br>
-                BCA.IDR<br>
-                A.C : 785 - 1135 - 425<br>
-                A.N : Antin Okfitasari
-            </div>
-        </div>
+        <table style="width: 100%; border: none; margin-top: 40px;">
+            <tr>
+                <td style="border: none; width: 70%; vertical-align: top; padding: 0;">
+                    <div class="transfer-info">
+                        <u>TRANSFER VIA</u><br>
+                        BCA.IDR<br>
+                        A.C : 785 - 1135 - 425<br>
+                        A.N : Antin Okfitasari
+                    </div>
+                </td>
+                <td style="border: none; width: 30%; text-align: center; vertical-align: top; padding: 0;">
+                    <div style="text-align: center;">
+                        <div>Hormat Kami,</div>
+                        @if (!empty($signatureImage))
+                            <div style="margin: 5px 0;">
+                                <img src="{{ $signatureImage }}" alt="Tanda Tangan" style="height: 60px;">
+                            </div>
+                        @else
+                            <div style="margin-top: 40px;"></div>
+                        @endif
+                        <div>( Kasir )</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
 
         @if (!empty($error))
             <div style="color: red; margin-top: 12px;">PDF generation error: {{ $error }}</div>

@@ -82,7 +82,6 @@ class InvoiceResource extends Resource
                                     ]),
                                 Forms\Components\TextInput::make('description')
                                     ->label('Deskripsi')
-                                    ->required()
                                     ->columnSpan([
                                         'md' => 4,
                                     ]),

@@ -129,6 +129,13 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->url(fn(): string => route('invoices.pdf', ['id' => $this->invoice->id]))
                 ->openUrlInNewTab(true),
 
+            Actions\Action::make('download_jpg')
+                ->label('Download JPG')
+                ->icon('heroicon-o-photo')
+                ->color('secondary')
+                ->url(fn(): string => route('invoices.jpg', ['id' => $this->invoice->id]))
+                ->openUrlInNewTab(true),
+
             Actions\Action::make('edit_invoice')
                 ->label('Edit Invoice')
                 ->icon('heroicon-o-pencil')

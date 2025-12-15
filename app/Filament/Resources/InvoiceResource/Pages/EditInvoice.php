@@ -18,10 +18,15 @@ class EditInvoice extends EditRecord
             Actions\Action::make('back')
                 ->label('Back')
                 ->icon('heroicon-o-arrow-left')
-                ->url(fn () => URL::previous()),
+                ->url(fn() => URL::previous()),
             Actions\DeleteAction::make(),
             Actions\ForceDeleteAction::make(),
             Actions\RestoreAction::make(),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

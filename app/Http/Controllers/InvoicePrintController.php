@@ -15,13 +15,14 @@ class InvoicePrintController extends Controller
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
         // Choose view based on MoU type (use custom KKP/PT design)
-        $mouType = optional($invoice->mou)->type;
-        $mouTypeNormalized = is_string($mouType) ? strtolower($mouType) : '';
+        // Determine invoice type (prioritize Invoice type, fallback to MoU type)
+        $type = $invoice->invoice_type ?? optional($invoice->mou)->type;
+        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
 
-        if ($mouTypeNormalized === 'kkp') {
+        if ($typeNormalized === 'kkp') {
             $view = 'invoices.pdf-kkp';
             $headerImageFile = 'kop-inovice-kkp.png';
-        } elseif ($mouTypeNormalized === 'pt') {
+        } elseif ($typeNormalized === 'pt') {
             $view = 'invoices.pdf-pt';
             $headerImageFile = 'kop-invoice-pt.png';
         } else {
@@ -39,10 +40,19 @@ class InvoicePrintController extends Controller
             }
         }
 
+        // Convert signature image to base64
+        $signatureImageBase64 = '';
+        $signatureImagePath = public_path('images/spesimen-kasir.png');
+        if (file_exists($signatureImagePath)) {
+            $signatureData = file_get_contents($signatureImagePath);
+            $signatureImageBase64 = 'data:image/png;base64,' . base64_encode($signatureData);
+        }
+
         $viewData = [
             'invoice' => $invoice,
             'costLists' => $costLists,
             'headerImage' => $headerImageBase64,
+            'signatureImage' => $signatureImageBase64,
         ];
 
         // Attempt to generate PDF using barryvdh/laravel-dompdf
@@ -63,5 +73,54 @@ class InvoicePrintController extends Controller
             $viewData['error'] = $e->getMessage();
             return view($view, $viewData);
         }
+    }
+
+    public function previewJpg($id)
+    {
+        $invoice = Invoice::with(['mou.client'])->findOrFail($id);
+        $costLists = CostListInvoice::where('invoice_id', $id)->get();
+
+        // Choose view based on Invoice Type (prioritize Invoice type, fallback to MoU type)
+        $type = $invoice->invoice_type ?? optional($invoice->mou)->type;
+        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+
+        if ($typeNormalized === 'kkp') {
+            $view = 'invoices.pdf-kkp';
+            $headerImageFile = 'kop-inovice-kkp.png';
+        } elseif ($typeNormalized === 'pt') {
+            $view = 'invoices.pdf-pt';
+            $headerImageFile = 'kop-invoice-pt.png';
+        } else {
+            $view = 'invoices.pdf';
+            $headerImageFile = null;
+        }
+
+        // Convert header image to base64
+        $headerImageBase64 = '';
+        if ($headerImageFile) {
+            $headerImagePath = public_path('images/' . $headerImageFile);
+            if (file_exists($headerImagePath)) {
+                $imageData = file_get_contents($headerImagePath);
+                $headerImageBase64 = 'data:image/png;base64,' . base64_encode($imageData);
+            }
+        }
+
+        // Convert signature image to base64
+        $signatureImageBase64 = '';
+        $signatureImagePath = public_path('images/spesimen-kasir.png');
+        if (file_exists($signatureImagePath)) {
+            $signatureData = file_get_contents($signatureImagePath);
+            $signatureImageBase64 = 'data:image/png;base64,' . base64_encode($signatureData);
+        }
+
+        $viewData = [
+            'invoice' => $invoice,
+            'costLists' => $costLists,
+            'headerImage' => $headerImageBase64,
+            'signatureImage' => $signatureImageBase64,
+            'originalView' => $view, // Pass the original view name to include
+        ];
+
+        return view('invoices.jpg-preview', $viewData);
     }
 }
