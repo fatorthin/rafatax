@@ -291,6 +291,8 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     \Filament\Forms\Components\DatePicker::make('invoice_date')
                         ->label('Tanggal Invoice')
                         ->required()
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
                         ->live()
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
                             if ($state) {
@@ -300,6 +302,8 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         }),
                     \Filament\Forms\Components\DatePicker::make('due_date')
                         ->label('Tanggal Jatuh Tempo')
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
                         ->required(),
                     Select::make('invoice_status')
                         ->label('Status')
@@ -314,9 +318,62 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             'pt' => 'PT',
                             'kkp' => 'KKP'
                         ]),
+                    \Filament\Forms\Components\Section::make('Rincian Biaya')
+                        ->schema([
+                            \Filament\Forms\Components\Repeater::make('costListInvoices')
+                                ->schema([
+                                    Select::make('coa_id')
+                                        ->label('CoA')
+                                        ->options(Coa::all()->pluck('name', 'id'))
+                                        ->required()
+                                        ->searchable()
+                                        ->columnSpan([
+                                            'md' => 3,
+                                        ]),
+                                    TextInput::make('description')
+                                        ->label('Deskripsi')
+                                        ->required()
+                                        ->columnSpan([
+                                            'md' => 4,
+                                        ]),
+                                    TextInput::make('amount')
+                                        ->label('Harga')
+                                        ->numeric()
+                                        ->required()
+                                        ->columnSpan([
+                                            'md' => 5,
+                                        ]),
+                                ])
+                                ->columns([
+                                    'md' => 12,
+                                ])
+                                ->defaultItems(0)
+                                ->reorderableWithButtons()
+                                ->collapsible()
+                                ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                        ])
                 ])
+                ->modalWidth('7xl')
                 ->action(function (array $data) {
-                    Invoice::create($data);
+                    \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+                        // Extract cost list items
+                        $costListItems = $data['costListInvoices'] ?? [];
+                        unset($data['costListInvoices']);
+
+                        // Create Invoice
+                        $invoice = Invoice::create($data);
+
+                        // Create Cost List Items
+                        foreach ($costListItems as $item) {
+                            \App\Models\CostListInvoice::create([
+                                'invoice_id' => $invoice->id,
+                                'mou_id' => $invoice->mou_id,
+                                'coa_id' => $item['coa_id'],
+                                'description' => $item['description'],
+                                'amount' => $item['amount'],
+                            ]);
+                        }
+                    });
 
                     Notification::make()
                         ->title('Invoice berhasil dibuat')

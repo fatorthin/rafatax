@@ -107,7 +107,21 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn(CostListInvoice $record): string => '/app/cost-list-invoices/' . $record->id . '/edit')
+                    ->form([
+                        Select::make('coa_id')
+                            ->label('CoA')
+                            ->options(Coa::all()->pluck('name', 'id'))
+                            ->required()
+                            ->searchable(),
+                        \Filament\Forms\Components\TextInput::make('description')
+                            ->label('Description')
+                            ->required(),
+                        \Filament\Forms\Components\TextInput::make('amount')
+                            ->label('Amount')
+                            ->numeric()
+                            ->required(),
+                    ])
+                    ->modalWidth('lg')
                     ->visible(!$isPaid),
                 \Filament\Tables\Actions\DeleteAction::make()
                     ->visible(!$isPaid),
@@ -193,7 +207,27 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 }),
             Actions\CreateAction::make()
                 ->label('Add Cost List')
-                ->url(fn(): string => '/app/cost-list-invoices/create?invoice_id=' . $this->invoice->id)
+                ->model(CostListInvoice::class)
+                ->form([
+                    Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(Coa::all()->pluck('name', 'id'))
+                        ->required()
+                        ->searchable(),
+                    \Filament\Forms\Components\TextInput::make('description')
+                        ->label('Description')
+                        ->required(),
+                    \Filament\Forms\Components\TextInput::make('amount')
+                        ->label('Amount')
+                        ->numeric()
+                        ->required(),
+                ])
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['invoice_id'] = $this->invoice->id;
+                    $data['mou_id'] = $this->invoice->mou_id;
+                    return $data;
+                })
+                ->modalWidth('lg')
                 ->visible(!$isPaid),
             Actions\Action::make('back')
                 ->label('Back to Invoice List')
