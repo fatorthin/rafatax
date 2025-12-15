@@ -158,7 +158,8 @@ class GeneralLedger extends Page
 
         $query = \App\Models\CashReport::query()
             ->with(['coa', 'cashReference'])
-            ->whereBetween('transaction_date', [$startDate, $endDate]);
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->whereNotIn('coa_id', [78, 118]);
 
         if ($cashReferenceId) {
             $query->where('cash_reference_id', $cashReferenceId);
