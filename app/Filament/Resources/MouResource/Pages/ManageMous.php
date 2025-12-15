@@ -20,7 +20,7 @@ class ManageMous extends ManageRecords
                 ->label('Add New MoU')
                 ->icon('heroicon-o-plus')
                 ->modalHeading('Add New MoU')
-                ->modalWidth('2xl'),
+                ->modalWidth('7xl'),
         ];
     }
 

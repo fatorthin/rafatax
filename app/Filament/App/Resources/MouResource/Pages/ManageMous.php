@@ -16,7 +16,7 @@ class ManageMous extends ManageRecords
             Actions\CreateAction::make()
                 ->label('Tambah MoU Baru')
                 ->icon('heroicon-o-plus')
-                ->modalWidth('2xl'),
+                ->modalWidth('7xl'),
         ];
     }
 }

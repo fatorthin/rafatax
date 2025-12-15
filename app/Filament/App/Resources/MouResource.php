@@ -126,6 +126,45 @@ class MouResource extends Resource
                             ->helperText('Masukkan persentase restitusi jika ada'),
                     ])
                     ->columns(1),
+
+                Forms\Components\Section::make('Rincian Biaya')
+                    ->schema([
+                        Forms\Components\Repeater::make('cost_lists')
+                            ->label('Daftar Biaya')
+                            ->relationship('cost_lists')
+                            ->schema([
+                                Forms\Components\Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(\App\Models\Coa::all()->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Deskripsi')
+                                    ->required()
+                                    ->placeholder('Deskripsi biaya')
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('amount')
+                                    ->label('Jumlah')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->required()
+                                    ->placeholder('0')
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(1)
+                            ->addActionLabel('Tambah Biaya'),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -253,7 +292,7 @@ class MouResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')
-                    ->modalWidth('2xl'),
+                    ->modalWidth('7xl'),
                 Tables\Actions\Action::make('viewCostList')
                     ->label('Detail Biaya')
                     ->url(fn($record) => route('filament.app.resources.mous.cost-list', ['record' => $record]))

@@ -73,6 +73,41 @@ class MouResource extends Resource
                     ->numeric()
                     ->default(0)
                     ->suffix('%'),
+                Forms\Components\Section::make('Cost List Details')
+                    ->schema([
+                        Forms\Components\Repeater::make('cost_lists')
+                            ->relationship('cost_lists')
+                            ->schema([
+                                Forms\Components\Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(\App\Models\Coa::all()->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Description')
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('amount')
+                                    ->label('Amount')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(1)
+                            ->addActionLabel('Add Cost Item'),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -175,7 +210,7 @@ class MouResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->color('info')
-                    ->modalWidth('2xl'),
+                    ->modalWidth('7xl'),
                 Tables\Actions\Action::make('viewCostList')
                     ->label('Detail')
                     ->url(fn($record) => "/admin/mous/{$record->id}/cost-list")
