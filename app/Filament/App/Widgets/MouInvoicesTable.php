@@ -15,6 +15,8 @@ class MouInvoicesTable extends BaseWidget
 {
     public ?int $mouId = null;
 
+    protected $listeners = ['invoice-created' => '$refresh', 'invoice-deleted' => '$refresh'];
+
     protected int | string | array $columnSpan = 'full';
 
     protected static ?string $heading = 'Daftar Invoice MoU';

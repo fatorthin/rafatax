@@ -6,6 +6,7 @@ use Filament\Tables\Table;
 use Filament\Support\Colors\Color;
 use Illuminate\Support\ServiceProvider;
 use Filament\Support\Facades\FilamentColor;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {

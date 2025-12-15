@@ -314,10 +314,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->default('unpaid'),
                     Select::make('invoice_type')
                         ->label('Tipe Invoice')
+                        ->required()
                         ->options([
                             'pt' => 'PT',
                             'kkp' => 'KKP'
-                        ]),
+                        ])
+                        ->default('pt'),
                     \Filament\Forms\Components\Section::make('Rincian Biaya')
                         ->schema([
                             \Filament\Forms\Components\Repeater::make('costListInvoices')
@@ -332,7 +334,6 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                         ]),
                                     TextInput::make('description')
                                         ->label('Deskripsi')
-                                        ->required()
                                         ->columnSpan([
                                             'md' => 4,
                                         ]),
@@ -379,6 +380,8 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->title('Invoice berhasil dibuat')
                         ->success()
                         ->send();
+
+                    $this->dispatch('invoice-created');
                 }),
             Action::make('back')
                 ->label('Kembali ke Daftar MoU')
