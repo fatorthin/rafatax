@@ -24,6 +24,12 @@ class ListCashReports extends ManageRecords
                 ->color('info')
                 ->url(fn() => static::getResource()::getUrl('neraca-lajur'))
                 ->button(),
+            Actions\Action::make('general_ledger')
+                ->label('General Ledger')
+                ->icon('heroicon-o-clipboard-document-list')
+                ->color('success')
+                ->url(fn() => static::getResource()::getUrl('general-ledger'))
+                ->button(),
         ];
     }
 }

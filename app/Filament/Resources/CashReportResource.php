@@ -17,9 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class CashReportResource extends Resource
 {
     protected static ?string $model = CashReport::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
     protected static ?string $navigationLabel = 'Histori Data Kas';
     protected static ?string $navigationGroup = 'Histori Data';
 
@@ -283,6 +281,24 @@ class CashReportResource extends Resource
             'neraca-lajur' => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
             'neraca' => Pages\Neraca::route('/neraca'),
             'laba-rugi-bulanan' => Pages\LabaRugiBulanan::route('/laba-rugi-bulanan'),
+            'general-ledger' => Pages\GeneralLedger::route('/general-ledger'),
+        ];
+    }
+
+    public static function getNavigationItems(): array
+    {
+        return [
+            ...parent::getNavigationItems(),
+            \Filament\Navigation\NavigationItem::make('Neraca Lajur Bulanan')
+                ->icon('heroicon-o-table-cells')
+                ->group('Histori Data')
+                ->url(static::getUrl('neraca-lajur'))
+                ->sort(2),
+            \Filament\Navigation\NavigationItem::make('Buku Besar')
+                ->icon('heroicon-o-clipboard-document-list')
+                ->group('Histori Data')
+                ->url(static::getUrl('general-ledger'))
+                ->sort(3),
         ];
     }
 
