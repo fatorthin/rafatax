@@ -11,14 +11,24 @@ class CaseProject extends Model
     use SoftDeletes, LogsActivity;
 
     protected $fillable = [
-        'external_id',
         'description',
         'case_date',
+        'case_type',
         'status',
         'staff_id',
         'client_id',
-        'link_dokumen',
-        'budget'
+        'mou_id',
+        'case_letter_number',
+        'case_letter_date',
+        'power_of_attorney_number',
+        'power_of_attorney_date',
+        'filling_drive',
+        'report_date',
+        'share_client_date',
+    ];
+
+    protected $casts = [
+        'staff_id' => 'array',
     ];
 
     public function client()
@@ -29,6 +39,11 @@ class CaseProject extends Model
     public function staff()
     {
         return $this->belongsTo(Staff::class);
+    }
+
+    public function mou()
+    {
+        return $this->belongsTo(MoU::class);
     }
 
     public function details()
