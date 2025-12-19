@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CaseProjectResource\Pages;
 
+use App\Models\Staff;
 use Filament\Tables\Table;
 use App\Models\CaseProject;
 use Filament\Infolists\Infolist;
@@ -13,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Infolists\Components\Section;
@@ -60,26 +62,6 @@ class DetailTim extends Page implements HasTable
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    // Hitung total bonus yang sudah ada
-                    $existingTotalBonus = CaseProjectDetail::where('case_project_id', $data['case_project_id'])
-                        ->sum('bonus');
-
-                    // Hitung total bonus jika data baru ditambahkan
-                    $newTotalBonus = $existingTotalBonus + $data['bonus'];
-
-                    // Cek apakah melebihi budget
-                    $budget = $this->record->budget;
-
-                    if ($newTotalBonus > $budget) {
-                        \Filament\Notifications\Notification::make()
-                            ->title('Gagal Menambahkan Data')
-                            ->body('Total bonus (Rp ' . number_format($newTotalBonus, 0, ',', '.') . ') akan melebihi budget proyek (Rp ' . number_format($budget, 0, ',', '.') . ')')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
                     CaseProjectDetail::create($data);
 
                     \Filament\Notifications\Notification::make()
@@ -101,9 +83,26 @@ class DetailTim extends Page implements HasTable
                     ->schema([
                         TextEntry::make('description')->label('Deskripsi'),
                         TextEntry::make('client.company_name')->label('Client'),
+                        TextEntry::make('case_type')->label('Tipe Kasus'),
+                        TextEntry::make('staff_members')
+                            ->label('Staff')
+                            ->badge()
+                            ->state(fn(CaseProject $record) => Staff::whereIn('id', $record->staff_id ?? [])->pluck('name')->toArray()),
                         TextEntry::make('case_date')->label('Tanggal Proyek')->date('d-m-Y'),
-                        TextEntry::make('budget')->label('Anggaran (Rp)')->formatStateUsing(fn($state) => 'Rp. ' . number_format($state, 0, ',', '.')),
-                        TextEntry::make('status')->label('Status'),
+                        TextEntry::make('status')
+                            ->label('Status')
+                            ->formatStateUsing(fn($state) => match ($state) {
+                                'open' => 'Open',
+                                'in_progress' => 'In Progress',
+                                'done' => 'Done',
+                                default => $state,
+                            })
+                            ->color(fn($state) => match ($state) {
+                                'open' => 'primary',
+                                'in_progress' => 'danger',
+                                'done' => 'success',
+                                default => 'gray',
+                            }),
                     ])->columns(3)
             ]);
     }

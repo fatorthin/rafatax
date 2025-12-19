@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PayrollBonusResource\Pages;
 use Filament\Tables\Table;
 use App\Models\CaseProject;
 use App\Models\PayrollBonus;
+use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 use Filament\Infolists\Infolist;
 use App\Models\CaseProjectDetail;
@@ -36,66 +37,24 @@ class DetailPayrollBonus extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('cutoff')
-                ->label('Cut Off')
-                ->icon('heroicon-o-scissors')
-                ->requiresConfirmation()
-                ->modalHeading('Cut Off Bonus')
-                ->modalDescription('Apakah Anda yakin ingin melakukan cut off bonus? Data akan diambil dari Case Project yang tanggalnya sesuai dengan periode cut off.')
-                ->modalSubmitActionLabel('Ya, Cut Off')
-                ->action(function () {
-                    // Hapus data cut off yang sudah ada sebelumnya
-                    PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)->delete();
-
-                    // Ambil data case project yang tanggalnya dalam rentang start_date dan end_date
-                    $caseProjects = CaseProject::whereBetween('case_date', [
-                        $this->record->start_date,
-                        $this->record->end_date
-                    ])->where('status', 'open')->pluck('id');
-
-                    // Simpan daftar case_project_id yang di-cut off ke PayrollBonus dalam bentuk array (akan dipersist JSON oleh cast)
-                    $this->record->case_project_ids = $caseProjects->values()->toArray();
-                    $this->record->save();
-
-                    // Ambil semua detail dari case project tersebut
-                    $caseProjectDetails = CaseProjectDetail::whereIn('case_project_id', $caseProjects)->get();
-
-                    // Jika tidak ada data bonus yang ditemukan
-                    if ($caseProjectDetails->isEmpty()) {
-                        \Filament\Notifications\Notification::make()
-                            ->title('Tidak Ada Data')
-                            ->body('Tidak ada data bonus yang ditemukan untuk periode cut off ini.')
-                            ->warning()
-                            ->send();
-
-                        return;
-                    }
-
-                    // Group by staff_id dan kumpulkan case_project_detail_id serta total bonus
-                    $groupedData = $caseProjectDetails->groupBy('staff_id')->map(function ($details) {
-                        return [
-                            'total_bonus' => $details->sum('bonus'),
-                            'case_project_detail_ids' => $details->pluck('id')->values()->toArray(),
-                        ];
-                    });
-
-                    // Simpan data ke PayrollBonusDetail
-                    // Pastikan menyimpan dalam bentuk array (biarkan Eloquent cast menangani JSON)
-                    foreach ($groupedData as $staffId => $data) {
-                        PayrollBonusDetail::create([
-                            'payroll_bonus_id' => $this->record->id,
-                            'staff_id' => $staffId,
-                            'amount' => $data['total_bonus'],
-                            'case_project_detail_ids' => $data['case_project_detail_ids'],
-                        ]);
-                    }
-
-                    \Filament\Notifications\Notification::make()
-                        ->title('Berhasil')
-                        ->body('Cut off bonus berhasil dilakukan. Total ' . $groupedData->count() . ' staff diproses.')
-                        ->success()
-                        ->send();
-                }),
+            EditAction::make()
+                ->record($this->record)
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('description')
+                        ->required()
+                        ->maxLength(255),
+                    \Filament\Forms\Components\Select::make('case_project_ids')
+                        ->label('Case Project')
+                        ->options(\App\Models\CaseProject::pluck('description', 'id'))
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->required(),
+                    \Filament\Forms\Components\DatePicker::make('start_date')
+                        ->required(),
+                    \Filament\Forms\Components\DatePicker::make('end_date')
+                        ->required(),
+                ]),
         ];
     }
 
