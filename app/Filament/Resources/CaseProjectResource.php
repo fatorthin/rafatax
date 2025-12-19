@@ -32,17 +32,18 @@ class CaseProjectResource extends Resource
                 Forms\Components\TextInput::make('description'),
                 Forms\Components\Select::make('client_id')
                     ->relationship('client', 'company_name')
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
+                    ->searchable(['company_name', 'code'])
                     ->label('Nama Client')
-                    ->searchable()
                     ->preload()
                     ->required(),
                 Forms\Components\Select::make('case_type')
                     ->options([
                         'SP2DK' => 'SP2DK',
-                        'Pembetulan' => 'Pembetulan',
-                        'Pemeriksaan' => 'Pemeriksaan',
-                        'Himbauan' => 'Himbauan',
-                        'Lainnya' => 'Lainnya',
+                        'Pembetulan' => 'PEMBETULAN',
+                        'Pemeriksaan' => 'PEMERIKSAAN',
+                        'Himbauan' => 'HIMBAUAN',
+                        'Lainnya' => 'LAINNYA',
                     ])
                     ->label('Kategori')
                     ->required(),
@@ -78,13 +79,14 @@ class CaseProjectResource extends Resource
                 Forms\Components\DatePicker::make('share_client_date')
                     ->label('Tanggal Berikan Client'),
                 Forms\Components\DatePicker::make('case_date')
+                    ->required()
                     ->label('Tanggal Kasus'),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([
-                        'open' => 'Open',
-                        'in_progress' => 'In Progress',
-                        'done' => 'Done',
+                        'open' => 'OPEN',
+                        'in_progress' => 'IN PROGRESS',
+                        'done' => 'DONE',
                     ])
                     ->required(),
             ]);
@@ -96,7 +98,8 @@ class CaseProjectResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('client.company_name')->label('Client')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('client.code')->label('Kode Client')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('client.company_name')->label('Nama Client')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('case_type')
                     ->label('Kategori')
                     ->sortable()
