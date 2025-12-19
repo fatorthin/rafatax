@@ -30,10 +30,18 @@ class PayrollBonusResource extends Resource
                 Forms\Components\TextInput::make('description')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('case_project_ids')
+                    ->label('Case Project')
+                    ->options(\App\Models\CaseProject::pluck('description', 'id'))
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 Forms\Components\DatePicker::make('start_date')
                     ->required(),
                 Forms\Components\DatePicker::make('end_date')
                     ->required(),
+
             ]);
     }
 
