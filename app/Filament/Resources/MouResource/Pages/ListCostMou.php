@@ -217,10 +217,13 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     DatePicker::make('invoice_date')
                         ->label('Invoice Date')
                         ->required()
-                        ->default(now()),
+                        ->default(now())
+                        ->live()
+                        ->afterStateUpdated(fn($state, \Filament\Forms\Set $set) => $state ? $set('due_date', \Illuminate\Support\Carbon::parse($state)->addMonth()) : null),
                     DatePicker::make('due_date')
                         ->label('Due Date')
-                        ->required(),
+                        ->required()
+                        ->default(now()->addMonth()),
                     Select::make('invoice_status')
                         ->label('Status')
                         ->options([
@@ -282,6 +285,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     // $data['client_id'] = $this->mou->client_id; // Commented out to be safe based on migration check
                     return $data;
                 })
+                ->after(fn() => $this->dispatch('invoice-created'))
                 ->modalWidth('7xl'),
         ];
     }

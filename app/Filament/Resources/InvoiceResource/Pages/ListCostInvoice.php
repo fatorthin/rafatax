@@ -62,6 +62,9 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('mou.mou_number')
                             ->label('MoU Number')
                             ->weight('bold'),
+                        TextEntry::make('mou.client.company_name')
+                            ->label('Client')
+                            ->weight('bold'),
                         TextEntry::make('invoice_date')
                             ->label('Invoice Date')
                             ->weight('bold')
@@ -147,56 +150,143 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->action(function () {
-                    // Get the mou related to this invoice
-                    $mou = $this->invoice->mou;
+                    try {
+                        // Get the mou related to this invoice
+                        $mou = $this->invoice->mou;
 
-                    if (!$mou) {
-                        $this->notify('error', 'No MoU associated with this invoice!');
-                        return;
+                        // Check if MoU exists
+                        if (!$mou) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('No MoU associated with this invoice!')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Get client from the mou
+                        $client = $mou->client;
+
+                        if (!$client || !$client->phone) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('Client phone number not found!')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Clean phone number
+                        $phone = preg_replace('/[^0-9]/', '', $client->phone);
+                        if (substr($phone, 0, 1) === '0') {
+                            $phone = '62' . substr($phone, 1);
+                        } elseif (substr($phone, 0, 2) !== '62') {
+                            $phone = '62' . $phone;
+                        }
+
+                        // Calculate total amount
+                        $totalAmount = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
+                        $formattedAmount = number_format($totalAmount, 0, ',', '.');
+
+                        // Create WhatsApp message
+                        $message = "Halo {$client->company_name},\n\n";
+                        $message .= "Ini adalah invoice untuk layanan kami:\n";
+                        $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
+                        $message .= "Tanggal: " . \Carbon\Carbon::parse($this->invoice->invoice_date)->translatedFormat('d F Y') . "\n";
+                        $message .= "Jatuh Tempo: " . \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y') . "\n";
+                        $message .= "Total: Rp {$formattedAmount}\n\n";
+                        $message .= "Terima kasih atas kerjasamanya.";
+
+                        /** @var \App\Services\WablasService $wablasService */
+                        $wablasService = app(\App\Services\WablasService::class);
+
+                        // 1. Send Text Message
+                        $wablasService->sendMessage($phone, $message);
+
+                        // 2. Generate PDF (Logic duplicated from InvoicePrintController)
+                        $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
+
+                        // Determine type
+                        $type = $this->invoice->invoice_type ?? optional($this->invoice->mou)->type;
+                        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+
+                        if ($typeNormalized === 'kkp') {
+                            $view = 'invoices.pdf-kkp';
+                            $headerImageFile = 'kop-inovice-kkp.png';
+                        } elseif ($typeNormalized === 'pt') {
+                            $view = 'invoices.pdf-pt';
+                            $headerImageFile = 'kop-invoice-pt.png';
+                        } else {
+                            $view = 'invoices.pdf';
+                            $headerImageFile = null;
+                        }
+
+                        // Prepare Images
+                        $headerImageBase64 = '';
+                        if ($headerImageFile) {
+                            $headerImagePath = public_path('images/' . $headerImageFile);
+                            if (file_exists($headerImagePath)) {
+                                $headerImageBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($headerImagePath));
+                            }
+                        }
+
+                        $signatureImageBase64 = '';
+                        $signatureImagePath = public_path('images/spesimen-kasir.png');
+                        if (file_exists($signatureImagePath)) {
+                            $signatureImageBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($signatureImagePath));
+                        }
+
+                        $viewData = [
+                            'invoice' => $this->invoice,
+                            'costLists' => $costLists,
+                            'headerImage' => $headerImageBase64,
+                            'signatureImage' => $signatureImageBase64,
+                        ];
+
+                        // Generate PDF
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
+
+                        // Save to temporary file
+                        $tempDir = storage_path('app/temp');
+                        if (!file_exists($tempDir)) {
+                            mkdir($tempDir, 0755, true);
+                        }
+
+                        $invoiceNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $this->invoice->invoice_number ?? $this->invoice->id);
+                        $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
+                        $tempPath = $tempDir . '/' . $filename;
+
+                        $pdf->save($tempPath);
+
+                        // 3. Send PDF Document
+                        $sendResult = $wablasService->sendDocument($phone, $tempPath);
+
+                        // Clean up
+                        if (file_exists($tempPath)) {
+                            unlink($tempPath);
+                        }
+
+                        if (isset($sendResult['status']) && $sendResult['status']) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Success')
+                                ->body('Invoice sent successfully via WhatsApp (PDF).')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Warning')
+                                ->body('Message sent, but failed to send PDF document.')
+                                ->warning()
+                                ->send();
+                        }
+                    } catch (\Exception $e) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Error')
+                            ->body('Failed to send WhatsApp: ' . $e->getMessage())
+                            ->danger()
+                            ->send();
+                        \Illuminate\Support\Facades\Log::error($e);
                     }
-
-                    // Get client from the mou
-                    $client = $mou->client;
-
-                    if (!$client || !$client->phone) {
-                        $this->notify('error', 'Client phone number not found!');
-                        return;
-                    }
-
-                    // Clean phone number (remove spaces, dashes, etc)
-                    $phone = preg_replace('/[^0-9]/', '', $client->phone);
-
-                    // Add country code if needed
-                    if (substr($phone, 0, 1) === '0') {
-                        $phone = '62' . substr($phone, 1);
-                    } elseif (substr($phone, 0, 2) !== '62') {
-                        $phone = '62' . $phone;
-                    }
-
-                    // Calculate total amount
-                    $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)
-                        ->sum('amount');
-
-                    // Format as IDR
-                    $formattedAmount = number_format($totalAmount, 0, ',', '.');
-
-                    // Create WhatsApp message
-                    $message = "Halo {$client->name},\n\n";
-                    $message .= "Ini adalah invoice untuk layanan kami:\n";
-                    $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
-                    $message .= "Tanggal: {$this->invoice->invoice_date}\n";
-                    $message .= "Jatuh Tempo: {$this->invoice->due_date}\n";
-                    $message .= "Total: Rp {$formattedAmount}\n\n";
-                    $message .= "Terima kasih atas kerjasamanya.";
-
-                    // Encode message for URL
-                    $encodedMessage = urlencode($message);
-
-                    // Create WhatsApp URL
-                    $whatsappUrl = "https://wa.me/{$phone}?text={$encodedMessage}";
-
-                    // Redirect to WhatsApp
-                    return redirect()->away($whatsappUrl);
                 }),
             Actions\CreateAction::make()
                 ->label('Add Cost List')

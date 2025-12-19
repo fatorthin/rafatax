@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Livewire::component('mou-invoices-table', \App\Filament\Widgets\MouInvoicesTable::class);
+
         FilamentColor::register([
             'danger' => Color::Red,
             'gray' => Color::Zinc,
