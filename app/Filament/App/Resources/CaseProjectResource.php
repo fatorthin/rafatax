@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\App\Resources;
 
 use App\Models\MoU;
 use Filament\Forms;
@@ -9,21 +9,26 @@ use App\Models\Staff;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\CaseProject;
+use App\Traits\HasPermissions;
+use App\Services\WablasService;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\CaseProjectResource\Pages;
+use App\Filament\App\Resources\CaseProjectResource\Pages;
+use App\Filament\App\Resources\CaseProjectResource\RelationManagers;
 
 class CaseProjectResource extends Resource
 {
+    use HasPermissions;
+
     protected static ?string $model = CaseProject::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-queue-list';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationLabel = 'Daftar Projek Kasus';
 
-    protected static ?string $navigationLabel = 'Daftar Proyek Kasus';
+    protected static ?string $navigationGroup = 'HRD';
 
     public static function form(Form $form): Form
     {
@@ -73,7 +78,7 @@ class CaseProjectResource extends Resource
                 Forms\Components\DatePicker::make('power_of_attorney_date')
                     ->label('Tanggal Surat Kuasa'),
                 Forms\Components\DatePicker::make('filling_drive')
-                    ->label('Tangggal Filling Drive'),
+                    ->label('Drive Pengisian'),
                 Forms\Components\DatePicker::make('report_date')
                     ->label('Tanggal Laporan'),
                 Forms\Components\DatePicker::make('share_client_date')
@@ -138,19 +143,63 @@ class CaseProjectResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\Action::make('detail')
-                    ->label('Detail Tim')
-                    ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
-                    ->icon('heroicon-o-information-circle'),
+                Tables\Actions\Action::make('sendNotification')
+                    ->label('Kirim Notifikasi')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Notifikasi Invoice & Payroll')
+                    ->modalDescription('Apakah Anda yakin ingin mengirim notifikasi ini via WhatsApp?')
+                    ->action(function (CaseProject $record, WablasService $wablasService) {
+                        $phone = '6281359976015';
+
+                        $staffNames = Staff::whereIn('id', $record->staff_id ?? [])->pluck('name')->join(', ');
+                        $clientName = $record->client->company_name ?? '-';
+                        $caseDate = $record->case_date ? \Carbon\Carbon::parse($record->case_date)->format('d-m-Y') : '-';
+
+                        $message = "🔔 *NOTIFIKASI INVOICE & PAYROLL*\n\n";
+                        $message .= "Case Project berikut memerlukan pembuatan invoice dan sudah dapat diproses payroll bonusnya:\n\n";
+                        $message .= "📝 *Deskripsi*: {$record->description}\n";
+                        $message .= "🏢 *Client*: {$clientName}\n";
+                        $message .= "📁 *Kategori*: {$record->case_type}\n";
+                        $message .= "👨‍💻 *Staff*: {$staffNames}\n";
+                        $message .= "📅 *Tanggal*: {$caseDate}\n\n";
+                        $message .= "Mohon segera diproses. Terima kasih.";
+
+                        $result = $wablasService->sendMessage($phone, $message);
+
+                        if ($result['success']) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Berhasil')
+                                ->body('Notifikasi berhasil dikirim via WhatsApp')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Gagal')
+                                ->body('Gagal mengirim notifikasi: ' . ($result['message'] ?? 'Unknown error'))
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\EditAction::make(),
-            ], position: ActionsPosition::BeforeColumns);
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+            ], position: ActionsPosition::BeforeColumns)
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ManageCaseProjects::route('/'),
-            'detail' => Pages\DetailTim::route('/{record}/detail'),
         ];
     }
 

@@ -16,6 +16,9 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use App\Filament\Resources\PayrollBonusResource;
+use App\Models\Staff;
+use App\Services\WablasService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 
@@ -38,6 +41,7 @@ class DetailPayrollBonus extends Page implements HasTable
     {
         return [
             EditAction::make()
+                ->label('Edit Data Payroll Bonus')
                 ->record($this->record)
                 ->form([
                     \Filament\Forms\Components\TextInput::make('description')
@@ -50,11 +54,36 @@ class DetailPayrollBonus extends Page implements HasTable
                         ->searchable()
                         ->preload()
                         ->required(),
-                    \Filament\Forms\Components\DatePicker::make('start_date')
-                        ->required(),
-                    \Filament\Forms\Components\DatePicker::make('end_date')
+                    \Filament\Forms\Components\DatePicker::make('payroll_date')
                         ->required(),
                 ]),
+            Action::make('send_all_wablas')
+                ->label('Kirim Semua Slip WA')
+                ->icon('heroicon-o-chat-bubble-bottom-center-text')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Kirim Semua Slip Bonus via WhatsApp')
+                ->modalDescription('Apakah Anda yakin ingin mengirim semua slip bonus ke staff terkait?')
+                ->action(function (WablasService $wablasService) {
+                    $details = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)->get();
+                    $successCount = 0;
+                    $failCount = 0;
+
+                    foreach ($details as $record) {
+                        $result = $this->sendBonusWablas($record, $wablasService);
+                        if ($result['success']) {
+                            $successCount++;
+                        } else {
+                            $failCount++;
+                        }
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title('Proses Selesai')
+                        ->body("Berhasil: {$successCount}, Gagal: {$failCount}")
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 
@@ -66,8 +95,7 @@ class DetailPayrollBonus extends Page implements HasTable
                 Section::make('Informasi payroll Bonus')
                     ->schema([
                         TextEntry::make('description')->label('Deskripsi'),
-                        TextEntry::make('start_date')->label('Tanggal Mulai Cut Off')->date('d-m-Y'),
-                        TextEntry::make('end_date')->label('Tanggal Selesai Cut Off')->date('d-m-Y'),
+                        TextEntry::make('payroll_date')->label('Tanggal Payroll')->date('d-m-Y'),
                         TextEntry::make('total_amount')->label('Total Amount (Rp)')
                             ->state(function () {
                                 $total = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)
@@ -161,6 +189,29 @@ class DetailPayrollBonus extends Page implements HasTable
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup'),
 
+                \Filament\Tables\Actions\Action::make('send_wablas')
+                    ->label('Kirim Slip WA')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (PayrollBonusDetail $record, WablasService $wablasService) {
+                        $result = $this->sendBonusWablas($record, $wablasService);
+
+                        if ($result['success']) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Berhasil')
+                                ->body($result['message'])
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Gagal')
+                                ->body($result['message'])
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 \Filament\Tables\Actions\Action::make('download_slip')
                     ->label('Download Slip')
                     ->icon('heroicon-o-document-arrow-down')
@@ -168,5 +219,72 @@ class DetailPayrollBonus extends Page implements HasTable
                     ->url(fn($record) => route('exports.payroll-bonus.slip', ['detail' => $record->id]))
                     ->openUrlInNewTab(false),
             ]);
+    }
+    private function sendBonusWablas(PayrollBonusDetail $record, WablasService $wablasService): array
+    {
+        try {
+            $staff = Staff::find($record->staff_id);
+            if (!$staff || !$staff->phone) {
+                return ['success' => false, 'message' => 'Nomor telepon staff tidak ditemukan.'];
+            }
+
+            $payrollDate = $this->record->payroll_date ? \Carbon\Carbon::parse($this->record->payroll_date)->format('F Y') : '-';
+            $amount = number_format($record->amount, 0, ',', '.');
+
+            // Generate Message Content
+            $message = "📋 *SLIP PAYROLL BONUS RAFATAX*\n\n";
+            $message .= "👤 *Nama*: {$staff->name}\n";
+            $message .= "📅 *Periode*: {$payrollDate}\n";
+            $message .= "💰 *Total Bonus*: Rp {$amount}\n\n";
+
+            $message .= "*Rincian Project:*\n";
+            $caseProjectDetailIds = $record->case_project_detail_ids ?? [];
+            if (!is_array($caseProjectDetailIds)) {
+                $caseProjectDetailIds = json_decode((string) $caseProjectDetailIds, true) ?? [];
+            }
+
+            $projectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client'])->whereIn('id', $caseProjectDetailIds)->get();
+            foreach ($projectDetails as $detail) {
+                $projectName = $detail->caseProject->description ?? 'Unknown Project';
+                $bonusVal = number_format($detail->bonus, 0, ',', '.');
+                $message .= "- {$projectName}: Rp {$bonusVal}\n";
+            }
+
+            $message .= "\n📄 Slip bonus detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
+            $message .= "Terima kasih atas dedikasi dan kerja kerasnya! 🙏";
+
+            // Generate PDF
+            $data = [
+                'detail' => $record,
+                'caseProjectDetails' => $projectDetails,
+            ];
+            $pdf = Pdf::loadView('exports.payroll-bonus-slip', $data);
+
+            // Save to temp
+            $filename = 'Slip_Bonus_' . str_replace(' ', '_', $staff->name) . '_' . time() . '.pdf';
+            $tempPath = storage_path('app/temp/' . $filename);
+            if (!file_exists(storage_path('app/temp'))) {
+                mkdir(storage_path('app/temp'), 0755, true);
+            }
+            $pdf->save($tempPath);
+
+            // Send Message
+            $wablasService->sendMessage($staff->phone, $message);
+
+            // Send Document
+            $result = $wablasService->sendDocument($staff->phone, $tempPath, "📄 Slip Bonus {$staff->name} - {$payrollDate}");
+
+            // Cleanup
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return [
+                'success' => $result['status'] ?? false,
+                'message' => ($result['status'] ?? false) ? "Slip bonus berhasil dikirim ke {$staff->name}" : "Gagal mengirim dokumen: " . ($result['message'] ?? 'Unknown error')
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
 }

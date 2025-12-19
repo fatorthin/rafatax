@@ -13,8 +13,7 @@ class PayrollBonus extends Model
 
     protected $fillable = [
         'description',
-        'start_date',
-        'end_date',
+        'payroll_date',
         'case_project_ids',
     ];
 

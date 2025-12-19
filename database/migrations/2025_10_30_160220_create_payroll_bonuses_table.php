@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('payroll_bonuses', function (Blueprint $table) {
             $table->id();
             $table->string('description');
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->date('payroll_date');
             $table->json('case_project_ids')->nullable();
             $table->timestamps();
             $table->softDeletes();
