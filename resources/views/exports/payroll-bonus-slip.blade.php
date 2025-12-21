@@ -6,7 +6,7 @@
     <title>Slip Bonus - {{ $detail->staff->name }}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: Helvetica, sans-serif;
             font-size: 12px;
             margin: 20px;
         }

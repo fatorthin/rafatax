@@ -258,7 +258,12 @@ class DetailPayrollBonus extends Page implements HasTable
                 'detail' => $record,
                 'caseProjectDetails' => $projectDetails,
             ];
-            $pdf = Pdf::loadView('exports.payroll-bonus-slip', $data);
+            $pdf = Pdf::loadView('exports.payroll-bonus-slip', $data)
+                ->setOption(['isFontSubsettingEnabled' => false])
+                ->setOption(['isPhpEnabled' => false])
+                ->setOption(['isHtml5ParserEnabled' => true])
+                ->setOption(['isRemoteEnabled' => false])
+                ->setOption(['compress' => 1]);
 
             // Save to temp
             $filename = 'Slip_Bonus_' . str_replace(' ', '_', $staff->name) . '_' . time() . '.pdf';

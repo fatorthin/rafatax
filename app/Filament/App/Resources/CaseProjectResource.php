@@ -12,6 +12,7 @@ use App\Models\CaseProject;
 use App\Traits\HasPermissions;
 use App\Services\WablasService;
 use Filament\Resources\Resource;
+use Filament\Tables\Columns\Layout\Stack;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -72,20 +73,32 @@ class CaseProjectResource extends Resource
                 Forms\Components\TextInput::make('case_letter_number')
                     ->label('No Surat Kasus'),
                 Forms\Components\DatePicker::make('case_letter_date')
-                    ->label('Tanggal Surat Kasus'),
+                    ->label('Tanggal Surat Kasus')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\TextInput::make('power_of_attorney_number')
                     ->label('No Surat Kuasa'),
                 Forms\Components\DatePicker::make('power_of_attorney_date')
-                    ->label('Tanggal Surat Kuasa'),
+                    ->label('Tanggal Surat Kuasa')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\DatePicker::make('filling_drive')
-                    ->label('Drive Pengisian'),
+                    ->label('Drive Pengisian')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\DatePicker::make('report_date')
-                    ->label('Tanggal Laporan'),
+                    ->label('Tanggal Laporan')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\DatePicker::make('share_client_date')
-                    ->label('Tanggal Berikan Client'),
+                    ->label('Tanggal Berikan Client')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\DatePicker::make('case_date')
                     ->required()
-                    ->label('Tanggal Kasus'),
+                    ->label('Tanggal Kasus')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([
@@ -102,7 +115,26 @@ class CaseProjectResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
-                Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
+
+
+                Tables\Columns\TextColumn::make('description')->sortable()->searchable()->weight('bold'),
+                Tables\Columns\TextColumn::make('status')->badge()->formatStateUsing(function ($state) {
+                    return match ($state) {
+                        'open' => 'OPEN',
+                        'in_progress' => 'IN PROGRESS',
+                        'done' => 'DONE',
+                        default => $state,
+                    };
+                })->color(function ($state) {
+                    return match ($state) {
+                        'open' => 'primary',
+                        'in_progress' => 'warning',
+                        'done' => 'success',
+                        default => 'gray',
+                    };
+                }),
+
+
                 Tables\Columns\TextColumn::make('client.code')->label('Kode Client')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('client.company_name')->label('Nama Client')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('case_type')
@@ -125,19 +157,7 @@ class CaseProjectResource extends Resource
                 Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('status')->label('Status')->sortable()->searchable()->badge()->formatStateUsing(function ($state) {
-                    return match ($state) {
-                        'open' => 'OPEN',
-                        'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
-                    };
-                })->color(function ($state) {
-                    return match ($state) {
-                        'open' => 'primary',
-                        'in_progress' => 'warning',
-                        'done' => 'success',
-                    };
-                }),
+
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
