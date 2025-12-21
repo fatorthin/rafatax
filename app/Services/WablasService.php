@@ -262,4 +262,106 @@ class WablasService
 
         return $documentResult;
     }
+
+    /**
+     * Kirim image dari file lokal
+     * Menggunakan endpoint /send-image-from-local sesuai dokumentasi WAblas
+     * https://texas.wablas.com/documentation/api#send-image-local
+     */
+    public function sendImage($phone, $filePath, $caption = '')
+    {
+        try {
+            // Normalize path untuk Windows
+            $normalizedPath = realpath($filePath);
+
+            if (!file_exists($normalizedPath)) {
+                Log::error('WAblas: File gambar tidak ditemukan', [
+                    'original_path' => $filePath,
+                    'normalized_path' => $normalizedPath
+                ]);
+                return [
+                    'status' => false,
+                    'message' => 'File gambar tidak ditemukan: ' . $filePath
+                ];
+            }
+
+            Log::info('WAblas: Mengirim gambar dari lokal', [
+                'phone' => $phone,
+                'file_path' => $normalizedPath,
+                'file_size' => filesize($normalizedPath),
+                'file_exists' => file_exists($normalizedPath),
+                'mime_type' => mime_content_type($normalizedPath)
+            ]);
+
+            // Baca file sebagai base64
+            $fileContent = file_get_contents($normalizedPath);
+            $fileName = basename($normalizedPath);
+
+            // Method dari dokumentasi: encode file sebagai base64
+            $data = [
+                'phone' => $phone,
+                'caption' => $caption,
+                'file' => base64_encode($fileContent),
+                'data' => json_encode(['name' => $fileName])
+            ];
+
+            $curl = curl_init();
+
+            // Format Authorization sesuai dokumentasi: token.secret_key
+            curl_setopt_array($curl, [
+                CURLOPT_URL => $this->baseUrl . "/send-image-from-local",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => http_build_query($data), // x-www-form-urlencoded
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: {$this->token}.{$this->secretKey}"
+                ],
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_VERIFYPEER => 0
+            ]);
+
+            $result = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            $info = curl_getinfo($curl);
+
+            curl_close($curl);
+
+            Log::info('WAblas: Response send image from local', [
+                'http_code' => $httpCode,
+                'response' => $result,
+                'curl_error' => $error,
+                'content_type' => $info['content_type'] ?? null,
+            ]);
+
+            $response = json_decode($result, true);
+
+            // Cek jika error
+            if ($httpCode >= 400 || !($response['status'] ?? false)) {
+                return [
+                    'status' => false,
+                    'message' => $response['message'] ?? 'Failed to send image',
+                    'http_code' => $httpCode,
+                    'use_fallback' => true
+                ];
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            Log::error('WAblas: Exception saat send image', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'Exception: ' . $e->getMessage(),
+                'use_fallback' => true
+            ];
+        }
+    }
 }

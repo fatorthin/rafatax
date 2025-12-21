@@ -83,6 +83,10 @@ class MouInvoicesTable extends BaseWidget
                     ->alignEnd(),
             ])
             ->actions([
+                Tables\Actions\EditAction::make()
+                    ->url(fn(Invoice $record): string => \App\Filament\Resources\InvoiceResource::getUrl('edit', ['record' => $record]))
+                    ->icon('heroicon-o-pencil')
+                    ->color('warning'),
                 Tables\Actions\ViewAction::make()
                     ->url(fn(Invoice $record): string => route('filament.admin.resources.invoices.viewCostList', ['record' => $record->id]))
                     ->label('View Details')

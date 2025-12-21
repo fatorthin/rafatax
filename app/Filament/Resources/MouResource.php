@@ -80,7 +80,7 @@ class MouResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('coa_id')
                                     ->label('CoA')
-                                    ->options(\App\Models\Coa::all()->pluck('name', 'id'))
+                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                                     ->searchable()
                                     ->required()
                                     ->columnSpan([

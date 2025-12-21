@@ -149,6 +149,10 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->label('Kirim Invoice')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Kirim Invoice')
+                ->modalDescription('Apakah Anda yakin ingin mengirim invoice ini ke klien via WhatsApp?')
+                ->modalSubmitActionLabel('Ya, Kirim')
                 ->action(function () {
                     try {
                         // Get the mou related to this invoice
@@ -203,7 +207,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         // 1. Send Text Message
                         $wablasService->sendMessage($phone, $message);
 
-                        // 2. Generate PDF (Logic duplicated from InvoicePrintController)
+                        // 2. Generate Image using Browsershot
                         $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
 
                         // Determine type
@@ -243,8 +247,8 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             'signatureImage' => $signatureImageBase64,
                         ];
 
-                        // Generate PDF
-                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
+                        // Render blade view to HTML
+                        $html = view($view, $viewData)->render();
 
                         // Save to temporary file
                         $tempDir = storage_path('app/temp');
@@ -253,13 +257,19 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         }
 
                         $invoiceNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $this->invoice->invoice_number ?? $this->invoice->id);
-                        $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
+                        $filename = 'invoice-' . $invoiceNumberClean . '.jpg';
                         $tempPath = $tempDir . '/' . $filename;
 
-                        $pdf->save($tempPath);
+                        // Generate Image from HTML
+                        \Spatie\Browsershot\Browsershot::html($html)
+                            ->setOption('newHeadless', true)
+                            ->windowSize(800, 1000) // Smaller width = larger relative text
+                            ->deviceScaleFactor(2) // High resolution
+                            ->fullPage() // Capture only the content
+                            ->save($tempPath);
 
-                        // 3. Send PDF Document
-                        $sendResult = $wablasService->sendDocument($phone, $tempPath);
+                        // 3. Send Image
+                        $sendResult = $wablasService->sendImage($phone, $tempPath);
 
                         // Clean up
                         if (file_exists($tempPath)) {
@@ -269,13 +279,14 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         if (isset($sendResult['status']) && $sendResult['status']) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Success')
-                                ->body('Invoice sent successfully via WhatsApp (PDF).')
+                                ->body('Invoice sent successfully via WhatsApp (Image).')
                                 ->success()
                                 ->send();
                         } else {
+                            // Fallback to PDF if Image fails (Optional, but good for robustness)
                             \Filament\Notifications\Notification::make()
                                 ->title('Warning')
-                                ->body('Message sent, but failed to send PDF document.')
+                                ->body('Message sent, but failed to send Image. Result: ' . ($sendResult['message'] ?? 'Unknown'))
                                 ->warning()
                                 ->send();
                         }

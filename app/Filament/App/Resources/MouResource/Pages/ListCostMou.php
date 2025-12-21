@@ -163,7 +163,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->form([
                         Select::make('coa_id')
                             ->label('CoA')
-                            ->options(Coa::all()->pluck('name', 'id'))
+                            ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                             ->searchable()
                             ->required(),
                         TextInput::make('description')
@@ -221,7 +221,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->schema([
                 Select::make('coa_id')
                     ->label('CoA')
-                    ->options(Coa::all()->pluck('name', 'id'))
+                    ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                     ->searchable()
                     ->placeholder('Pilih CoA'),
             ]);
@@ -238,7 +238,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->form([
                     Select::make('coa_id')
                         ->label('CoA')
-                        ->options(Coa::all()->pluck('name', 'id'))
+                        ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                         ->searchable()
                         ->required(),
                     TextInput::make('amount')
@@ -326,7 +326,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 ->schema([
                                     Select::make('coa_id')
                                         ->label('CoA')
-                                        ->options(Coa::all()->pluck('name', 'id'))
+                                        ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                                         ->required()
                                         ->searchable()
                                         ->columnSpan([
