@@ -225,7 +225,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         // 1. Send Text Message
                         $wablasService->sendMessage($phone, $message);
 
-                        // 2. Generate Image using Browsershot
+                        // 2. Generate PDF using DOMPDF
                         $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
 
                         // Determine type
@@ -248,14 +248,16 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         if ($headerImageFile) {
                             $headerImagePath = public_path('images/' . $headerImageFile);
                             if (file_exists($headerImagePath)) {
-                                $headerImageBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($headerImagePath));
+                                // Optimize image: Resize to max 600px width and compress
+                                $headerImageBase64 = $this->optimizeImage($headerImagePath, 600);
                             }
                         }
 
                         $signatureImageBase64 = '';
                         $signatureImagePath = public_path('images/spesimen-kasir.png');
                         if (file_exists($signatureImagePath)) {
-                            $signatureImageBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($signatureImagePath));
+                            // Optimize signature: Resize to max 250px width
+                            $signatureImageBase64 = $this->optimizeImage($signatureImagePath, 250);
                         }
 
                         $viewData = [
@@ -265,8 +267,10 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             'signatureImage' => $signatureImageBase64,
                         ];
 
-                        // Render blade view to HTML
-                        $html = view($view, $viewData)->render();
+                        // Generate PDF with Compression
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $viewData)
+                            ->setPaper('a4', 'portrait')
+                            ->setOption(['compress' => 1]);
 
                         // Save to temporary file
                         $tempDir = storage_path('app/temp');
@@ -275,19 +279,13 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         }
 
                         $invoiceNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $this->invoice->invoice_number ?? $this->invoice->id);
-                        $filename = 'invoice-' . $invoiceNumberClean . '.jpg';
+                        $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
                         $tempPath = $tempDir . '/' . $filename;
 
-                        // Generate Image from HTML
-                        \Spatie\Browsershot\Browsershot::html($html)
-                            ->setOption('newHeadless', true)
-                            ->windowSize(800, 1000) // Smaller width = larger relative text
-                            ->deviceScaleFactor(2) // High resolution
-                            ->fullPage() // Capture only the content
-                            ->save($tempPath);
+                        $pdf->save($tempPath);
 
-                        // 3. Send Image
-                        $sendResult = $wablasService->sendImage($phone, $tempPath);
+                        // 3. Send Document
+                        $sendResult = $wablasService->sendDocument($phone, $tempPath);
 
                         // Clean up
                         if (file_exists($tempPath)) {
@@ -297,14 +295,13 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         if (isset($sendResult['status']) && $sendResult['status']) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Success')
-                                ->body('Invoice sent successfully via WhatsApp (Image).')
+                                ->body('Invoice sent successfully via WhatsApp (PDF).')
                                 ->success()
                                 ->send();
                         } else {
-                            // Fallback to PDF if Image fails (Optional, but good for robustness)
                             \Filament\Notifications\Notification::make()
                                 ->title('Warning')
-                                ->body('Message sent, but failed to send Image. Result: ' . ($sendResult['message'] ?? 'Unknown'))
+                                ->body('Message sent, but failed to send PDF. Result: ' . ($sendResult['message'] ?? 'Unknown'))
                                 ->warning()
                                 ->send();
                         }
@@ -332,5 +329,65 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->color('danger')
                 ->icon('heroicon-o-arrow-left'),
         ];
+    }
+    protected function optimizeImage($path, $maxWidth)
+    {
+        if (!file_exists($path)) {
+            return '';
+        }
+
+        list($width, $height, $type) = getimagesize($path);
+
+        // Load image based on type
+        switch ($type) {
+            case IMAGETYPE_JPEG:
+                $source = imagecreatefromjpeg($path);
+                break;
+            case IMAGETYPE_PNG:
+                $source = imagecreatefrompng($path);
+                break;
+            default:
+                return 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+        }
+
+        // Calculate new dimensions
+        if ($width > $maxWidth) {
+            $newWidth = $maxWidth;
+            $newHeight = ($height / $width) * $newWidth;
+        } else {
+            $newWidth = $width;
+            $newHeight = $height;
+        }
+
+        // Create new image
+        $destination = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Handle transparency for PNG
+        if ($type == IMAGETYPE_PNG) {
+            imagealphablending($destination, false);
+            imagesavealpha($destination, true);
+            $transparent = imagecolorallocatealpha($destination, 255, 255, 255, 127);
+            imagefilledrectangle($destination, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        // Resize
+        imagecopyresampled($destination, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        // Output to buffer
+        ob_start();
+        if ($type == IMAGETYPE_PNG) {
+            imagepng($destination, null, 8); // Compression level 8 (0-9) - Higher compression
+            $mime = 'image/png';
+        } else {
+            imagejpeg($destination, null, 75); // Quality 75 - Lower quality for smaller size
+            $mime = 'image/jpeg';
+        }
+        $contents = ob_get_clean();
+
+        // Cleanup
+        imagedestroy($source);
+        imagedestroy($destination);
+
+        return 'data:' . $mime . ';base64,' . base64_encode($contents);
     }
 }

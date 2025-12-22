@@ -7,7 +7,7 @@
     <title>Invoice PDF</title>
     <style>
         body {
-            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            font-family: sans-serif;
             font-size: 12px;
         }
 

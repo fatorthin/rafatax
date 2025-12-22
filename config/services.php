@@ -54,4 +54,9 @@ return [
         'timeout' => env('KPI_TIMEOUT', 15),
     ],
 
+    'browsershot' => [
+        'node_path' => env('BROWSERSHOT_NODE_PATH'),
+        'npm_path' => env('BROWSERSHOT_NPM_PATH'),
+    ],
+
 ];
