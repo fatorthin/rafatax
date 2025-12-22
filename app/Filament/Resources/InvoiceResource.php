@@ -43,6 +43,8 @@ class InvoiceResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->unique(Invoice::class, 'invoice_number', fn($record) => $record),
+                Forms\Components\TextInput::make('description')
+                    ->maxLength(255),
                 Forms\Components\DatePicker::make('invoice_date')
                     ->required()
                     ->live()

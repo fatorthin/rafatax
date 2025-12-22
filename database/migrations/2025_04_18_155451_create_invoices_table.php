@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('mou_id')->constrained('mous')->onDelete('cascade');
             $table->string('invoice_number')->unique()->required();
+            $table->string('description')->nullable();
             $table->date('invoice_date')->required();
             $table->date('due_date');
             $table->enum('invoice_status', ['unpaid', 'paid']);

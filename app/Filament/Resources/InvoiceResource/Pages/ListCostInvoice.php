@@ -193,13 +193,31 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $formattedAmount = number_format($totalAmount, 0, ',', '.');
 
                         // Create WhatsApp message
-                        $message = "Halo {$client->company_name},\n\n";
-                        $message .= "Ini adalah invoice untuk layanan kami:\n";
+                        $message = "Yth. {$client->company_name},\n\n";
+                        $message .= "Berikut kami lampirkan invoice untuk layanan kami:\n";
                         $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
-                        $message .= "Tanggal: " . \Carbon\Carbon::parse($this->invoice->invoice_date)->translatedFormat('d F Y') . "\n";
-                        $message .= "Jatuh Tempo: " . \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y') . "\n";
-                        $message .= "Total: Rp {$formattedAmount}\n\n";
-                        $message .= "Terima kasih atas kerjasamanya.";
+                        $message .= "Keterangan: {$this->invoice->description}\n";
+                        // $message .= "Tanggal: " . \Carbon\Carbon::parse($this->invoice->invoice_date)->translatedFormat('d F Y') . "\n";
+                        // $message .= "Jatuh Tempo: " . \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y') . "\n";
+                        // $message .= "Total: Rp {$formattedAmount}\n\n";
+
+                        $type = $this->invoice->invoice_type ?? optional($this->invoice->mou)->type;
+                        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+
+                        $isKkp = $typeNormalized === 'kkp'; // kkp or pt
+
+                        $bankDetails = $isKkp
+                            ? "Bank: BCA\nNo. Rekening: 785-1135-425\nAtas nama: Antin Okfitasari"
+                            : "Bank: BCA\nNo. Rekening: 785-1260-513\nAtas nama: Aghnia Oasis Konsultindo PT";
+
+                        $signature = $isKkp
+                            ? "Antin Okfitasari - Konsultan Pajak\nGriya Rafa, Jl. Nampan 01, Dusun II\nMadegondo, Grogol, Sukoharjo\nPhone: +62 812-2596-210\nEmail: antin.okfitasari@gmail.com"
+                            : "Aghnia Oasis Konsultindo PT\nGriya Rafa, Jl. Nampan 01, Dusun II\nMadegondo, Grogol, Sukoharjo\nPhone: +62 813-5997-6015\nEmail: aghniaoasiskonsultindo@gmail.com";
+
+                        $message .= "Pembayaran dapat dilakukan melalui transfer ke rekening berikut:\n{$bankDetails}\n\n";
+                        $message .= "Apabila telah melakukan pembayaran, dimohon untuk mengirim konfirmasi kepada kami dengan melalui nomor ini.\n\n";
+                        $message .= "Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.\n\n";
+                        $message .= "Best Regards,\nTim Finance\n\n{$signature}\n";
 
                         /** @var \App\Services\WablasService $wablasService */
                         $wablasService = app(\App\Services\WablasService::class);
