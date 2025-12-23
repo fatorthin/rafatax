@@ -217,6 +217,9 @@
             border: none;
             margin-bottom: 20px;
         }
+        .parties-table tr {
+            background-color: transparent !important;
+        }
         .parties-table td {
             border: none !important;
             padding: 4px !important;
