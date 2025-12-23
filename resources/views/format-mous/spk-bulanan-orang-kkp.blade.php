@@ -193,6 +193,18 @@
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
+
+        .parties-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin-bottom: 20px;
+        }
+        .parties-table td {
+            border: none;
+            padding: 5px;
+            vertical-align: top;
+        }
         
         .watermark { /* Style watermark untuk mode normal DAN sebagai dasar untuk print */
             position: fixed; 
@@ -371,21 +383,53 @@
                             <div class="section">
                                 <p>Yang bertanda tangan di bawah ini masing-masing:</p>
                                 
-                                <div class="parties">
-                                    <div class="party">
-                                        <p><strong>1. Nama:</strong> {{ $mou->client->name ?? '-' }}</p>
-                                        <p><strong>Jabatan:</strong> {{ $mou->client->position ?? '-' }}</p>
-                                        <p><strong>Alamat:</strong> {{ $mou->client->address ?? '-' }}</p>
-                                        <p>dan selanjutnya disebut <strong>PIHAK PERTAMA</strong></p>
-                                    </div>
-                                    
-                                    <div class="party">
-                                        <p><strong>2. Nama:</strong> ANTIN OKFITASARI</p>
-                                        <p><strong>Jabatan:</strong> OWNER KKP ANTIN OKFITASARI (RAFATAX)</p>
-                                        <p><strong>Alamat:</strong> DK NAMPAN RT 01 RW 02 MADEGONDO GROGOL SUKOHARJO</p>
-                                        <p>dan selanjutnya disebut <strong>PIHAK KEDUA</strong></p>
-                                    </div>
-                                </div>
+                                <table class="parties-table">
+                                    <tr>
+                                        <td style="width: 20px; font-weight: bold;">1.</td>
+                                        <td style="width: 100px; font-weight: bold;">Nama</td>
+                                        <td style="width: 10px;">:</td>
+                                        <td>{{ $mou->client->owner_name ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td style="font-weight: bold;">Jabatan</td>
+                                        <td>:</td>
+                                        <td>{{ $mou->client->owner_role ?: 'OWNER' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td style="font-weight: bold;">Alamat</td>
+                                        <td>:</td>
+                                        <td>{{ $mou->client->address ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td colspan="3">dan selanjutnya disebut <strong>PIHAK PERTAMA</strong></td>
+                                    </tr>
+                                    <tr><td colspan="4" style="height: 10px;"></td></tr>
+                                    <tr>
+                                        <td style="font-weight: bold;">2.</td>
+                                        <td style="font-weight: bold;">Nama</td>
+                                        <td>:</td>
+                                        <td>ANTIN OKFITASARI</td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td style="font-weight: bold;">Jabatan</td>
+                                        <td>:</td>
+                                        <td>OWNER KKP ANTIN OKFITASARI (RAFATAX)</td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td style="font-weight: bold;">Alamat</td>
+                                        <td>:</td>
+                                        <td>DK NAMPAN RT 01 RW 02 MADEGONDO GROGOL SUKOHARJO</td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td colspan="3">dan selanjutnya disebut <strong>PIHAK KEDUA</strong></td>
+                                    </tr>
+                                </table>
                                 
                                  <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan <strong>Perikatan Jasa Konsultasi Perpajakan Atas Pekerjaan Konsultasi Kewajiban Perpajakan PERORANGAN Untuk Tahun Yang Berakhir {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</strong>, seperti diatur dalam pasal-pasal Surat Perikatan di bawah ini:</p>
                             </div>
@@ -482,8 +526,8 @@
                                         <p>Pihak Pertama</p>
                                         <br>
                                         <div class="signature-line"></div>
-                                        <p class="signature-name">{{ $mou->client->name ?? '-' }}</p>
-                                        <p class="signature-title">{{ $mou->client->position ?? '-' }}</p>
+                                        <p class="signature-name">{{ $mou->client->owner_name ?? '-' }}</p>
+                                        <p class="signature-title">{{ $mou->client->owner_role ?: 'OWNER' }}</p>
                                     </div>
                                     
                                     <div class="signature-box">

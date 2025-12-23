@@ -481,8 +481,8 @@
                                         <p>Pihak Pertama</p>
                                         <br>
                                         <div class="signature-line"></div>
-                                        <p class="signature-name">{{ $mou->client->name ?? '-' }}</p>
-                                        <p class="signature-title">{{ $mou->client->position ?? '-' }}</p>
+                                        <p class="signature-name">{{ $mou->client->owner_name ?? '-' }}</p>
+                                        <p class="signature-title">{{ $mou->client->owner_role ?: 'OWNER' }}</p>
                                     </div>
                                     
                                     <div class="signature-box">

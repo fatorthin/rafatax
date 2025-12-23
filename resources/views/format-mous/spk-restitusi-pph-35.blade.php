@@ -373,9 +373,9 @@
                                
                                 <div class="parties">
                                     <div class="party">
-                                        <p><strong>Bp / Ibu {{ $mou->client->contact_person ?? '-' }}</strong></p>
-                                        <p><strong>{{ $mou->client->position ?? '-' }}</strong> </p>
-                                        <p><strong>{{ $mou->client->name ?? '-' }}</strong></p>
+                                        <p><strong>Bp / Ibu {{ $mou->client->owner_name ?? '-' }}</strong></p>
+                                        <p><strong>{{ $mou->client->owner_role ?: 'OWNER' }}</strong> </p>
+                                        <p><strong>{{ $mou->client->company_name ?? '-' }}</strong></p>
                                     </div>
 
                                     <div class="party">
@@ -490,8 +490,8 @@
                                         <p>Pihak Pertama</p>
                                         <br>
                                         <div class="signature-line"></div>
-                                        <p class="signature-name">{{ $mou->client->name ?? '-' }}</p>
-                                        <p class="signature-title">{{ $mou->client->position ?? '-' }}</p>
+                                        <p class="signature-name">{{ $mou->client->owner_name ?? '-' }}</p>
+                                        <p class="signature-title">{{ $mou->client->owner_role ?: 'OWNER' }}</p>
                                     </div>
                                     
                                     <div class="signature-box">

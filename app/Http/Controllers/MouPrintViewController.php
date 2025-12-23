@@ -13,10 +13,16 @@ class MouPrintViewController extends Controller
         $mou = MoU::with(['client', 'categoryMou'])->findOrFail($id);
         $costLists = CostListMou::where('mou_id', $id)->get();
 
-        return view('format-mous.spk-tahunan-pt', [
+        if ($mou->type === 'pt') {
+            $view = 'format-mous.' . $mou->categoryMou->format_mou_pt;
+        } else {
+            $view = 'format-mous.' . $mou->categoryMou->format_mou_kkp;
+        }
+
+        return view($view, [
             'mou' => $mou,
             'costLists' => $costLists,
             'printMode' => true,
         ]);
     }
-} 
+}
