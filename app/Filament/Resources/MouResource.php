@@ -88,7 +88,6 @@ class MouResource extends Resource
                                     ]),
                                 Forms\Components\TextInput::make('description')
                                     ->label('Description')
-                                    ->required()
                                     ->columnSpan([
                                         'md' => 4,
                                     ]),
@@ -104,8 +103,7 @@ class MouResource extends Resource
                             ->columns([
                                 'md' => 12,
                             ])
-                            ->defaultItems(1)
-                            ->addActionLabel('Add Cost Item'),
+                            ->defaultItems(0),
                     ])
                     ->collapsible(),
             ]);
