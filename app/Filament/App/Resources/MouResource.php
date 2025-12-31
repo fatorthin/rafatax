@@ -100,11 +100,11 @@ class MouResource extends Resource
                             ->required()
                             ->placeholder('Pilih tipe'),
                         Forms\Components\Select::make('client_id')
-                            ->label('Klien')
+                            ->label('Client')
                             ->relationship('client', 'company_name')
-                            ->searchable()
-                            ->required()
-                            ->placeholder('Pilih klien'),
+                            ->searchable(['company_name', 'code'])
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->company_name} - {$record->code}")
+                            ->required(),
                         Forms\Components\Select::make('category_mou_id')
                             ->label('Kategori MoU')
                             ->relationship('categoryMou', 'name')
@@ -143,7 +143,6 @@ class MouResource extends Resource
                                     ]),
                                 Forms\Components\TextInput::make('description')
                                     ->label('Deskripsi')
-                                    ->required()
                                     ->placeholder('Deskripsi biaya')
                                     ->columnSpan([
                                         'md' => 4,
@@ -161,7 +160,7 @@ class MouResource extends Resource
                             ->columns([
                                 'md' => 12,
                             ])
-                            ->defaultItems(1)
+                            ->defaultItems(0)
                             ->addActionLabel('Tambah Biaya'),
                     ])
                     ->collapsible(),
