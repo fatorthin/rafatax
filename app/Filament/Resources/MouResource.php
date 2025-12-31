@@ -60,7 +60,8 @@ class MouResource extends Resource
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
                     ->relationship('client', 'company_name')
-                    ->searchable()
+                    ->searchable(['company_name', 'code'])
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->company_name} - {$record->code}")
                     ->required(),
                 Forms\Components\Select::make('category_mou_id')
                     ->label('Category MoU')
