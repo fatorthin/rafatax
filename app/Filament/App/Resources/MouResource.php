@@ -91,14 +91,16 @@ class MouResource extends Resource
                             ->default('approved')
                             ->required()
                             ->placeholder('Pilih status'),
-                        Forms\Components\Select::make('type')
+                        Forms\Components\Radio::make('type')
                             ->label('Tipe')
                             ->options([
                                 'pt' => 'PT',
                                 'kkp' => 'KKP',
                             ])
-                            ->required()
-                            ->placeholder('Pilih tipe'),
+                            ->default('pt')
+                            ->inline()
+                            ->inlineLabel(false)
+                            ->required(),
                         Forms\Components\Select::make('client_id')
                             ->label('Client')
                             ->relationship('client', 'company_name')

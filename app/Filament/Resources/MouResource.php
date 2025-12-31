@@ -50,12 +50,14 @@ class MouResource extends Resource
                     ])
                     ->default('approved')
                     ->required(),
-                Forms\Components\Select::make('type')
+                Forms\Components\Radio::make('type')
                     ->options([
                         'pt' => 'PT',
                         'kkp' => 'KKP',
                     ])
                     ->default('pt')
+                    ->inline()
+                    ->inlineLabel(false)
                     ->required(),
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
