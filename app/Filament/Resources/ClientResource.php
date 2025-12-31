@@ -65,8 +65,7 @@ class ClientResource extends Resource
                         'G' => 'G',
                         'H' => 'H',
                         'I' => 'I',
-                    ])
-                    ->required(),
+                    ]),
                 Forms\Components\Select::make('jenis_wp')
                     ->label('Jenis WP')
                     ->options([

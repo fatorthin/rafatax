@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('contact_person')->nullable();
             $table->string('npwp')->nullable();
             $table->enum('jenis_wp', ['perseorangan', 'badan'])->default('perseorangan');
-            $table->string('grade');
+            $table->string('grade')->nullable();
             $table->boolean('pph_25_reporting')->default(false);
             $table->boolean('pph_23_reporting')->default(false);
             $table->boolean('pph_21_reporting')->default(false);
