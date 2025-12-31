@@ -140,6 +140,10 @@ class MouResource extends Resource
                     ->label('Client Name')
                     ->sortable()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('categoryMou.name')
+                    ->label('Category')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\SelectColumn::make('status')
                     ->options([
                         'approved' => 'Approved',
@@ -160,18 +164,7 @@ class MouResource extends Resource
                             ->whereNotNull('invoice_id')
                             ->sum('amount');
                     })->alignEnd(),
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
