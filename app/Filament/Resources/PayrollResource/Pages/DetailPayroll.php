@@ -221,9 +221,12 @@ class DetailPayroll extends Page implements HasTable
                 ->color('info')
                 ->requiresConfirmation()
                 ->modalHeading('Kirim Semua Slip Gaji PDF via WhatsApp')
-                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp? Proses ini akan berjalan langsung (tanpa antrian), mohon tunggu hingga selesai.')
+                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp? Proses ini akan menggunakan fitur Bulk Sending (v2).')
                 ->modalSubmitActionLabel('Kirim Semua PDF')
                 ->action(function () {
+                    // Prevent timeout during potentially long PDF generation loop
+                    set_time_limit(0);
+
                     // Ambil semua detail yang memiliki nomor WA
                     $details = PayrollDetail::with('staff')
                         ->where('payroll_id', $this->record->id)
@@ -244,37 +247,20 @@ class DetailPayroll extends Page implements HasTable
                         new \App\Services\WablasService()
                     );
 
-                    $successCount = 0;
-                    $failCount = 0;
+                    // Use the new bulk method
+                    $result = $controller->sendBulkPayslips($details);
 
-                    foreach ($details as $detail) {
-                        try {
-                            $response = $controller->sendPayslipWithPdf($detail);
-                            $data = $response->getData(true);
-
-                            if ($data['success']) {
-                                $successCount++;
-                            } else {
-                                $failCount++;
-                                Log::error("Gagal mengirim slip gaji ke {$detail->staff->name}: " . $data['message']);
-                            }
-                        } catch (\Exception $e) {
-                            $failCount++;
-                            Log::error("Error mengirim slip gaji ke {$detail->staff->name}: " . $e->getMessage());
-                        }
-                    }
-
-                    if ($failCount > 0) {
+                    if ($result['success']) {
                         Notification::make()
-                            ->title('Pengiriman Selesai dengan Error')
-                            ->body("Berhasil: $successCount. Gagal: $failCount. Cek log untuk detail kegagalan.")
-                            ->warning()
+                            ->title('Pengiriman Bulk Berhasil')
+                            ->body("Request terkirim untuk " . $result['count'] . " pesan. Webhook akan memproses pengiriman di background.")
+                            ->success()
                             ->send();
                     } else {
                         Notification::make()
-                            ->title('Pengiriman Berhasil')
-                            ->body("Sukses mengirim slip gaji ke $successCount staff.")
-                            ->success()
+                            ->title('Gagal Mengirim Bulk')
+                            ->body('Terjadi kesalahan: ' . ($result['message'] ?? 'Unknown error'))
+                            ->danger()
                             ->send();
                     }
                 }),

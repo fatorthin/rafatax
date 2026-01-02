@@ -19,6 +19,91 @@ class PayrollWhatsAppController extends Controller
         $this->wablasService = $wablasService;
     }
 
+    public function sendBulkPayslips(\Illuminate\Support\Collection $details)
+    {
+        try {
+            Log::info('Starting sendBulkPayslips for ' . $details->count() . ' items');
+
+            $textPayload = ['data' => []];
+            $documentPayload = ['data' => []];
+            $publicPath = public_path('storage/payslips/');
+
+            if (!file_exists($publicPath)) {
+                mkdir($publicPath, 0755, true);
+            }
+
+            foreach ($details as $detail) {
+                if (!$detail->staff->phone) {
+                    continue;
+                }
+
+                $phone = $this->formatPhoneNumber($detail->staff->phone);
+                $period = \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F Y');
+                $totalSalary = $this->calculateTotalSalary($detail);
+
+                // 1. Prepare Text Message
+                $message = "📋 *SLIP GAJI RAFATAX*\n\n";
+                $message .= "👤 Nama: {$detail->staff->name}\n";
+                $message .= "📅 Periode: {$period}\n";
+                $message .= "💰 Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
+                $message .= "📄 Slip gaji detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
+                $message .= "Terima kasih atas kerja keras Anda! 🙏";
+
+                $textPayload['data'][] = [
+                    'phone' => $phone,
+                    'message' => $message,
+                ];
+
+                // 2. Prepare PDF Document
+                $pdfPath = $this->generatePayslipPdf($detail); // This returns temp path
+
+                if ($pdfPath && file_exists($pdfPath)) {
+                    $filename = basename($pdfPath);
+                    $publicFile = $publicPath . $filename;
+
+                    if (copy($pdfPath, $publicFile)) {
+                        $documentUrl = url('storage/payslips/' . $filename);
+
+                        $documentPayload['data'][] = [
+                            'phone' => $phone,
+                            'document' => $documentUrl,
+                        ];
+
+                        // Remove temp file
+                        unlink($pdfPath);
+                    }
+                }
+            }
+
+            // Execute Bulk Sending
+            $textResult = ['success' => false, 'message' => 'No data'];
+            $docResult = ['success' => false, 'message' => 'No data'];
+
+            if (!empty($textPayload['data'])) {
+                Log::info('Sending bulk text messages...');
+                $textResult = $this->wablasService->sendBulkMessage($textPayload);
+            }
+
+            if (!empty($documentPayload['data'])) {
+                Log::info('Sending bulk documents...');
+                $docResult = $this->wablasService->sendBulkDocument($documentPayload);
+            }
+
+            return [
+                'success' => ($textResult['success'] ?? false) || ($docResult['success'] ?? false),
+                'text_result' => $textResult,
+                'doc_result' => $docResult,
+                'count' => count($textPayload['data'])
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error in sendBulkPayslips: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
     public function sendPayslip(PayrollDetail $detail)
     {
         try {

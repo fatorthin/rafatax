@@ -366,4 +366,95 @@ class WablasService
             ];
         }
     }
+    /**
+     * Kirim pesan massal
+     * Sesuai dokumentasi: https://texas.wablas.com/documentation/api#send-message
+     */
+    public function sendBulkMessage(array $payload): array
+    {
+        $curl = curl_init();
+
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
+            "Authorization: {$this->token}.{$this->secretKey}",
+            "Content-Type: application/json"
+        ]);
+
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/v2/send-message");
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+
+        $result = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($error) {
+            Log::error('Wablas Bulk Message API Error: ' . $error);
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $error
+            ];
+        }
+
+        $response = json_decode($result, true);
+
+        return [
+            'success' => $httpCode === 200,
+            'message' => $response['message'] ?? 'Unknown response',
+            'data' => $response,
+            'http_code' => $httpCode,
+        ];
+    }
+
+    /**
+     * Kirim dokumen massal via URL
+     * Sesuai dokumentasi: https://texas.wablas.com/documentation/api#send-document
+     */
+    public function sendBulkDocument(array $payload): array
+    {
+        $curl = curl_init();
+
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
+            "Authorization: {$this->token}.{$this->secretKey}",
+            "Content-Type: application/json"
+        ]);
+
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/v2/send-document");
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 60);
+
+        $result = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+
+        curl_close($curl);
+
+        if ($error) {
+            Log::error('Wablas Bulk Document API Error: ' . $error);
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $error
+            ];
+        }
+
+        $response = json_decode($result, true);
+
+        return [
+            'success' => $httpCode === 200,
+            'message' => $response['message'] ?? 'Unknown response',
+            'data' => $response,
+            'http_code' => $httpCode,
+        ];
+    }
 }
