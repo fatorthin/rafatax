@@ -221,7 +221,7 @@ class DetailPayroll extends Page implements HasTable
                 ->color('info')
                 ->requiresConfirmation()
                 ->modalHeading('Kirim Semua Slip Gaji PDF via WhatsApp')
-                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp?')
+                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp? Proses ini akan berjalan langsung (tanpa antrian), mohon tunggu hingga selesai.')
                 ->modalSubmitActionLabel('Kirim Semua PDF')
                 ->action(function () {
                     // Ambil semua detail yang memiliki nomor WA
@@ -240,41 +240,43 @@ class DetailPayroll extends Page implements HasTable
                         return;
                     }
 
-                    // Siapkan jobs per staff agar proses berjalan di background (menghindari timeout)
-                    $jobs = [];
+                    $controller = new \App\Http\Controllers\PayrollWhatsAppController(
+                        new \App\Services\WablasService()
+                    );
+
+                    $successCount = 0;
+                    $failCount = 0;
+
                     foreach ($details as $detail) {
-                        $jobs[] = new SendPayslipPdf($detail->id);
+                        try {
+                            $response = $controller->sendPayslipWithPdf($detail);
+                            $data = $response->getData(true);
+
+                            if ($data['success']) {
+                                $successCount++;
+                            } else {
+                                $failCount++;
+                                Log::error("Gagal mengirim slip gaji ke {$detail->staff->name}: " . $data['message']);
+                            }
+                        } catch (\Exception $e) {
+                            $failCount++;
+                            Log::error("Error mengirim slip gaji ke {$detail->staff->name}: " . $e->getMessage());
+                        }
                     }
 
-                    // Beri peringatan jika queue masih sync (berpotensi timeout)
-                    if (config('queue.default') === 'sync') {
+                    if ($failCount > 0) {
                         Notification::make()
-                            ->title('Peringatan: Queue belum dikonfigurasi')
-                            ->body('Saat ini koneksi queue adalah "sync" sehingga proses kirim massal tetap berjalan di request dan berpotensi timeout. Disarankan set QUEUE_CONNECTION=database dan jalankan worker.')
+                            ->title('Pengiriman Selesai dengan Error')
+                            ->body("Berhasil: $successCount. Gagal: $failCount. Cek log untuk detail kegagalan.")
                             ->warning()
                             ->send();
+                    } else {
+                        Notification::make()
+                            ->title('Pengiriman Berhasil')
+                            ->body("Sukses mengirim slip gaji ke $successCount staff.")
+                            ->success()
+                            ->send();
                     }
-
-                    // Dispatch sebagai batch agar lebih mudah dimonitor di log
-                    Bus::batch($jobs)
-                        ->name('Kirim semua slip gaji PDF: ' . $this->record->name)
-                        ->onQueue('whatsapp')
-                        ->allowFailures()
-                        ->then(function (Batch $batch) {
-                            Log::info('Batch kirim slip gaji PDF selesai', [
-                                'batch_id' => $batch->id,
-                                'total_jobs' => $batch->totalJobs,
-                                'failed_jobs' => $batch->failedJobs,
-                            ]);
-                        })
-                        ->dispatch();
-
-                    // Beri notifikasi segera, proses jalan di background
-                    Notification::make()
-                        ->title('Pengiriman dimulai')
-                        ->body('Pengiriman slip gaji PDF ke WhatsApp sedang diproses di background untuk ' . $details->count() . ' staff. Anda dapat menutup halaman ini.')
-                        ->success()
-                        ->send();
                 }),
         ];
     }
