@@ -48,7 +48,7 @@ class MouResource extends Resource
                         'approved' => 'Approved',
                         'unapproved' => 'Unapproved',
                     ])
-                    ->default('approved')
+                    ->default('unapproved')
                     ->required(),
                 Forms\Components\Radio::make('type')
                     ->options([
