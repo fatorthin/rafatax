@@ -104,7 +104,7 @@ class ClientDetail extends Page implements HasInfolists, HasTable
                             ->label('Jenis Wajib Pajak')
                             ->weight('bold')
                             ->formatStateUsing(fn(string $state): string => match ($state) {
-                                'op' => 'Perseorangan',
+                                'perseorangan' => 'Perseorangan',
                                 'badan' => 'Badan',
                             }),
                         Fieldset::make('Laporan Pajak Klien')
