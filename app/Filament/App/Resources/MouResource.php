@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources;
 
+use App\Models\Coa;
 use App\Models\MoU;
 use Filament\Forms;
 use Filament\Tables;
@@ -88,7 +89,7 @@ class MouResource extends Resource
                                 'approved' => 'Disetujui',
                                 'unapproved' => 'Belum Disetujui',
                             ])
-                            ->default('approved')
+                            ->default('unapproved')
                             ->required()
                             ->placeholder('Pilih status'),
                         Forms\Components\Radio::make('type')
@@ -137,7 +138,7 @@ class MouResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('coa_id')
                                     ->label('CoA')
-                                    ->options(\App\Models\Coa::all()->pluck('name', 'id'))
+                                    ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                                     ->searchable()
                                     ->required()
                                     ->columnSpan([

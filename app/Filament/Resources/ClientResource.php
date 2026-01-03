@@ -207,7 +207,7 @@ class ClientResource extends Resource
                     ]),
                 Tables\Filters\SelectFilter::make('jenis_wp')
                     ->options([
-                        'op' => 'Perseorangan',
+                        'perseorangan' => 'Perseorangan',
                         'badan' => 'Badan'
                     ]),
                 Tables\Filters\SelectFilter::make('pph_25_reporting')
