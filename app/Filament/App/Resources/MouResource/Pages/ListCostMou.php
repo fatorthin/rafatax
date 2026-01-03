@@ -49,7 +49,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     public function mount($record): void
     {
-        $this->mou = MoU::findOrFail($record);
+        $this->mou = MoU::withTrashed()->findOrFail($record);
         $this->cost_lists = CostListMou::where('mou_id', $record)->get();
         $this->invoices = Invoice::where('mou_id', $record)->get();
     }

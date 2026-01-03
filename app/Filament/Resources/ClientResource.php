@@ -80,6 +80,15 @@ class ClientResource extends Resource
                         'kkp' => 'KKP'
                     ])
                     ->required(),
+                Forms\Components\Select::make('status')
+                    ->label('Status')
+                    ->options([
+                        'active' => 'Active',
+                        'inactive' => 'Inactive',
+                        'batal' => 'Batal'
+                    ])
+                    ->default('batal')
+                    ->required(),
                 Forms\Components\Select::make('staff')
                     ->label('Staff Penanggung Jawab')
                     ->relationship('staff', 'name') // 'staff' adalah nama relasi, 'name' adalah kolom yang ditampilkan

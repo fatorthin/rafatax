@@ -304,6 +304,7 @@ class MouResource extends Resource
                     ->url(fn($record) => route('filament.app.resources.mous.cost-list', ['record' => $record]))
                     ->icon('heroicon-o-currency-dollar')
                     ->color('success'),
+                Tables\Actions\DeleteAction::make()
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -336,9 +337,6 @@ class MouResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ])
             ->latest('created_at');
     }
 }
