@@ -84,10 +84,13 @@ class StaffAttendanceResource extends Resource
                 Forms\Components\TimePicker::make('jam_masuk')
                     ->label('Jam Masuk')
                     ->required()
+                    ->seconds(false)
+                    ->format('H:i')
                     ->default('00:00'),
                 Forms\Components\TimePicker::make('jam_pulang')
                     ->label('Jam Pulang')
                     ->format('H:i')
+                    ->seconds(false)
                     ->required()
                     ->default('00:00')
                     ->live()
