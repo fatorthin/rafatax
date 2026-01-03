@@ -106,7 +106,11 @@ class StaffAttendanceResource extends Resource
 
                         // Buat objek waktu untuk jam pulang dan batas lembur
                         $today = now()->format('Y-m-d');
-                        $jamPulang = \Carbon\Carbon::parse($today . ' ' . $state);
+                        try {
+                            $jamPulang = \Carbon\Carbon::parse($state);
+                        } catch (\Exception $e) {
+                            $jamPulang = \Carbon\Carbon::parse($today . ' ' . $state);
+                        }
                         $batasLembur = \Carbon\Carbon::parse($today . ' 17:30');
 
                         // Jika pulang setelah batas lembur
