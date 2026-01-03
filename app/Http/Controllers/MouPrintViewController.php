@@ -13,11 +13,15 @@ class MouPrintViewController extends Controller
         $mou = MoU::with(['client', 'categoryMou'])->findOrFail($id);
         $costLists = CostListMou::where('mou_id', $id)->get();
 
-        if ($mou->type === 'pt') {
-            $view = 'format-mous.' . $mou->categoryMou->format_mou_pt;
-        } else {
-            $view = 'format-mous.' . $mou->categoryMou->format_mou_kkp;
+        $format = $mou->type === 'pt'
+            ? $mou->categoryMou->format_mou_pt
+            : $mou->categoryMou->format_mou_kkp;
+
+        if (!$format) {
+            abort(404, 'Format print PDF belum diatur untuk kategori MoU ini. Silakan hubungi admin untuk setting kategori.');
         }
+
+        $view = 'format-mous.' . $format;
 
         return view($view, [
             'mou' => $mou,
