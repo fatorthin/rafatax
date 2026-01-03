@@ -25,6 +25,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Infolists\Components\Section;
+use Filament\Tables\Enums\ActionsPosition;
 use App\Filament\Resources\PayrollResource;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\TextInputColumn;
@@ -733,6 +734,6 @@ class DetailPayroll extends Page implements HasTable
                         }
                     })
                     ->visible(fn($record) => !empty($record->staff->phone)),
-            ]);
+            ], position: ActionsPosition::BeforeCells);
     }
 }
