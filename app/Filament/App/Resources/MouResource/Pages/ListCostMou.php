@@ -266,6 +266,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->success()
                         ->send();
                 }),
+            Actions\Action::make('export_pdf')
+                ->label('Print PDF MoU')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn() => route('mou.print.view', ['id' => $this->mou->id]))
+                ->openUrlInNewTab(),
             Action::make('createInvoice')
                 ->label('Buat Invoice')
                 ->icon('heroicon-o-document-currency-dollar')
