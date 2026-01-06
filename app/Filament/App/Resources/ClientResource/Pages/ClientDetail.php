@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\ClientResource\Pages;
+namespace App\Filament\App\Resources\ClientResource\Pages;
 
 use App\Models\MoU;
 use App\Models\Client;
@@ -9,14 +9,14 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use App\Filament\Resources\ClientResource;
+use App\Filament\App\Resources\ClientResource;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Fieldset;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
-
+use Filament\Tables\Actions\Action;
 
 class ClientDetail extends Page implements HasInfolists, HasTable
 {
@@ -50,7 +50,6 @@ class ClientDetail extends Page implements HasInfolists, HasTable
     {
         return [];
     }
-
 
     public function infolist(Infolist $infolist): Infolist
     {
@@ -139,8 +138,6 @@ class ClientDetail extends Page implements HasInfolists, HasTable
                             ->columns(3),
                     ])
                     ->columns(3)
-
-
             ]);
     }
 
@@ -181,9 +178,9 @@ class ClientDetail extends Page implements HasInfolists, HasTable
                 //
             ])
             ->actions([
-                \Filament\Tables\Actions\Action::make('viewCostList')
+                Action::make('viewCostList')
                     ->label('Detail')
-                    ->url(fn($record) => "/admin/mous/{$record->id}/cost-list") // Change this line
+                    ->url(fn($record) => "/admin/mous/{$record->id}/cost-list")
                     ->icon('heroicon-o-eye'),
             ])
             ->bulkActions([

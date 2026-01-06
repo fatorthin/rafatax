@@ -81,6 +81,14 @@ trait HasPermissions
         $resourceName = static::getResourceName();
 
         // Check if user has view permission for this resource
-        return $user->hasPermission($resourceName . '.view');
+        return $user->hasPermission($resourceName . '.view') || $user->hasPermission(\Illuminate\Support\Str::plural($resourceName) . '.view');
+    }
+
+    /**
+     * Check if user can view the resource list
+     */
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
     }
 }
