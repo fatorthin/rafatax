@@ -29,6 +29,8 @@ class ClientResource extends Resource
                 Forms\Components\TextInput::make('code')
                     ->label('Kode Klien')
                     ->required()
+                    ->readOnly()
+                    ->helperText('Kode akan otomatis dibuat setelah memilih Jenis Klien.')
                     ->unique(ignoreRecord: true), // Ignore current record on edit
                 Forms\Components\TextInput::make('company_name')
                     ->label('Nama Perusahaan')
@@ -51,6 +53,7 @@ class ClientResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('npwp')
                     ->label('No NPWP')
+                    ->numeric()
                     ->required(),
                 Forms\Components\Select::make('grade')
                     ->options([
@@ -79,7 +82,38 @@ class ClientResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ])
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, ?string $state) {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $prefix = match ($state) {
+                            'pt' => 'PT',
+                            'kkp' => 'AO',
+                            default => null,
+                        };
+
+                        if (! $prefix) {
+                            return;
+                        }
+
+                        $lastClient = Client::where('type', $state)
+                            ->where('code', 'like', "{$prefix}-%")
+                            ->orderByRaw("CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED) DESC")
+                            ->first();
+
+                        $number = 1;
+
+                        if ($lastClient) {
+                            $parts = explode('-', $lastClient->code);
+                            $lastNumber = (int) end($parts);
+                            $number = $lastNumber + 1;
+                        }
+
+                        $set('code', sprintf('%s-%03d', $prefix, $number));
+                    }),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([
