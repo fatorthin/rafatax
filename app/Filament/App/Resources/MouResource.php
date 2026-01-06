@@ -56,9 +56,10 @@ class MouResource extends Resource
                         Forms\Components\TextInput::make('mou_number')
                             ->label('Nomor MoU')
                             ->unique(ignoreRecord: true)
+                            ->readOnly()
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('Masukkan nomor MoU'),
+                            ->placeholder('Nomor MoU akan otomatis dibuat'),
                         Forms\Components\TextInput::make('description')
                             ->label('Deskripsi')
                             ->required()
@@ -70,7 +71,11 @@ class MouResource extends Resource
                             ->placeholder('Pilih tanggal mulai')
                             ->native(false)
                             ->displayFormat('d/m/Y')
-                            ->default(date('Y') . '-01-01'),
+                            ->default(date('Y') . '-01-01')
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                self::generateMouNumber($set, $get);
+                            }),
                         Forms\Components\DatePicker::make('end_date')
                             ->label('Tanggal Berakhir')
                             ->required()
@@ -101,7 +106,11 @@ class MouResource extends Resource
                             ->default('pt')
                             ->inline()
                             ->inlineLabel(false)
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                self::generateMouNumber($set, $get);
+                            }),
                         Forms\Components\Select::make('client_id')
                             ->label('Client')
                             ->relationship('client', 'company_name')
@@ -114,7 +123,11 @@ class MouResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->placeholder('Pilih kategori'),
+                            ->placeholder('Pilih kategori')
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                self::generateMouNumber($set, $get);
+                            }),
                     ])
                     ->columns(2),
 
@@ -338,5 +351,81 @@ class MouResource extends Resource
     {
         return parent::getEloquentQuery()
             ->latest('created_at');
+    }
+
+    public static function generateMouNumber(Forms\Set $set, Forms\Get $get): void
+    {
+        $type = $get('type');
+        $categoryId = $get('category_mou_id');
+        $startDate = $get('start_date');
+
+        if (!$type || !$categoryId || !$startDate) {
+            return;
+        }
+
+        // 1. Type
+        $typeCode = $type === 'pt' ? 'PT' : 'KKP';
+
+        // 2. Category Code
+        $category = \App\Models\CategoryMou::find($categoryId);
+        if (!$category) {
+            return;
+        }
+
+        $categoryName = $category->name;
+        $categoryCode = match ($categoryName) {
+            'Bulanan' => 'BTH',
+            'SPT' => 'TH',
+            'Pembetulan' => 'PBT',
+            'Pembukuan' => 'PBK',
+            'Pemeriksaan' => 'PMK',
+            'Restitusi' => 'RS',
+            'SP2DK' => 'SP',
+            'Konsultasi' => 'KS',
+            'Keberatan' => 'KB',
+            'Pelatihan' => 'PL',
+            'Lainnya' => 'LN',
+            default => 'LN',
+        };
+
+        // 3. Date (Month Roman/Year)
+        $date = \Carbon\Carbon::parse($startDate);
+        $year = $date->year;
+        $month = $date->month;
+
+        $romanMonths = [
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII'
+        ];
+        $monthRoman = $romanMonths[$month];
+
+        // 4. Sequence Number
+        $lastNumber = 0;
+        $mous = MoU::whereYear('start_date', $year)->pluck('mou_number');
+
+        foreach ($mous as $num) {
+            if (preg_match('/^(\d+)\//', $num, $matches)) {
+                $val = (int)$matches[1];
+                if ($val > $lastNumber) {
+                    $lastNumber = $val;
+                }
+            }
+        }
+
+        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+        // Result
+        $result = sprintf('%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        $set('mou_number', $result);
     }
 }

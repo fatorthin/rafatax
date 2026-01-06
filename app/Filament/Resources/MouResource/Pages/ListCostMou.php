@@ -27,6 +27,7 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Actions;
 use Filament\Actions\Action;
+use App\Filament\Resources\InvoiceResource;
 use App\Filament\Resources\MouResource\Widgets\MouStatsOverview;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
@@ -213,13 +214,26 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     TextInput::make('invoice_number')
                         ->label('Invoice Number')
                         ->required()
+                        ->readOnly()
                         ->unique('invoices', 'invoice_number'),
                     DatePicker::make('invoice_date')
                         ->label('Invoice Date')
                         ->required()
                         ->default(now())
                         ->live()
-                        ->afterStateUpdated(fn($state, \Filament\Forms\Set $set) => $state ? $set('due_date', \Illuminate\Support\Carbon::parse($state)->addMonth()) : null),
+                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                            if ($state) {
+                                $set('due_date', \Illuminate\Support\Carbon::parse($state)->addMonth());
+                            }
+                            InvoiceResource::generateInvoiceNumber($set, $get);
+                        })
+                        ->afterStateHydrated(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get, $state) {
+                            // Ensure defaults are applied before trying to generate
+                            if (!$state) {
+                                $set('invoice_date', now());
+                            }
+                            InvoiceResource::generateInvoiceNumber($set, $get);
+                        }),
                     DatePicker::make('due_date')
                         ->label('Due Date')
                         ->required()

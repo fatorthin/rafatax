@@ -40,20 +40,26 @@ class InvoiceResource extends Resource
                             ->pluck('mou_number', 'id');
                     })
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        self::generateInvoiceNumber($set, $get);
+                    }),
                 Forms\Components\TextInput::make('invoice_number')
                     ->required()
                     ->maxLength(255)
+                    ->readOnly()
                     ->unique(Invoice::class, 'invoice_number', fn($record) => $record),
                 Forms\Components\DatePicker::make('invoice_date')
                     ->required()
                     ->live()
-                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
                             // Add 3 weeks to the invoice date
                             $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
                             $set('due_date', $dueDate);
                         }
+                        self::generateInvoiceNumber($set, $get);
                     }),
                 Forms\Components\DatePicker::make('due_date')
                     ->required(),
@@ -259,5 +265,85 @@ class InvoiceResource extends Resource
                 SoftDeletingScope::class,
             ])
             ->latest('created_at');
+    }
+
+    public static function generateInvoiceNumber(Forms\Set $set, Forms\Get $get): void
+    {
+        $mouId = $get('mou_id');
+        $invoiceDate = $get('invoice_date');
+
+        if (!$mouId || !$invoiceDate) {
+            return;
+        }
+
+        $mou = MoU::with('categoryMou')->find($mouId);
+        if (!$mou) {
+            return;
+        }
+
+        // 1. Type
+        $typeCode = $mou->type === 'pt' ? 'PT' : 'KKP';
+
+        // 2. Category
+        $categoryName = $mou->categoryMou?->name;
+        $categoryCode = match ($categoryName) {
+            'Bulanan Perorangan' => 'BTH',
+            'Bulanan Perusahaan' => 'BTH',
+            'SPT Perorangan' => 'TH',
+            'SPT Perusahaan' => 'TH',
+            'Pembetulan' => 'PBT',
+            'Pembukuan' => 'PBK',
+            'Pemeriksaan' => 'PMK',
+            'Restitusi' => 'RS',
+            'SP2DK' => 'SP',
+            'Konsultasi' => 'KS',
+            'Keberatan' => 'KB',
+            'Pelatihan' => 'PL',
+            'Lainnya' => 'LN',
+            default => 'LN',
+        };
+
+        // 3. Date
+        $date = \Carbon\Carbon::parse($invoiceDate);
+        $year = $date->year;
+        $month = $date->month;
+
+        $romanMonths = [
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII'
+        ];
+        $monthRoman = $romanMonths[$month];
+
+        // 4. Sequence
+        // Reset to 1 if month changes
+        $lastNumber = 0;
+
+        $invoices = Invoice::whereYear('invoice_date', $year)
+            ->whereMonth('invoice_date', $month)
+            ->pluck('invoice_number');
+
+        foreach ($invoices as $inv) {
+            if (preg_match('/^INV\/(\d+)\//', $inv, $matches)) {
+                $val = (int)$matches[1];
+                if ($val > $lastNumber) {
+                    $lastNumber = $val;
+                }
+            }
+        }
+
+        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+        $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        $set('invoice_number', $result);
     }
 }

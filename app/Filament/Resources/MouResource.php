@@ -30,6 +30,7 @@ class MouResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('mou_number')->label('MoU Number')
                     ->unique(ignoreRecord: true)
+                    ->readOnly()
                     ->required(),
                 Forms\Components\TextInput::make('description')
                     ->required(),
@@ -37,7 +38,11 @@ class MouResource extends Resource
                     ->required()
                     ->native(false)
                     ->displayFormat('d/m/Y')
-                    ->default(date('Y') . '-01-01'),
+                    ->default(date('Y') . '-01-01')
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateMouNumber($set, $get);
+                    }),
                 Forms\Components\DatePicker::make('end_date')
                     ->required()
                     ->native(false)
@@ -58,7 +63,11 @@ class MouResource extends Resource
                     ->default('pt')
                     ->inline()
                     ->inlineLabel(false)
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateMouNumber($set, $get);
+                    }),
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
                     ->relationship('client', 'company_name')
@@ -70,7 +79,11 @@ class MouResource extends Resource
                     ->relationship('categoryMou', 'name')
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateMouNumber($set, $get);
+                    }),
                 Forms\Components\TextInput::make('percentage_restitution')
                     ->label('Percentage Restitution (optional)')
                     ->numeric()
@@ -181,6 +194,7 @@ class MouResource extends Resource
                 Tables\Filters\SelectFilter::make('category_mou_id')
                     ->label('Category')
                     ->relationship('categoryMou', 'name')
+                    ->multiple()
                     ->preload()
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('month')
@@ -189,7 +203,11 @@ class MouResource extends Resource
                         collect(range(1, 12))->mapWithKeys(function ($month) {
                             return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
                         })->toArray()
-                    ),
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $month) => $query->whereMonth('start_date', $month)
+                    )),
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Year')
                     ->options(
@@ -199,7 +217,11 @@ class MouResource extends Resource
                             ->orderBy('year', 'desc')
                             ->pluck('year', 'year')
                             ->toArray()
-                    ),
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $year) => $query->whereYear('start_date', $year)
+                    )),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
@@ -244,5 +266,83 @@ class MouResource extends Resource
                 SoftDeletingScope::class,
             ])
             ->latest('created_at');
+    }
+
+    public static function generateMouNumber(Forms\Set $set, Forms\Get $get): void
+    {
+        $type = $get('type');
+        $categoryId = $get('category_mou_id');
+        $startDate = $get('start_date');
+
+        if (!$type || !$categoryId || !$startDate) {
+            return;
+        }
+
+        // 1. Type
+        $typeCode = $type === 'pt' ? 'PT' : 'KKP';
+
+        // 2. Category Code
+        $category = \App\Models\CategoryMou::find($categoryId);
+        if (!$category) {
+            return;
+        }
+
+        $categoryName = $category->name;
+        $categoryCode = match ($categoryName) {
+            'Bulanan Perorangan' => 'BTH',
+            'Bulanan Perusahaan' => 'BTH',
+            'SPT Perorangan' => 'TH',
+            'SPT Perusahaan' => 'TH',
+            'Pembetulan' => 'PBT',
+            'Pembukuan' => 'PBK',
+            'Pemeriksaan' => 'PMK',
+            'Restitusi' => 'RS',
+            'SP2DK' => 'SP',
+            'Konsultasi' => 'KS',
+            'Keberatan' => 'KB',
+            'Pelatihan' => 'PL',
+            'Lainnya' => 'LN',
+            default => 'LN',
+        };
+
+        // 3. Date (Month Roman/Year)
+        $date = \Carbon\Carbon::parse($startDate);
+        $year = $date->year;
+        $month = $date->month;
+
+        $romanMonths = [
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII'
+        ];
+        $monthRoman = $romanMonths[$month];
+
+        // 4. Sequence Number
+        $lastNumber = 0;
+        $mous = MoU::whereYear('start_date', $year)->pluck('mou_number');
+
+        foreach ($mous as $num) {
+            if (preg_match('/^(\d+)\//', $num, $matches)) {
+                $val = (int)$matches[1];
+                if ($val > $lastNumber) {
+                    $lastNumber = $val;
+                }
+            }
+        }
+
+        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+        // Result
+        $result = sprintf('%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        $set('mou_number', $result);
     }
 }

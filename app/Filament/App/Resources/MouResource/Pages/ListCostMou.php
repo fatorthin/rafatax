@@ -21,6 +21,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use App\Filament\App\Widgets\MouInvoicesTable;
 use Filament\Infolists\Components\Section;
+use App\Filament\App\Resources\InvoiceResource;
 use App\Filament\App\Resources\MouResource;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -293,6 +294,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->label('Nomor Invoice')
                         ->required()
                         ->maxLength(255)
+                        ->readOnly()
                         ->unique(Invoice::class, 'invoice_number'),
                     \Filament\Forms\Components\DatePicker::make('invoice_date')
                         ->label('Tanggal Invoice')
@@ -300,11 +302,18 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->native(false)
                         ->displayFormat('d/m/Y')
                         ->live()
-                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
+                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             if ($state) {
                                 $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
                                 $set('due_date', $dueDate);
                             }
+                            InvoiceResource::generateInvoiceNumber($set, $get);
+                        })
+                        ->afterStateHydrated(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get, $state) {
+                            if (!$state) {
+                                $set('invoice_date', now());
+                            }
+                            InvoiceResource::generateInvoiceNumber($set, $get);
                         }),
                     \Filament\Forms\Components\DatePicker::make('due_date')
                         ->label('Tanggal Jatuh Tempo')
