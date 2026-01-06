@@ -73,6 +73,13 @@ class InvoiceResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ]),
+                Forms\Components\Checkbox::make('is_saldo_awal')
+                    ->label('Checklist Invoice Saldo Awal')
+                    ->default(false)
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateInvoiceNumber($set, $get);
+                    }),
             ]);
     }
 
@@ -271,6 +278,7 @@ class InvoiceResource extends Resource
     {
         $mouId = $get('mou_id');
         $invoiceDate = $get('invoice_date');
+        $isSaldoAwal = $get('is_saldo_awal') ?? false;
 
         if (!$mouId || !$invoiceDate) {
             return;
@@ -333,17 +341,29 @@ class InvoiceResource extends Resource
             ->pluck('invoice_number');
 
         foreach ($invoices as $inv) {
+            $val = 0;
+            // Pattern 1: Normal INV/001/...
             if (preg_match('/^INV\/(\d+)\//', $inv, $matches)) {
                 $val = (int)$matches[1];
-                if ($val > $lastNumber) {
-                    $lastNumber = $val;
-                }
+            }
+            // Pattern 2: SA INV/SA/001/...
+            elseif (preg_match('/^INV\/SA\/(\d+)\//', $inv, $matches)) {
+                $val = (int)$matches[1];
+            }
+
+            if ($val > $lastNumber) {
+                $lastNumber = $val;
             }
         }
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-        $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        // Format: 
+        if ($isSaldoAwal) {
+            $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        } else {
+            $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        }
         $set('invoice_number', $result);
     }
 }

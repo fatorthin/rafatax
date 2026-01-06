@@ -21,7 +21,8 @@ class Invoice extends Model
         'amount',
         'invoice_status',
         'invoice_type',
-        'description'
+        'description',
+        'is_saldo_awal'
     ];
 
     public function client()

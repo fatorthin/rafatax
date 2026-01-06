@@ -73,6 +73,13 @@ class InvoiceResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ]),
+                Forms\Components\Checkbox::make('is_saldo_awal')
+                    ->label('Checklist Invoice Saldo Awal')
+                    ->default(false)
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateInvoiceNumber($set, $get);
+                    }),
                 Forms\Components\Section::make('Rincian Biaya')
                     ->schema([
                         Forms\Components\Repeater::make('costListInvoices')
@@ -317,6 +324,7 @@ class InvoiceResource extends Resource
     {
         $mouId = $get('mou_id');
         $invoiceDate = $get('invoice_date');
+        $isSaldoAwal = $get('is_saldo_awal') ?? false;
 
         if (!$mouId || !$invoiceDate) {
             return;
@@ -375,25 +383,37 @@ class InvoiceResource extends Resource
         $lastNumber = 0;
 
         // Find existing invoices for the same month and year
-        // We look for patterns like INV/{number}/.../{monthRoman}/{year}
+        // We look for patterns like INV/001... or INV/SA/001...
         $invoices = Invoice::whereYear('invoice_date', $year)
             ->whereMonth('invoice_date', $month)
             ->pluck('invoice_number');
 
         foreach ($invoices as $inv) {
-            // Pattern: INV/number/...
+            $val = 0;
+            // Pattern 1: Normal INV/001/...
             if (preg_match('/^INV\/(\d+)\//', $inv, $matches)) {
                 $val = (int)$matches[1];
-                if ($val > $lastNumber) {
-                    $lastNumber = $val;
-                }
+            }
+            // Pattern 2: SA INV/SA/001/...
+            elseif (preg_match('/^INV\/SA\/(\d+)\//', $inv, $matches)) {
+                $val = (int)$matches[1];
+            }
+
+            if ($val > $lastNumber) {
+                $lastNumber = $val;
             }
         }
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-        // Format: INV/{nomor urut}/{tipe mounya PT/KKP}/{category mounya}/{bulan}/{tahun}
-        $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        // Format: 
+        // Normal: INV/{nomor urut}/{tipe mounya PT/KKP}/{category mounya}/{bulan}/{tahun}
+        // SA: INV/SA/{nomor urut}/{tipe mounya PT/KKP}/{category mounya}/{bulan}/{tahun}
+        if ($isSaldoAwal) {
+            $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        } else {
+            $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        }
         $set('invoice_number', $result);
     }
 }

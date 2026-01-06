@@ -20,6 +20,7 @@ return new class extends Migration
             $table->date('due_date');
             $table->enum('invoice_status', ['unpaid', 'paid']);
             $table->enum('invoice_type', ['pt', 'kkp']);
+            $table->boolean('is_saldo_awal')->default(false);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
