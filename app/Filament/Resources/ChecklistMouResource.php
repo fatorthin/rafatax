@@ -19,9 +19,9 @@ class ChecklistMouResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationGroup = 'Histori Data';
 
-    protected static ?string $navigationLabel = 'Daftar Checklist Tagihan MoU';
+    protected static ?string $navigationLabel = 'Histori Checklist Tagihan MoU';
 
     public static function form(Form $form): Form
     {

@@ -44,4 +44,8 @@ class MoU extends Model
     {
         return $this->belongsTo(CategoryMou::class);
     }
+    public function checklistMous()
+    {
+        return $this->hasMany(ChecklistMou::class, 'mou_id');
+    }
 }
