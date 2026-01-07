@@ -363,7 +363,7 @@
         <tfoot>
             <tr>
                 <td class="footer-img-cell">
-                    <img src="{{ asset('images/footer.png') }}" alt="Footer">
+                    <img src="{{ asset('images/footer-v1.png') }}" alt="Footer">
                 </td>
             </tr>
         </tfoot>
