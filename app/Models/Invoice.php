@@ -22,7 +22,8 @@ class Invoice extends Model
         'invoice_status',
         'invoice_type',
         'description',
-        'is_saldo_awal'
+        'is_saldo_awal',
+        'memo_id'
     ];
 
     public function client()
@@ -43,5 +44,10 @@ class Invoice extends Model
     public function costListInvoices()
     {
         return $this->hasMany(CostListInvoice::class);
+    }
+
+    public function memo()
+    {
+        return $this->belongsTo(Memo::class);
     }
 }
