@@ -296,8 +296,19 @@ class MouResource extends Resource
                     ->relationship('categoryMou', 'name')
                     ->preload()
                     ->searchable(),
+                Tables\Filters\SelectFilter::make('month')
+                    ->label('Month')
+                    ->options(
+                        collect(range(1, 12))->mapWithKeys(function ($month) {
+                            return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
+                        })->toArray()
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $month) => $query->whereMonth('start_date', $month)
+                    )),
                 Tables\Filters\SelectFilter::make('year')
-                    ->label('Tahun')
+                    ->label('Year')
                     ->options(
                         MoU::query()
                             ->selectRaw('YEAR(start_date) as year')
@@ -305,7 +316,11 @@ class MouResource extends Resource
                             ->orderBy('year', 'desc')
                             ->pluck('year', 'year')
                             ->toArray()
-                    ),
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $year) => $query->whereYear('start_date', $year)
+                    )),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
