@@ -79,7 +79,22 @@ class InvoiceResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->readOnly()
-                    ->unique(Invoice::class, 'invoice_number', fn($record) => $record),
+                    ->unique(
+                        Invoice::class,
+                        'invoice_number',
+                        fn($record) => $record,
+                        modifyRuleUsing: function ($rule) {
+                            return $rule->whereNull('deleted_at');
+                        }
+                    )
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('regenerate_number')
+                            ->icon('heroicon-m-arrow-path')
+                            ->tooltip('Regenerate Invoice Number')
+                            ->action(function (Forms\Set $set, Forms\Get $get) {
+                                self::generateInvoiceNumber($set, $get);
+                            })
+                    ),
                 Forms\Components\TextInput::make('description')
                     ->maxLength(255),
                 Forms\Components\DatePicker::make('invoice_date')
@@ -466,14 +481,23 @@ class InvoiceResource extends Resource
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-        // Format: 
-        // Normal: INV/{nomor urut}/{tipe mounya PT/KKP}/{category mounya}/{bulan}/{tahun}
-        // SA: INV/SA/{nomor urut}/{tipe mounya PT/KKP}/{category mounya}/{bulan}/{tahun}
-        if ($isSaldoAwal) {
-            $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
-        } else {
-            $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
-        }
+        // Loop to find next available number in case of race condition (check existence)
+        do {
+            if ($isSaldoAwal) {
+                $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+            } else {
+                $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+            }
+
+            if (Invoice::where('invoice_number', $result)->exists()) {
+                $lastNumber++;
+                $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+                $exists = true;
+            } else {
+                $exists = false;
+            }
+        } while ($exists);
+
         $set('invoice_number', $result);
     }
 }
