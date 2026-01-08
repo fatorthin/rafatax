@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\MemoResource\Pages;
 
-use App\Filament\Resources\MemoResource;
 use Filament\Actions;
+use App\Filament\Resources\MemoResource;
 use Filament\Resources\Pages\ManageRecords;
+use App\Filament\Resources\MemoResource\Widgets\MemoListStatsOverview;
 
 class ManageMemos extends ManageRecords
 {
@@ -14,6 +15,13 @@ class ManageMemos extends ManageRecords
     {
         return [
             Actions\CreateAction::make()
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            MemoListStatsOverview::class,
         ];
     }
 }

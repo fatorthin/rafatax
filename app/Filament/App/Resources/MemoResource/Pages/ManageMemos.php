@@ -16,4 +16,11 @@ class ManageMemos extends ManageRecords
             Actions\CreateAction::make(),
         ];
     }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Resources\MemoResource\Widgets\MemoListStatsOverview::class,
+        ];
+    }
 }

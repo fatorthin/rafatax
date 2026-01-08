@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('memos', function (Blueprint $table) {
             $table->id();
+            $table->string('no_memo')->unique();
             $table->string('description')->nullable();
             $table->string('nama_klien');
             $table->string('instansi_klien');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->json('type_work');
             $table->date('tanggal_ttd');
             $table->enum('tipe_klien', ['pt', 'kkp'])->default('pt');
+            $table->double('total_fee');
             $table->softDeletes();
             $table->timestamps();
         });

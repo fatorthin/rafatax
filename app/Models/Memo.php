@@ -16,8 +16,15 @@ class Memo extends Model
         'alamat_klien',
         'type_work',
         'tanggal_ttd',
-        'tipe_klien'
+        'tipe_klien',
+        'total_fee',
+        'no_memo'
     ];
 
     protected $casts = ['type_work' => 'array'];
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }
