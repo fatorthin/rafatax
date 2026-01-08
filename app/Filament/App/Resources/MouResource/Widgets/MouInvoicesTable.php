@@ -2,14 +2,15 @@
 
 namespace App\Filament\App\Resources\MouResource\Widgets;
 
-use App\Models\Invoice;
-use App\Models\CostListInvoice;
 use App\Models\MoU;
-use App\Filament\App\Resources\InvoiceResource;
 use Filament\Tables;
+use App\Models\Invoice;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
+use App\Models\CostListInvoice;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\App\Resources\InvoiceResource;
+use Filament\Widgets\TableWidget as BaseWidget;
 
 class MouInvoicesTable extends BaseWidget
 {
@@ -111,6 +112,18 @@ class MouInvoicesTable extends BaseWidget
                     ->label('View Details')
                     ->icon('heroicon-o-eye')
                     ->color('info'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Delete Invoice')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function (Invoice $record) {
+                        $record->delete();
+                        Notification::make()
+                            ->title('Invoice deleted successfully')
+                            ->success()
+                            ->send();
+                    }),
             ]);
     }
 
