@@ -19,7 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use App\Filament\App\Widgets\MouInvoicesTable;
+use App\Filament\App\Resources\MouResource\Widgets\MouInvoicesTable;
 use Filament\Infolists\Components\Section;
 use App\Filament\App\Resources\InvoiceResource;
 use App\Filament\App\Resources\MouResource;
@@ -319,6 +319,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->label('Tanggal Jatuh Tempo')
                         ->native(false)
                         ->displayFormat('d/m/Y')
+                        ->default(now()->addWeeks(3))
                         ->required(),
                     Select::make('invoice_status')
                         ->label('Status')

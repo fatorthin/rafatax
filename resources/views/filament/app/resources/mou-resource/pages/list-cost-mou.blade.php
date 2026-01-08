@@ -11,7 +11,7 @@
         </div>
 
         <div class="rounded-xl">
-            @livewire(App\Filament\App\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])
+            @livewire(App\Filament\App\Resources\MouResource\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])
         </div>
 
     </div>
