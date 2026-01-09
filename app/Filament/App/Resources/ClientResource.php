@@ -123,6 +123,7 @@ class ClientResource extends Resource
                     ->options([
                         'active' => 'Active',
                         'inactive' => 'Inactive',
+                        'pending' => 'Pending',
                         'batal' => 'Batal'
                     ])
                     ->default('batal')
