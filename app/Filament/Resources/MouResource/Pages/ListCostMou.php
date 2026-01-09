@@ -169,8 +169,17 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     protected function getHeaderActions(): array
     {
         return [
+            Actions\EditAction::make()
+                ->label('Edit MoU')
+                ->icon('heroicon-o-pencil')
+                ->record($this->mou)
+                ->form(fn(Form $form) => MouResource::form($form)->getComponents())
+                ->modalWidth('7xl')
+                ->color('danger')
+                ->successRedirectUrl(fn() => MouResource::getUrl('viewCostList', ['record' => $this->mou])),
             Actions\CreateAction::make()
                 ->label('Add Cost List')
+                ->color('info')
                 ->icon('heroicon-o-plus')
                 ->model(CostListMou::class)
                 ->form([
@@ -206,6 +215,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->icon('heroicon-o-arrow-left'),
             Actions\CreateAction::make('create_invoice')
                 ->label('Create Invoice')
+                ->color('secondary')
                 ->model(Invoice::class)
                 ->icon('heroicon-o-document-plus')
                 ->form([
@@ -215,7 +225,15 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->label('Invoice Number')
                         ->required()
                         ->readOnly()
-                        ->unique('invoices', 'invoice_number'),
+                        ->unique('invoices', 'invoice_number')
+                        ->suffixAction(
+                            \Filament\Forms\Components\Actions\Action::make('regenerate_number')
+                                ->icon('heroicon-o-arrow-path')
+                                ->tooltip('Regenerate Invoice Number')
+                                ->action(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                                    InvoiceResource::generateInvoiceNumber($set, $get);
+                                })
+                        ),
                     DatePicker::make('invoice_date')
                         ->label('Invoice Date')
                         ->required()

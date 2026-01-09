@@ -231,6 +231,13 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     protected function getHeaderActions(): array
     {
         return [
+            Actions\EditAction::make()
+                ->label('Edit MoU')
+                ->icon('heroicon-o-pencil')
+                ->record($this->mou)
+                ->form(fn(Form $form) => MouResource::form($form)->getComponents())
+                ->modalWidth('7xl')
+                ->successRedirectUrl(fn() => MouResource::getUrl('cost-list', ['record' => $this->mou])),
             Action::make('createCost')
                 ->label('Tambah Biaya')
                 ->icon('heroicon-o-plus')
@@ -295,7 +302,15 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->required()
                         ->maxLength(255)
                         ->readOnly()
-                        ->unique(Invoice::class, 'invoice_number'),
+                        ->unique(Invoice::class, 'invoice_number')
+                        ->suffixAction(
+                            \Filament\Forms\Components\Actions\Action::make('regenerate_number')
+                                ->icon('heroicon-o-arrow-path')
+                                ->tooltip('Regenerate Invoice Number')
+                                ->action(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                                    InvoiceResource::generateInvoiceNumber($set, $get);
+                                })
+                        ),
                     \Filament\Forms\Components\DatePicker::make('invoice_date')
                         ->label('Tanggal Invoice')
                         ->required()

@@ -49,7 +49,15 @@ class InvoiceResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->readOnly()
-                    ->unique(Invoice::class, 'invoice_number', fn($record) => $record),
+                    ->unique(Invoice::class, 'invoice_number', fn($record) => $record)
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('refresh_invoice_number')
+                            ->icon('heroicon-o-arrow-path')
+                            ->tooltip('Regenerate Invoice Number')
+                            ->action(function (Forms\Set $set, Forms\Get $get) {
+                                self::generateInvoiceNumber($set, $get);
+                            })
+                    ),
                 Forms\Components\DatePicker::make('invoice_date')
                     ->required()
                     ->live()
