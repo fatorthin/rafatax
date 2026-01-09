@@ -157,7 +157,7 @@ class CaseProjectResource extends Resource
                 Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable(),
                 Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
+                // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
 
             ])
             ->filters([
