@@ -16,7 +16,9 @@ return new class extends Migration
             $table->foreignId('mou_id')->constrained('mous')->onDelete('cascade');
             $table->foreignId('coa_id')->constrained('coa')->onDelete('cascade');
             $table->string('description')->nullable();
+            $table->double('quantity');
             $table->double('amount');
+            $table->double('total_amount');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

@@ -167,7 +167,7 @@ class MouResource extends Resource
                     ->label('Total MoU Amount')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        return $record->cost_lists()->sum('amount');
+                        return $record->cost_lists()->sum('total_amount');
                     })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice Amount')

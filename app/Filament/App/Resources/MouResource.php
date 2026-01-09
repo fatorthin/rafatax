@@ -246,7 +246,7 @@ class MouResource extends Resource
                     ->label('Total Nilai MoU')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        $total = $record->cost_lists()->sum('amount');
+                        $total = $record->cost_lists()->sum('total_amount');
                         return 'Rp ' . number_format($total, 0, ',', '.');
                     })
                     ->alignEnd()

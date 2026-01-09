@@ -15,7 +15,9 @@ class CostListMou extends Model
     protected $fillable = [
         'mou_id',
         'coa_id',
+        'quantity',
         'amount',
+        'total_amount',
         'description'
     ];
 

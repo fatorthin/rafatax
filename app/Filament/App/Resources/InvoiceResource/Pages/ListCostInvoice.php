@@ -153,57 +153,170 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->label('Kirim Invoice')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Kirim Invoice')
+                ->modalDescription('Apakah Anda yakin ingin mengirim invoice ini ke klien via WhatsApp?')
+                ->modalSubmitActionLabel('Ya, Kirim')
                 ->action(function () {
-                    // Get the mou related to this invoice
-                    $mou = $this->invoice->mou;
+                    try {
+                        // Get the mou related to this invoice
+                        $mou = $this->invoice->mou;
 
-                    if (!$mou) {
-                        $this->notify('error', 'No MoU associated with this invoice!');
-                        return;
+                        // Check if MoU exists
+                        if (!$mou) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('No MoU associated with this invoice!')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Get client from the mou
+                        $client = $mou->client;
+
+                        if (!$client || !$client->phone) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('Client phone number not found!')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Clean phone number
+                        $phone = preg_replace('/[^0-9]/', '', $client->phone);
+                        if (substr($phone, 0, 1) === '0') {
+                            $phone = '62' . substr($phone, 1);
+                        } elseif (substr($phone, 0, 2) !== '62') {
+                            $phone = '62' . $phone;
+                        }
+
+                        // Calculate total amount
+                        $totalAmount = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
+                        $formattedAmount = number_format($totalAmount, 0, ',', '.');
+
+                        // Create WhatsApp message
+                        $message = "Yth. {$client->company_name},\n\n";
+                        $message .= "Berikut kami lampirkan invoice untuk layanan kami:\n";
+                        $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
+                        $message .= "Keterangan: {$this->invoice->description}\n";
+                        // $message .= "Tanggal: " . \Carbon\Carbon::parse($this->invoice->invoice_date)->translatedFormat('d F Y') . "\n";
+                        // $message .= "Jatuh Tempo: " . \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y') . "\n";
+                        // $message .= "Total: Rp {$formattedAmount}\n\n";
+
+                        $type = $this->invoice->invoice_type ?? optional($this->invoice->mou)->type;
+                        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+
+                        $isKkp = $typeNormalized === 'kkp'; // kkp or pt
+
+                        $bankDetails = $isKkp
+                            ? "Bank: BCA\nNo. Rekening: 785-1135-425\nAtas nama: Antin Okfitasari"
+                            : "Bank: BCA\nNo. Rekening: 785-1260-513\nAtas nama: Aghnia Oasis Konsultindo PT";
+
+                        $signature = $isKkp
+                            ? "Antin Okfitasari - Konsultan Pajak\nGriya Rafa, Jl. Nampan 01, Dusun II\nMadegondo, Grogol, Sukoharjo\nPhone: +62 812-2596-210\nEmail: antin.okfitasari@gmail.com"
+                            : "Aghnia Oasis Konsultindo PT\nGriya Rafa, Jl. Nampan 01, Dusun II\nMadegondo, Grogol, Sukoharjo\nPhone: +62 813-5997-6015\nEmail: aghniaoasiskonsultindo@gmail.com";
+
+                        $message .= "Pembayaran dapat dilakukan melalui transfer ke rekening berikut:\n{$bankDetails}\n\n";
+                        $message .= "Apabila telah melakukan pembayaran, dimohon untuk mengirim konfirmasi kepada kami dengan melalui nomor ini.\n\n";
+                        $message .= "Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.\n\n";
+                        $message .= "Best Regards,\nTim Finance\n\n{$signature}\n";
+
+                        /** @var \App\Services\WablasService $wablasService */
+                        $wablasService = app(\App\Services\WablasService::class);
+
+                        // 1. Send Text Message
+                        $wablasService->sendMessage($phone, $message);
+
+                        // 2. Generate PDF using DOMPDF
+                        $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
+
+                        // Determine type
+                        $type = $this->invoice->invoice_type ?? optional($this->invoice->mou)->type;
+                        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+
+                        if ($typeNormalized === 'kkp') {
+                            $view = 'invoices.pdf-kkp';
+                            $headerImageFile = 'kop-inovice-kkp.png';
+                        } elseif ($typeNormalized === 'pt') {
+                            $view = 'invoices.pdf-pt';
+                            $headerImageFile = 'kop-invoice-pt.png';
+                        } else {
+                            $view = 'invoices.pdf';
+                            $headerImageFile = null;
+                        }
+
+                        // Prepare Images
+                        $headerImageBase64 = '';
+                        if ($headerImageFile) {
+                            $headerImagePath = public_path('images/' . $headerImageFile);
+                            if (file_exists($headerImagePath)) {
+                                // Optimize image: Resize to max 600px width and compress
+                                $headerImageBase64 = $this->optimizeImage($headerImagePath, 600);
+                            }
+                        }
+
+                        $signatureImageBase64 = '';
+                        $signatureImagePath = public_path('images/spesimen-kasir.png');
+                        if (file_exists($signatureImagePath)) {
+                            // Optimize signature: Resize to max 250px width
+                            $signatureImageBase64 = $this->optimizeImage($signatureImagePath, 250);
+                        }
+
+                        $viewData = [
+                            'invoice' => $this->invoice,
+                            'costLists' => $costLists,
+                            'headerImage' => $headerImageBase64,
+                            'signatureImage' => $signatureImageBase64,
+                        ];
+
+                        // Generate PDF with Compression
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $viewData)
+                            ->setPaper('a4', 'portrait')
+                            ->setOption(['compress' => 1]);
+
+                        // Save to temporary file
+                        $tempDir = storage_path('app/temp');
+                        if (!file_exists($tempDir)) {
+                            mkdir($tempDir, 0755, true);
+                        }
+
+                        $invoiceNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $this->invoice->invoice_number ?? $this->invoice->id);
+                        $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
+                        $tempPath = $tempDir . '/' . $filename;
+
+                        $pdf->save($tempPath);
+
+                        // 3. Send Document
+                        $sendResult = $wablasService->sendDocument($phone, $tempPath);
+
+                        // Clean up
+                        if (file_exists($tempPath)) {
+                            unlink($tempPath);
+                        }
+
+                        if (isset($sendResult['status']) && $sendResult['status']) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Success')
+                                ->body('Invoice sent successfully via WhatsApp (PDF).')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Warning')
+                                ->body('Message sent, but failed to send PDF. Result: ' . ($sendResult['message'] ?? 'Unknown'))
+                                ->warning()
+                                ->send();
+                        }
+                    } catch (\Exception $e) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Error')
+                            ->body('Failed to send WhatsApp: ' . $e->getMessage())
+                            ->danger()
+                            ->send();
+                        \Illuminate\Support\Facades\Log::error($e);
                     }
-
-                    // Get client from the mou
-                    $client = $mou->client;
-
-                    if (!$client || !$client->phone) {
-                        $this->notify('error', 'Client phone number not found!');
-                        return;
-                    }
-
-                    // Clean phone number (remove spaces, dashes, etc)
-                    $phone = preg_replace('/[^0-9]/', '', $client->phone);
-
-                    // Add country code if needed
-                    if (substr($phone, 0, 1) === '0') {
-                        $phone = '62' . substr($phone, 1);
-                    } elseif (substr($phone, 0, 2) !== '62') {
-                        $phone = '62' . $phone;
-                    }
-
-                    // Calculate total amount
-                    $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)
-                        ->sum('amount');
-
-                    // Format as IDR
-                    $formattedAmount = number_format($totalAmount, 0, ',', '.');
-
-                    // Create WhatsApp message
-                    $message = "Halo {$client->name},\n\n";
-                    $message .= "Ini adalah invoice untuk layanan kami:\n";
-                    $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
-                    $message .= "Tanggal: {$this->invoice->invoice_date}\n";
-                    $message .= "Jatuh Tempo: {$this->invoice->due_date}\n";
-                    $message .= "Total: Rp {$formattedAmount}\n\n";
-                    $message .= "Terima kasih atas kerjasamanya.";
-
-                    // Encode message for URL
-                    $encodedMessage = urlencode($message);
-
-                    // Create WhatsApp URL
-                    $whatsappUrl = "https://wa.me/{$phone}?text={$encodedMessage}";
-
-                    // Redirect to WhatsApp
-                    return redirect()->away($whatsappUrl);
                 }),
             Actions\CreateAction::make()
                 ->label('Add Cost List')
