@@ -35,7 +35,8 @@ class CaseProjectResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('description'),
+                Forms\Components\TextInput::make('description')
+                    ->required(),
                 Forms\Components\Select::make('client_id')
                     ->relationship('client', 'company_name')
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
