@@ -122,7 +122,7 @@ class ClientResource extends Resource
                         'pending' => 'Pending',
                         'batal' => 'Batal'
                     ])
-                    ->default('batal')
+                    ->default('pending')
                     ->required(),
                 Forms\Components\Select::make('staff')
                     ->label('Staff Penanggung Jawab')
