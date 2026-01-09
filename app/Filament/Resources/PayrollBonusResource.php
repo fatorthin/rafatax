@@ -37,11 +37,8 @@ class PayrollBonusResource extends Resource
                     ->searchable()
                     ->preload()
                     ->required(),
-                Forms\Components\DatePicker::make('start_date')
+                Forms\Components\DatePicker::make('payroll_date')
                     ->required(),
-                Forms\Components\DatePicker::make('end_date')
-                    ->required(),
-
             ]);
     }
 
@@ -50,8 +47,7 @@ class PayrollBonusResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('start_date')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('end_date')->date('d-m-Y')->sortable(),
+                Tables\Columns\TextColumn::make('payroll_date')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('total_payroll')
                     ->label('Total Payroll Bonus')
                     ->getStateUsing(function ($record) {
