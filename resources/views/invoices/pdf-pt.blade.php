@@ -131,8 +131,8 @@
                     <div class="transfer-info">
                         <u>TRANSFER VIA</u><br>
                         BCA.IDR<br>
-                        A.C : 785 - 1135 - 425<br>
-                        A.N : Antin Okfitasari
+                        A.C : 785 - 1260 - 513<br>
+                        A.N : PT. Aghnia Oasis Konsultindo
                     </div>
                 </td>
                 <td style="border: none; width: 30%; text-align: center; vertical-align: top; padding: 0;">
