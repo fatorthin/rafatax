@@ -62,6 +62,9 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('mou.mou_number')
                             ->label('MoU Number')
                             ->weight('bold'),
+                        TextEntry::make('mou.client.company_name')
+                            ->label('Client Name')
+                            ->weight('bold'),
                         TextEntry::make('invoice_date')
                             ->label('Invoice Date')
                             ->weight('bold')
@@ -348,5 +351,66 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->color('info')
                 ->icon('heroicon-o-arrow-left'),
         ];
+    }
+
+    protected function optimizeImage($path, $maxWidth)
+    {
+        if (!file_exists($path)) {
+            return '';
+        }
+
+        list($width, $height, $type) = getimagesize($path);
+
+        // Load image based on type
+        switch ($type) {
+            case IMAGETYPE_JPEG:
+                $source = imagecreatefromjpeg($path);
+                break;
+            case IMAGETYPE_PNG:
+                $source = imagecreatefrompng($path);
+                break;
+            default:
+                return 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+        }
+
+        // Calculate new dimensions
+        if ($width > $maxWidth) {
+            $newWidth = $maxWidth;
+            $newHeight = ($height / $width) * $newWidth;
+        } else {
+            $newWidth = $width;
+            $newHeight = $height;
+        }
+
+        // Create new image
+        $destination = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Handle transparency for PNG
+        if ($type == IMAGETYPE_PNG) {
+            imagealphablending($destination, false);
+            imagesavealpha($destination, true);
+            $transparent = imagecolorallocatealpha($destination, 255, 255, 255, 127);
+            imagefilledrectangle($destination, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        // Resize
+        imagecopyresampled($destination, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        // Output to buffer
+        ob_start();
+        if ($type == IMAGETYPE_PNG) {
+            imagepng($destination, null, 8); // Compression level 8 (0-9) - Higher compression
+            $mime = 'image/png';
+        } else {
+            imagejpeg($destination, null, 75); // Quality 75 - Lower quality for smaller size
+            $mime = 'image/jpeg';
+        }
+        $contents = ob_get_clean();
+
+        // Cleanup
+        imagedestroy($source);
+        imagedestroy($destination);
+
+        return 'data:' . $mime . ';base64,' . base64_encode($contents);
     }
 }
