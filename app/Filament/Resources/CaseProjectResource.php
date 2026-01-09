@@ -29,7 +29,8 @@ class CaseProjectResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('description'),
+                Forms\Components\TextInput::make('description')
+                    ->required(),
                 Forms\Components\Select::make('client_id')
                     ->relationship('client', 'company_name')
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
@@ -78,9 +79,9 @@ class CaseProjectResource extends Resource
                     ->label('Tanggal Laporan'),
                 Forms\Components\DatePicker::make('share_client_date')
                     ->label('Tanggal Berikan Client'),
-                Forms\Components\DatePicker::make('case_date')
-                    ->required()
-                    ->label('Tanggal Kasus'),
+                // Forms\Components\DatePicker::make('case_date')
+                //     ->required()
+                //     ->label('Tanggal Kasus'),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([

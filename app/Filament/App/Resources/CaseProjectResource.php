@@ -95,11 +95,11 @@ class CaseProjectResource extends Resource
                     ->label('Tanggal Berikan Client')
                     ->native(false)
                     ->displayFormat('d/m/Y'),
-                Forms\Components\DatePicker::make('case_date')
-                    ->required()
-                    ->label('Tanggal Kasus')
-                    ->native(false)
-                    ->displayFormat('d/m/Y'),
+                // Forms\Components\DatePicker::make('case_date')
+                //     ->required()
+                //     ->label('Tanggal Kasus')
+                //     ->native(false)
+                //     ->displayFormat('d/m/Y'),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([

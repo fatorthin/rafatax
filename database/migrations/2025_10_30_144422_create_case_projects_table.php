@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('case_projects', function (Blueprint $table) {
             $table->id();
             $table->string('description');
-            $table->date('case_date')->nullable();
+            // $table->date('case_date')->nullable();
             $table->enum('status', ['open', 'in_progress', 'done'])->default('open');
             $table->enum('case_type', ['SP2DK', 'Pembetulan', 'Pemeriksaan', 'Himbauan', 'Lainnya'])->nullable();
             $table->json('staff_id')->nullable();
