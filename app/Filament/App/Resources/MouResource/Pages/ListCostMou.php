@@ -302,7 +302,13 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->required()
                         ->maxLength(255)
                         ->readOnly()
-                        ->unique(Invoice::class, 'invoice_number')
+                        ->unique(
+                            Invoice::class,
+                            'invoice_number',
+                            modifyRuleUsing: function ($rule) {
+                                return $rule->whereNull('deleted_at');
+                            }
+                        )
                         ->suffixAction(
                             \Filament\Forms\Components\Actions\Action::make('regenerate_number')
                                 ->icon('heroicon-o-arrow-path')

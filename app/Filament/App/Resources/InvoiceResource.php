@@ -49,7 +49,14 @@ class InvoiceResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->readOnly()
-                    ->unique(Invoice::class, 'invoice_number', fn($record) => $record)
+                    ->unique(
+                        Invoice::class,
+                        'invoice_number',
+                        fn($record) => $record,
+                        modifyRuleUsing: function ($rule) {
+                            return $rule->whereNull('deleted_at');
+                        }
+                    )
                     ->suffixAction(
                         Forms\Components\Actions\Action::make('refresh_invoice_number')
                             ->icon('heroicon-o-arrow-path')
