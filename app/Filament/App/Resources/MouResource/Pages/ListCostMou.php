@@ -138,8 +138,17 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Deskripsi')
                     ->searchable()
                     ->limit(50),
+                TextColumn::make('quantity')
+                    ->label('Qty')
+                    ->numeric(),
+                TextColumn::make('satuan_quantity')
+                    ->label('Satuan'),
                 TextColumn::make('amount')
-                    ->label('Jumlah')
+                    ->label('Harga Satuan')
+                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->alignEnd(),
+                TextColumn::make('total_amount')
+                    ->label('Total')
                     ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->summarize(Sum::make()->label('Total Jumlah'))
                     ->alignEnd(),
@@ -158,7 +167,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         return [
                             'coa_id' => $record->coa_id,
                             'description' => $record->description,
+                            'quantity' => $record->quantity,
+                            'satuan_quantity' => $record->satuan_quantity,
                             'amount' => $record->amount,
+                            'total_amount' => $record->total_amount,
                         ];
                     })
                     ->form([
@@ -171,17 +183,41 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->label('Deskripsi')
                             ->required()
                             ->maxLength(255),
+                        TextInput::make('quantity')
+                            ->label('Qty')
+                            ->numeric()
+                            ->default(1)
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                $price = $get('amount');
+                                $set('total_amount', floatval($state) * floatval($price));
+                            }),
+                        TextInput::make('satuan_quantity')
+                            ->label('Satuan'),
                         TextInput::make('amount')
-                            ->label('Jumlah')
+                            ->label('Harga Satuan')
                             ->numeric()
                             ->minValue(0)
-                            ->required(),
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                $qty = $get('quantity') ?? 1;
+                                $set('total_amount', floatval($state) * floatval($qty));
+                            }),
+                        TextInput::make('total_amount')
+                            ->label('Total')
+                            ->numeric()
+                            ->readOnly(),
                     ])
                     ->action(function (array $data, CostListMou $record) {
                         $record->update([
                             'coa_id' => $data['coa_id'],
                             'description' => $data['description'],
+                            'quantity' => $data['quantity'],
+                            'satuan_quantity' => $data['satuan_quantity'],
                             'amount' => $data['amount'],
+                            'total_amount' => $data['total_amount'],
                         ]);
 
                         // Refresh local collections (optional for immediate state)
@@ -249,21 +285,45 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
                         ->searchable()
                         ->required(),
-                    TextInput::make('amount')
-                        ->label('Jumlah')
-                        ->numeric()
-                        ->minValue(0)
-                        ->required(),
                     TextInput::make('description')
                         ->label('Deskripsi')
                         ->maxLength(255),
+                    TextInput::make('quantity')
+                        ->label('Qty')
+                        ->numeric()
+                        ->default(1)
+                        ->required()
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            $price = $get('amount');
+                            $set('total_amount', floatval($state) * floatval($price));
+                        }),
+                    TextInput::make('satuan_quantity')
+                        ->label('Satuan'),
+                    TextInput::make('amount')
+                        ->label('Harga Satuan')
+                        ->numeric()
+                        ->minValue(0)
+                        ->required()
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            $qty = $get('quantity') ?? 1;
+                            $set('total_amount', floatval($state) * floatval($qty));
+                        }),
+                    TextInput::make('total_amount')
+                        ->label('Total')
+                        ->numeric()
+                        ->readOnly(),
                 ])
                 ->action(function (array $data) {
                     CostListMou::create([
                         'mou_id' => $this->mou->id,
                         'coa_id' => $data['coa_id'],
                         'description' => $data['description'],
+                        'quantity' => $data['quantity'],
+                        'satuan_quantity' => $data['satuan_quantity'],
                         'amount' => $data['amount'],
+                        'total_amount' => $data['total_amount'],
                     ]);
 
                     // Refresh local collections

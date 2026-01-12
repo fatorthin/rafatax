@@ -132,8 +132,17 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->rowIndex(),
                 TextColumn::make('coa.name')->label('CoA'),
                 TextColumn::make('description')->label('Description'),
+                TextColumn::make('quantity')
+                    ->label('Qty')
+                    ->numeric(),
+                TextColumn::make('satuan_quantity')
+                    ->label('Satuan'),
                 TextColumn::make('amount')
-                    ->label('Amount')
+                    ->label('Price')
+                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->alignEnd(),
+                TextColumn::make('total_amount')
+                    ->label('Total')
                     ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->summarize(Sum::make()->label('Total Amount')),
             ])
@@ -143,17 +152,48 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
+                    ->fillForm(function (CostListMou $record): array {
+                        return [
+                            'coa_id' => $record->coa_id,
+                            'description' => $record->description,
+                            'quantity' => $record->quantity,
+                            'satuan_quantity' => $record->satuan_quantity,
+                            'amount' => $record->amount,
+                            'total_amount' => $record->total_amount,
+                        ];
+                    })
                     ->form([
                         Select::make('coa_id')
                             ->label('CoA')
                             ->options(Coa::whereIn('id', [119, 120, 121, 122, 123, 124, 125, 126])->pluck('name', 'id'))
                             ->searchable()
                             ->required(),
+                        TextInput::make('quantity')
+                            ->label('Qty')
+                            ->numeric()
+                            ->default(1)
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                $price = $get('amount');
+                                $set('total_amount', floatval($state) * floatval($price));
+                            }),
+                        TextInput::make('satuan_quantity')
+                            ->label('Satuan'),
                         TextInput::make('amount')
-                            ->label('Amount')
+                            ->label('Price')
                             ->numeric()
                             ->required()
-                            ->prefix('Rp'),
+                            ->prefix('Rp')
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                $qty = $get('quantity') ?? 1;
+                                $set('total_amount', floatval($state) * floatval($qty));
+                            }),
+                        TextInput::make('total_amount')
+                            ->label('Total')
+                            ->numeric()
+                            ->readOnly(),
                         Textarea::make('description')
                             ->label('Description')
                             ->rows(3),
@@ -188,11 +228,32 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->options(Coa::whereIn('id', [119, 120, 121, 122, 123, 124, 125, 126])->pluck('name', 'id'))
                         ->searchable()
                         ->required(),
+                    TextInput::make('quantity')
+                        ->label('Qty')
+                        ->numeric()
+                        ->default(1)
+                        ->required()
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            $price = $get('amount');
+                            $set('total_amount', floatval($state) * floatval($price));
+                        }),
+                    TextInput::make('satuan_quantity')
+                        ->label('Satuan'),
                     TextInput::make('amount')
-                        ->label('Amount')
+                        ->label('Price')
                         ->numeric()
                         ->required()
-                        ->prefix('Rp'),
+                        ->prefix('Rp')
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            $qty = $get('quantity') ?? 1;
+                            $set('total_amount', floatval($state) * floatval($qty));
+                        }),
+                    TextInput::make('total_amount')
+                        ->label('Total')
+                        ->numeric()
+                        ->readOnly(),
                     Textarea::make('description')
                         ->label('Description')
                         ->rows(3),
