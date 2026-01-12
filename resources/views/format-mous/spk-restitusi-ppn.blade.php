@@ -433,7 +433,8 @@
                         <header class="header">
                             <p class="document-title">Surat Perjanjian Kerja</p>
                             <p class="document-subtitle">Supervisi Kewajiban Perpajakan Tahun
-                                {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</p>
+                                {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                            </p>
                             <p class="document-number">NO: {{ $mou->mou_number }}</p>
                         </header>
 
@@ -456,7 +457,8 @@
                                     <div class="party">
                                         <p><strong>PERJANJIAN KERJASAMA PERPAJAKAN/PERIKATAN JASA KONSULTASI PERPAJAKAN
                                                 ATAS JASA PENGURUSAN RESTITUSI PPN TAHUN
-                                                {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</strong></p>
+                                                {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}</strong>
+                                        </p>
                                     </div>
 
                                     <div class="party">
@@ -468,7 +470,8 @@
                                             Bersama ini kami sampaikan PERJANJIAN KERJASAMA untuk perikatan jasa
                                             konsultasi perpajakan melalui Restitusi atas nama
                                             {{ $mou->client->company_name }} untuk tahun pajak
-                                            {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}, dengan
+                                            {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }},
+                                            dengan
                                             pokok-pokok sebagai berikut:</p>
                                     </div>
                                 </div>
@@ -501,11 +504,14 @@
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
                                     <li>Penyusunan Data untuk Restitusi PPN tahun
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                     <li>Pendampingan proses pencairan Restitusi PPN
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                     <li>Konsultasi Perpajakan terkait restitusi PPN tahun pajak
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                 </ol>
 
                                 <h3>Prosedur Pelaksanaan:</h3>
@@ -522,10 +528,11 @@
                                 <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan
                                     oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP
                                     atas kewajiban perpajakan TAHUN
-                                    {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan
-                                    ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga
-                                    dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh
-                                    pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.
+                                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                    yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan.
+                                    Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan
+                                    data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang
+                                    diperoleh dari pihak Pertama.
                                 </p>
                             </div>
 
@@ -587,10 +594,11 @@
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
                                 <p>Lingkup pekerjaan hanya terkait dengan segala jasa pengurusan restitusi PPN tahun
-                                    pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sebagaimana
-                                    disebut dalam prosedur pelaksanaan. Adapun jika terdapat pekerjaan di luar rincian
-                                    pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara
-                                        tertulis dan terpisah dari surat perjanjian ini.</strong></p>
+                                    pajak
+                                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                    sebagaimana disebut dalam prosedur pelaksanaan. Adapun jika terdapat pekerjaan di
+                                    luar rincian pekerjaan, <strong>akan di kenakan Fee tersendiri dan dibuatkan
+                                        kontrak secara tertulis dan terpisah dari surat perjanjian ini.</strong></p>
                             </div>
 
                             <div class="section">

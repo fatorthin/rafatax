@@ -512,8 +512,10 @@
                                     pihak Pertama dan pihak Kedua sepakat untuk mengadakan perjanjian kerja sama seperti
                                     diatur dalam pasal-pasal Surat Perjanjian Kompilasi melalui SP2DK
                                     <strong>{{ $mou->client->company_name }}</strong> atas nama tahun pajak
-                                    {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }} di
-                                    bawah ini:</p>
+                                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                    di
+                                    bawah ini:
+                                </p>
                             </div>
 
                             <div class="section">
@@ -546,9 +548,11 @@
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
                                     <li>Penyusunan SP2DK tahun pajak
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                     <li>Konsultasi Perpajakan terkait tahun pajak
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                 </ol>
 
                                 <h3>Prosedur Pelaksanaan:</h3>
@@ -575,7 +579,8 @@
                                 <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan
                                     oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP
                                     atas kewajiban perpajakan TAHUN
-                                    {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan
+                                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                    yang bertentangan dengan
                                     ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga
                                     dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh
                                     pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.

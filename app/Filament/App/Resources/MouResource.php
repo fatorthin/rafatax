@@ -140,6 +140,14 @@ class MouResource extends Resource
                             ->suffix('%')
                             ->placeholder('0')
                             ->helperText('Masukkan persentase restitusi jika ada'),
+                        Forms\Components\TextInput::make('tahun_pajak')
+                            ->label('Tahun Pajak')
+                            ->numeric()
+                            ->default(date('Y'))
+                            ->placeholder(date('Y')),
+                        Forms\Components\TextInput::make('link_mou')
+                            ->label('Link MoU')
+                            ->placeholder('Masukkan link MoU'),
                     ])
                     ->columns(1),
 

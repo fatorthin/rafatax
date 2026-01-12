@@ -23,6 +23,7 @@ return new class extends Migration
             $table->foreignId('category_mou_id')->constrained('category_mous')->onDelete('cascade');
             $table->double('percentage_restitution')->default(0)->nullable();
             $table->text('link_mou')->nullable();
+            $table->year('tahun_pajak')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

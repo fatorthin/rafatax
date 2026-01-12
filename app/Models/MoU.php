@@ -23,7 +23,8 @@ class MoU extends Model
         'type',
         'category_mou_id',
         'percentage_restitution',
-        'link_mou'
+        'link_mou',
+        'tahun_pajak'
     ];
 
     public function client()

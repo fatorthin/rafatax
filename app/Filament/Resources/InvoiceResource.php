@@ -125,7 +125,11 @@ class InvoiceResource extends Resource
                         'pt' => 'PT',
                         'kkp' => 'KKP'
                     ])
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateInvoiceNumber($set, $get);
+                    }),
                 Forms\Components\Checkbox::make('is_saldo_awal')
                     ->label('Checklist Invoice Saldo Awal')
                     ->default(false)
@@ -400,7 +404,8 @@ class InvoiceResource extends Resource
             if (!$mou) return;
 
             // 1. Type
-            $typeCode = $mou->type === 'pt' ? 'PT' : 'KKP';
+            $invoiceType = $get('invoice_type');
+            $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
 
             // 2. Category
             $categoryName = $mou->categoryMou?->name;
@@ -425,7 +430,8 @@ class InvoiceResource extends Resource
             if (!$memo) return;
 
             // 1. Type
-            $typeCode = $memo->tipe_klien === 'pt' ? 'PT' : 'KKP';
+            $invoiceType = $get('invoice_type');
+            $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
 
             // 2. Category (Default to LN for Memos)
             $categoryCode = 'LN';

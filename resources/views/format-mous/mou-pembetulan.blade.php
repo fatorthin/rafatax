@@ -510,8 +510,9 @@
                                     {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }}
                                     pihak Pertama dan pihak Kedua sepakat untuk mengadakan perjanjian kerja sama seperti
                                     diatur dalam pasal-pasal Surat Perjanjian Kompilasi melalui Pembetulan SPT tahun
-                                    pajak
-                                    {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }} di
+                                    tahun pajak
+                                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                    di
                                     bawah ini:</p>
                             </div>
 
@@ -545,10 +546,12 @@
                                 <h3>Rincian Pekerjaan:</h3>
                                 <ol>
                                     <li>Penyusunan SPT Pembetulan ke satu tahun pajak
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                     <li>Pendampingan ke Kantor Pajak</li>
                                     <li>Konsultasi Perpajakan terkait tahun pajak
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                 </ol>
 
                                 <h3>Prosedur Pelaksanaan:</h3>
@@ -562,7 +565,9 @@
                                     <li>Permintaan data informasi terkait perpajakan secara berkala.</li>
                                     <li>Review SPT tahunan yang sudah terlapor</li>
                                     <li>Penyusunan dan Pelaporan SPT Pembetulan {{ $mou->client->company_name }} tahun
-                                        pajak {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        pajak
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                 </ol>
 
                                 <h3>Laporan yang akan diterbitkan:</h3>
@@ -570,13 +575,15 @@
                                     <li>Review dalam bentuk resume kewajiban perpajakan Pihak Pertama yang telah
                                         berjalan.</li>
                                     <li>Laporan SPT tahunan Pembetulan Tahun pajak
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    </li>
                                 </ol>
 
                                 <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan
                                     oleh pihak Pertama dengan kondisi riil maupun kondisi temuan data dari pihak KPP
                                     atas kewajiban perpajakan TAHUN
-                                    {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} yang bertentangan dengan
+                                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                    yang bertentangan dengan
                                     ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga
                                     dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh
                                     pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.
@@ -648,7 +655,8 @@
                                         termasuk pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan
                                         yang lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan,
                                     <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan
-                                        terpisah dari surat perjanjian ini.</strong></p>
+                                        terpisah dari surat perjanjian ini.</strong>
+                                </p>
                             </div>
 
                             <div class="section">
