@@ -34,6 +34,41 @@ class DaftarAktivaTetapResource extends Resource
                 ->icon('heroicon-o-calendar')
                 ->url(fn(): string => static::getUrl('monthly'))
                 ->color('success'),
+            Action::make('generate_depreciation')
+                ->label('Hitung Depresiasi')
+                ->icon('heroicon-o-calculator')
+                ->color('warning')
+                ->form([
+                    Forms\Components\DatePicker::make('periode')
+                        ->label('Periode Depresiasi')
+                        ->required()
+                        ->displayFormat('F Y')
+                        ->native(false),
+                ])
+                ->action(function (array $data) {
+                    $date = \Carbon\Carbon::parse($data['periode']);
+                    $assets = DaftarAktivaTetap::where('status', 'aktif')->get();
+                    $count = 0;
+
+                    foreach ($assets as $asset) {
+                        // Hitung penyusutan bulanan: (Harga Perolehan * Tarif) / 100 / 12
+                        $monthlyDepreciation = ($asset->harga_perolehan * $asset->tarif_penyusutan / 100) / 12;
+
+                        DepresiasiAktivaTetap::create([
+                            'daftar_aktiva_tetap_id' => $asset->id,
+                            'tanggal_penyusutan' => $date->format('Y-m-d'),
+                            'jumlah_penyusutan' => round($monthlyDepreciation), // Pembulatan biasa
+                        ]);
+
+                        $count++;
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title('Berhasil')
+                        ->body("Berhasil menghitung depresiasi untuk {$count} aktiva tetap.")
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 
