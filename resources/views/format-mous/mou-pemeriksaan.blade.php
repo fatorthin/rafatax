@@ -649,8 +649,8 @@
                             <div class="section">
                                 <h2 class="section-title">Jangka Waktu</h2>
                                 <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini
-                                    ditandatangani oleh kedua belah pihak, sampai <b>dengan terlapornya SPT
-                                        Pembetulan</b> .</p>
+                                    ditandatangani oleh kedua belah pihak, sampai <b>dengan selesainya Pemeriksaan</b> .
+                                </p>
                             </div>
 
                             <div class="section">
@@ -666,10 +666,9 @@
 
                             <div class="section">
                                 <h2 class="section-title">Lain-Lain</h2>
-                                <p>Lingkup pekerjaan hanya terkait dengan kompilasi penyusunan SPT Pembetulan
-                                    sebagaimana disebut dalam <strong>rincian pekerjaan</strong> dan <strong>tidak
-                                        termasuk pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan
-                                        yang lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan,
+                                <p>Lingkup pekerjaan hanya terkait hanya dengan Pemeriksaan
+                                    sebagaimana disebut dalam <strong>rincian pekerjaan</strong> . Adapun jika terdapat
+                                    pekerjaan di luar rincian pekerjaan,
                                     <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan
                                         terpisah dari surat perjanjian ini.</strong>
                                 </p>
