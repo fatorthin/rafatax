@@ -11,7 +11,7 @@ class MouListStatsOverview extends BaseWidget
 {
     protected function getStats(): array
     {
-        $totalCostListMou = CostListMou::sum('amount');
+        $totalCostListMou = CostListMou::sum('total_amount');
         $totalCostListInvoice = CostListInvoice::whereNotNull('invoice_id')->sum('amount');
         $difference = $totalCostListMou - $totalCostListInvoice;
 

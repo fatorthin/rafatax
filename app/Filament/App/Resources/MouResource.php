@@ -157,11 +157,30 @@ class MouResource extends Resource
                                     ->columnSpan([
                                         'md' => 4,
                                     ]),
+
                                 Forms\Components\TextInput::make('description')
                                     ->label('Deskripsi')
                                     ->placeholder('Deskripsi biaya')
                                     ->columnSpan([
                                         'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('quantity')
+                                    ->label('Qty')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->required()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $price = $get('amount');
+                                        $set('total_amount', floatval($state) * floatval($price));
+                                    })
+                                    ->columnSpan([
+                                        'md' => 1,
+                                    ]),
+                                Forms\Components\TextInput::make('satuan_quantity')
+                                    ->label('Satuan')
+                                    ->columnSpan([
+                                        'md' => 1,
                                     ]),
                                 Forms\Components\TextInput::make('amount')
                                     ->label('Jumlah')
@@ -169,8 +188,21 @@ class MouResource extends Resource
                                     ->prefix('Rp')
                                     ->required()
                                     ->placeholder('0')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $qty = $get('quantity') ?? 1;
+                                        $set('total_amount', floatval($state) * floatval($qty));
+                                    })
                                     ->columnSpan([
-                                        'md' => 4,
+                                        'md' => 3,
+                                    ]),
+                                Forms\Components\TextInput::make('total_amount')
+                                    ->label('Total')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->readOnly()
+                                    ->columnSpan([
+                                        'md' => 3,
                                     ]),
                             ])
                             ->columns([

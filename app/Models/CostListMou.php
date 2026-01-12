@@ -16,6 +16,7 @@ class CostListMou extends Model
         'mou_id',
         'coa_id',
         'quantity',
+        'satuan_quantity',
         'amount',
         'total_amount',
         'description'

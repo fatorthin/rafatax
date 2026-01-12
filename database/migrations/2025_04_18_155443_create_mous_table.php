@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->foreignId('category_mou_id')->constrained('category_mous')->onDelete('cascade');
             $table->double('percentage_restitution')->default(0)->nullable();
+            $table->text('link_mou')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

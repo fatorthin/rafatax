@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->double('quantity');
             $table->double('amount');
+            $table->string('satuan_quantity')->nullable();
             $table->double('total_amount');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
