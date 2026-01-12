@@ -51,13 +51,33 @@ class DaftarAktivaTetapResource extends Resource
                     $count = 0;
 
                     foreach ($assets as $asset) {
+                        // Hitung total penyusutan yang sudah ada
+                        $existingDepreciation = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $asset->id)->sum('jumlah_penyusutan');
+
+                        // Hitung sisa nilai buku saat ini
+                        $remainingValue = $asset->harga_perolehan - $existingDepreciation;
+
+                        // Jika sisa nilai buku sudah 0 atau kurang, skip
+                        if ($remainingValue <= 0) {
+                            continue;
+                        }
+
                         // Hitung penyusutan bulanan: (Harga Perolehan * Tarif) / 100 / 12
                         $monthlyDepreciation = ($asset->harga_perolehan * $asset->tarif_penyusutan / 100) / 12;
+                        $monthlyDepreciation = round($monthlyDepreciation);
+
+                        // Pastikan penyusutan tidak melebihi sisa nilai buku
+                        if ($monthlyDepreciation > $remainingValue) {
+                            $monthlyDepreciation = $remainingValue;
+                        }
+
+                        // Cek apakah sudah ada depresiasi di bulan yang sama (opsional, tapi bagus untuk mencegah duplikat)
+                        // Untuk saat ini kita jalankan sesuai request user saja
 
                         DepresiasiAktivaTetap::create([
                             'daftar_aktiva_tetap_id' => $asset->id,
                             'tanggal_penyusutan' => $date->format('Y-m-d'),
-                            'jumlah_penyusutan' => round($monthlyDepreciation), // Pembulatan biasa
+                            'jumlah_penyusutan' => $monthlyDepreciation,
                         ]);
 
                         $count++;
