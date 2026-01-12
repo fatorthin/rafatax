@@ -45,10 +45,11 @@ class InvoiceResource extends Resource
                     ->label('MoU')
                     ->options(function () {
                         return MoU::query()
-                            ->select('id', 'mou_number', 'description')
+                            ->select('id', 'mou_number', 'description', 'client_id')
+                            ->with('client')
                             ->get()
                             ->mapWithKeys(function ($mou) {
-                                return [$mou->id => $mou->mou_number . ' - ' . $mou->description];
+                                return [$mou->id => ($mou->client->company_name ?? '-') . ' - ' . $mou->mou_number . ' - ' . $mou->description];
                             });
                     })
                     ->searchable()
