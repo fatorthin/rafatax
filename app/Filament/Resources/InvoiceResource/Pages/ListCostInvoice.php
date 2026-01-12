@@ -125,11 +125,11 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
         $isPaid = $this->invoice->invoice_status === 'paid';
 
         return [
-            Actions\Action::make('download_pdf')
-                ->label('Download PDF')
-                ->icon('heroicon-o-document-arrow-down')
-                ->color('secondary')
-                ->url(fn(): string => route('invoices.pdf', ['id' => $this->invoice->id]))
+            Actions\Action::make('preview_pdf')
+                ->label('Preview PDF')
+                ->icon('heroicon-o-eye')
+                ->color('info')
+                ->url(fn(): string => route('invoices.preview', ['id' => $this->invoice->id]))
                 ->openUrlInNewTab(true),
 
             Actions\Action::make('download_jpg')

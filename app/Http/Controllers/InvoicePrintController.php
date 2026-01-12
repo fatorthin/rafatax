@@ -11,6 +11,30 @@ class InvoicePrintController extends Controller
 {
     public function download($id)
     {
+        try {
+            list($pdf, $filename) = $this->preparePdf($id);
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            // Fallback: render the selected view in browser if PDF generation fails
+            // Note: Since we don't have the view data easily available here without re-running logic,
+            // we might want to just re-throw or handle differently.
+            // For now, let's re-run the preparation failure logic in a simple way or just error out.
+            return response($e->getMessage(), 500);
+        }
+    }
+
+    public function preview($id)
+    {
+        try {
+            list($pdf, $filename) = $this->preparePdf($id);
+            return $pdf->stream($filename);
+        } catch (\Throwable $e) {
+            return response($e->getMessage(), 500);
+        }
+    }
+
+    private function preparePdf($id)
+    {
         $invoice = Invoice::with(['mou.client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
@@ -55,24 +79,17 @@ class InvoicePrintController extends Controller
             'signatureImage' => $signatureImageBase64,
         ];
 
-        // Attempt to generate PDF using barryvdh/laravel-dompdf
-        try {
-            $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
 
-            // Clean invoice number to remove invalid filename characters
-            $invoiceNumberClean = str_replace(
-                ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
-                '-',
-                $invoice->invoice_number ?? $invoice->id
-            );
-            $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
+        // Clean invoice number to remove invalid filename characters
+        $invoiceNumberClean = str_replace(
+            ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
+            '-',
+            $invoice->invoice_number ?? $invoice->id
+        );
+        $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
 
-            return $pdf->download($filename);
-        } catch (\Throwable $e) {
-            // Fallback: render the selected view in browser if PDF generation fails
-            $viewData['error'] = $e->getMessage();
-            return view($view, $viewData);
-        }
+        return [$pdf, $filename];
     }
 
     public function previewJpg($id)

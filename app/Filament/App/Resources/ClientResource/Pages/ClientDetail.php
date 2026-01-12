@@ -180,7 +180,7 @@ class ClientDetail extends Page implements HasInfolists, HasTable
             ->actions([
                 Action::make('viewCostList')
                     ->label('Detail')
-                    ->url(fn($record) => "/admin/mous/{$record->id}/cost-list")
+                    ->url(fn($record) => "/app/mous/{$record->id}/cost-list")
                     ->icon('heroicon-o-eye'),
             ])
             ->bulkActions([
