@@ -588,17 +588,26 @@
                                         <tr>
                                             <th>NO</th>
                                             <th>JENIS PEKERJAAN</th>
-                                            <th>FEE</th>
-                                            <th>KETERANGAN</th>
+                                            <th>QTY</th>
+                                            <th>SATUAN</th>
+                                            <th>HARGA</th>
+                                            <th>TOTAL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($costLists as $i => $cost)
                                             <tr>
-                                                <td>{{ $i + 1 }}</td>
-                                                <td>{{ $cost->description }}</td>
-                                                <td>Rp {{ number_format($cost->amount, 0, ',', '.') }}</td>
-                                                <td>{{ $cost->coa->name ?? '-' }}</td>
+                                                <td style="text-align: center;">{{ $i + 1 }}</td>
+                                                <td>
+                                                    <strong>{{ $cost->description }}</strong><br>
+                                                    <small>{{ $cost->coa->name ?? '-' }}</small>
+                                                </td>
+                                                <td style="text-align: center;">{{ $cost->quantity }}</td>
+                                                <td style="text-align: center;">{{ $cost->satuan_quantity }}</td>
+                                                <td style="text-align: right;">Rp
+                                                    {{ number_format($cost->amount, 0, ',', '.') }}</td>
+                                                <td style="text-align: right;">Rp
+                                                    {{ number_format($cost->total_amount, 0, ',', '.') }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -636,7 +645,8 @@
                                         pemeriksaan, pengurusan restitusi</strong>, <strong>ataupun pekerjaan yang
                                         lain</strong>. Adapun jika terdapat pekerjaan di luar rincian pekerjaan,
                                     <strong>akan di kenakan Fee tersendiri dan dibuatkan kontrak secara tertulis dan
-                                        terpisah dari surat perjanjian ini.</strong></p>
+                                        terpisah dari surat perjanjian ini.</strong>
+                                </p>
                             </div>
 
                             <div class="section">
