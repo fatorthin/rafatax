@@ -57,6 +57,12 @@ class InvoiceResource extends Resource
                     ->visible(fn(Forms\Get $get) => $get('reference_type') === 'mou')
                     ->live()
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        if ($state) {
+                            $mou = MoU::find($state);
+                            if ($mou) {
+                                $set('invoice_type', $mou->type);
+                            }
+                        }
                         self::generateInvoiceNumber($set, $get);
                     }),
                 Forms\Components\Select::make('memo_id')
