@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Perjanjian Pendampingan Pemeriksaan Tahun Pajak - KKP Antin Okfitasari</title>
+    <title>Surat Perjanjian Pendampingan Pemeriksaan Tahun Pajak -
+        {{ $mou->type === 'pt' ? 'PT Aghnia Oasis Konsultindo' : 'KKP Antin Okfitasari' }}</title>
     <style>
         * {
             margin: 0;

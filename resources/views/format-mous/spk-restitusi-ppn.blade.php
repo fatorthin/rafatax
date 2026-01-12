@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Perjanjian Kerja Restitusi PPN - PT Aghnia Oasis Konsultindo</title>
+    <title>Surat Perjanjian Kerja Restitusi PPN -
+        {{ $mou->type === 'pt' ? 'PT Aghnia Oasis Konsultindo' : 'KKP Antin Okfitasari' }}</title>
     <style>
         * {
             margin: 0;
@@ -410,14 +411,22 @@
         <thead>
             <tr>
                 <td class="header-img-cell">
-                    <img src="{{ asset('images/header.png') }}" alt="Header">
+                    @if ($mou->type === 'pt')
+                        <img src="{{ asset('images/header.png') }}" alt="Header">
+                    @else
+                        <img src="{{ asset('images/header-kkp.jpg') }}" alt="Header">
+                    @endif
                 </td>
             </tr>
         </thead>
         <tfoot>
             <tr>
                 <td class="footer-img-cell">
-                    <img src="{{ asset('images/footer.png') }}" alt="Footer">
+                    @if ($mou->type === 'pt')
+                        <img src="{{ asset('images/footer-v1.png') }}" alt="Footer">
+                    @else
+                        <img src="{{ asset('images/footer-kkp.svg') }}" alt="Footer">
+                    @endif
                 </td>
             </tr>
         </tfoot>
