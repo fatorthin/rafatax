@@ -108,14 +108,20 @@ class InvoiceResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('invoice_number')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('mou.mou_number')
-                    ->label('MoU Number')
-                    ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('mou.client.company_name')
+                Tables\Columns\TextColumn::make('reference_number')
+                    ->label('MoU / Memo Number')
+                    ->getStateUsing(fn($record) => $record->mou?->mou_number ?? $record->memo?->no_memo)
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('mou', fn($q) => $q->where('mou_number', 'like', "%{$search}%"))
+                            ->orWhereHas('memo', fn($q) => $q->where('no_memo', 'like', "%{$search}%"));
+                    }),
+                Tables\Columns\TextColumn::make('client_name')
                     ->label('Client')
-                    ->searchable()
-                    ->sortable(),
+                    ->getStateUsing(fn($record) => $record->mou?->client?->company_name ?? $record->memo?->nama_klien)
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"))
+                            ->orWhereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
+                    }),
                 Tables\Columns\TextColumn::make('mou.type')
                     ->label('Type')
                     ->sortable(),
