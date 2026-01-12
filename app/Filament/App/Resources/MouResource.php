@@ -55,9 +55,18 @@ class MouResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('mou_number')
                             ->label('Nomor MoU')
-                            ->unique(ignoreRecord: true)
+                            ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
+                                return $rule->whereNull('deleted_at');
+                            })
                             ->readOnly()
                             ->required()
+                            ->suffixAction(
+                                Forms\Components\Actions\Action::make('regenerate')
+                                    ->icon('heroicon-m-arrow-path')
+                                    ->action(function (Forms\Set $set, Forms\Get $get) {
+                                        self::generateMouNumber($set, $get);
+                                    })
+                            )
                             ->maxLength(255)
                             ->placeholder('Nomor MoU akan otomatis dibuat'),
                         Forms\Components\TextInput::make('description')
@@ -177,7 +186,8 @@ class MouResource extends Resource
                                     ->numeric()
                                     ->default(1)
                                     ->required()
-                                    ->reactive()
+                                    ->required()
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $price = $get('amount');
                                         $set('total_amount', floatval($state) * floatval($price));
@@ -196,7 +206,8 @@ class MouResource extends Resource
                                     ->prefix('Rp')
                                     ->required()
                                     ->placeholder('0')
-                                    ->reactive()
+                                    ->placeholder('0')
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $qty = $get('quantity') ?? 1;
                                         $set('total_amount', floatval($state) * floatval($qty));

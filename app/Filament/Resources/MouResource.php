@@ -29,9 +29,18 @@ class MouResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('mou_number')->label('MoU Number')
-                    ->unique(ignoreRecord: true)
+                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
+                        return $rule->whereNull('deleted_at');
+                    })
                     ->readOnly()
-                    ->required(),
+                    ->required()
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('regenerate')
+                            ->icon('heroicon-m-arrow-path')
+                            ->action(function (Forms\Set $set, Forms\Get $get) {
+                                self::generateMouNumber($set, $get);
+                            })
+                    ),
                 Forms\Components\TextInput::make('description')
                     ->required(),
                 Forms\Components\DatePicker::make('start_date')
@@ -119,7 +128,8 @@ class MouResource extends Resource
                                     ->numeric()
                                     ->default(1)
                                     ->required()
-                                    ->reactive()
+                                    ->required()
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $price = $get('amount');
                                         $set('total_amount', floatval($state) * floatval($price));
@@ -137,7 +147,8 @@ class MouResource extends Resource
                                     ->numeric()
                                     ->prefix('Rp')
                                     ->required()
-                                    ->reactive()
+                                    ->required()
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $qty = $get('quantity') ?? 1;
                                         $set('total_amount', floatval($state) * floatval($qty));
