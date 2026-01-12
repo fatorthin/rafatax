@@ -649,7 +649,8 @@
                             <div class="section">
                                 <h2 class="section-title">Jangka Waktu</h2>
                                 <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini
-                                    ditandatangani oleh kedua belah pihak, sampai <b>dengan selesainya Pemeriksaan</b> .
+                                    ditandatangani oleh kedua belah pihak, sampai <b>dengan selesainya Pemeriksaan
+                                        (terbitnya SPHP)</b> .
                                 </p>
                             </div>
 
