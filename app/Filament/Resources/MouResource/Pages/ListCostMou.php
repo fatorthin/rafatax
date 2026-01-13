@@ -302,27 +302,26 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 })
                         ),
                     DatePicker::make('invoice_date')
-                        ->label('Invoice Date')
+                        ->label('Tanggal Invoice')
                         ->required()
-                        ->default(now())
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
                         ->live()
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             if ($state) {
-                                $set('due_date', \Illuminate\Support\Carbon::parse($state)->addMonth());
+                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
+                                $set('due_date', $dueDate);
                             }
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         })
                         ->afterStateHydrated(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get, $state) {
-                            // Ensure defaults are applied before trying to generate
-                            if (!$state) {
-                                $set('invoice_date', now());
-                            }
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         }),
                     DatePicker::make('due_date')
-                        ->label('Due Date')
-                        ->required()
-                        ->default(now()->addMonth()),
+                        ->label('Tanggal Jatuh Tempo')
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
+                        ->required(),
                     Select::make('invoice_status')
                         ->label('Status')
                         ->options([

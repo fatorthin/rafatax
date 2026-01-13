@@ -385,22 +385,18 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->live()
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             if ($state) {
-                                $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
+                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
                                 $set('due_date', $dueDate);
                             }
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         })
                         ->afterStateHydrated(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get, $state) {
-                            if (!$state) {
-                                $set('invoice_date', now());
-                            }
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         }),
                     \Filament\Forms\Components\DatePicker::make('due_date')
                         ->label('Tanggal Jatuh Tempo')
                         ->native(false)
                         ->displayFormat('d/m/Y')
-                        ->default(now()->addWeeks(3))
                         ->required(),
                     Select::make('invoice_status')
                         ->label('Status')
