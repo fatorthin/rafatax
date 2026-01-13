@@ -192,7 +192,7 @@ $totalFeeFormatted = 'Rp.' . number_format($memo->total_fee, 0, ',', '.');
 
     <div class="signature-section">
         <div>Ditandatangani di Sukoharjo</div>
-        <div>Pada tanggal {{ \Carbon\Carbon::parse($memo->tanggal_ttd)->translatedFormat('d F Y') }}</div>
+        <div>Pada tanggal {{ \Carbon\Carbon::parse($memo->tanggal_ttd)->locale('id')->translatedFormat('d F Y') }}</div>
         <div class="font-bold underline" style="margin-bottom: 80px;">Pihak Pertama</div>
 
         <div class="font-bold underline">ANTIN OKFITASARI, S.E.,S.H.,Msi., Ak., CA.AB., BKP.,CATr.,ACPA</div>
