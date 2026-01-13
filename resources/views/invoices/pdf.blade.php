@@ -44,8 +44,8 @@
 <body>
     <div class="header">
         <h2>Invoice {{ $invoice->invoice_number ?? '' }}</h2>
-        <div>{{ optional($invoice->mou)->mou_number ?? '' }}</div>
-        <div>{{ optional(optional($invoice->mou)->client)->company_name ?? '' }}</div>
+        <div>{{ $reference_number ?? (optional($invoice->mou)->mou_number ?? '') }}</div>
+        <div>{{ $client_name ?? (optional(optional($invoice->mou)->client)->company_name ?? '') }}</div>
     </div>
 
     <div class="section">

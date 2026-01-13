@@ -92,7 +92,7 @@
                 <div>Sukoharjo, {{ now()->format('d F Y') }}</div>
                 <div>Kepada :</div>
                 <div>
-                    <strong>{{ optional($invoice->mou->client)->name ?? (optional($invoice->mou->client)->company_name ?? '') }}</strong>
+                    <strong>{{ $client_name ?? (optional($invoice->mou->client)->name ?? (optional($invoice->mou->client)->company_name ?? '')) }}</strong>
                 </div>
             </div>
             <div style="clear: both;"></div>

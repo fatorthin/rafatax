@@ -59,12 +59,14 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('invoice_number')
                             ->label('Invoice Number')
                             ->weight('bold'),
-                        TextEntry::make('mou.mou_number')
-                            ->label('MoU Number')
-                            ->weight('bold'),
-                        TextEntry::make('mou.client.company_name')
+                        TextEntry::make('reference_number')
+                            ->label(fn($record) => $record->mou_id ? 'MoU Number' : 'Memo Number')
+                            ->weight('bold')
+                            ->state(fn($record) => $record->mou ? $record->mou->mou_number : ($record->memo ? $record->memo->no_memo : '-')),
+                        TextEntry::make('client_name')
                             ->label('Client Name')
-                            ->weight('bold'),
+                            ->weight('bold')
+                            ->state(fn($record) => $record->mou ? $record->mou->client->company_name : ($record->memo ? $record->memo->nama_klien : '-')),
                         TextEntry::make('invoice_date')
                             ->label('Invoice Date')
                             ->weight('bold')
@@ -163,51 +165,54 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 ->label('Kirim Invoice')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->requiresConfirmation()
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('phone_number')
+                        ->label('WhatsApp Number')
+                        ->required()
+                        ->default(function () {
+                            // Try to get phone from MoU client if exists
+                            $mou = $this->invoice->mou;
+                            if ($mou && $mou->client) {
+                                return $mou->client->phone;
+                            }
+                            return null;
+                        })
+                        ->helperText('Format: 08123456789 or 628123456789'),
+                ])
                 ->modalHeading('Kirim Invoice')
-                ->modalDescription('Apakah Anda yakin ingin mengirim invoice ini ke klien via WhatsApp?')
+                ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
                 ->modalSubmitActionLabel('Ya, Kirim')
-                ->action(function () {
+                ->action(function (array $data) {
                     try {
-                        // Get the mou related to this invoice
-                        $mou = $this->invoice->mou;
+                        // Get phone number from form data
+                        $phoneInput = $data['phone_number'];
 
-                        // Check if MoU exists
-                        if (!$mou) {
+                        if (empty($phoneInput)) {
                             \Filament\Notifications\Notification::make()
                                 ->title('Error')
-                                ->body('No MoU associated with this invoice!')
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        // Get client from the mou
-                        $client = $mou->client;
-
-                        if (!$client || !$client->phone) {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Error')
-                                ->body('Client phone number not found!')
+                                ->body('Phone number is required!')
                                 ->danger()
                                 ->send();
                             return;
                         }
 
                         // Clean phone number
-                        $phone = preg_replace('/[^0-9]/', '', $client->phone);
+                        $phone = preg_replace('/[^0-9]/', '', $phoneInput);
                         if (substr($phone, 0, 1) === '0') {
                             $phone = '62' . substr($phone, 1);
                         } elseif (substr($phone, 0, 2) !== '62') {
                             $phone = '62' . $phone;
                         }
 
+                        // Determine Client Name
+                        $clientName = $this->invoice->mou ? $this->invoice->mou->client->company_name : ($this->invoice->memo ? $this->invoice->memo->nama_klien : 'Client');
+
                         // Calculate total amount
                         $totalAmount = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
                         $formattedAmount = number_format($totalAmount, 0, ',', '.');
 
                         // Create WhatsApp message
-                        $message = "Yth. {$client->company_name},\n\n";
+                        $message = "Yth. {$clientName},\n\n";
                         $message .= "Berikut kami lampirkan invoice untuk layanan kami:\n";
                         $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
                         $message .= "Keterangan: {$this->invoice->description}\n";
@@ -215,7 +220,12 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         // $message .= "Jatuh Tempo: " . \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y') . "\n";
                         // $message .= "Total: Rp {$formattedAmount}\n\n";
 
-                        $type = $this->invoice->invoice_type ?? optional($this->invoice->mou)->type;
+                        // Determine Type for Signature and Bank Details
+                        // Priority: Invoice Type -> MoU Type -> Memo Client Type -> null
+                        $type = $this->invoice->invoice_type
+                            ?? optional($this->invoice->mou)->type
+                            ?? optional($this->invoice->memo)->tipe_klien;
+
                         $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
 
                         $isKkp = $typeNormalized === 'kkp'; // kkp or pt
@@ -240,11 +250,12 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $wablasService->sendMessage($phone, $message);
 
                         // 2. Generate PDF using DOMPDF
-                        $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
+                        // Logic moved to Controller or kept here? 
+                        // Since we have specific PDF generation logic in Controller, we should ideally reuse it, 
+                        // but since this is an action, we might need to replicate the preparation logic or call a service.
+                        // For now, I will replicate the enhanced logic here to ensure it uses the correct data.
 
-                        // Determine type
-                        $type = $this->invoice->invoice_type ?? optional($this->invoice->mou)->type;
-                        $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+                        $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
 
                         if ($typeNormalized === 'kkp') {
                             $view = 'invoices.pdf-kkp';

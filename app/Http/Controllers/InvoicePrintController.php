@@ -35,12 +35,15 @@ class InvoicePrintController extends Controller
 
     private function preparePdf($id)
     {
-        $invoice = Invoice::with(['mou.client'])->findOrFail($id);
+        $invoice = Invoice::with(['mou.client', 'memo'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
         // Choose view based on MoU type (use custom KKP/PT design)
-        // Determine invoice type (prioritize Invoice type, fallback to MoU type)
-        $type = $invoice->invoice_type ?? optional($invoice->mou)->type;
+        // Determine invoice type (prioritize Invoice type, fallback to MoU type, then Memo type)
+        $type = $invoice->invoice_type
+            ?? optional($invoice->mou)->type
+            ?? optional($invoice->memo)->tipe_klien;
+
         $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
 
         if ($typeNormalized === 'kkp') {
@@ -77,6 +80,9 @@ class InvoicePrintController extends Controller
             'costLists' => $costLists,
             'headerImage' => $headerImageBase64,
             'signatureImage' => $signatureImageBase64,
+            // Pass normalized data to view to simplify template logic
+            'client_name' => $invoice->mou ? $invoice->mou->client->company_name : ($invoice->memo ? $invoice->memo->nama_klien : ''),
+            'reference_number' => $invoice->mou ? $invoice->mou->mou_number : ($invoice->memo ? $invoice->memo->no_memo : ''),
         ];
 
         $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
@@ -94,11 +100,14 @@ class InvoicePrintController extends Controller
 
     public function previewJpg($id)
     {
-        $invoice = Invoice::with(['mou.client'])->findOrFail($id);
+        $invoice = Invoice::with(['mou.client', 'memo'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
         // Choose view based on Invoice Type (prioritize Invoice type, fallback to MoU type)
-        $type = $invoice->invoice_type ?? optional($invoice->mou)->type;
+        $type = $invoice->invoice_type
+            ?? optional($invoice->mou)->type
+            ?? optional($invoice->memo)->tipe_klien;
+
         $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
 
         if ($typeNormalized === 'kkp') {
@@ -136,6 +145,9 @@ class InvoicePrintController extends Controller
             'headerImage' => $headerImageBase64,
             'signatureImage' => $signatureImageBase64,
             'originalView' => $view, // Pass the original view name to include
+            // Pass normalized data to view to simplify template logic
+            'client_name' => $invoice->mou ? $invoice->mou->client->company_name : ($invoice->memo ? $invoice->memo->nama_klien : ''),
+            'reference_number' => $invoice->mou ? $invoice->mou->mou_number : ($invoice->memo ? $invoice->memo->no_memo : ''),
         ];
 
         return view('invoices.jpg-preview', $viewData);

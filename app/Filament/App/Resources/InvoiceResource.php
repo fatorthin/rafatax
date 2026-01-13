@@ -31,16 +31,57 @@ class InvoiceResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Radio::make('reference_type')
+                    ->label('Reference Type')
+                    ->options([
+                        'mou' => 'MoU',
+                        'memo' => 'Memo',
+                    ])
+                    ->default('mou')
+                    ->inline()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set) {
+                        $set('mou_id', null);
+                        $set('memo_id', null);
+                        $set('invoice_number', null);
+                    }),
                 Forms\Components\Select::make('mou_id')
                     ->label('MoU')
                     ->options(function () {
                         return MoU::query()
-                            ->select('id', 'mou_number')
+                            ->select('id', 'mou_number', 'description', 'client_id')
+                            ->with('client')
                             ->get()
-                            ->pluck('mou_number', 'id');
+                            ->mapWithKeys(function ($mou) {
+                                return [$mou->id => ($mou->client->company_name ?? '-') . ' - ' . $mou->mou_number . ' - ' . $mou->description];
+                            });
                     })
                     ->searchable()
-                    ->required()
+                    ->required(fn(Forms\Get $get) => $get('reference_type') === 'mou')
+                    ->visible(fn(Forms\Get $get) => $get('reference_type') === 'mou')
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        if ($state) {
+                            $mou = MoU::find($state);
+                            if ($mou) {
+                                $set('invoice_type', $mou->type);
+                            }
+                        }
+                        self::generateInvoiceNumber($set, $get);
+                    }),
+                Forms\Components\Select::make('memo_id')
+                    ->label('Memo')
+                    ->options(function () {
+                        return \App\Models\Memo::query()
+                            ->select('id', 'no_memo', 'description')
+                            ->get()
+                            ->mapWithKeys(function ($memo) {
+                                return [$memo->id => $memo->no_memo . ' - ' . $memo->description];
+                            });
+                    })
+                    ->searchable()
+                    ->required(fn(Forms\Get $get) => $get('reference_type') === 'memo')
+                    ->visible(fn(Forms\Get $get) => $get('reference_type') === 'memo')
                     ->live()
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         self::generateInvoiceNumber($set, $get);
@@ -298,39 +339,53 @@ class InvoiceResource extends Resource
     public static function generateInvoiceNumber(Forms\Set $set, Forms\Get $get): void
     {
         $mouId = $get('mou_id');
+        $memoId = $get('memo_id');
         $invoiceDate = $get('invoice_date');
         $isSaldoAwal = $get('is_saldo_awal') ?? false;
 
-        if (!$mouId || !$invoiceDate) {
+        if ((!$mouId && !$memoId) || !$invoiceDate) {
             return;
         }
 
-        $mou = MoU::with('categoryMou')->find($mouId);
-        if (!$mou) {
+        if ($mouId) {
+            $mou = MoU::with('categoryMou')->find($mouId);
+            if (!$mou) return;
+
+            // 1. Type
+            $invoiceType = $get('invoice_type');
+            $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
+
+            // 2. Category
+            $categoryName = $mou->categoryMou?->name;
+            $categoryCode = match ($categoryName) {
+                'Bulanan Perorangan' => 'BTH',
+                'Bulanan Perusahaan' => 'BTH',
+                'SPT Perorangan' => 'TH',
+                'SPT Perusahaan' => 'TH',
+                'Pembetulan' => 'PBT',
+                'Pembukuan' => 'PBK',
+                'Pemeriksaan' => 'PMK',
+                'Restitusi' => 'RS',
+                'SP2DK' => 'SP',
+                'Konsultasi' => 'KS',
+                'Keberatan' => 'KB',
+                'Pelatihan' => 'PL',
+                'Lainnya' => 'LN',
+                default => 'LN',
+            };
+        } elseif ($memoId) {
+            $memo = \App\Models\Memo::find($memoId);
+            if (!$memo) return;
+
+            // 1. Type
+            $invoiceType = $get('invoice_type');
+            $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
+
+            // 2. Category (Default to LN for Memos)
+            $categoryCode = 'LN';
+        } else {
             return;
         }
-
-        // 1. Type
-        $typeCode = $mou->type === 'pt' ? 'PT' : 'KKP';
-
-        // 2. Category
-        $categoryName = $mou->categoryMou?->name;
-        $categoryCode = match ($categoryName) {
-            'Bulanan Perorangan' => 'BTH',
-            'Bulanan Perusahaan' => 'BTH',
-            'SPT Perorangan' => 'TH',
-            'SPT Perusahaan' => 'TH',
-            'Pembetulan' => 'PBT',
-            'Pembukuan' => 'PBK',
-            'Pemeriksaan' => 'PMK',
-            'Restitusi' => 'RS',
-            'SP2DK' => 'SP',
-            'Konsultasi' => 'KS',
-            'Keberatan' => 'KB',
-            'Pelatihan' => 'PL',
-            'Lainnya' => 'LN',
-            default => 'LN',
-        };
 
         // 3. Date
         $date = \Carbon\Carbon::parse($invoiceDate);
@@ -357,6 +412,8 @@ class InvoiceResource extends Resource
         // Reset to 1 if month changes
         $lastNumber = 0;
 
+        // Find existing invoices for the same month and year
+        // We look for patterns like INV/001... or INV/SA/001...
         $invoices = Invoice::whereYear('invoice_date', $year)
             ->whereMonth('invoice_date', $month)
             ->pluck('invoice_number');
@@ -379,12 +436,23 @@ class InvoiceResource extends Resource
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-        // Format: 
-        if ($isSaldoAwal) {
-            $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
-        } else {
-            $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
-        }
+        // Loop to find next available number in case of race condition (check existence)
+        do {
+            if ($isSaldoAwal) {
+                $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+            } else {
+                $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+            }
+
+            if (Invoice::where('invoice_number', $result)->exists()) {
+                $lastNumber++;
+                $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+                $exists = true;
+            } else {
+                $exists = false;
+            }
+        } while ($exists);
+
         $set('invoice_number', $result);
     }
 }
