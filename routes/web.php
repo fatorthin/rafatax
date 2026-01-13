@@ -76,6 +76,7 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/mou/{id}/print-view', [MouPrintViewController::class, 'show'])->name('mou.print.view');
 Route::get('/mou/{id}/pdf/download', [MouPrintViewController::class, 'downloadPdf'])->name('mou.pdf.download')->middleware('auth');
 Route::get('/mou/{id}/pdf/preview', [MouPrintViewController::class, 'previewPdf'])->name('mou.pdf.preview')->middleware('auth');
+Route::get('/mou/{id}/pdf/test', [MouPrintViewController::class, 'previewPdfTest'])->name('mou.pdf.test')->middleware('auth');
 Route::get('/invoices/{id}/preview', [InvoicePrintController::class, 'preview'])->name('invoices.preview')->middleware('auth');
 Route::get('/invoices/{id}/pdf', [InvoicePrintController::class, 'download'])->name('invoices.pdf')->middleware('auth');
 Route::get('/invoices/{id}/jpg', [InvoicePrintController::class, 'previewJpg'])->name('invoices.jpg')->middleware('auth');
