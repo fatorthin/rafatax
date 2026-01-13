@@ -17,6 +17,11 @@ class ViewMemo extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('preview_pdf')
+                ->label('Preview PDF')
+                ->icon('heroicon-o-eye')
+                ->url(fn($record) => route('memos.pdf', ['id' => $record->id]))
+                ->openUrlInNewTab(),
             Actions\Action::make('create_invoice')
                 ->label('Create Invoice')
                 ->icon('heroicon-o-plus')

@@ -127,3 +127,5 @@ Route::put('/cash-reference/transaction/{transactionId}/update', [\App\Http\Cont
 Route::delete('/cash-reference/{id}/transaction/{transactionId}/delete', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'destroy'])
     ->name('cash-reference.transaction.delete')
     ->middleware('auth');
+
+Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');

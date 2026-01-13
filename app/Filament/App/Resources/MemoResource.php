@@ -2,16 +2,25 @@
 
 namespace App\Filament\App\Resources;
 
-use App\Filament\App\Resources\MemoResource\Pages;
-use App\Filament\Resources\MemoResource\RelationManagers; // Use Admin RelationManagers
-use App\Models\Memo;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Memo;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\CostListInvoice;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\ActionsPosition;
+use Filament\Forms\Components\DateTimePicker;
+use App\Filament\App\Resources\MemoResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\App\Resources\MemoResource\RelationManagers; // Use App RelationManagers
 
 class MemoResource extends Resource
 {
@@ -170,7 +179,7 @@ class MemoResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

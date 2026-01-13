@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\MemoResource\RelationManagers;
+namespace App\Filament\App\Resources\MemoResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -14,6 +14,11 @@ use App\Filament\App\Resources\InvoiceResource;
 class InvoicesRelationManager extends RelationManager
 {
     protected static string $relationship = 'invoices';
+
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
 
     public function form(Form $form): Form
     {
@@ -38,12 +43,32 @@ class InvoicesRelationManager extends RelationManager
                     ->required(),
                 Forms\Components\DatePicker::make('due_date')
                     ->required(),
-                Forms\Components\TextInput::make('amount')
-                    ->numeric()
-                    ->prefix('Rp')
-                    ->required(),
+
                 Forms\Components\TextInput::make('description')
                     ->maxLength(255),
+                Forms\Components\Repeater::make('costListInvoices')
+                    ->relationship()
+                    ->schema([
+                        Forms\Components\Select::make('coa_id')
+                            ->label('CoA')
+                            ->options(\App\Models\Coa::where('group_coa_id', '40')->pluck('name', 'id'))
+                            ->required()
+                            ->searchable()
+                            ->columnSpan(['md' => 3]),
+                        Forms\Components\TextInput::make('description')
+                            ->label('Deskripsi')
+                            ->columnSpan(['md' => 4]),
+                        Forms\Components\TextInput::make('amount')
+                            ->label('Harga')
+                            ->numeric()
+                            ->required()
+                            ->columnSpan(['md' => 5]),
+                    ])
+                    ->columns(['md' => 12])
+                    ->defaultItems(0)
+                    ->reorderableWithButtons()
+                    ->collapsible()
+                    ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
             ]);
     }
 
@@ -82,11 +107,10 @@ class InvoicesRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-
                 Tables\Actions\EditAction::make()
-                    ->url(fn($record) => InvoiceResource::getUrl('edit', ['record' => $record]))
                     ->visible(true),
-                Tables\Actions\DeleteAction::make()->visible(true),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(true),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
