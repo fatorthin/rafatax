@@ -61,10 +61,35 @@
         .underline {
             text-decoration: underline;
         }
+
+        .bordered-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+            margin-bottom: 20px;
+        }
+
+        .bordered-table th,
+        .bordered-table td {
+            border: 1px solid black;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .check-col {
+            width: 30px;
+            text-align: center;
+        }
+
+        .no-col {
+            width: 30px;
+            text-align: center;
+        }
     </style>
 </head>
 
-<body>
+<body
+    style="background-image: url('{{ public_path('images/background.png') }}'); background-repeat: no-repeat; background-position: center; background-size: 70%;">
     <div class="text-center font-bold mb-4" style="margin-bottom: 30px;">
         MEMO KESEPAKATAN KERJA
     </div>
@@ -92,7 +117,7 @@
     </table>
 
     <div style="margin-bottom: 15px;">
-        Selanjutnya disebut PIHAK PERTAMA
+        Selanjutnya disebut <span class="font-bold">PIHAK PERTAMA</span>
     </div>
 
     <table class="table-data" style="margin-left: 30px; margin-bottom: 20px;">
@@ -114,21 +139,51 @@
     </table>
 
     <div style="margin-bottom: 15px;">
-        Selanjutnya disebut PIHAK KEDUA
+        Selanjutnya disebut <span class="font-bold">PIHAK KEDUA</span>
     </div>
 
-    <div style="margin-bottom: 10px; text-align: justify;">
-        Bahwa PIHAK PERTAMA melakukan kesepakatan kerja dengan PIHAK KEDUA untuk
-        menguruskan atas rincian pekerjaan sebagai berikut:
+    <div style="margin-bottom: 5px; text-align: justify;">
+        Bahwa <span class="font-bold">PIHAK PERTAMA</span> melakukan kesepakatan kerja dengan <span
+            class="font-bold">PIHAK KEDUA</span> untuk
+        mengerjakan atas :
     </div>
 
-    <ol class="list-numbered">
-        @if ($memo->type_work && is_array($memo->type_work))
-            @foreach ($memo->type_work as $work)
-                <li>{{ $work['work_detail'] }}</li>
-            @endforeach
-        @endif
-    </ol>
+    <!-- Defined list of items with checks for active ones -->
+    @php
+        $selectedWorks = collect($memo->type_work ?? [])
+            ->pluck('work_detail')
+            ->map(fn($item) => trim($item))
+            ->toArray();
+        // Standard list from screenshot logic or dynamic?
+        // User said "nanti untuk gambar backgroundnya menggunakan gambar [..] dan untuk type worknya ditambahi kolom total fee nya diambil dari data total fee"
+        // The screenshot shows a mix of specific items and standard items.
+        // Since we only have dynamic items in the DB, I will render the dynamic items in the table.
+        // If the user wants a fixed list with checks, they would need to change the data structure.
+        // For now, I will render the user's dynamic items as Rows 1..N and check mark V on all of them?
+// Or just list them. The screenshot shows checked items.
+// I will assume all items "in" the memo are "checked".
+
+$items = $memo->type_work ?? [];
+$rowCount = count($items);
+$totalFeeFormatted = 'Rp.' . number_format($memo->total_fee, 0, ',', '.');
+    @endphp
+
+    <table class="bordered-table">
+        @foreach ($items as $index => $work)
+            <tr>
+                <td class="no-col">{{ $index + 1 }}.</td>
+                <td>{{ $work['work_detail'] }}</td>
+                <td class="check-col">V</td>
+                @if ($index === 0)
+                    <td rowspan="{{ $rowCount }}"
+                        style="vertical-align: middle; text-align: center; font-weight: bold; width: 150px;">
+                        {{ $totalFeeFormatted }}
+                    </td>
+                @endif
+            </tr>
+        @endforeach
+        {{-- Fill empty rows if needed to look like the screenshot? User didn't ask for generic items, just "type worknya ditambahi kolom total fee". --}}
+    </table>
 
     <div style="margin-top: 15px; margin-bottom: 30px; text-align: justify;">
         Bukti persetujuan Pihak Pertama mengenai hal-hal tersebut di atas adalah dengan
