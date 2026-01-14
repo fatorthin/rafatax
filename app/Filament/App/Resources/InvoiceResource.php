@@ -128,7 +128,11 @@ class InvoiceResource extends Resource
                     ->options([
                         'pt' => 'PT',
                         'kkp' => 'KKP'
-                    ]),
+                    ])
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        self::generateInvoiceNumber($set, $get);
+                    }),
                 Forms\Components\Checkbox::make('is_saldo_awal')
                     ->label('Checklist Invoice Saldo Awal')
                     ->default(false)
