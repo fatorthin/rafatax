@@ -152,7 +152,7 @@ class InvoiceResource extends Resource
                                     ->default(fn(Forms\Get $get) => $get('../../mou_id')),
                                 Forms\Components\Select::make('coa_id')
                                     ->label('CoA')
-                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('coa_id', '162')->pluck('name', 'id'))
+                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
                                     ->columnSpan([
