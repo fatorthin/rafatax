@@ -40,6 +40,13 @@ class InvoiceResource extends Resource
                     ->default('mou')
                     ->inline()
                     ->live()
+                    ->afterStateHydrated(function (Forms\Set $set, $record) {
+                        if ($record?->memo_id) {
+                            $set('reference_type', 'memo');
+                        } else {
+                            $set('reference_type', 'mou');
+                        }
+                    })
                     ->afterStateUpdated(function (Forms\Set $set) {
                         $set('mou_id', null);
                         $set('memo_id', null);
