@@ -412,7 +412,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             'pt' => 'PT',
                             'kkp' => 'KKP'
                         ])
-                        ->default('pt'),
+                        ->default(fn() => $this->mou->type)
+                        ->live()
+                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                            InvoiceResource::generateInvoiceNumber($set, $get);
+                        }),
                     \Filament\Forms\Components\Section::make('Rincian Biaya')
                         ->schema([
                             \Filament\Forms\Components\Repeater::make('costListInvoices')

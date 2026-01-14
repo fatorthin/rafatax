@@ -342,7 +342,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             'pt' => 'PT',
                             'kkp' => 'KKP',
                         ])
-                        ->required(),
+                        ->required()
+                        ->default(fn() => $this->mou->type)
+                        ->live()
+                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                            InvoiceResource::generateInvoiceNumber($set, $get);
+                        }),
                     Textarea::make('description')
                         ->label('Description')
                         ->rows(3),

@@ -203,9 +203,6 @@ class InvoiceResource extends Resource
                         return $query->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"))
                             ->orWhereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
                     }),
-                Tables\Columns\TextColumn::make('mou.type')
-                    ->label('Type')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('invoice_date')
                     ->date()
                     ->sortable(),
@@ -452,10 +449,13 @@ class InvoiceResource extends Resource
         // Reset to 1 if month changes
         $lastNumber = 0;
 
-        // Find existing invoices for the same month and year
+        $invoiceType = $get('invoice_type');
+
+        // Find existing invoices for the same month and year AND same type
         // We look for patterns like INV/001... or INV/SA/001...
         $invoices = Invoice::whereYear('invoice_date', $year)
             ->whereMonth('invoice_date', $month)
+            ->where('invoice_type', $invoiceType)
             ->pluck('invoice_number');
 
         foreach ($invoices as $inv) {
