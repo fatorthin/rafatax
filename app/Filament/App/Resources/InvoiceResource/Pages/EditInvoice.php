@@ -11,7 +11,7 @@ class EditInvoice extends EditRecord
 {
     protected static string $resource = InvoiceResource::class;
 
-    protected static string $view = 'filament.app.resources.invoice-resource.pages.edit-invoice';
+
 
     protected function getHeaderActions(): array
     {
