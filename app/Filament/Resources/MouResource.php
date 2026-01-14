@@ -377,7 +377,9 @@ class MouResource extends Resource
 
         // 4. Sequence Number
         $lastNumber = 0;
-        $mous = MoU::whereYear('start_date', $year)->pluck('mou_number');
+        $mous = MoU::whereYear('start_date', $year)
+            ->where('type', $type)
+            ->pluck('mou_number');
 
         foreach ($mous as $num) {
             if (preg_match('/^(\d+)\//', $num, $matches)) {
