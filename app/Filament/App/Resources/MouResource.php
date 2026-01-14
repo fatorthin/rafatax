@@ -440,8 +440,10 @@ class MouResource extends Resource
 
         $categoryName = $category->name;
         $categoryCode = match ($categoryName) {
-            'Bulanan' => 'BTH',
-            'SPT' => 'TH',
+            'Bulanan Perorangan' => 'BTH',
+            'Bulanan Perusahaan' => 'BTH',
+            'SPT Perorangan' => 'TH',
+            'SPT Perusahaan' => 'TH',
             'Pembetulan' => 'PBT',
             'Pembukuan' => 'PBK',
             'Pemeriksaan' => 'PMK',
