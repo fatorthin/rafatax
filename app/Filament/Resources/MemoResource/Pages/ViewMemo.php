@@ -30,7 +30,15 @@ class ViewMemo extends ViewRecord
                         ->label('Invoice Number')
                         ->required()
                         ->readOnly()
-                        ->unique(Invoice::class, 'invoice_number'),
+                        ->unique(Invoice::class, 'invoice_number')
+                        ->suffixAction(
+                            \Filament\Forms\Components\Actions\Action::make('regenerate_invoice_number')
+                                ->icon('heroicon-o-arrow-path')
+                                ->tooltip('Regenerate Invoice Number')
+                                ->action(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                                    $this->generateInvoiceNumber($set, $get);
+                                })
+                        ),
                     Select::make('invoice_status')
                         ->options([
                             'unpaid' => 'Unpaid',
