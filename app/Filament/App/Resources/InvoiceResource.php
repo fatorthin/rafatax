@@ -136,6 +136,42 @@ class InvoiceResource extends Resource
                     ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                         self::generateInvoiceNumber($set, $get);
                     }),
+                Forms\Components\Section::make('Rincian Biaya')
+                    ->schema([
+                        Forms\Components\Repeater::make('costListInvoices')
+                            ->relationship()
+                            ->schema([
+                                Forms\Components\Hidden::make('mou_id')
+                                    ->default(fn(Forms\Get $get) => $get('../../mou_id')),
+                                Forms\Components\Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('coa_id', '162')->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable()
+                                    ->columnSpan([
+                                        'md' => 3,
+                                    ]),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Deskripsi')
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('amount')
+                                    ->label('Harga')
+                                    ->numeric()
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 5,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderableWithButtons()
+                            ->collapsible()
+                            ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                    ])
             ]);
     }
 
