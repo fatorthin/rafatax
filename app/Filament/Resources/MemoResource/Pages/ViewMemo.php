@@ -70,7 +70,7 @@ class ViewMemo extends ViewRecord
                         ->schema([
                             Select::make('coa_id')
                                 ->label('CoA')
-                                ->options(\App\Models\Coa::all()->pluck('name', 'id'))
+                                ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
                                 ->required()
                                 ->searchable()
                                 ->columnSpan(['md' => 4]),
