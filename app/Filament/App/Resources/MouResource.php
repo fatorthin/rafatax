@@ -372,6 +372,34 @@ class MouResource extends Resource
                         $data['value'],
                         fn(Builder $query, $year) => $query->whereYear('start_date', $year)
                     )),
+                Tables\Filters\SelectFilter::make('created_month')
+                    ->label('Bulan Dibuat')
+                    ->options(
+                        collect(range(1, 12))->mapWithKeys(function ($month) {
+                            return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
+                        })->toArray()
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $month) => $query->whereMonth('created_at', $month)
+                    )),
+                Tables\Filters\SelectFilter::make('created_year')
+                    ->label('Tahun Dibuat')
+                    ->options(
+                        function () {
+                            // Get years from created_at
+                            return MoU::query()
+                                ->selectRaw('YEAR(created_at) as year')
+                                ->distinct()
+                                ->orderBy('year', 'desc')
+                                ->pluck('year', 'year')
+                                ->toArray();
+                        }
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $year) => $query->whereYear('created_at', $year)
+                    )),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

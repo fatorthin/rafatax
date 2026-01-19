@@ -66,6 +66,49 @@ class RekapMou extends Page implements HasTable
                             ],
                         ],
                     ])),
+                Tables\Actions\Action::make('view_monthly')
+                    ->label('Lihat Bulanan')
+                    ->icon('heroicon-o-calendar')
+                    ->form([
+                        \Filament\Forms\Components\Select::make('month')
+                            ->label('Bulan')
+                            ->options(
+                                collect(range(1, 12))->mapWithKeys(function ($month) {
+                                    return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
+                                })->toArray()
+                            )
+                            ->default(now()->month)
+                            ->required(),
+                        \Filament\Forms\Components\Select::make('year')
+                            ->label('Tahun')
+                            ->options(
+                                function () {
+                                    return \App\Models\MoU::query()
+                                        ->selectRaw('YEAR(created_at) as year')
+                                        ->distinct()
+                                        ->orderBy('year', 'desc')
+                                        ->pluck('year', 'year')
+                                        ->toArray();
+                                }
+                            )
+                            ->default(now()->year)
+                            ->required(),
+                    ])
+                    ->action(function (array $data, CategoryMou $record) {
+                        return redirect()->to(MouResource::getUrl('index', [
+                            'tableFilters' => [
+                                'category_mou_id' => [
+                                    'value' => $record->id,
+                                ],
+                                'created_month' => [
+                                    'value' => $data['month'],
+                                ],
+                                'created_year' => [
+                                    'value' => $data['year'],
+                                ],
+                            ],
+                        ]));
+                    }),
             ])
             ->paginated(false);
     }

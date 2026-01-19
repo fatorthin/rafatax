@@ -28,6 +28,7 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
             'scope' => 'all',
             'recipients' => [],
             'message' => '',
+            'attachment' => null,
             'test_mode' => false,
         ]);
     }
@@ -89,6 +90,14 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
                             ->helperText('Gunakan teks biasa. Emoji didukung. Pastikan nomor valid.')
                             ->required(),
 
+                        Forms\Components\FileUpload::make('attachment')
+                            ->label('Lampiran (Gambar/PDF)')
+                            ->helperText('Format: JPG, PNG, PDF. Maks 5MB.')
+                            ->acceptedFileTypes(['image/*', 'application/pdf'])
+                            ->maxSize(5120)
+                            ->directory('whatsapp-broadcasts')
+                            ->visibility('public'),
+
                         Forms\Components\Toggle::make('test_mode')
                             ->label('Mode uji (batasi 3 penerima)')
                             ->default(false),
@@ -104,10 +113,11 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
         $scope = $state['scope'] ?? 'all';
         $ids = $state['recipients'] ?? [];
         $message = trim((string)($state['message'] ?? ''));
+        $attachment = $state['attachment'] ?? null;
         $testMode = (bool)($state['test_mode'] ?? false);
 
-        if ($message === '') {
-            Notification::make()->title('Pesan wajib diisi')->danger()->send();
+        if ($message === '' && empty($attachment)) {
+            Notification::make()->title('Pesan atau lampiran wajib diisi')->danger()->send();
             return;
         }
 
@@ -153,10 +163,28 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
         $fail = 0;
         $failedRows = [];
 
+        $attachmentPath = null;
+        $attachmentType = null;
+
+        if ($attachment) {
+            $attachmentPath = \Illuminate\Support\Facades\Storage::disk('public')->path($attachment);
+            $mime = mime_content_type($attachmentPath);
+            $attachmentType = str_starts_with($mime, 'image/') ? 'image' : 'document';
+        }
+
         $firstErrorDetail = null;
         foreach ($list as $row) {
-            $res = $svc->sendMessage($row['phone'], $message);
-            if (($res['success'] ?? false) === true) {
+            if ($attachmentPath) {
+                if ($attachmentType === 'image') {
+                    $res = $svc->sendImage($row['phone'], $attachmentPath, $message);
+                } else {
+                    $res = $svc->sendDocument($row['phone'], $attachmentPath, $message);
+                }
+            } else {
+                $res = $svc->sendMessage($row['phone'], $message);
+            }
+
+            if (($res['success'] ?? false) === true || ($res['status'] ?? false) === true) {
                 $ok++;
             } else {
                 $fail++;
@@ -169,7 +197,7 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
                 }
                 $failedRows[] = $row['name'] . ' (' . $row['phone'] . ')';
             }
-            usleep(250000);
+            usleep(500000); // 0.5s delay to be safe
         }
 
         if ($fail === 0) {

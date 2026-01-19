@@ -332,7 +332,7 @@ class InvoiceResource extends Resource
                         return $query
                             ->when(
                                 $data['value'],
-                                fn(Builder $query, $type): Builder => $query->whereHas('mou', fn($q) => $q->where('type', $type)),
+                                fn(Builder $query, $type): Builder => $query->where('invoice_type', $type),
                             );
                     }),
                 Tables\Filters\SelectFilter::make('invoice_status')
