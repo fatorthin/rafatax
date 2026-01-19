@@ -15,8 +15,16 @@ class ChecklistMouTable extends BaseWidget
 {
     public ?int $mouId = null;
 
+    protected $listeners = ['invoice-created' => '$refresh', 'invoice-deleted' => '$refresh'];
+
     public function mount()
     {
+        // Self-healing: Reset checklist items linked to deleted invoices
+        ChecklistMou::where('mou_id', $this->mouId)
+            ->whereNotNull('invoice_id')
+            ->whereDoesntHave('invoice')
+            ->update(['invoice_id' => null, 'status' => 'pending']);
+
         $this->generateMonthlyChecklists();
     }
 

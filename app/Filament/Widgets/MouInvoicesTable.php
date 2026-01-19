@@ -92,6 +92,10 @@ class MouInvoicesTable extends BaseWidget
                     ->label('View Details')
                     ->icon('heroicon-o-eye')
                     ->color('info'),
+                Tables\Actions\DeleteAction::make()
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation(),
             ]);
     }
 

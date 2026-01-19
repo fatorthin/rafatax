@@ -51,6 +51,13 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     public function mount($record): void
     {
         $this->mou = MoU::withTrashed()->findOrFail($record);
+
+        // Self-healing: Reset checklist items linked to deleted invoices
+        \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+            ->whereNotNull('invoice_id')
+            ->whereDoesntHave('invoice')
+            ->update(['invoice_id' => null, 'status' => 'pending']);
+
         $this->cost_lists = CostListMou::where('mou_id', $record)->get();
         $this->invoices = Invoice::where('mou_id', $record)->get();
     }
@@ -449,7 +456,23 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 ->reorderableWithButtons()
                                 ->collapsible()
                                 ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
-                        ])
+                        ]),
+                    \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
+                        ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
+                        ->options(function () {
+                            return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                                ->whereNull('invoice_id')
+                                ->orderBy('checklist_date', 'asc')
+                                ->get()
+                                ->mapWithKeys(function ($item) {
+                                    $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+                                    return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
+                                });
+                        })
+                        ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
+                        ->columns(2)
+                        ->gridDirection('row')
+                        ->bulkToggleable(),
                 ])
                 ->modalWidth('7xl')
                 ->action(function (array $data) {
@@ -458,8 +481,20 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         $costListItems = $data['costListInvoices'] ?? [];
                         unset($data['costListInvoices']);
 
+                        // Extract checklist items
+                        $checklistIds = $data['checklist_mou_ids'] ?? [];
+                        unset($data['checklist_mou_ids']);
+
                         // Create Invoice
                         $invoice = Invoice::create($data);
+
+                        // Update Checklist Items
+                        if (!empty($checklistIds)) {
+                            \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
+                                'invoice_id' => $invoice->id,
+                                'status' => 'completed'
+                            ]);
+                        }
 
                         // Create Cost List Items
                         foreach ($costListItems as $item) {

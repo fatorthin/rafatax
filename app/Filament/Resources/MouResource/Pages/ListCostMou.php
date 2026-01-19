@@ -48,9 +48,18 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     public $invoices;
 
+    public $pendingChecklistIds = [];
+
     public function mount($record): void
     {
         $this->mou = MoU::findOrFail($record);
+
+        // Self-healing: Reset checklist items linked to deleted invoices
+        \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+            ->whereNotNull('invoice_id')
+            ->whereDoesntHave('invoice')
+            ->update(['invoice_id' => null, 'status' => 'pending']);
+
         $this->cost_lists = CostListMou::where('mou_id', $record)->get();
         $this->invoices = Invoice::where('mou_id', $record)->get();
     }
@@ -387,14 +396,40 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 ->reorderableWithButtons()
                                 ->collapsible()
                                 ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
-                        ])
+                        ]),
+                    \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
+                        ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
+                        ->options(function () {
+                            return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                                ->whereNull('invoice_id')
+                                ->orderBy('checklist_date', 'asc')
+                                ->get()
+                                ->mapWithKeys(function ($item) {
+                                    $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+                                    return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
+                                });
+                        })
+                        ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
+                        ->columns(2)
+                        ->gridDirection('row')
+                        ->bulkToggleable(),
                 ])
                 ->mutateFormDataUsing(function (array $data): array {
                     $data['mou_id'] = $this->mou->id;
+                    $this->pendingChecklistIds = $data['checklist_mou_ids'] ?? [];
+                    unset($data['checklist_mou_ids']);
                     // $data['client_id'] = $this->mou->client_id; // Commented out to be safe based on migration check
                     return $data;
                 })
-                ->after(fn() => $this->dispatch('invoice-created'))
+                ->after(function ($record) {
+                    if (!empty($this->pendingChecklistIds)) {
+                        \App\Models\ChecklistMou::whereIn('id', $this->pendingChecklistIds)->update([
+                            'invoice_id' => $record->id,
+                            'status' => 'completed'
+                        ]);
+                    }
+                    $this->dispatch('invoice-created');
+                })
                 ->modalWidth('7xl'),
         ];
     }

@@ -20,7 +20,7 @@ class RekapInvoice extends Page implements HasTable
 
     protected static string $view = 'filament.pages.rekap-invoice';
 
-    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
 
     protected static ?string $navigationLabel = 'Rekap Invoice';
 

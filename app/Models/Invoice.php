@@ -26,6 +26,17 @@ class Invoice extends Model
         'memo_id'
     ];
 
+    protected static function booted()
+    {
+        static::deleted(function ($invoice) {
+            // Reset checklist invoices
+            \App\Models\ChecklistMou::where('invoice_id', $invoice->id)->update([
+                'invoice_id' => null,
+                'status' => 'pending'
+            ]);
+        });
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
