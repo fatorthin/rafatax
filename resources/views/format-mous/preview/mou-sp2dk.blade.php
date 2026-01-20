@@ -174,7 +174,8 @@
         <div class="section">
             <div class="document-title">Surat Perjanjian Kompilasi</div>
             <div class="document-subtitle">Atas SP2DK TAHUN
-                {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</div>
+                {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+            </div>
             <div class="document-number">NO: {{ $mou->mou_number }}</div>
         </div>
 
