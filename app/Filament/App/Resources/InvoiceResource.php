@@ -147,6 +147,14 @@ class InvoiceResource extends Resource
                     ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                         self::generateInvoiceNumber($set, $get);
                     }),
+                Forms\Components\Select::make('rek_transfer')
+                    ->label('Rekening Transfer')
+                    ->options([
+                        'BCA PT' => 'BCA PT',
+                        'BCA BARU' => 'BCA BARU',
+                        'BCA LAMA' => 'BCA LAMA',
+                        'MANDIRI' => 'MANDIRI'
+                    ]),
                 Forms\Components\Section::make('Rincian Biaya')
                     ->schema([
                         Forms\Components\Repeater::make('costListInvoices')
