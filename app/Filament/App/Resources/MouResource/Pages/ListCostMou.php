@@ -424,6 +424,14 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         }),
+                    Select::make('rek_transfer')
+                        ->label('Rekening Transfer')
+                        ->options([
+                            'BCA PT' => 'BCA PT',
+                            'BCA BARU' => 'BCA BARU',
+                            'BCA LAMA' => 'BCA LAMA',
+                            'MANDIRI' => 'MANDIRI'
+                        ]),
                     \Filament\Forms\Components\Section::make('Rincian Biaya')
                         ->schema([
                             \Filament\Forms\Components\Repeater::make('costListInvoices')

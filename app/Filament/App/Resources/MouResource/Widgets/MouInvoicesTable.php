@@ -75,6 +75,14 @@ class MouInvoicesTable extends BaseWidget
                         'Overdue' => 'danger',
                         default => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('rek_transfer')
+                    ->label('Rekening Transfer')
+                    ->options([
+                        'BCA PT' => 'BCA PT',
+                        'BCA BARU' => 'BCA BARU',
+                        'BCA LAMA' => 'BCA LAMA',
+                        'MANDIRI' => 'MANDIRI'
+                    ]),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
                     ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
