@@ -150,6 +150,9 @@ class InvoiceResource extends Resource
                     ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                         self::generateInvoiceNumber($set, $get);
                     }),
+                Forms\Components\Checkbox::make('is_include_pph23')
+                    ->label('Checklist Invoice PPH23')
+                    ->default(false),
                 Forms\Components\Select::make('rek_transfer')
                     ->label('Rekening Transfer')
                     ->options([
