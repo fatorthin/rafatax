@@ -75,7 +75,7 @@ class MouInvoicesTable extends BaseWidget
                         'Overdue' => 'danger',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('rek_transfer')
+                Tables\Columns\SelectColumn::make('rek_transfer')
                     ->label('Rekening Transfer')
                     ->options([
                         'BCA PT' => 'BCA PT',
