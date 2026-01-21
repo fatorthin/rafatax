@@ -214,8 +214,18 @@ class MemoResource extends Resource
 
         if ($currentNo) {
             $parts = explode('/', $currentNo);
-            // Format: {seq}/{type}/LN/{roman}/{year}
-            if (count($parts) === 5) {
+
+            // New Format: {seq}/{type}/M/LN/{roman}/{year} -> 6 parts
+            if (count($parts) === 6) {
+                $oldSequence = $parts[0];
+                $oldYear = $parts[5];
+
+                if ($oldYear == $year) {
+                    $sequence = $oldSequence;
+                }
+            }
+            // Old Format: {seq}/{type}/LN/{roman}/{year} -> 5 parts
+            elseif (count($parts) === 5) {
                 $oldSequence = $parts[0];
                 $oldYear = $parts[4];
 
@@ -226,7 +236,7 @@ class MemoResource extends Resource
         }
 
         if (! $sequence) {
-            // Find max sequence from both Memos and MoUs
+            // Find max sequence from Memos ONLY
             $lastNumber = 0;
 
             // Check Memos
@@ -240,22 +250,11 @@ class MemoResource extends Resource
                 }
             }
 
-            // Check MoUs
-            $mous = \App\Models\MoU::whereYear('start_date', $year)->pluck('mou_number');
-            foreach ($mous as $num) {
-                if (preg_match('/^(\d+)\//', $num, $matches)) {
-                    $val = (int)$matches[1];
-                    if ($val > $lastNumber) {
-                        $lastNumber = $val;
-                    }
-                }
-            }
-
             $sequence = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
         }
 
-        // Format: {no urut memo}/{tipe klien}/LN/{bulan dalam romawi}/{tahun}
-        $number = sprintf('%s/%s/LN/%s/%s', $sequence, strtoupper($tipeKlien), $romanMonth, $year);
+        // Format: {no urut memo}/{tipe klien}/M/LN/{bulan dalam romawi}/{tahun}
+        $number = sprintf('%s/%s/M/LN/%s/%s', $sequence, strtoupper($tipeKlien), $romanMonth, $year);
 
         $set('no_memo', $number);
     }
