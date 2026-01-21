@@ -21,6 +21,18 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
 
     public ?array $data = [];
 
+    public function sendAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('send')
+            ->label('Kirim Broadcast')
+            ->color('success')
+            ->requiresConfirmation()
+            ->modalHeading('Konfirmasi Kirim Broadcast')
+            ->modalDescription('Apakah Anda yakin ingin mengirim pesan broadcast ini? Pastikan pesan dan tujuan sudah benar.')
+            ->modalSubmitActionLabel('Ya, Kirim')
+            ->action(fn() => $this->kirimBroadcast());
+    }
+
     public function mount(): void
     {
         $this->form->fill([
