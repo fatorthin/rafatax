@@ -112,10 +112,10 @@ class MouInvoicesTable extends BaseWidget
                     ->label('View Details')
                     ->icon('heroicon-o-eye')
                     ->color('info'),
-                Tables\Actions\Action::make('downloadPdf')
-                    ->label('Download PDF')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->url(fn(Invoice $record): string => route('invoices.pdf', ['id' => $record->id]))
+                Tables\Actions\Action::make('previewPdf')
+                    ->label('Preview PDF')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn(Invoice $record): string => route('invoices.preview', ['id' => $record->id]))
                     ->color('success')
                     ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make()
