@@ -106,6 +106,7 @@ class ClientDetail extends Page implements HasInfolists, HasTable
                             ->formatStateUsing(fn(string $state): string => match ($state) {
                                 'active' => 'Aktif',
                                 'inactive' => 'Tidak Aktif',
+                                'pending' => 'Pending',
                                 'batal' => 'Batal',
                             }),
                         Fieldset::make('Laporan Pajak Klien')
