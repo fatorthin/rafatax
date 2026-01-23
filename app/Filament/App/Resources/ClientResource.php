@@ -57,7 +57,8 @@ class ClientResource extends Resource
                                     return;
                                 }
 
-                                $lastClient = Client::where('type', $type)
+                                $lastClient = Client::withTrashed()
+                                    ->where('type', $type)
                                     ->where('code', 'like', "{$prefix}-%")
                                     ->orderByRaw("CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED) DESC")
                                     ->first();
@@ -140,7 +141,8 @@ class ClientResource extends Resource
                             return;
                         }
 
-                        $lastClient = Client::where('type', $state)
+                        $lastClient = Client::withTrashed()
+                            ->where('type', $state)
                             ->where('code', 'like', "{$prefix}-%")
                             ->orderByRaw("CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED) DESC")
                             ->first();
