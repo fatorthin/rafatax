@@ -31,7 +31,44 @@ class ClientResource extends Resource
                     ->required()
                     ->readOnly()
                     ->helperText('Kode akan otomatis dibuat setelah memilih Jenis Klien.')
-                    ->unique(ignoreRecord: true), // Ignore current record on edit
+                    ->unique(ignoreRecord: true)
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('regenerateCode')
+                            ->icon('heroicon-m-arrow-path')
+                            ->color('info')
+                            ->tooltip('Regenerate Code')
+                            ->action(function (Forms\Get $get, Forms\Set $set) {
+                                $type = $get('type');
+                                if (! $type) {
+                                    return;
+                                }
+
+                                $prefix = match ($type) {
+                                    'pt' => 'PT',
+                                    'kkp' => 'AO',
+                                    default => null,
+                                };
+
+                                if (! $prefix) {
+                                    return;
+                                }
+
+                                $lastClient = Client::where('type', $type)
+                                    ->where('code', 'like', "{$prefix}-%")
+                                    ->orderByRaw("CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED) DESC")
+                                    ->first();
+
+                                $number = 1;
+
+                                if ($lastClient) {
+                                    $parts = explode('-', $lastClient->code);
+                                    $lastNumber = (int) end($parts);
+                                    $number = $lastNumber + 1;
+                                }
+
+                                $set('code', sprintf('%s-%03d', $prefix, $number));
+                            })
+                    ), // Ignore current record on edit
                 Forms\Components\TextInput::make('company_name')
                     ->label('Nama Perusahaan')
                     ->required()
