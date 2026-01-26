@@ -628,16 +628,21 @@
                                 </table>
 
                                 <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran yang di
-                                        sepakati akan di bayarkan setiap bulan berjalan mulai masa pajak masa Januari
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sampai dengan masa
-                                        pajak Desember {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</em>
+                                        sepakati akan di bayarkan setiap bulan berjalan mulai tanggal
+                                        {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }}
+                                        sampai
+                                        dengan masa
+                                        pajak
+                                        {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</em>
                                 </p>
                             </div>
 
                             <div class="section">
                                 <h2 class="section-title">Jangka Waktu</h2>
                                 <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini
-                                    ditandatangani oleh kedua belah pihak, sampai dengan bulan Januari 2026</p>
+                                    ditandatangani oleh kedua belah pihak, sampai dengan bulan Januari
+                                    {{ \Carbon\Carbon::parse($mou->end_date)->addYear()->locale('id')->translatedFormat('Y') }}
+                                </p>
                             </div>
 
                             <div class="section">
