@@ -195,6 +195,12 @@
                 </tr>
                 <tr>
                     <td></td>
+                    <td><strong>Perusahaan</strong></td>
+                    <td>:</td>
+                    <td>{{ $mou->client->company_name ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td></td>
                     <td><strong>Alamat</strong></td>
                     <td>:</td>
                     <td>{{ $mou->client->address ?? '-' }}</td>
@@ -217,6 +223,12 @@
                     <td><strong>Jabatan</strong></td>
                     <td>:</td>
                     <td>DIREKTUR</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><strong>Perusahaan</strong></td>
+                    <td>:</td>
+                    <td>PT AGHNIA OASIS KONSULTINDO</td>
                 </tr>
                 <tr>
                     <td></td>

@@ -194,6 +194,12 @@
                 </tr>
                 <tr>
                     <td></td>
+                    <td><strong>Perusahaan</strong></td>
+                    <td>:</td>
+                    <td>{{ $mou->client->company_name ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td></td>
                     <td><strong>Alamat</strong></td>
                     <td>:</td>
                     <td>{{ $mou->client->address ?? '-' }}</td>
@@ -211,12 +217,27 @@
                     <td>:</td>
                     <td>ANTIN OKFITASARI</td>
                 </tr>
-                <tr>
-                    <td></td>
-                    <td><strong>Jabatan</strong></td>
-                    <td>:</td>
-                    <td>DIREKTUR</td>
-                </tr>
+                @if ($mou->type === 'pt')
+                    <tr>
+                        <td></td>
+                        <td><strong>Jabatan</strong></td>
+                        <td>:</td>
+                        <td>DIREKTUR</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td><strong>Perusahaan</strong></td>
+                        <td>:</td>
+                        <td>PT AGHNIA OASIS KONSULTINDO</td>
+                    </tr>
+                @else
+                    <tr>
+                        <td></td>
+                        <td><strong>Jabatan</strong></td>
+                        <td>:</td>
+                        <td>OWNER</td>
+                    </tr>
+                @endif
                 <tr>
                     <td></td>
                     <td><strong>Alamat</strong></td>
