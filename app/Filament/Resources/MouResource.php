@@ -37,8 +37,8 @@ class MouResource extends Resource
                     ->suffixAction(
                         Forms\Components\Actions\Action::make('regenerate')
                             ->icon('heroicon-m-arrow-path')
-                            ->action(function (Forms\Set $set, Forms\Get $get) {
-                                self::generateMouNumber($set, $get);
+                            ->action(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                                self::generateMouNumber($set, $get, $record);
                             })
                     ),
                 Forms\Components\TextInput::make('description')
@@ -49,8 +49,8 @@ class MouResource extends Resource
                     ->displayFormat('d/m/Y')
                     ->default(date('Y') . '-01-01')
                     ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
-                        self::generateMouNumber($set, $get);
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                        self::generateMouNumber($set, $get, $record);
                     }),
                 Forms\Components\DatePicker::make('end_date')
                     ->required()
@@ -74,8 +74,8 @@ class MouResource extends Resource
                     ->inlineLabel(false)
                     ->required()
                     ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
-                        self::generateMouNumber($set, $get);
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                        self::generateMouNumber($set, $get, $record);
                     }),
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
@@ -90,8 +90,8 @@ class MouResource extends Resource
                     ->preload()
                     ->required()
                     ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
-                        self::generateMouNumber($set, $get);
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                        self::generateMouNumber($set, $get, $record);
                     }),
                 Forms\Components\TextInput::make('percentage_restitution')
                     ->label('Percentage Restitution (optional)')
@@ -317,7 +317,7 @@ class MouResource extends Resource
             ->latest('created_at');
     }
 
-    public static function generateMouNumber(Forms\Set $set, Forms\Get $get): void
+    public static function generateMouNumber(Forms\Set $set, Forms\Get $get, ?MoU $record = null): void
     {
         $type = $get('type');
         $categoryId = $get('category_mou_id');
@@ -379,8 +379,23 @@ class MouResource extends Resource
         // 4. Sequence Number
         $newNumber = null;
 
-        // Try to preserve existing sequence if Type and Year match
-        if ($currentMouNumber) {
+        // Try to preserve sequence from PERSISTED RECORD first
+        if ($record && $record->mou_number) {
+            if (preg_match('/^(\d+)\/([A-Z]+)\/([A-Z]+)\/([IVX]+)\/(\d+)$/', $record->mou_number, $matches)) {
+                $existingSeq = $matches[1];
+                $existingTypeCode = $matches[2];
+                $existingYear = $matches[5];
+
+                // If Type and Year match the RECORD, use RECORD's sequence
+                // This handles the revert case (e.g. PT -> KKP -> PT: uses original PT sequence)
+                if ($existingTypeCode === $typeCode && (int)$existingYear === (int)$year) {
+                    $newNumber = $existingSeq;
+                }
+            }
+        }
+
+        // If not found in record, try to preserve from CURRENT INPUT (for creation/uncommitted edits)
+        if (!$newNumber && $currentMouNumber) {
             if (preg_match('/^(\d+)\/([A-Z]+)\/([A-Z]+)\/([IVX]+)\/(\d+)$/', $currentMouNumber, $matches)) {
                 $existingSeq = $matches[1];
                 $existingTypeCode = $matches[2];
@@ -392,7 +407,7 @@ class MouResource extends Resource
             }
         }
 
-        // If no existing number or type/year changed, generate new sequence
+        // If still no number, generate new sequence
         if (!$newNumber) {
             $lastNumber = 0;
             $mous = MoU::whereYear('start_date', $year)
