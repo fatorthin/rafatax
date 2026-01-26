@@ -4,30 +4,31 @@ namespace App\Filament\Resources\MouResource\Pages;
 
 use App\Models\Coa;
 use App\Models\MoU;
+use Filament\Actions;
+use App\Models\Invoice;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\CostListMou;
-use App\Models\Invoice;
+use Filament\Actions\Action;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Contracts\HasForms;
 use App\Filament\Resources\MouResource;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\DatePicker;
+use Filament\Infolists\Components\Section;
+use App\Filament\Resources\InvoiceResource;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Columns\Summarizers\Sum;
-use Filament\Infolists\Infolist;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
-use Filament\Actions;
-use Filament\Actions\Action;
-use App\Filament\Resources\InvoiceResource;
 use App\Filament\Resources\MouResource\Widgets\MouStatsOverview;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
@@ -357,6 +358,17 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         }),
+                    Select::make('rek_transfer')
+                        ->label('Rekening Transfer')
+                        ->options([
+                            'BCA PT' => 'BCA PT',
+                            'BCA BARU' => 'BCA BARU',
+                            'BCA LAMA' => 'BCA LAMA',
+                            'MANDIRI' => 'MANDIRI'
+                        ]),
+                    Checkbox::make('is_include_pph23')
+                        ->label('Checklist Invoice PPH23')
+                        ->default(false),
                     Textarea::make('description')
                         ->label('Description')
                         ->rows(3),

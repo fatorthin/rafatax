@@ -65,15 +65,21 @@ class MouInvoicesTable extends BaseWidget
                     ->label('Due Date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('invoice_status')
+                Tables\Columns\SelectColumn::make('invoice_status')
                     ->label('Status')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'Paid' => 'success',
-                        'Unpaid' => 'warning',
-                        'Overdue' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->options([
+                        'paid' => 'Paid',
+                        'unpaid' => 'Unpaid',
+                        'overdue' => 'Overdue',
+                    ]),
+                Tables\Columns\SelectColumn::make('rek_transfer')
+                    ->label('Rekening Transfer')
+                    ->options([
+                        'BCA PT' => 'BCA PT',
+                        'BCA BARU' => 'BCA BARU',
+                        'BCA LAMA' => 'BCA LAMA',
+                        'MANDIRI' => 'MANDIRI'
+                    ]),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
                     ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))

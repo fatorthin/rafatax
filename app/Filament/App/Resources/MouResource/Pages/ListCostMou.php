@@ -15,20 +15,21 @@ use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Components\Checkbox;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use App\Filament\App\Resources\MouResource\Widgets\MouInvoicesTable;
 use Filament\Infolists\Components\Section;
-use App\Filament\App\Resources\InvoiceResource;
 use App\Filament\App\Resources\MouResource;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Infolists\Contracts\HasInfolists;
+use App\Filament\App\Resources\InvoiceResource;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
+use App\Filament\App\Resources\MouResource\Widgets\MouInvoicesTable;
 
 class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 {
@@ -341,6 +342,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->success()
                         ->send();
                 }),
+            Actions\Action::make('preview_pdf')
+                ->label('Preview PDF')
+                ->icon('heroicon-o-eye')
+                ->color('warning')
+                ->url(fn() => route('mou.pdf.preview', ['id' => $this->mou->id]))
+                ->openUrlInNewTab(),
             Action::make('export_pdf')
                 ->label('Print PDF MoU')
                 ->icon('heroicon-o-printer')
@@ -424,6 +431,17 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             InvoiceResource::generateInvoiceNumber($set, $get);
                         }),
+                    Select::make('rek_transfer')
+                        ->label('Rekening Transfer')
+                        ->options([
+                            'BCA PT' => 'BCA PT',
+                            'BCA BARU' => 'BCA BARU',
+                            'BCA LAMA' => 'BCA LAMA',
+                            'MANDIRI' => 'MANDIRI'
+                        ]),
+                    Checkbox::make('is_include_pph23')
+                        ->label('Checklist Invoice PPH23')
+                        ->default(false),
                     \Filament\Forms\Components\Section::make('Rincian Biaya')
                         ->schema([
                             \Filament\Forms\Components\Repeater::make('costListInvoices')

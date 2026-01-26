@@ -238,6 +238,7 @@ class MouResource extends Resource
     {
         return $table
             ->striped()
+            ->recordUrl(null)
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('mou_number')

@@ -23,7 +23,9 @@ class Invoice extends Model
         'invoice_type',
         'description',
         'is_saldo_awal',
-        'memo_id'
+        'memo_id',
+        'rek_transfer',
+        'is_include_pph23'
     ];
 
     protected static function booted()
