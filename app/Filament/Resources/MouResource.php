@@ -322,6 +322,7 @@ class MouResource extends Resource
         $type = $get('type');
         $categoryId = $get('category_mou_id');
         $startDate = $get('start_date');
+        $currentMouNumber = $get('mou_number');
 
         if (!$type || !$categoryId || !$startDate) {
             return;
@@ -376,21 +377,39 @@ class MouResource extends Resource
         $monthRoman = $romanMonths[$month];
 
         // 4. Sequence Number
-        $lastNumber = 0;
-        $mous = MoU::whereYear('start_date', $year)
-            ->where('type', $type)
-            ->pluck('mou_number');
+        $newNumber = null;
 
-        foreach ($mous as $num) {
-            if (preg_match('/^(\d+)\//', $num, $matches)) {
-                $val = (int)$matches[1];
-                if ($val > $lastNumber) {
-                    $lastNumber = $val;
+        // Try to preserve existing sequence if Type and Year match
+        if ($currentMouNumber) {
+            if (preg_match('/^(\d+)\/([A-Z]+)\/([A-Z]+)\/([IVX]+)\/(\d+)$/', $currentMouNumber, $matches)) {
+                $existingSeq = $matches[1];
+                $existingTypeCode = $matches[2];
+                $existingYear = $matches[5];
+
+                if ($existingTypeCode === $typeCode && (int)$existingYear === (int)$year) {
+                    $newNumber = $existingSeq;
                 }
             }
         }
 
-        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        // If no existing number or type/year changed, generate new sequence
+        if (!$newNumber) {
+            $lastNumber = 0;
+            $mous = MoU::whereYear('start_date', $year)
+                ->where('type', $type)
+                ->pluck('mou_number');
+
+            foreach ($mous as $num) {
+                if (preg_match('/^(\d+)\//', $num, $matches)) {
+                    $val = (int)$matches[1];
+                    if ($val > $lastNumber) {
+                        $lastNumber = $val;
+                    }
+                }
+            }
+
+            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        }
 
         // Result
         $result = sprintf('%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
