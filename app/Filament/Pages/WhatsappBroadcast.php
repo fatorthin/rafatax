@@ -37,7 +37,7 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
     {
         $this->form->fill([
             'target_type' => 'client',
-            'scope' => 'all',
+            'scope' => 'selected',
             'recipients' => [],
             'message' => '',
             'attachment' => null,
@@ -64,9 +64,9 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
                         Forms\Components\Radio::make('scope')
                             ->label('Cakupan')
                             ->options([
-                                'all' => 'Semua',
                                 'selected' => 'Pilih sebagian',
                             ])
+                            ->default('selected')
                             ->inline()
                             ->live()
                             ->required(),
@@ -92,6 +92,7 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
                                     ->pluck('company_name', 'id');
                             })
                             ->visible(fn(callable $get) => $get('scope') === 'selected')
+                            ->required()
                             ->searchable()
                             ->reactive()
                             ->placeholder('Pilih penerima...'),
