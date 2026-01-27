@@ -7,9 +7,6 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\App\Resources\InvoiceResource;
 
 class InvoicesRelationManager extends RelationManager
 {
@@ -24,9 +21,26 @@ class InvoicesRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Forms\Components\Hidden::make('memo_id')
+                    ->default(function ($livewire) {
+                        return $livewire->ownerRecord->id;
+                    }),
                 Forms\Components\TextInput::make('invoice_number')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->readOnly()
+                    ->unique(
+                        \App\Models\Invoice::class,
+                        'invoice_number',
+                        ignoreRecord: true
+                    )
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('refresh_invoice_number')
+                            ->icon('heroicon-o-arrow-path')
+                            ->action(function (Forms\Set $set, Forms\Get $get) {
+                                \App\Filament\App\Resources\InvoiceResource::generateInvoiceNumber($set, $get);
+                            })
+                    ),
                 Forms\Components\Select::make('invoice_status')
                     ->options([
                         'unpaid' => 'Unpaid',
@@ -38,14 +52,34 @@ class InvoicesRelationManager extends RelationManager
                         'pt' => 'PT',
                         'kkp' => 'KKP',
                     ])
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        \App\Filament\App\Resources\InvoiceResource::generateInvoiceNumber($set, $get);
+                    }),
                 Forms\Components\DatePicker::make('invoice_date')
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        if ($state) {
+                            $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
+                            $set('due_date', $dueDate);
+                        }
+                        \App\Filament\App\Resources\InvoiceResource::generateInvoiceNumber($set, $get);
+                    }),
                 Forms\Components\DatePicker::make('due_date')
                     ->required(),
+                Forms\Components\Checkbox::make('is_saldo_awal')
+                    ->label('Checklist Invoice Saldo Awal')
+                    ->default(false)
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                        \App\Filament\App\Resources\InvoiceResource::generateInvoiceNumber($set, $get);
+                    }),
 
                 Forms\Components\TextInput::make('description')
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
                 Forms\Components\Repeater::make('costListInvoices')
                     ->relationship()
                     ->schema([
@@ -68,7 +102,8 @@ class InvoicesRelationManager extends RelationManager
                     ->defaultItems(0)
                     ->reorderableWithButtons()
                     ->collapsible()
-                    ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                    ->itemLabel(fn(array $state): ?string => $state['description'] ?? null)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -85,12 +120,11 @@ class InvoicesRelationManager extends RelationManager
                         'pt' => 'info',
                         'kkp' => 'success',
                     }),
-                Tables\Columns\TextColumn::make('invoice_status')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'unpaid' => 'danger',
-                        'paid' => 'success',
-                    }),
+                Tables\Columns\SelectColumn::make('invoice_status')
+                    ->options([
+                        'unpaid' => 'Unpaid',
+                        'paid' => 'Paid',
+                    ]),
                 Tables\Columns\TextColumn::make('amount')
                     ->numeric(locale: 'id')
                     ->prefix('Rp ')
@@ -104,9 +138,22 @@ class InvoicesRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->label('Tambah Invoice')
+                    ->icon('heroicon-o-plus'),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview_pdf')
+                    ->label('Preview PDF')
+                    ->icon('heroicon-o-document-magnifying-glass')
+                    ->url(fn($record) => route('invoices.preview', $record->id))
+                    ->openUrlInNewTab()
+                    ->color('success'),
+                Tables\Actions\Action::make('view_details')
+                    ->label('Detail')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn($record) => route('filament.app.resources.invoices.viewCostList', ['record' => $record->id]))
+                    ->color('info'),
                 Tables\Actions\EditAction::make()
                     ->visible(true),
                 Tables\Actions\DeleteAction::make()
