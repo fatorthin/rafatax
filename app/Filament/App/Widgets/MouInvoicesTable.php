@@ -111,6 +111,18 @@ class MouInvoicesTable extends BaseWidget
                     ->label('Edit Invoice')
                     ->icon('heroicon-o-eye')
                     ->color('primary'),
+                Tables\Actions\Action::make('preview_pdf')
+                    ->label('Preview PDF')
+                    ->icon('heroicon-o-document-magnifying-glass')
+                    ->url(fn($record) => route('invoices.preview', $record->id))
+                    ->openUrlInNewTab()
+                    ->color('success'),
+                Tables\Actions\Action::make('download_jpeg')
+                    ->label('Download JPEG')
+                    ->icon('heroicon-o-photo')
+                    ->url(fn($record) => route('invoices.jpg', $record->id))
+                    ->openUrlInNewTab()
+                    ->color('warning'),
                 Tables\Actions\ViewAction::make()
                     // ->url(fn(Invoice $record): string => InvoiceResource::getUrl('cost-list', ['record' => $record]))
                     ->url(fn(Invoice $record): string => route('filament.app.resources.invoices.viewCostList', ['record' => $record->id]))

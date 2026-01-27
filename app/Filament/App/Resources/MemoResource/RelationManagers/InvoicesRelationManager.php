@@ -149,6 +149,12 @@ class InvoicesRelationManager extends RelationManager
                     ->url(fn($record) => route('invoices.preview', $record->id))
                     ->openUrlInNewTab()
                     ->color('success'),
+                Tables\Actions\Action::make('download_jpeg')
+                    ->label('Download JPEG')
+                    ->icon('heroicon-o-photo')
+                    ->url(fn($record) => route('invoices.jpg', $record->id))
+                    ->openUrlInNewTab()
+                    ->color('warning'),
                 Tables\Actions\Action::make('view_details')
                     ->label('Detail')
                     ->icon('heroicon-o-eye')
