@@ -630,12 +630,12 @@
                                 </table>
 
                                 <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran yang di
-                                        sepakati akan di bayarkan setiap bulan berjalan mulai tanggal
-                                        {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }}
+                                        sepakati akan di bayarkan setiap bulan berjalan mulai masa pajak
+                                        {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('F Y') }}
                                         sampai
                                         dengan masa
                                         pajak
-                                        {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('d F Y') }}</em>
+                                        {{ \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('F Y') }}</em>
                                 </p>
                             </div>
 
