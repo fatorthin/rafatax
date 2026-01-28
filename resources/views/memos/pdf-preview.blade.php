@@ -93,7 +93,7 @@
     <div class="text-center font-bold mb-4" style="margin-bottom: 30px;">
         MEMO KESEPAKATAN KERJA
         <div style="margin-top: 5px;">
-            NOMOR : {{ $memo->no_memo }}
+            NO : {{ $memo->no_memo }}
         </div>
     </div>
 
