@@ -113,6 +113,9 @@ class InvoiceResource extends Resource
                                 self::generateInvoiceNumber($set, $get);
                             })
                     ),
+                Forms\Components\TextInput::make('description')
+                    ->label('Deskripsi')
+                    ->required(),
                 Forms\Components\DatePicker::make('invoice_date')
                     ->required()
                     ->live()
