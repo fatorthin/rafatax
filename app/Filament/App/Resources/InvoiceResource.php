@@ -221,6 +221,9 @@ class InvoiceResource extends Resource
                         return $query->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"))
                             ->orWhereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
                     }),
+                Tables\Columns\TextColumn::make('description')
+                    ->label('Deskripsi')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('invoice_date')
                     ->date()
                     ->sortable(),
