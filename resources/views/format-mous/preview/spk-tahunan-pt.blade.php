@@ -355,8 +355,10 @@
 
             <p><em>Fee belum termasuk PPh yang harus dipotong, dengan rincian pembayaran yang di
                     sepakati akan di bayarkan setiap bulan berjalan mulai masa pajak masa Januari
-                    {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }} sampai dengan masa
-                    pajak Desember {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}</em>
+                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                    sampai dengan masa
+                    pajak Desember
+                    {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}</em>
             </p>
         </div>
 
