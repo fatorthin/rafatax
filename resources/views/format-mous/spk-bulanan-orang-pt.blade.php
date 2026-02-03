@@ -586,8 +586,10 @@
                                 <h3>Laporan yang akan diterbitkan:</h3>
                                 <ol>
                                     <li>Review dan resume perpajakan Pihak Pertama yang telah berjalan.</li>
-                                    <li>Laporan Masa mulai Januari sampai Desember
-                                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                                    <li>Laporan Masa mulai
+                                        {{ \Carbon\Carbon::parse($mou->tanggal_tagih_awal)->locale('id')->translatedFormat('F Y') }}
+                                        sampai
+                                        {{ \Carbon\Carbon::parse($mou->tanggal_tagih_akhir)->locale('id')->translatedFormat('F Y') }}
                                     </li>
                                     <li>Laporan SPT Tahunan tahun pajak
                                         {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
