@@ -24,7 +24,9 @@ class MoU extends Model
         'category_mou_id',
         'percentage_restitution',
         'link_mou',
-        'tahun_pajak'
+        'tahun_pajak',
+        'tanggal_tagih_awal',
+        'tanggal_tagih_akhir'
     ];
 
     public function client()

@@ -75,7 +75,7 @@ class MouResource extends Resource
                             ->maxLength(500)
                             ->placeholder('Masukkan deskripsi MoU'),
                         Forms\Components\DatePicker::make('start_date')
-                            ->label('Tanggal Mulai')
+                            ->label('Tanggal Mulai Pengerjaan')
                             ->required()
                             ->placeholder('Pilih tanggal mulai')
                             ->native(false)
@@ -86,12 +86,24 @@ class MouResource extends Resource
                                 self::generateMouNumber($set, $get, $record);
                             }),
                         Forms\Components\DatePicker::make('end_date')
-                            ->label('Tanggal Berakhir')
+                            ->label('Tanggal Berakhir Pengerjaan')
                             ->required()
                             ->placeholder('Pilih tanggal berakhir')
                             ->native(false)
                             ->displayFormat('d/m/Y')
                             ->default(date('Y') . '-12-31'),
+                        Forms\Components\DatePicker::make('tanggal_tagih_awal')
+                            ->label('Tanggal Awal Penagihan')
+                            ->required()
+                            ->placeholder('Pilih tanggal awal penagihan')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
+                        Forms\Components\DatePicker::make('tanggal_tagih_akhir')
+                            ->label('Tanggal Akhir Penagihan')
+                            ->required()
+                            ->placeholder('Pilih tanggal akhir penagihan')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
                     ])
                     ->columns(2),
 
@@ -247,12 +259,22 @@ class MouResource extends Resource
                     ->sortable()
                     ->copyable(),
                 Tables\Columns\TextColumn::make('start_date')
-                    ->label('Tanggal Mulai')
+                    ->label('Tanggal Awal Pengerjaan')
                     ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('end_date')
-                    ->label('Tanggal Berakhir')
+                    ->label('Tanggal Akhir Pengerjaan')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tanggal_tagih_awal')
+                    ->label('Tanggal Awal Penagihan')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tanggal_tagih_akhir')
+                    ->label('Tanggal Akhir Penagihan')
                     ->date('d/m/Y')
                     ->sortable()
                     ->toggleable(),

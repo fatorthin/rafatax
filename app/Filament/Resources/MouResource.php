@@ -44,6 +44,7 @@ class MouResource extends Resource
                 Forms\Components\TextInput::make('description')
                     ->required(),
                 Forms\Components\DatePicker::make('start_date')
+                    ->label('Tanggal Awal Pengerjaan')
                     ->required()
                     ->native(false)
                     ->displayFormat('d/m/Y')
@@ -54,6 +55,19 @@ class MouResource extends Resource
                     }),
                 Forms\Components\DatePicker::make('end_date')
                     ->required()
+                    ->label('Tanggal Akhir Pengerjaan')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-12-31'),
+                Forms\Components\DatePicker::make('tanggal_tagih_awal')
+                    ->required()
+                    ->label('Tanggal Awal Penagihan')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-01-01'),
+                Forms\Components\DatePicker::make('tanggal_tagih_akhir')
+                    ->required()
+                    ->label('Tanggal Akhir Penagihan')
                     ->native(false)
                     ->displayFormat('d/m/Y')
                     ->default(date('Y') . '-12-31'),
@@ -184,9 +198,11 @@ class MouResource extends Resource
                 Tables\Columns\TextColumn::make('mou_number')->label('MoU Number')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_date')
+                    ->label('Tanggal Awal Pengerjaan')
                     ->dateTime('d/m/Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_date')
+                    ->label('Tanggal Akhir Pengerjaan')
                     ->date()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

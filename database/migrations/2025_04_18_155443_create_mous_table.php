@@ -24,6 +24,8 @@ return new class extends Migration
             $table->double('percentage_restitution')->default(0)->nullable();
             $table->text('link_mou')->nullable();
             $table->year('tahun_pajak')->nullable();
+            $table->date('tanggal_tagih_awal')->nullable();
+            $table->date('tanggal_tagih_akhir')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
