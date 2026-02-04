@@ -359,8 +359,11 @@
         <div class="section">
             <div class="section-title">Jangka Waktu</div>
             <p>Jangka waktu pelaksanaan pekerjaan adalah sejak perikatan kerjasama ini
-                ditandatangani oleh kedua belah pihak, sampai dengan bulan Januari
-                {{ \Carbon\Carbon::parse($mou->end_date)->addYear()->locale('id')->translatedFormat('Y') }}.
+                ditandatangani oleh kedua belah pihak, sampai dengan bulan @if ($mou->categoryMou->id == 1)
+                    April {{ ($mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->year) + 1 }}
+                @elseif($mou->categoryMou->id == 2)
+                    Maret {{ ($mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->year) + 1 }}
+                @endif.
             </p>
         </div>
 
