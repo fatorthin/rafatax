@@ -109,13 +109,25 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             })
                             ->weight('bold'),
                         TextEntry::make('start_date')
-                            ->label('Start Date')
+                            ->label('Tanggal Awal Pengerjaan')
                             ->weight('bold')
-                            ->dateTime('d F Y'),
+                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
                         TextEntry::make('end_date')
-                            ->label('End Date')
+                            ->label('Tanggal Akhir Pengerjaan')
                             ->weight('bold')
-                            ->dateTime('d F Y'),
+                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
+                        TextEntry::make('tahun_pajak')
+                            ->label('Tahun Pajak')
+                            ->weight('bold')
+                            ->getStateUsing(fn($record) => $record->tahun_pajak ?: ($record->start_date ? \Carbon\Carbon::parse($record->start_date)->year : null)),
+                        TextEntry::make('tanggal_tagih_awal')
+                            ->label('Tanggal Tagih Awal')
+                            ->weight('bold')
+                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
+                        TextEntry::make('tanggal_tagih_akhir')
+                            ->label('Tanggal Tagih Akhir')
+                            ->weight('bold')
+                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
                         TextEntry::make('client.contact_person')
                             ->label('Contact Person')
                             ->weight('bold'),
