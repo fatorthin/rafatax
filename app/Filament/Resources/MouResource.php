@@ -374,7 +374,11 @@ class MouResource extends Resource
         // 3. Date (Month Roman/Year)
         $date = \Carbon\Carbon::parse($startDate);
         $year = $date->year;
-        $month = $date->month;
+        if ($record && $record->created_at) {
+            $month = $record->created_at->month;
+        } else {
+            $month = now()->month;
+        }
 
         $romanMonths = [
             1 => 'I',
