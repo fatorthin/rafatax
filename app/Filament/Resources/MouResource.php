@@ -146,7 +146,8 @@ class MouResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $price = $get('amount');
-                                        $set('total_amount', floatval($state) * floatval($price));
+                                        $total = floatval($state) * floatval($price);
+                                        $set('total_amount', number_format($total, 0, ',', '.'));
                                     })
                                     ->columnSpan([
                                         'md' => 1,
@@ -165,16 +166,18 @@ class MouResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $qty = $get('quantity') ?? 1;
-                                        $set('total_amount', floatval($state) * floatval($qty));
+                                        $total = floatval($state) * floatval($qty);
+                                        $set('total_amount', number_format($total, 0, ',', '.'));
                                     })
                                     ->columnSpan([
                                         'md' => 3,
                                     ]),
                                 Forms\Components\TextInput::make('total_amount')
                                     ->label('Total')
-                                    ->numeric()
                                     ->prefix('Rp')
                                     ->readOnly()
+                                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '0')
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', str_replace(',', '', $state ?? '0')))
                                     ->columnSpan([
                                         'md' => 3,
                                     ]),
