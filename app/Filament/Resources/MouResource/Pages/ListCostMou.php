@@ -455,6 +455,141 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     $this->dispatch('invoice-created');
                 })
                 ->modalWidth('7xl'),
+            Actions\CreateAction::make('create_old_invoice')
+                ->label('Tambah Invoice Lama')
+                ->color('warning')
+                ->model(Invoice::class)
+                ->icon('heroicon-o-archive-box')
+                ->form([
+                    \Filament\Forms\Components\Hidden::make('mou_id')
+                        ->default($this->mou->id),
+                    TextInput::make('invoice_number')
+                        ->label('Invoice Number')
+                        ->required()
+                        ->unique(
+                            'invoices',
+                            'invoice_number',
+                            modifyRuleUsing: function ($rule) {
+                                return $rule->whereNull('deleted_at');
+                            }
+                        ),
+                    DatePicker::make('invoice_date')
+                        ->label('Tanggal Invoice')
+                        ->required()
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
+                        ->live()
+                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
+                            if ($state) {
+                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
+                                $set('due_date', $dueDate);
+                            }
+                        }),
+                    DatePicker::make('due_date')
+                        ->label('Tanggal Jatuh Tempo')
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
+                        ->required(),
+                    Select::make('invoice_status')
+                        ->label('Status')
+                        ->options([
+                            'unpaid' => 'Unpaid',
+                            'paid' => 'Paid',
+                        ])
+                        ->default('unpaid')
+                        ->required(),
+                    Select::make('invoice_type')
+                        ->label('Type')
+                        ->options([
+                            'pt' => 'PT',
+                            'kkp' => 'KKP',
+                        ])
+                        ->required()
+                        ->default(fn() => $this->mou->type),
+                    Select::make('rek_transfer')
+                        ->label('Rekening Transfer')
+                        ->options([
+                            'BCA PT' => 'BCA PT',
+                            'BCA BARU' => 'BCA BARU',
+                            'BCA LAMA' => 'BCA LAMA',
+                            'MANDIRI' => 'MANDIRI'
+                        ]),
+                    Checkbox::make('is_include_pph23')
+                        ->label('Checklist Invoice PPH23')
+                        ->default(false),
+                    Textarea::make('description')
+                        ->label('Description')
+                        ->rows(3),
+                    \Filament\Forms\Components\Section::make('Rincian Biaya')
+                        ->schema([
+                            \Filament\Forms\Components\Repeater::make('costListInvoices')
+                                ->relationship()
+                                ->schema([
+                                    \Filament\Forms\Components\Hidden::make('mou_id')
+                                        ->default($this->mou->id),
+                                    Select::make('coa_id')
+                                        ->label('CoA')
+                                        ->options(Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
+                                        ->required()
+                                        ->searchable()
+                                        ->columnSpan([
+                                            'md' => 3,
+                                        ]),
+                                    TextInput::make('description')
+                                        ->label('Deskripsi')
+                                        ->required()
+                                        ->columnSpan([
+                                            'md' => 4,
+                                        ]),
+                                    TextInput::make('amount')
+                                        ->label('Harga')
+                                        ->numeric()
+                                        ->required()
+                                        ->columnSpan([
+                                            'md' => 5,
+                                        ]),
+                                ])
+                                ->columns([
+                                    'md' => 12,
+                                ])
+                                ->defaultItems(0)
+                                ->reorderableWithButtons()
+                                ->collapsible()
+                                ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                        ]),
+                    \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
+                        ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
+                        ->options(function () {
+                            return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                                ->whereNull('invoice_id')
+                                ->orderBy('checklist_date', 'asc')
+                                ->get()
+                                ->mapWithKeys(function ($item) {
+                                    $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+                                    return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
+                                });
+                        })
+                        ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
+                        ->columns(2)
+                        ->gridDirection('row')
+                        ->bulkToggleable(),
+                ])
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['mou_id'] = $this->mou->id;
+                    $this->pendingChecklistIds = $data['checklist_mou_ids'] ?? [];
+                    unset($data['checklist_mou_ids']);
+                    return $data;
+                })
+                ->after(function ($record) {
+                    if (!empty($this->pendingChecklistIds)) {
+                        \App\Models\ChecklistMou::whereIn('id', $this->pendingChecklistIds)->update([
+                            'invoice_id' => $record->id,
+                            'status' => 'completed'
+                        ]);
+                    }
+                    $this->dispatch('invoice-created');
+                })
+                ->modalWidth('7xl'),
         ];
     }
 }
