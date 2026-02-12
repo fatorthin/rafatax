@@ -447,9 +447,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 })
                 ->after(function ($record) {
                     if (!empty($this->pendingChecklistIds)) {
+                        $checklistStatus = $record->invoice_status === 'paid' ? 'completed' : 'pending';
                         \App\Models\ChecklistMou::whereIn('id', $this->pendingChecklistIds)->update([
                             'invoice_id' => $record->id,
-                            'status' => 'completed'
+                            'status' => $checklistStatus
                         ]);
                     }
                     $this->dispatch('invoice-created');
@@ -582,9 +583,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 })
                 ->after(function ($record) {
                     if (!empty($this->pendingChecklistIds)) {
+                        $checklistStatus = $record->invoice_status === 'paid' ? 'completed' : 'pending';
                         \App\Models\ChecklistMou::whereIn('id', $this->pendingChecklistIds)->update([
                             'invoice_id' => $record->id,
-                            'status' => 'completed'
+                            'status' => $checklistStatus
                         ]);
                     }
                     $this->dispatch('invoice-created');
