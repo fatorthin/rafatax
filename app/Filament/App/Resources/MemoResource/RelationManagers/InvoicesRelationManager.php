@@ -85,7 +85,7 @@ class InvoicesRelationManager extends RelationManager
                     ->schema([
                         Forms\Components\Select::make('coa_id')
                             ->label('CoA')
-                            ->options(\App\Models\Coa::where('group_coa_id', '40')->pluck('name', 'id'))
+                            ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
                             ->required()
                             ->searchable()
                             ->columnSpan(['md' => 3]),
