@@ -96,7 +96,7 @@ class InvoicesRelationManager extends RelationManager
                             ->label('Harga')
                             ->numeric()
                             ->required()
-                            ->columnSpan(['md' => 2]),
+                            ->columnSpan(['md' => 4]),
                     ])
                     ->columns(['md' => 12])
                     ->defaultItems(0)
