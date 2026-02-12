@@ -479,6 +479,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->required()
                         ->native(false)
                         ->displayFormat('d/m/Y')
+                        ->default('2025-12-31')
                         ->live()
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
                             if ($state) {
