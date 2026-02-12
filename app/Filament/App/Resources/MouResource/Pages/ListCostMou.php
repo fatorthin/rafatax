@@ -519,9 +519,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
                         // Update Checklist Items
                         if (!empty($checklistIds)) {
+                            $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
                             \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
                                 'invoice_id' => $invoice->id,
-                                'status' => 'completed'
+                                'status' => $checklistStatus
                             ]);
                         }
 
