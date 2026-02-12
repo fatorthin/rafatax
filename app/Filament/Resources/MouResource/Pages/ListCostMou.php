@@ -491,6 +491,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->label('Tanggal Jatuh Tempo')
                         ->native(false)
                         ->displayFormat('d/m/Y')
+                        ->default('2026-01-21')
                         ->required(),
                     Select::make('invoice_status')
                         ->label('Status')
@@ -508,20 +509,6 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ])
                         ->required()
                         ->default(fn() => $this->mou->type),
-                    Select::make('rek_transfer')
-                        ->label('Rekening Transfer')
-                        ->options([
-                            'BCA PT' => 'BCA PT',
-                            'BCA BARU' => 'BCA BARU',
-                            'BCA LAMA' => 'BCA LAMA',
-                            'MANDIRI' => 'MANDIRI'
-                        ]),
-                    Checkbox::make('is_include_pph23')
-                        ->label('Checklist Invoice PPH23')
-                        ->default(false),
-                    Textarea::make('description')
-                        ->label('Description')
-                        ->rows(3),
                     \Filament\Forms\Components\Section::make('Rincian Biaya')
                         ->schema([
                             \Filament\Forms\Components\Repeater::make('costListInvoices')
