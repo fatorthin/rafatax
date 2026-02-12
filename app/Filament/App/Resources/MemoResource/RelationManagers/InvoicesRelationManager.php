@@ -88,7 +88,7 @@ class InvoicesRelationManager extends RelationManager
                             ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
                             ->required()
                             ->searchable()
-                            ->columnSpan(['md' => 3]),
+                            ->columnSpan(['md' => 4]),
                         Forms\Components\TextInput::make('description')
                             ->label('Deskripsi')
                             ->columnSpan(['md' => 4]),
@@ -96,7 +96,7 @@ class InvoicesRelationManager extends RelationManager
                             ->label('Harga')
                             ->numeric()
                             ->required()
-                            ->columnSpan(['md' => 5]),
+                            ->columnSpan(['md' => 2]),
                     ])
                     ->columns(['md' => 12])
                     ->defaultItems(0)
