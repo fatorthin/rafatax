@@ -79,6 +79,10 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             ->label('Status')
                             ->weight('bold')
                             ->formatStateUsing(fn(string $state): string => ucfirst($state)),
+                        TextEntry::make('is_include_pph23')
+                            ->label('Include PPH 23')
+                            ->weight('bold')
+                            ->formatStateUsing(fn(bool $state): string => $state ? 'Yes' : 'No'),
                     ])
                     ->columns(3)
             ]);

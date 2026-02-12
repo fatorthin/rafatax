@@ -109,13 +109,35 @@
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $isIncludePph = $invoice->is_include_pph23 ?? false;
+                    $totalAmount = 0;
+                @endphp
                 @foreach ($costLists as $index => $item)
+                    @php
+                        $amount = $item->amount;
+                        if ($isIncludePph) {
+                            $amount = $amount / 0.98;
+                        }
+                        $totalAmount += $amount;
+                    @endphp
                     <tr>
                         <td>{{ $item->description ?? 'Fee' }}</td>
-                        <td class="text-right">{{ number_format($item->amount, 0, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($item->amount, 0, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($amount, 0, ',', '.') }}</td>
+                        <td class="text-right">{{ number_format($amount, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
+
+                @if ($isIncludePph)
+                    @php
+                        $pphAmount = $totalAmount * 0.02;
+                    @endphp
+                    <tr>
+                        <td>Potongan Pajak PPH 23</td>
+                        <td class="text-right">2%</td>
+                        <td class="text-right">-{{ number_format($pphAmount, 0, ',', '.') }}</td>
+                    </tr>
+                @endif
                 <tr class="total-row">
                     <td style="text-align:left;">Terbilang
                         :<br><em>{{ \App\Helpers\TerbilangHelper::terbilang($costLists->sum('amount')) }}</em></td>
