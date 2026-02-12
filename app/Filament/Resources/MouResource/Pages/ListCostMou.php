@@ -499,7 +499,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             'unpaid' => 'Unpaid',
                             'paid' => 'Paid',
                         ])
-                        ->default('unpaid')
+                        ->default('paid')
                         ->required(),
                     Select::make('invoice_type')
                         ->label('Type')
