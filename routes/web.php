@@ -130,3 +130,9 @@ Route::delete('/cash-reference/{id}/transaction/{transactionId}/delete', [\App\H
     ->middleware('auth');
 
 Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');
+
+Route::get('/test-dispatch', function () {
+    \Illuminate\Support\Facades\Log::info('Test dispatch job at: ' . now());
+    // Atau dispatch job sungguhan
+    return 'Job logged! Cek storage/logs/laravel.log';
+});
