@@ -366,6 +366,18 @@ class InvoiceResource extends Resource
                     ->url(fn($record) => static::getUrl('viewCostList', ['record' => $record->id]))
                     ->icon('heroicon-o-eye')
                     ->color('info'),
+                Tables\Actions\Action::make('previewPdf')
+                    ->label('Preview PDF')
+                    ->url(fn($record) => route('invoices.preview', $record->id))
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->openUrlInNewTab(),
+                Tables\Actions\Action::make('downloadJpg')
+                    ->label('Download JPG')
+                    ->url(fn($record) => route('invoices.jpg', $record->id))
+                    ->icon('heroicon-o-photo')
+                    ->color('primary')
+                    ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make()->color('danger'),
             ])
             ->bulkActions([
