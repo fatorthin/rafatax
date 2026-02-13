@@ -34,45 +34,32 @@ class PayrollDetail extends Page
                 ->color('info')
                 ->requiresConfirmation()
                 ->modalHeading('Kirim Semua Slip Gaji PDF via WhatsApp')
-                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp?')
+                ->modalDescription('Apakah Anda yakin ingin mengirim slip gaji PDF ke semua staff yang memiliki nomor WhatsApp? Proses akan berjalan di background.')
                 ->modalSubmitActionLabel('Kirim Semua PDF')
                 ->action(function () {
-                    $details = PayrollDetail::with('staff')
+                    $details = \App\Models\PayrollDetail::with('staff')
                         ->where('payroll_id', $this->record->id)
                         ->whereHas('staff', function ($query) {
                             $query->whereNotNull('phone')->where('phone', '!=', '');
                         })
                         ->get();
 
-                    $successCount = 0;
-                    $failCount = 0;
+                    if ($details->isEmpty()) {
+                        Notification::make()
+                            ->title('Tidak ada data untuk dikirim')
+                            ->warning()
+                            ->send();
+                        return;
+                    }
 
+                    // Dispatch setiap pengiriman sebagai Job terpisah (background)
                     foreach ($details as $detail) {
-                        try {
-                            // Panggil controller langsung
-                            $controller = new \App\Http\Controllers\PayrollWhatsAppController(
-                                new \App\Services\WablasService()
-                            );
-
-                            $response = $controller->sendPayslipWithPdf($detail);
-                            $data = $response->getData(true);
-
-                            if ($data['success']) {
-                                $successCount++;
-                            } else {
-                                $failCount++;
-                            }
-
-                            // Delay 2 detik antar pengiriman untuk menghindari rate limit
-                            sleep(2);
-                        } catch (\Exception $e) {
-                            $failCount++;
-                        }
+                        \App\Jobs\SendPayslipPdf::dispatch($detail->id);
                     }
 
                     Notification::make()
-                        ->title('Selesai!')
-                        ->body("Berhasil mengirim {$successCount} slip gaji PDF. Gagal: {$failCount}")
+                        ->title('Pengiriman Dijadwalkan')
+                        ->body("{$details->count()} slip gaji akan dikirim via WhatsApp di background. Cek log untuk status pengiriman.")
                         ->success()
                         ->send();
                 }),

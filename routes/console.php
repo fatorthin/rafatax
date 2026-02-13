@@ -10,7 +10,7 @@ Artisan::command('inspire', function () {
 
 // Queue worker untuk shared hosting
 // Jalan setiap menit, berhenti otomatis jika tidak ada job atau setelah 55 detik
-Schedule::command('queue:work database --stop-when-empty --max-time=55 --tries=3 --backoff=5')
+Schedule::command('queue:work database --queue=default,whatsapp --stop-when-empty --max-time=55 --tries=3 --backoff=5')
     ->everyMinute()
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/queue-worker.log'));
