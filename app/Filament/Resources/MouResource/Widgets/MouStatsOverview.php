@@ -14,10 +14,22 @@ class MouStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $totalCostListMou = CostListMou::where('mou_id', $this->mouId)->sum('total_amount');
-        $totalCostListInvoice = CostListInvoice::where('mou_id', $this->mouId)
+
+        $totalCostListInvoiceUnpaid = CostListInvoice::where('mou_id', $this->mouId)
             ->whereNotNull('invoice_id')
+            ->whereHas('invoice', function ($query) {
+                $query->where('invoice_status', 'unpaid');
+            })
             ->sum('amount');
-        $difference = $totalCostListMou - $totalCostListInvoice;
+
+        $totalCostListInvoicePaid = CostListInvoice::where('mou_id', $this->mouId)
+            ->whereNotNull('invoice_id')
+            ->whereHas('invoice', function ($query) {
+                $query->where('invoice_status', 'paid');
+            })
+            ->sum('amount');
+
+        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid);
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
@@ -25,9 +37,14 @@ class MouStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('info'),
 
-            Stat::make('Total Cost List Invoice', 'Rp ' . number_format($totalCostListInvoice, 0, ',', '.'))
-                ->description('Total yang sudah ditagihkan')
-                ->descriptionIcon('heroicon-m-document-check')
+            Stat::make('Total Invoice Unpaid', 'Rp ' . number_format($totalCostListInvoiceUnpaid, 0, ',', '.'))
+                ->description('Total tagihan yang belum dibayar')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color('warning'),
+
+            Stat::make('Total Invoice Paid', 'Rp ' . number_format($totalCostListInvoicePaid, 0, ',', '.'))
+                ->description('Total tagihan yang sudah dibayar')
+                ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
 
             Stat::make('Selisih', 'Rp ' . number_format(abs($difference), 0, ',', '.'))
