@@ -69,7 +69,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     protected function getHeaderWidgets(): array
     {
-        return [];
+        return [
+            \App\Filament\App\Resources\MouResource\Widgets\MouStatsOverview::make([
+                'mouId' => $this->mou->id,
+            ]),
+        ];
     }
 
     protected function getFooterWidgets(): array
