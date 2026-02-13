@@ -130,3 +130,34 @@ Route::delete('/cash-reference/{id}/transaction/{transactionId}/delete', [\App\H
     ->middleware('auth');
 
 Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');
+
+// Route khusus untuk menjalankan queue worker via HTTP (karena kendala cron job CLI)
+// Akses: https://domain.com/run-queue-worker?key=rafatax-secret-worker
+Route::get('/run-queue-worker', function () {
+    // Simple security check
+    if (request('key') !== 'rafatax-secret-worker') {
+        abort(403, 'Unauthorized');
+    }
+
+    try {
+        // Jalankan worker untuk antrian whatsapp & default
+        // Batasi hanya berjalan max 50 detik agar tidak timeout gateway (biasanya 60s)
+        \Illuminate\Support\Facades\Artisan::call('queue:work', [
+            '--queue' => 'whatsapp,default',
+            '--stop-when-empty' => true,
+            '--max-time' => 50, // Stop before PHP max execution time
+            '--tries' => 3
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Queue worker executed successfully',
+            'output' => \Illuminate\Support\Facades\Artisan::output()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
