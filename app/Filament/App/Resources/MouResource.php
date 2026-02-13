@@ -261,31 +261,35 @@ class MouResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->copyable(),
+                Tables\Columns\TextColumn::make('tahun_pajak')
+                    ->label('Tahun Pajak')
+                    ->getStateUsing(fn($record) => $record->tahun_pajak ?: ($record->start_date ? \Carbon\Carbon::parse($record->start_date)->year : null))
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('start_date')
                     ->label('Tanggal Awal Pengerjaan')
                     ->dateTime('d/m/Y')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('end_date')
                     ->label('Tanggal Akhir Pengerjaan')
-                    ->date('d/m/Y')
+                    ->date()
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('tanggal_tagih_awal')
                     ->label('Tanggal Awal Penagihan')
                     ->date('d/m/Y')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('tanggal_tagih_akhir')
                     ->label('Tanggal Akhir Penagihan')
                     ->date('d/m/Y')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('description')
                     ->label('Deskripsi')
                     ->searchable()
                     ->limit(50)
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tipe')
                     ->searchable()
@@ -328,14 +332,33 @@ class MouResource extends Resource
                     })
                     ->alignEnd()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('total_invoice_unpaid')
+                    ->label('Total Invoice Unpaid')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        return CostListInvoice::where('mou_id', $record->id)
+                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'unpaid'))
+                            ->sum('amount');
+                    })
+                    ->alignEnd()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('total_invoice_paid')
+                    ->label('Total Invoice Paid')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        return CostListInvoice::where('mou_id', $record->id)
+                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'paid'))
+                            ->sum('amount');
+                    })
+                    ->alignEnd()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        $total = CostListInvoice::where('mou_id', $record->id)
+                        return CostListInvoice::where('mou_id', $record->id)
                             ->whereNotNull('invoice_id')
                             ->sum('amount');
-                        return 'Rp ' . number_format($total, 0, ',', '.');
                     })
                     ->alignEnd()
                     ->toggleable(),
