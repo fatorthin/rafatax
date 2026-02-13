@@ -69,9 +69,9 @@ class MouInvoicesTable extends BaseWidget
                 Tables\Columns\SelectColumn::make('invoice_status')
                     ->label('Status')
                     ->options([
-                        'Paid' => 'Paid',
-                        'Unpaid' => 'Unpaid',
-                        'Overdue' => 'Overdue',
+                        'paid' => 'Paid',
+                        'unpaid' => 'Unpaid',
+                        'overdue' => 'Overdue',
                     ]),
                 Tables\Columns\SelectColumn::make('rek_transfer')
                     ->label('Rekening Transfer')
