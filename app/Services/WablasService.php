@@ -41,8 +41,8 @@ class WablasService
         curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/send-message");
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 60);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 120);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -261,6 +261,11 @@ class WablasService
             }
         }
 
+        // Normalize result to ensure success key exists
+        if (is_array($documentResult)) {
+            $documentResult['success'] = $documentResult['success'] ?? ($documentResult['status'] ?? false);
+        }
+
         return $documentResult;
     }
 
@@ -385,8 +390,8 @@ class WablasService
         curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/v2/send-message");
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 60);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 120);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
