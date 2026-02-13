@@ -94,7 +94,8 @@
                 <img src="{{ $headerImage }}" alt="Kop Invoice KKP">
             @endif
             <div class="meta">
-                <div>Sukoharjo, {{ now()->locale('id')->isoFormat('D MMMM Y') }}</div>
+                <div>Sukoharjo, {{ \Carbon\Carbon::parse($invoice->invoice_date)->locale('id')->isoFormat('D MMMM Y') }}
+                </div>
                 <div>Kepada :</div>
                 <div>
                     <strong>{{ $client_name ?? (optional($invoice->mou->client)->name ?? (optional($invoice->mou->client)->company_name ?? '')) }}</strong>
