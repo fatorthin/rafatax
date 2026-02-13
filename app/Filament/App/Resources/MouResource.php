@@ -436,7 +436,8 @@ class MouResource extends Resource
                     ->label('Detail Biaya')
                     ->url(fn($record) => route('filament.app.resources.mous.cost-list', ['record' => $record]))
                     ->icon('heroicon-o-currency-dollar')
-                    ->color('success'),
+                    ->color('success')
+                    ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make()
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([

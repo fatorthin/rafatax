@@ -299,7 +299,8 @@ class MouResource extends Resource
                     ->label('Detail')
                     ->url(fn($record) => "/admin/mous/{$record->id}/cost-list")
                     ->icon('heroicon-o-eye')
-                    ->color('success'),
+                    ->color('success')
+                    ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make(),
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
