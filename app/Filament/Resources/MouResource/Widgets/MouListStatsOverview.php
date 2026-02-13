@@ -12,8 +12,15 @@ class MouListStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $totalCostListMou = CostListMou::sum('total_amount');
-        $totalCostListInvoice = CostListInvoice::whereNotNull('invoice_id')->sum('amount');
-        $difference = $totalCostListMou - $totalCostListInvoice;
+        $totalCostListInvoiceUnpaid = CostListInvoice::whereHas('invoice', function ($query) {
+            $query->where('invoice_status', 'unpaid');
+        })->sum('amount');
+
+        $totalCostListInvoicePaid = CostListInvoice::whereHas('invoice', function ($query) {
+            $query->where('invoice_status', 'paid');
+        })->sum('amount');
+
+        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid);
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
@@ -21,9 +28,14 @@ class MouListStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('info'),
 
-            Stat::make('Total Cost List Invoice', 'Rp ' . number_format($totalCostListInvoice, 0, ',', '.'))
-                ->description('Total yang sudah ditagihkan')
-                ->descriptionIcon('heroicon-m-document-check')
+            Stat::make('Total Invoice Unpaid', 'Rp ' . number_format($totalCostListInvoiceUnpaid, 0, ',', '.'))
+                ->description('Total tagihan yang belum dibayar')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color('warning'),
+
+            Stat::make('Total Invoice Paid', 'Rp ' . number_format($totalCostListInvoicePaid, 0, ',', '.'))
+                ->description('Total tagihan yang sudah dibayar')
+                ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
 
             Stat::make('Selisih', 'Rp ' . number_format(abs($difference), 0, ',', '.'))
