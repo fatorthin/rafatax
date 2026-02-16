@@ -42,7 +42,17 @@ class MemoResource extends Resource
                     ->required()
                     ->readOnly()
                     ->dehydrated()
-                    ->unique(ignoreRecord: true),
+                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
+                        return $rule->whereNull('deleted_at');
+                    })
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('regenerate_no_memo')
+                            ->icon('heroicon-m-arrow-path')
+                            ->action(function (Forms\Get $get, Forms\Set $set) {
+                                $set('no_memo', null);
+                                self::generateMemoNumber($get, $set);
+                            })
+                    ),
                 Forms\Components\TextInput::make('description')
                     ->label('Deskripsi')
                     ->required(),
