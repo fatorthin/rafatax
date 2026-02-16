@@ -32,7 +32,10 @@ class InvoicesRelationManager extends RelationManager
                     ->unique(
                         \App\Models\Invoice::class,
                         'invoice_number',
-                        ignoreRecord: true
+                        ignoreRecord: true,
+                        modifyRuleUsing: function ($rule) {
+                            return $rule->whereNull('deleted_at');
+                        }
                     )
                     ->suffixAction(
                         Forms\Components\Actions\Action::make('refresh_invoice_number')
@@ -46,6 +49,7 @@ class InvoicesRelationManager extends RelationManager
                         'unpaid' => 'Unpaid',
                         'paid' => 'Paid',
                     ])
+                    ->default('unpaid')
                     ->required(),
                 Forms\Components\Select::make('invoice_type')
                     ->options([
