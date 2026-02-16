@@ -56,6 +56,10 @@
                         class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-plus"></i> Add Transaction
                     </button>
+                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </a>
                 </div>
             </div>
 

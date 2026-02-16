@@ -21,6 +21,109 @@ class CashReferenceMonthDetailController extends Controller
             return redirect()->back()->with('error', 'Invalid year or month parameter');
         }
 
+        $data = $this->getTransactionData($id, $year, $month);
+
+        // Get COA list for form
+        $coaList = Coa::all()->mapWithKeys(function ($coa) {
+            return [$coa->id => $coa->code . ' - ' . $coa->name];
+        });
+
+        return view('cash-reference.month-detail', array_merge($data, ['coaList' => $coaList]));
+    }
+
+    public function export($id, Request $request)
+    {
+        $year = (int) $request->query('year');
+        $month = (int) $request->query('month');
+
+        if (!$year || !$month || $month < 1 || $month > 12) {
+            return redirect()->back()->with('error', 'Invalid year or month parameter');
+        }
+
+        $data = $this->getTransactionData($id, $year, $month);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Title
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', $data['cashReference']->name . ' - ' . $data['monthName'] . ' ' . $data['year']);
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Summary
+        $sheet->setCellValue('A3', 'Previous Balance');
+        $sheet->setCellValue('B3', $data['prevBalance']);
+        $sheet->getStyle('B3')->getNumberFormat()->setFormatCode('#,##0.00');
+
+        $sheet->setCellValue('A4', 'Total Debit');
+        $sheet->setCellValue('B4', $data['totalDebit']);
+        $sheet->getStyle('B4')->getNumberFormat()->setFormatCode('#,##0.00');
+
+        $sheet->setCellValue('A5', 'Total Credit');
+        $sheet->setCellValue('B5', $data['totalCredit']);
+        $sheet->getStyle('B5')->getNumberFormat()->setFormatCode('#,##0.00');
+
+        $sheet->setCellValue('A6', 'Ending Balance');
+        $sheet->setCellValue('B6', $data['endingBalance']);
+        $sheet->getStyle('B6')->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('B6')->getFont()->setBold(true);
+
+        // Headers
+        $row = 8;
+        $headers = ['Date', 'CoA', 'Description', 'Debit', 'Credit', 'Balance'];
+        foreach ($headers as $col => $header) {
+            $columnUtils = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1);
+            $sheet->setCellValue($columnUtils . $row, $header);
+            $sheet->getStyle($columnUtils . $row)->getFont()->setBold(true);
+            $sheet->getStyle($columnUtils . $row)->getBorders()->getBottom()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        }
+
+        // Data
+        $row++;
+        foreach ($data['transactions'] as $transaction) {
+            $sheet->setCellValue('A' . $row, Carbon::parse($transaction->transaction_date)->format('d-M-Y'));
+            $sheet->setCellValue('B' . $row, $transaction->coa->code ?? '-');
+            $sheet->setCellValue('C' . $row, $transaction->description);
+
+            $sheet->setCellValue('D' . $row, $transaction->debit_amount);
+            $sheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+
+            $sheet->setCellValue('E' . $row, $transaction->credit_amount);
+            $sheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+
+            $sheet->setCellValue('F' . $row, $transaction->running_balance);
+            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+
+            $row++;
+        }
+
+        // Auto size columns
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        // Sanitize name components
+        $sanitizedName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $data['cashReference']->name);
+        $filename = 'Cash_Ref_' . $sanitizedName . '_' . $data['monthName'] . '_' . $data['year'] . '.xlsx';
+
+        // Clear output buffer to avoid corrupt file
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . urlencode($filename) . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function getTransactionData($id, $year, $month)
+    {
         $cashReference = CashReference::findOrFail($id);
 
         // Get previous month balance
@@ -41,11 +144,6 @@ class CashReferenceMonthDetailController extends Controller
             $transaction->running_balance = $balance;
         }
 
-        // Get COA list for form
-        $coaList = Coa::all()->mapWithKeys(function ($coa) {
-            return [$coa->id => $coa->code . ' - ' . $coa->name];
-        });
-
         $monthName = Carbon::create($year, $month, 1)->format('F');
 
         // Calculate totals
@@ -53,7 +151,7 @@ class CashReferenceMonthDetailController extends Controller
         $totalCredit = $transactions->sum('credit_amount');
         $endingBalance = $prevBalance + ($totalDebit - $totalCredit);
 
-        return view('cash-reference.month-detail', compact(
+        return compact(
             'cashReference',
             'transactions',
             'year',
@@ -62,9 +160,8 @@ class CashReferenceMonthDetailController extends Controller
             'prevBalance',
             'totalDebit',
             'totalCredit',
-            'endingBalance',
-            'coaList'
-        ));
+            'endingBalance'
+        );
     }
 
     private function getPreviousMonthBalance($cashReferenceId, $year, $month): float

@@ -117,6 +117,10 @@ Route::get('/cash-reference/{id}/month-detail', [\App\Http\Controllers\CashRefer
     ->name('cash-reference.month-detail')
     ->middleware('auth');
 
+Route::get('/cash-reference/{id}/month-detail/export', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'export'])
+    ->name('cash-reference.month-detail.export')
+    ->middleware('auth');
+
 Route::post('/cash-reference/{id}/transaction/store', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'store'])
     ->name('cash-reference.transaction.store')
     ->middleware('auth');
