@@ -26,13 +26,15 @@
         /* Fixed Header */
         header {
             position: fixed;
-            top: -220px;
+            top: -200px;
             /* Adjusted based on new margin */
             left: 0;
             right: 0;
             height: 150px;
             text-align: center;
         }
+
+
 
         header img {
             width: 100%;
@@ -418,6 +420,7 @@
                     <p>{{ $mou->client->owner_role ?: 'OWNER' }}</p>
                 </div>
 
+
                 <div class="signature-spacer"></div>
 
                 <div class="signature-box">
@@ -442,8 +445,8 @@
                     $img_h = 90; // Height of footer image
                     $y_pos = $h - $img_h + 10; // Position near bottom
                     
-                    // KKP Footer
-                    $img_path = public_path("images/footer-kkp.svg");
+                    // KKP Footer (PNG)
+                    $img_path = public_path("images/footer-kkp-v1.png");
                     if (file_exists($img_path)) {
                         $pdf->image($img_path, 0, $y_pos, $w, $img_h);
                     }
