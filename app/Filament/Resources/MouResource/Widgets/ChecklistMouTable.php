@@ -15,7 +15,7 @@ class ChecklistMouTable extends BaseWidget
 {
     public ?int $mouId = null;
 
-    protected $listeners = ['invoice-created' => '$refresh', 'invoice-deleted' => '$refresh'];
+    protected $listeners = ['invoice-created' => '$refresh', 'invoice-deleted' => '$refresh', 'invoice-status-updated' => '$refresh'];
 
     public function mount()
     {

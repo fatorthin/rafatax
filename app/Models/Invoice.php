@@ -25,7 +25,8 @@ class Invoice extends Model
         'is_saldo_awal',
         'memo_id',
         'rek_transfer',
-        'is_include_pph23'
+        'is_include_pph23',
+        'cash_report_id'
     ];
 
     protected static function booted()
@@ -37,6 +38,11 @@ class Invoice extends Model
                 'status' => 'pending'
             ]);
         });
+    }
+
+    public function cashReport()
+    {
+        return $this->belongsTo(CashReport::class);
     }
 
     public function client()
