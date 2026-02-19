@@ -137,6 +137,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('categoryMou.name')
                             ->label('Category MoU')
                             ->weight('bold'),
+                        TextEntry::make('link_mou')
+                            ->label('Link MoU')
+                            ->url(fn($record) => $record->link_mou, shouldOpenInNewTab: true)
+                            ->color('primary')
+                            ->weight('bold')
+                            ->default('-'),
                     ])
                     ->columns(3)
             ]);
