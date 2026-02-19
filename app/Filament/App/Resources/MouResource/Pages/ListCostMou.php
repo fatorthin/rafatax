@@ -369,6 +369,126 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->color('success')
                 ->url(fn() => route('mou.print.view', ['id' => $this->mou->id]))
                 ->openUrlInNewTab(),
+            Action::make('send_mou_whatsapp')
+                ->label('Kirim MoU ke Client')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('phone_number')
+                        ->label('WhatsApp Number')
+                        ->required()
+                        ->default(function () {
+                            $client = $this->mou->client;
+                            return $client?->phone;
+                        })
+                        ->helperText('Format: 08123456789 atau 628123456789'),
+                ])
+                ->modalHeading('Kirim MoU ke Client via WhatsApp')
+                ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
+                ->modalSubmitActionLabel('Ya, Kirim')
+                ->action(function (array $data) {
+                    try {
+                        $phoneInput = $data['phone_number'];
+
+                        if (empty($phoneInput)) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('Nomor WhatsApp wajib diisi!')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Clean phone number
+                        $phone = preg_replace('/[^0-9]/', '', $phoneInput);
+                        if (substr($phone, 0, 1) === '0') {
+                            $phone = '62' . substr($phone, 1);
+                        } elseif (substr($phone, 0, 2) !== '62') {
+                            $phone = '62' . $phone;
+                        }
+
+                        // Build caption message
+                        $ownerName = $this->mou->client?->owner_name ?? 'Bapak/Ibu';
+                        $caption = "Yth. Bapak/Ibu {$ownerName},\n\n";
+                        $caption .= "Berikut kami kirimkan draft MoU kerjasama.\n";
+                        $caption .= "Mohon dapat dipelajari dan ditandatangani sebagai bukti persetujuan.\n";
+                        $caption .= "Selanjutnya MoU yg sdh ditandatangani, dapat dikirimkan ke kami paling lambat 7 hari sejak draft MoU diterima.\n\n";
+                        $caption .= "Terimakasih atas kerjasamanya";
+
+                        // Generate PDF using same logic as MouPrintViewController
+                        $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
+                        $costLists = CostListMou::where('mou_id', $mou->id)->get();
+
+                        $format = $mou->type === 'pt'
+                            ? $mou->categoryMou->format_mou_pt
+                            : $mou->categoryMou->format_mou_kkp;
+
+                        if (!$format) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('Format print PDF belum diatur untuk kategori MoU ini.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $view = 'format-mous.preview.' . $format;
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
+                            'mou' => $mou,
+                            'costLists' => $costLists,
+                            'printMode' => true,
+                            'isPdf' => true,
+                        ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
+
+                        // Save to temporary file
+                        $tempDir = storage_path('app/temp');
+                        if (!file_exists($tempDir)) {
+                            mkdir($tempDir, 0755, true);
+                        }
+
+                        $mouNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number);
+                        $filename = 'MoU-' . $mouNumberClean . '.pdf';
+                        $tempPath = $tempDir . '/' . $filename;
+
+                        $pdf->save($tempPath);
+
+                        // Send via Wablas
+                        /** @var \App\Services\WablasService $wablasService */
+                        $wablasService = app(\App\Services\WablasService::class);
+
+                        // Send text caption first
+                        $wablasService->sendMessage($phone, $caption);
+
+                        // Send PDF document
+                        $sendResult = $wablasService->sendDocument($phone, $tempPath);
+
+                        // Clean up temp file
+                        if (file_exists($tempPath)) {
+                            unlink($tempPath);
+                        }
+
+                        if (isset($sendResult['status']) && $sendResult['status']) {
+                            Notification::make()
+                                ->title('Berhasil')
+                                ->body('MoU berhasil dikirim ke client via WhatsApp.')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Warning')
+                                ->body('Pesan terkirim, tetapi gagal mengirim PDF. ' . ($sendResult['message'] ?? ''))
+                                ->warning()
+                                ->send();
+                        }
+                    } catch (\Exception $e) {
+                        Notification::make()
+                            ->title('Error')
+                            ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                            ->danger()
+                            ->send();
+                        \Illuminate\Support\Facades\Log::error($e);
+                    }
+                }),
             Action::make('createInvoice')
                 ->label('Buat Invoice')
                 ->icon('heroicon-o-document-currency-dollar')

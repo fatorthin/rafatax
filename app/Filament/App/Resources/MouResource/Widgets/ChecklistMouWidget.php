@@ -15,6 +15,8 @@ class ChecklistMouWidget extends BaseWidget
 {
     public ?int $mouId = null;
 
+    protected $listeners = ['invoice-created' => '$refresh', 'invoice-deleted' => '$refresh', 'invoice-status-updated' => '$refresh'];
+
     public function mount()
     {
         $this->generateMonthlyChecklists();
