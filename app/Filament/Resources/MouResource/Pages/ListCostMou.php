@@ -378,11 +378,19 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
             // Build caption message
             $ownerName = $this->mou->client?->owner_name ?? 'Bapak/Ibu';
-            $caption = "Yth. Bapak/Ibu {$ownerName},\n\n";
-            $caption .= "Berikut kami kirimkan draft MoU kerjasama.\n";
-            $caption .= "Mohon dapat dipelajari dan ditandatangani sebagai bukti persetujuan.\n";
-            $caption .= "Selanjutnya MoU yg sdh ditandatangani, dapat dikirimkan ke kami paling lambat 7 hari sejak draft MoU diterima.\n\n";
-            $caption .= "Terimakasih atas kerjasamanya";
+            $mouNumber = $this->mou->mou_number ?? '-';
+            $categoryName = $this->mou->categoryMou?->name ?? '-';
+            $companyName = $this->mou->client?->company_name ?? '-';
+
+            $caption = "Yth. Bapak/Ibu {$ownerName}\n";
+            $caption .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan draft MOU Kerjasama untuk tahun 2026.\n";
+            $caption .= "Mohon dapat dipelajari dan ditandatangani sebagi bukti persetujuan.\n";
+            $caption .= "No Mou \t\t: {$mouNumber}\n";
+            $caption .= "Jenis Pekerjaan \t: {$categoryName} {$companyName}\n";
+            $caption .= "Ketentuan:\n";
+            $caption .= "- MoU wajib di Tandatangani dan di kirim kembali kepada kami Max 7 Hari setelah pesan ini di kirim.\n\n";
+            $caption .= "Terima kasih\n";
+            $caption .= "Admin Rafatax Consulting";
 
             // Generate PDF using same logic as MouPrintViewController
             $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
