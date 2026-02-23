@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources;
 
+use App\Models\CashReport;
 use App\Models\MoU;
 use Filament\Forms;
 use Filament\Tables;
@@ -9,6 +10,7 @@ use App\Models\Invoice;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Traits\HasPermissions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -378,6 +380,79 @@ class InvoiceResource extends Resource
                     ->icon('heroicon-o-photo')
                     ->color('primary')
                     ->openUrlInNewTab(),
+                Tables\Actions\Action::make('updateStatusBayar')
+                    ->label('Update Status Bayar')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->modalHeading('Update Status Bayar')
+                    ->modalDescription('Pilih rekening transfer untuk menandai invoice sebagai Paid.')
+                    ->form([
+                        Forms\Components\Select::make('rek_transfer')
+                            ->label('Rekening Transfer')
+                            ->options([
+                                'BCA PT' => 'BCA PT',
+                                'BCA BARU' => 'BCA BARU',
+                                'BCA LAMA' => 'BCA LAMA',
+                                'MANDIRI' => 'MANDIRI',
+                                'KAS BESAR' => 'KAS BESAR',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function (Invoice $record, array $data): void {
+                        $rekTransferMapping = [
+                            'BCA PT' => 1,
+                            'BCA BARU' => 2,
+                            'BCA LAMA' => 3,
+                            'MANDIRI' => 5,
+                            'KAS BESAR' => 6,
+                        ];
+
+                        $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
+
+                        // Update invoice status and rekening transfer
+                        $record->update([
+                            'invoice_status' => 'paid',
+                            'rek_transfer' => $data['rek_transfer'],
+                        ]);
+
+                        // Create cash report entry per cost list invoice item (each has its own coa_id)
+                        $firstCashReportId = null;
+                        $costListInvoices = $record->costListInvoices()->get();
+                        foreach ($costListInvoices as $costItem) {
+                            $cashReport = CashReport::create([
+                                'description' => 'Pembayaran Invoice ' . $record->invoice_number . ' - ' . $costItem->description . ' - ' . ($record->mou?->client?->company_name ?? ''),
+                                'cash_reference_id' => $cashReferenceId,
+                                'mou_id' => $record->mou_id,
+                                'coa_id' => $costItem->coa_id,
+                                'invoice_id' => $record->id,
+                                'cost_list_invoice_id' => $costItem->id,
+                                'type' => 'debit',
+                                'debit_amount' => $costItem->amount,
+                                'credit_amount' => 0,
+                                'transaction_date' => now(),
+                            ]);
+
+                            if ($firstCashReportId === null) {
+                                $firstCashReportId = $cashReport->id;
+                            }
+                        }
+
+                        // Update cash_report_id on invoice
+                        if ($firstCashReportId) {
+                            $record->update(['cash_report_id' => $firstCashReportId]);
+                        }
+
+                        // Update ChecklistMou status to complete for this invoice
+                        \App\Models\ChecklistMou::where('invoice_id', $record->id)
+                            ->update(['status' => 'completed']);
+
+                        Notification::make()
+                            ->title('Status invoice berhasil diubah menjadi Paid')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn(Invoice $record): bool => $record->invoice_status !== 'paid'),
                 Tables\Actions\DeleteAction::make()->color('danger'),
             ])
             ->bulkActions([
