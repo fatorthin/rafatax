@@ -209,274 +209,294 @@ class InvoiceResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->recordUrl(null)
             ->paginated([10, 25, 50, 100])
-            ->columns([
-                Tables\Columns\TextColumn::make('invoice_number')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('reference_number')
-                    ->label('MoU / Memo Number')
-                    ->getStateUsing(fn($record) => $record->mou?->mou_number ?? $record->memo?->no_memo)
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->whereHas('mou', fn($q) => $q->where('mou_number', 'like', "%{$search}%"))
-                            ->orWhereHas('memo', fn($q) => $q->where('no_memo', 'like', "%{$search}%"));
-                    }),
-                Tables\Columns\TextColumn::make('client_name')
-                    ->label('Client')
-                    ->getStateUsing(fn($record) => $record->mou?->client?->company_name ?? $record->memo?->nama_klien)
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"))
-                            ->orWhereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
-                    }),
-                Tables\Columns\TextColumn::make('type')
-                    ->label('Type')
-                    ->getStateUsing(fn($record) => $record->mou?->type ?? $record->memo?->tipe_klien)
-                    ->formatStateUsing(fn($state) => match (strtolower($state ?? '')) {
-                        'pt' => 'PT',
-                        'kkp' => 'KKP',
-                        default => $state,
-                    }),
-                Tables\Columns\TextColumn::make('invoice_date')
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('due_date')
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('invoice_type')
-                    ->label('Type')
-                    ->getStateUsing(fn($record) => $record->invoice_type)
-                    ->formatStateUsing(fn($state) => match (strtolower($state ?? '')) {
-                        'pt' => 'PT',
-                        'kkp' => 'KKP',
-                        default => $state,
-                    }),
-                Tables\Columns\TextColumn::make('invoice_status')
-                    ->label('Status')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'paid' => 'success',
-                        'unpaid' => 'warning',
-                        'overdue' => 'danger',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn(string $state): string => ucfirst($state)),
-                Tables\Columns\TextColumn::make('rek_transfer')
-                    ->label('Rekening Transfer'),
-                Tables\Columns\TextColumn::make('total_amount')
-                    ->label('Total Amount')
-                    ->alignEnd()
-                    ->formatStateUsing(function ($state) {
-                        return number_format((float) $state, 0, ',', '.');
-                    })
-                    ->getStateUsing(function ($record) {
-                        return $record->costListInvoices()->sum('amount');
-                    })
-                    ->summarize(
-                        Tables\Columns\Summarizers\Summarizer::make()
-                            ->label('Total')
-                            ->using(function ($query) {
-                                // Get all invoice IDs from the current query
-                                $invoiceIds = $query->pluck('id')->toArray();
-
-                                // Calculate total from the cost_list_invoices table
-                                $total = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
-                                    ->sum('amount');
-
-                                return $total;
-                            })
-                            ->formatStateUsing(function ($state) {
-                                return 'IDR ' . number_format((float) $state, 0, ',', '.');
-                            })
-                    ),
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                Tables\Filters\TrashedFilter::make(),
-                Tables\Filters\Filter::make('date_range')
-                    ->form([
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\Select::make('year')
-                                    ->label('Year')
-                                    ->options(
-                                        Invoice::query()
-                                            ->selectRaw('YEAR(invoice_date) as year')
-                                            ->distinct()
-                                            ->orderBy('year', 'desc')
-                                            ->pluck('year', 'year')
-                                            ->toArray()
-                                    ),
-                                Forms\Components\Select::make('month')
-                                    ->label('Month')
-                                    ->options(
-                                        collect(range(1, 12))->mapWithKeys(function ($month) {
-                                            return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
-                                        })->toArray()
-                                    ),
-                            ]),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['year'],
-                                fn(Builder $query, $year): Builder => $query->whereYear('invoice_date', $year),
-                            )
-                            ->when(
-                                $data['month'],
-                                fn(Builder $query, $month): Builder => $query->whereMonth('invoice_date', $month),
-                            );
-                    })
-                    ->indicator(function (array $data): ?string {
-                        $indicators = [];
-
-                        if ($data['month'] ?? null) {
-                            $monthName = \Carbon\Carbon::create()->month($data['month'])->format('F');
-                            $indicators[] = "Month: {$monthName}";
-                        }
-
-                        if ($data['year'] ?? null) {
-                            $indicators[] = "Year: {$data['year']}";
-                        }
-
-                        return count($indicators) ? implode(' + ', $indicators) : null;
-                    }),
-                Tables\Filters\SelectFilter::make('client')
-                    ->label('Client')
-                    ->relationship('mou.client', 'company_name')
-                    ->searchable()
-                    ->preload(),
-                Tables\Filters\SelectFilter::make('invoice_type')
-                    ->label('Type')
-                    ->options([
-                        'pt' => 'PT',
-                        'kkp' => 'KKP',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['value'],
-                                fn(Builder $query, $type): Builder => $query->where('invoice_type', $type),
-                            );
-                    }),
-                Tables\Filters\SelectFilter::make('invoice_status')
-                    ->label('Status')
-                    ->options([
-                        'unpaid' => 'Unpaid',
-                        'paid' => 'Paid',
-                    ]),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make()->color('warning'),
-                Tables\Actions\Action::make('viewCostList')
-                    ->label('Detail')
-                    ->url(fn($record) => "/admin/invoices/{$record->id}/cost-list")
-                    ->icon('heroicon-o-eye')
-                    ->color('info'),
-                Tables\Actions\Action::make('previewPdf')
-                    ->label('Preview PDF')
-                    ->url(fn($record) => route('invoices.preview', $record->id))
-                    ->icon('heroicon-o-document-text')
-                    ->color('success')
-                    ->openUrlInNewTab(),
-                // Tables\Actions\Action::make('downloadJpg')
-                //     ->label('Download JPG')
-                //     ->url(fn($record) => route('invoices.jpg', $record->id))
-                //     ->icon('heroicon-o-photo')
-                //     ->color('primary')
-                //     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('updateStatusBayar')
-                    ->label('Update Status Bayar')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('primary')
-                    ->requiresConfirmation()
-                    ->modalHeading('Update Status Bayar')
-                    ->modalDescription('Pilih rekening transfer untuk menandai invoice sebagai Paid.')
-                    ->form([
-                        Forms\Components\Select::make('rek_transfer')
-                            ->label('Rekening Transfer')
-                            ->options([
-                                'BCA PT' => 'BCA PT',
-                                'BCA BARU' => 'BCA BARU',
-                                'BCA LAMA' => 'BCA LAMA',
-                                'MANDIRI' => 'MANDIRI',
-                                'KAS BESAR' => 'KAS BESAR',
-                            ])
-                            ->required(),
-                    ])
-                    ->action(function (Invoice $record, array $data): void {
-                        $rekTransferMapping = [
-                            'BCA PT' => 1,
-                            'BCA BARU' => 2,
-                            'BCA LAMA' => 3,
-                            'MANDIRI' => 5,
-                            'KAS BESAR' => 6,
-                        ];
-
-                        $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
-
-                        // Update invoice status and rekening transfer
-                        $record->update([
-                            'invoice_status' => 'paid',
-                            'rek_transfer' => $data['rek_transfer'],
-                        ]);
-
-                        // Create cash report entry per cost list invoice item (each has its own coa_id)
-                        $firstCashReportId = null;
-                        $costListInvoices = $record->costListInvoices()->get();
-                        foreach ($costListInvoices as $costItem) {
-                            $cashReport = CashReport::create([
-                                'description' => 'Pembayaran Invoice ' . $record->invoice_number . ' - ' . $costItem->description . ' - ' . ($record->mou?->client?->company_name ?? ''),
-                                'cash_reference_id' => $cashReferenceId,
-                                'mou_id' => $record->mou_id,
-                                'coa_id' => $costItem->coa_id,
-                                'invoice_id' => $record->id,
-                                'cost_list_invoice_id' => $costItem->id,
-                                'type' => 'debit',
-                                'debit_amount' => $costItem->amount,
-                                'credit_amount' => 0,
-                                'transaction_date' => now(),
-                            ]);
-
-                            if ($firstCashReportId === null) {
-                                $firstCashReportId = $cashReport->id;
-                            }
-                        }
-
-                        // Update cash_report_id on invoice
-                        if ($firstCashReportId) {
-                            $record->update(['cash_report_id' => $firstCashReportId]);
-                        }
-
-                        // Update ChecklistMou status to complete for this invoice
-                        \App\Models\ChecklistMou::where('invoice_id', $record->id)
-                            ->update(['status' => 'completed']);
-
-                        Notification::make()
-                            ->title('Status invoice berhasil diubah menjadi Paid')
-                            ->success()
-                            ->send();
-                    })
-                    ->visible(fn(Invoice $record): bool => $record->invoice_status !== 'paid'),
-                Tables\Actions\DeleteAction::make()->color('danger'),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
-            ])
+            ->columns(static::getTableColumns())
+            ->filters(static::getTableFilters())
+            ->actions(static::getTableActions())
+            ->bulkActions(static::getTableBulkActions())
             ->defaultSort('invoice_date', 'desc')
             ->deferLoading();
+    }
+
+    private static function getTableColumns(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('invoice_number')
+                ->searchable(),
+            Tables\Columns\TextColumn::make('reference_number')
+                ->label('MoU / Memo Number')
+                ->getStateUsing(fn($record) => $record->mou?->mou_number ?? $record->memo?->no_memo)
+                ->searchable(query: function (Builder $query, string $search): Builder {
+                    return $query->whereHas('mou', fn($q) => $q->where('mou_number', 'like', "%{$search}%"))
+                        ->orWhereHas('memo', fn($q) => $q->where('no_memo', 'like', "%{$search}%"));
+                }),
+            Tables\Columns\TextColumn::make('client_name')
+                ->label('Client')
+                ->getStateUsing(fn($record) => $record->mou?->client?->company_name ?? $record->memo?->nama_klien)
+                ->searchable(query: function (Builder $query, string $search): Builder {
+                    return $query->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"))
+                        ->orWhereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
+                }),
+            Tables\Columns\TextColumn::make('type')
+                ->label('Type')
+                ->getStateUsing(fn($record) => $record->mou?->type ?? $record->memo?->tipe_klien)
+                ->formatStateUsing(fn($state) => match (strtolower($state ?? '')) {
+                    'pt' => 'PT',
+                    'kkp' => 'KKP',
+                    default => $state,
+                }),
+            Tables\Columns\TextColumn::make('invoice_date')
+                ->date()
+                ->sortable(),
+            Tables\Columns\TextColumn::make('due_date')
+                ->date()
+                ->sortable(),
+            Tables\Columns\TextColumn::make('invoice_type')
+                ->label('Type')
+                ->getStateUsing(fn($record) => $record->invoice_type)
+                ->formatStateUsing(fn($state) => match (strtolower($state ?? '')) {
+                    'pt' => 'PT',
+                    'kkp' => 'KKP',
+                    default => $state,
+                }),
+            Tables\Columns\TextColumn::make('invoice_status')
+                ->label('Status')
+                ->badge()
+                ->color(fn(string $state): string => match ($state) {
+                    'paid' => 'success',
+                    'unpaid' => 'warning',
+                    'overdue' => 'danger',
+                    default => 'gray',
+                })
+                ->formatStateUsing(fn(string $state): string => ucfirst($state)),
+            Tables\Columns\TextColumn::make('rek_transfer')
+                ->label('Rekening Transfer'),
+            Tables\Columns\TextColumn::make('total_amount')
+                ->label('Total Amount')
+                ->alignEnd()
+                ->formatStateUsing(function ($state) {
+                    return number_format((float) $state, 0, ',', '.');
+                })
+                ->getStateUsing(function ($record) {
+                    return $record->costListInvoices()->sum('amount');
+                })
+                ->summarize(
+                    Tables\Columns\Summarizers\Summarizer::make()
+                        ->label('Total')
+                        ->using(function ($query) {
+                            // Get all invoice IDs from the current query
+                            $invoiceIds = $query->pluck('id')->toArray();
+
+                            // Calculate total from the cost_list_invoices table
+                            $total = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
+                                ->sum('amount');
+
+                            return $total;
+                        })
+                        ->formatStateUsing(function ($state) {
+                            return 'IDR ' . number_format((float) $state, 0, ',', '.');
+                        })
+                ),
+            Tables\Columns\TextColumn::make('deleted_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('created_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+        ];
+    }
+
+    private static function getTableFilters(): array
+    {
+        return [
+            Tables\Filters\TrashedFilter::make(),
+            Tables\Filters\Filter::make('date_range')
+                ->form([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\Select::make('year')
+                                ->label('Year')
+                                ->options(
+                                    Invoice::query()
+                                        ->selectRaw('YEAR(invoice_date) as year')
+                                        ->distinct()
+                                        ->orderBy('year', 'desc')
+                                        ->pluck('year', 'year')
+                                        ->toArray()
+                                ),
+                            Forms\Components\Select::make('month')
+                                ->label('Month')
+                                ->options(
+                                    collect(range(1, 12))->mapWithKeys(function ($month) {
+                                        return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
+                                    })->toArray()
+                                ),
+                        ]),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when(
+                            $data['year'],
+                            fn(Builder $query, $year): Builder => $query->whereYear('invoice_date', $year),
+                        )
+                        ->when(
+                            $data['month'],
+                            fn(Builder $query, $month): Builder => $query->whereMonth('invoice_date', $month),
+                        );
+                })
+                ->indicator(function (array $data): ?string {
+                    $indicators = [];
+
+                    if ($data['month'] ?? null) {
+                        $monthName = \Carbon\Carbon::create()->month($data['month'])->format('F');
+                        $indicators[] = "Month: {$monthName}";
+                    }
+
+                    if ($data['year'] ?? null) {
+                        $indicators[] = "Year: {$data['year']}";
+                    }
+
+                    return count($indicators) ? implode(' + ', $indicators) : null;
+                }),
+            Tables\Filters\SelectFilter::make('client')
+                ->label('Client')
+                ->relationship('mou.client', 'company_name')
+                ->searchable()
+                ->preload(),
+            Tables\Filters\SelectFilter::make('invoice_type')
+                ->label('Type')
+                ->options([
+                    'pt' => 'PT',
+                    'kkp' => 'KKP',
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when(
+                            $data['value'],
+                            fn(Builder $query, $type): Builder => $query->where('invoice_type', $type),
+                        );
+                }),
+            Tables\Filters\SelectFilter::make('invoice_status')
+                ->label('Status')
+                ->options([
+                    'unpaid' => 'Unpaid',
+                    'paid' => 'Paid',
+                ]),
+        ];
+    }
+
+    private static function getTableActions(): array
+    {
+        return [
+            Tables\Actions\EditAction::make()->color('warning'),
+            Tables\Actions\Action::make('viewCostList')
+                ->label('Detail')
+                ->url(fn($record) => "/admin/invoices/{$record->id}/cost-list")
+                ->icon('heroicon-o-eye')
+                ->color('info'),
+            Tables\Actions\Action::make('previewPdf')
+                ->label('Preview PDF')
+                ->url(fn($record) => route('invoices.preview', $record->id))
+                ->icon('heroicon-o-document-text')
+                ->color('success')
+                ->openUrlInNewTab(),
+            // Tables\Actions\Action::make('downloadJpg')
+            //     ->label('Download JPG')
+            //     ->url(fn($record) => route('invoices.jpg', $record->id))
+            //     ->icon('heroicon-o-photo')
+            //     ->color('primary')
+            //     ->openUrlInNewTab(),
+            Tables\Actions\Action::make('updateStatusBayar')
+                ->label('Update Status Bayar')
+                ->icon('heroicon-o-check-circle')
+                ->color('primary')
+                ->requiresConfirmation()
+                ->modalHeading('Update Status Bayar')
+                ->modalDescription('Pilih rekening transfer untuk menandai invoice sebagai Paid.')
+                ->form([
+                    Forms\Components\Select::make('rek_transfer')
+                        ->label('Rekening Transfer')
+                        ->options([
+                            'BCA PT' => 'BCA PT',
+                            'BCA BARU' => 'BCA BARU',
+                            'BCA LAMA' => 'BCA LAMA',
+                            'MANDIRI' => 'MANDIRI',
+                            'KAS BESAR' => 'KAS BESAR',
+                        ])
+                        ->required(),
+                ])
+                ->action(function (Invoice $record, array $data): void {
+                    $rekTransferMapping = [
+                        'BCA PT' => 1,
+                        'BCA BARU' => 2,
+                        'BCA LAMA' => 3,
+                        'MANDIRI' => 5,
+                        'KAS BESAR' => 6,
+                    ];
+
+                    $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
+
+                    // Update invoice status and rekening transfer
+                    $record->update([
+                        'invoice_status' => 'paid',
+                        'rek_transfer' => $data['rek_transfer'],
+                    ]);
+
+                    // Create cash report entry per cost list invoice item (each has its own coa_id)
+                    $firstCashReportId = null;
+                    $costListInvoices = $record->costListInvoices()->get();
+                    foreach ($costListInvoices as $costItem) {
+                        $cashReport = CashReport::create([
+                            'description' => 'Pembayaran Invoice ' . $record->invoice_number . ' - ' . $costItem->description . ' - ' . ($record->mou?->client?->company_name ?? ''),
+                            'cash_reference_id' => $cashReferenceId,
+                            'mou_id' => $record->mou_id,
+                            'coa_id' => $costItem->coa_id,
+                            'invoice_id' => $record->id,
+                            'cost_list_invoice_id' => $costItem->id,
+                            'type' => 'debit',
+                            'debit_amount' => $costItem->amount,
+                            'credit_amount' => 0,
+                            'transaction_date' => now(),
+                        ]);
+
+                        if ($firstCashReportId === null) {
+                            $firstCashReportId = $cashReport->id;
+                        }
+                    }
+
+                    // Update cash_report_id on invoice
+                    if ($firstCashReportId) {
+                        $record->update(['cash_report_id' => $firstCashReportId]);
+                    }
+
+                    // Update ChecklistMou status to complete for this invoice
+                    \App\Models\ChecklistMou::where('invoice_id', $record->id)
+                        ->update(['status' => 'completed']);
+
+                    Notification::make()
+                        ->title('Status invoice berhasil diubah menjadi Paid')
+                        ->success()
+                        ->send();
+                })
+                ->visible(fn(Invoice $record): bool => $record->invoice_status !== 'paid'),
+            Tables\Actions\DeleteAction::make()->color('danger'),
+        ];
+    }
+
+    private static function getTableBulkActions(): array
+    {
+        return [
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\ForceDeleteBulkAction::make(),
+                Tables\Actions\RestoreBulkAction::make(),
+            ]),
+        ];
     }
 
     public static function getRelations(): array
