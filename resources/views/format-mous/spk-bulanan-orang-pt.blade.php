@@ -703,7 +703,8 @@
 
                                     <div class="signature-box">
                                         <p>Pihak Kedua</p>
-                                        <br>
+                                        <img src="{{ public_path('images/ttd_antin.png') }}" alt="Tanda Tangan"
+                                            style="height: 100px;">
                                         <div class="signature-line"></div>
                                         <p class="signature-name">ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB.,
                                             BKP.,CATr.ACPA</p>

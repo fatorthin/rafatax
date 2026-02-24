@@ -413,7 +413,8 @@
 
                 <div class="signature-box">
                     <p>Pihak Kedua</p>
-                    <div class="signature-line" style="border:none; height: 50px;"></div>
+                    <img src="{{ public_path('images/ttd_antin.png') }}" alt="Tanda Tangan" style="height: 100px;">
+                    <div class="signature-line" style="border:none; height: 0px;"></div>
                     <div
                         style="border-bottom: 1px solid black; display: inline-block; min-width: 150px; padding-bottom: 2px;">
                         ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB.,
