@@ -226,7 +226,7 @@ class ClientResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('jenis_wp')
                     ->label('Jenis WP')
-                    ->formatStateUsing(fn($state) => $state === 'op' ? 'Perseorangan' : 'Badan')
+                    ->formatStateUsing(fn($state) => $state === 'perseorangan' ? 'Perseorangan' : 'Badan')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('grade')
                     ->searchable()
