@@ -284,6 +284,7 @@ class CashReportResource extends Resource
             'create' => Pages\CreateCashReport::route('/create'),
             'view' => Pages\ViewCashReport::route('/{record}'),
             'edit' => Pages\EditCashReport::route('/{record}/edit'),
+            'neraca-lajur' => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
         ];
     }
 
