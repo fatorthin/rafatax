@@ -13,7 +13,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CashReportResource extends Resource
 {
@@ -284,7 +283,6 @@ class CashReportResource extends Resource
             'create' => Pages\CreateCashReport::route('/create'),
             'view' => Pages\ViewCashReport::route('/{record}'),
             'edit' => Pages\EditCashReport::route('/{record}/edit'),
-            'neraca-lajur' => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
         ];
     }
 

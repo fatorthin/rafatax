@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Filament\App\Resources\CashReportResource\Pages;
+namespace App\Filament\App\Pages;
 
-use App\Filament\App\Resources\CashReportResource;
 use App\Models\Coa;
-use Filament\Resources\Pages\Page;
+use Filament\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -22,9 +21,7 @@ class NeracaLajurBulanan extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string $resource = CashReportResource::class;
     protected static string $view = 'filament.resources.cash-report-resource.pages.neraca-lajur-bulanan';
-
     protected static ?string $title = 'Neraca Lajur Bulanan (KKP)';
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
     protected static ?string $navigationLabel = 'Neraca Lajur Bulanan';
@@ -34,6 +31,19 @@ class NeracaLajurBulanan extends Page implements HasTable
     public $year;
     public $kasbesarId;
     public $kaskecilId;
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        return $user->hasPermission('cash-report.view') || $user->hasPermission('cash-reports.view');
+    }
 
     public function mount(): void
     {
@@ -83,18 +93,18 @@ class NeracaLajurBulanan extends Page implements HasTable
                     $this->month = $data['month'];
                     $this->year = $data['year'];
 
-                    $this->redirect(static::getResource()::getUrl('neraca-lajur', ['month' => $this->month, 'year' => $this->year]));
+                    $this->redirect(static::getUrl(['month' => $this->month, 'year' => $this->year]));
                 }),
             Action::make('viewNeraca')
                 ->label('Lihat Laporan Neraca')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
-                ->url(fn() => static::getResource()::getUrl('neraca', ['month' => $this->month, 'year' => $this->year])),
+                ->url(fn() => url('/neraca-lajur/neraca?month=' . $this->month . '&year=' . $this->year)),
             Action::make('viewLabaRugi')
                 ->label('Lihat Laporan Laba Rugi')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
-                ->url(fn() => static::getResource()::getUrl('laba-rugi-bulanan', ['month' => $this->month, 'year' => $this->year])),
+                ->url(fn() => url('/neraca-lajur/laba-rugi?month=' . $this->month . '&year=' . $this->year)),
             Action::make('saveNeracaSetelahAJE')
                 ->label('Simpan Data Neraca')
                 ->icon('heroicon-o-document-check')
@@ -107,11 +117,6 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->color('success')
                 ->url(fn() => url('/neraca-lajur/export?month=' . $this->month . '&year=' . $this->year))
                 ->openUrlInNewTab(false),
-            Action::make('back')
-                ->label('Kembali')
-                ->icon('heroicon-o-arrow-left')
-                ->color('gray')
-                ->url(fn() => static::getResource()::getUrl('index')),
         ];
     }
 
@@ -215,7 +220,6 @@ class NeracaLajurBulanan extends Page implements HasTable
                         debit_amount as kas_besar_kredit,
                         credit_amount as kas_besar_debit
                     FROM (
-                        -- Regular case for all COA except AO-101
                         SELECT 
                             coa_id,
                             SUM(debit_amount) as debit_amount,
@@ -229,7 +233,6 @@ class NeracaLajurBulanan extends Page implements HasTable
                         
                         UNION ALL
                         
-                        -- Special case for AO-101
                         SELECT 
                             76 as coa_id,
                             SUM(credit_amount) as debit_amount,
@@ -251,7 +254,6 @@ class NeracaLajurBulanan extends Page implements HasTable
                         debit_amount as kas_kecil_debit,
                         credit_amount as kas_kecil_kredit
                     FROM (
-                        -- Regular case for all COA except AO-101.1
                         SELECT 
                             coa_id,
                             SUM(credit_amount) as debit_amount,
@@ -265,7 +267,6 @@ class NeracaLajurBulanan extends Page implements HasTable
                         
                         UNION ALL
                         
-                        -- Special case for AO-101.1
                         SELECT 
                             77 as coa_id,
                             SUM(debit_amount) as debit_amount,
