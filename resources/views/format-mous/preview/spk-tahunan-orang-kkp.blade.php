@@ -26,7 +26,7 @@
         /* Fixed Header */
         header {
             position: fixed;
-            top: -220px;
+            top: -200px;
             /* Adjusted based on new margin */
             left: 0;
             right: 0;
