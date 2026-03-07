@@ -11,7 +11,9 @@ class MouListStatsOverview extends BaseWidget
 {
     protected function getStats(): array
     {
-        $totalCostListMou = CostListMou::sum('total_amount');
+        $totalCostListMou = CostListMou::whereHas('mou', function ($query) {
+            $query->where('status', 'approved');
+        })->sum('total_amount');
         $totalCostListInvoiceUnpaid = CostListInvoice::whereHas('invoice', function ($query) {
             $query->where('invoice_status', 'unpaid');
         })->sum('amount');
@@ -24,7 +26,7 @@ class MouListStatsOverview extends BaseWidget
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
-                ->description('Total anggaran semua MoU')
+                ->description('Total anggaran semua MoU (Approved)')
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('info'),
 

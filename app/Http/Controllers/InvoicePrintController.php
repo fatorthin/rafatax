@@ -93,7 +93,13 @@ class InvoicePrintController extends Controller
             '-',
             $invoice->invoice_number ?? $invoice->id
         );
-        $filename = 'invoice-' . $invoiceNumberClean . '.pdf';
+        $companyName = $invoice->mou ? optional($invoice->mou->client)->company_name : optional($invoice->memo)->nama_klien;
+        $companyNameClean = str_replace(
+            ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
+            '-',
+            $companyName ?? ''
+        );
+        $filename = 'invoice-' . $invoiceNumberClean . '-' . $companyNameClean . '.pdf';
 
         return [$pdf, $filename];
     }

@@ -312,6 +312,10 @@ class MouResource extends Resource
                         $data['value'],
                         fn(Builder $query, $year) => $query->whereYear('start_date', $year)
                     )),
+                Tables\Filters\Filter::make('status')
+                    ->label('Status')
+                    ->query(fn(Builder $query): Builder => $query->where('status', 'approved'))
+                    ->default()
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

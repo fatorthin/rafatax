@@ -13,7 +13,11 @@ class MouStatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        $totalCostListMou = CostListMou::where('mou_id', $this->mouId)->sum('total_amount');
+        $totalCostListMou = CostListMou::where('mou_id', $this->mouId)
+            ->whereHas('mou', function ($query) {
+                $query->where('status', 'approved');
+            })
+            ->sum('total_amount');
 
         $totalCostListInvoiceUnpaid = CostListInvoice::where('mou_id', $this->mouId)
             ->whereNotNull('invoice_id')
