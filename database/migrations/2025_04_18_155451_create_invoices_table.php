@@ -24,6 +24,7 @@ return new class extends Migration
             $table->enum('rek_transfer', ['BCA PT', 'BCA BARU', 'BCA LAMA', 'MANDIRI'])->nullable();
             $table->boolean('is_saldo_awal')->default(false);
             $table->boolean('is_include_pph23')->default(false);
+            $table->date('tgl_transfer')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

@@ -26,7 +26,8 @@ class Invoice extends Model
         'memo_id',
         'rek_transfer',
         'is_include_pph23',
-        'cash_report_id'
+        'cash_report_id',
+        'tgl_transfer'
     ];
 
     protected static function booted()
