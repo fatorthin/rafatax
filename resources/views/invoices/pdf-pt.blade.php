@@ -150,13 +150,31 @@
 
         <table style="width: 100%; border: none; margin-top: 40px;">
             <tr>
-                <td style="border: none; width: 70%; vertical-align: top; padding: 0;">
+                <td style="border: none; width: 40%; vertical-align: top; padding: 0;">
                     <div class="transfer-info">
                         <u>TRANSFER VIA</u><br>
                         BCA.IDR<br>
                         A.C : 785 - 1260 - 513<br>
                         A.N : PT. Aghnia Oasis Konsultindo
                     </div>
+                </td>
+                <td style="border: none; width: 30%; text-align: center; vertical-align: middle; padding: 0;">
+                    @if (isset($invoice) && strtolower($invoice->invoice_status) === 'paid')
+                        @php
+                            $stampPath = public_path('images/cap-lunas.png');
+                            // Ambil tanggal lunas: tgl_transfer jika ada (atau dari relation cash report)
+                            $paidDate = $invoice->tgl_transfer ?? $invoice->created_at;
+                        @endphp
+                        @if (file_exists($stampPath))
+                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents($stampPath)) }}"
+                                alt="LUNAS" style="height: 80px; opacity: 0.8;">
+                            @if ($paidDate)
+                                <div style="margin-top: 5px; font-weight: bold; font-size: 15px; color: #1E0CD3;">
+                                    {{ \Carbon\Carbon::parse($paidDate)->format('d/m/Y') }}
+                                </div>
+                            @endif
+                        @endif
+                    @endif
                 </td>
                 <td style="border: none; width: 30%; text-align: center; vertical-align: top; padding: 0;">
                     <div style="text-align: center;">
