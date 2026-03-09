@@ -72,7 +72,7 @@ class MouPrintViewController extends Controller
             'isPdf' => true,
         ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true]);
 
-        $filename = 'MoU-' . str_replace(['/', '\\'], '-', $mou->mou_number) . '.pdf';
+        $filename = 'MoU-' . str_replace(['/', '\\'], '-', $mou->mou_number) . '-' . str_replace(['/', '\\'], '-', $mou->client->company_name ?? '') . '.pdf';
 
         return [$pdf, $filename];
     }
