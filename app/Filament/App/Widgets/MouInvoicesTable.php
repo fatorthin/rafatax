@@ -82,6 +82,12 @@ class MouInvoicesTable extends BaseWidget
                         'BCA LAMA' => 'BCA LAMA',
                         'MANDIRI' => 'MANDIRI'
                     ]),
+                Tables\Columns\TextColumn::make('tgl_transfer')
+                    ->label('Transfer Date')
+                    ->getStateUsing(fn($record) => $record->invoice_status === 'paid' ? ($record->tgl_transfer ?? $record->created_at) : null)
+                    ->date()
+                    ->placeholder('-')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
                     ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))

@@ -79,6 +79,12 @@ class MouInvoicesTable extends BaseWidget
                     ->formatStateUsing(fn(string $state): string => ucfirst($state)),
                 Tables\Columns\TextColumn::make('rek_transfer')
                     ->label('Rekening Transfer'),
+                Tables\Columns\TextColumn::make('tgl_transfer')
+                    ->label('Transfer Date')
+                    ->getStateUsing(fn($record) => $record->invoice_status === 'paid' ? ($record->tgl_transfer ?? $record->created_at) : null)
+                    ->date()
+                    ->placeholder('-')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
                     ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
