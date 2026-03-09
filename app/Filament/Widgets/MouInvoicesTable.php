@@ -110,8 +110,12 @@ class MouInvoicesTable extends BaseWidget
                     ->color('primary')
                     ->requiresConfirmation()
                     ->modalHeading('Update Status Bayar')
-                    ->modalDescription('Pilih rekening transfer untuk menandai invoice sebagai Paid.')
+                    ->modalDescription('Pilih tanggal transfer dan rekening transfer untuk menandai invoice sebagai Paid.')
                     ->form([
+                        Forms\Components\DatePicker::make('tgl_transfer')
+                            ->label('Tanggal Transfer')
+                            ->default(now())
+                            ->required(),
                         Forms\Components\Select::make('rek_transfer')
                             ->label('Rekening Transfer')
                             ->options([
@@ -154,7 +158,7 @@ class MouInvoicesTable extends BaseWidget
                                 'type' => 'debit',
                                 'debit_amount' => $costItem->amount,
                                 'credit_amount' => 0,
-                                'transaction_date' => now(),
+                                'transaction_date' => $data['tgl_transfer'],
                             ]);
 
                             if ($firstCashReportId === null) {
