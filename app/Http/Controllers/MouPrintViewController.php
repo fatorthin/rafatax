@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\MoU;
 use App\Models\CostListMou;
-use Illuminate\Http\Request;
 
 class MouPrintViewController extends Controller
 {
