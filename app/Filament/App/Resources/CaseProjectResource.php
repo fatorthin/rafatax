@@ -66,8 +66,8 @@ class CaseProjectResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('mou_id')
                     ->label('No MoU')
-                    ->options(MoU::all()->mapWithKeys(fn($record) => [
-                        $record->id => "{$record->mou_number} - {$record->description}"
+                    ->options(MoU::with('client')->get()->mapWithKeys(fn($record) => [
+                        $record->id => "{$record->mou_number} - {$record->client?->company_name} - {$record->description}"
                     ]))
                     ->searchable()
                     ->preload(),
@@ -114,6 +114,7 @@ class CaseProjectResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
 
