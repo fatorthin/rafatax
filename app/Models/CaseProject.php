@@ -25,6 +25,7 @@ class CaseProject extends Model
         'filling_drive',
         'report_date',
         'share_client_date',
+        'link_drive'
     ];
 
     protected $casts = [

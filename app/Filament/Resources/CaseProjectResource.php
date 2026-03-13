@@ -75,6 +75,8 @@ class CaseProjectResource extends Resource
                     ->label('Tanggal Surat Kuasa'),
                 Forms\Components\DatePicker::make('filling_drive')
                     ->label('Tangggal Filling Drive'),
+                Forms\Components\Textarea::make('link_drive')
+                    ->label('Link Drive'),
                 Forms\Components\DatePicker::make('report_date')
                     ->label('Tanggal Laporan'),
                 Forms\Components\DatePicker::make('share_client_date')

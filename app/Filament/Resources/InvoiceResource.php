@@ -120,14 +120,14 @@ class InvoiceResource extends Resource
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
                             // Add 3 weeks to the invoice date
-                            $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
+                            $dueDate = date('Y-m-d', strtotime($state . ' + 2 weeks'));
                             $set('due_date', $dueDate);
                         }
                         self::generateInvoiceNumber($set, $get);
                     }),
                 Forms\Components\DatePicker::make('due_date')
                     ->required()
-                    ->default(now()->addWeeks(3)),
+                    ->default(now()->addWeeks(2)),
                 Forms\Components\Select::make('invoice_status')
                     ->options([
                         'unpaid' => 'Unpaid',

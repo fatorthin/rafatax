@@ -124,7 +124,7 @@ class InvoiceResource extends Resource
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
                             // Add 3 weeks to the invoice date
-                            $dueDate = date('Y-m-d', strtotime($state . ' + 3 weeks'));
+                            $dueDate = date('Y-m-d', strtotime($state . ' + 2 weeks'));
                             $set('due_date', $dueDate);
                         }
                         self::generateInvoiceNumber($set, $get);

@@ -87,6 +87,8 @@ class CaseProjectResource extends Resource
                     ->label('Drive Pengisian')
                     ->native(false)
                     ->displayFormat('d/m/Y'),
+                Forms\Components\Textarea::make('link_drive')
+                    ->label('Link Drive'),
                 Forms\Components\DatePicker::make('report_date')
                     ->label('Tanggal Laporan')
                     ->native(false)

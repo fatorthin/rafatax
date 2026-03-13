@@ -548,7 +548,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         ->live()
                         ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                             if ($state) {
-                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
+                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(2)->toDateString();
                                 $set('due_date', $dueDate);
                             }
                             InvoiceResource::generateInvoiceNumber($set, $get);
