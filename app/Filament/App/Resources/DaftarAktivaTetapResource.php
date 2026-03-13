@@ -8,6 +8,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
+use App\Traits\HasPermissions;
 use App\Models\DaftarAktivaTetap;
 use App\Models\DepresiasiAktivaTetap;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +19,8 @@ use Filament\Tables\Enums\ActionsPosition;
 
 class DaftarAktivaTetapResource extends Resource
 {
+    use HasPermissions;
+
     protected static ?string $model = DaftarAktivaTetap::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

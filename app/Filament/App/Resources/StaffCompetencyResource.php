@@ -3,8 +3,8 @@
 namespace App\Filament\App\Resources;
 
 use App\Filament\App\Resources\StaffCompetencyResource\Pages;
-use App\Filament\App\Resources\StaffCompetencyResource\RelationManagers;
 use App\Models\StaffCompetency;
+use App\Traits\HasPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class StaffCompetencyResource extends Resource
 {
+    use HasPermissions;
     protected static ?string $model = StaffCompetency::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

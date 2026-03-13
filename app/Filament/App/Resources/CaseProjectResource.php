@@ -12,12 +12,10 @@ use App\Models\CaseProject;
 use App\Traits\HasPermissions;
 use App\Services\WablasService;
 use Filament\Resources\Resource;
-use Filament\Tables\Columns\Layout\Stack;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\CaseProjectResource\Pages;
-use App\Filament\App\Resources\CaseProjectResource\RelationManagers;
 
 class CaseProjectResource extends Resource
 {
@@ -158,6 +156,13 @@ class CaseProjectResource extends Resource
                 Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable(),
                 Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable(),
+                Tables\Columns\TextColumn::make('link_drive')
+                    ->label('Link Drive')
+                    ->formatStateUsing(fn($state) => $state ? 'Buka Link' : '-')
+                    ->url(fn($record) => $record->link_drive, shouldOpenInNewTab: true)
+                    ->color('primary')
+                    ->icon('heroicon-o-link')
+                    ->iconPosition('before'),
                 Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
                 // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
@@ -206,6 +211,22 @@ class CaseProjectResource extends Resource
                                 ->send();
                         }
                     }),
+                Tables\Actions\Action::make('detail')
+                    ->label('Detail Tim')
+                    ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
+                    ->icon('heroicon-o-information-circle'),
+                Tables\Actions\Action::make('editLinkDrive')
+                    ->label('Edit Link Drive')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\Textarea::make('link_drive')
+                            ->label('Link Drive')
+                            ->default(fn(CaseProject $record) => $record->link_drive),
+                    ])
+                    ->action(function (CaseProject $record, array $data) {
+                        $record->update(['link_drive' => $data['link_drive']]);
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
@@ -224,6 +245,7 @@ class CaseProjectResource extends Resource
     {
         return [
             'index' => Pages\ManageCaseProjects::route('/'),
+            'detail' => Pages\DetailTim::route('/{record}/detail'),
         ];
     }
 

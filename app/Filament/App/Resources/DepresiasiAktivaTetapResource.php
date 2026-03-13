@@ -7,6 +7,7 @@ use Filament\Tables;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use App\Traits\HasPermissions;
 use App\Models\DaftarAktivaTetap;
 use App\Models\DepresiasiAktivaTetap;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,8 @@ use App\Filament\App\Resources\DepresiasiAktivaTetapResource\Pages;
 
 class DepresiasiAktivaTetapResource extends Resource
 {
+    use HasPermissions;
+
     protected static ?string $model = DepresiasiAktivaTetap::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

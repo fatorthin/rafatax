@@ -2,28 +2,23 @@
 
 namespace App\Filament\App\Resources;
 
-use Filament\Forms;
-use App\Models\Memo;
-use Filament\Tables;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use App\Models\CostListInvoice;
-use Filament\Resources\Resource;
-use Filament\Forms\Components\Radio;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Textarea;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Forms\Components\TextInput;
-use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Tables\Enums\ActionsPosition;
-use Filament\Forms\Components\DateTimePicker;
 use App\Filament\App\Resources\MemoResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\MemoResource\RelationManagers; // Use App RelationManagers
+use App\Models\CostListInvoice;
+use App\Models\Memo;
+use App\Traits\HasPermissions;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Enums\ActionsPosition;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MemoResource extends Resource
 {
+    use HasPermissions;
+
     protected static ?string $model = Memo::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -137,7 +132,7 @@ class MemoResource extends Resource
                     ->label('Total Invoice')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        return \App\Models\CostListInvoice::whereHas('invoice', function ($query) use ($record) {
+                        return CostListInvoice::whereHas('invoice', function ($query) use ($record) {
                             $query->where('memo_id', $record->id);
                         })->sum('amount');
                     }),

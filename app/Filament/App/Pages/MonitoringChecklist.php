@@ -20,6 +20,19 @@ class MonitoringChecklist extends Page implements HasTable
 {
     use InteractsWithTable;
 
+    public static function canAccess(array $parameters = []): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        return $user->hasPermission('checklist-mou.view') || $user->hasPermission('checklist-mous.view');
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-presentation-chart-line';
 
     protected static ?string $navigationLabel = 'Checklist Tagihan MoU';

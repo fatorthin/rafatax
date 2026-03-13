@@ -26,6 +26,19 @@ class RekapMou extends Page implements HasTable
 
     protected static ?string $title = 'Rekap MoU';
 
+    public static function canAccess(array $parameters = []): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        return $user->hasPermission('mou.view') || $user->hasPermission('mous.view');
+    }
+
     public function table(Table $table): Table
     {
         return $table

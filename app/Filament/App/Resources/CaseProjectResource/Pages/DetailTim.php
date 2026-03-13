@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\CaseProjectResource\Pages;
+namespace App\Filament\App\Resources\CaseProjectResource\Pages;
 
 use App\Models\Staff;
 use Filament\Tables\Table;
@@ -19,7 +19,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
-use App\Filament\Resources\CaseProjectResource;
+use App\Filament\App\Resources\CaseProjectResource;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 

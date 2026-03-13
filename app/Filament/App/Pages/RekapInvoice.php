@@ -11,6 +11,19 @@ class RekapInvoice extends BasePage
 {
     protected static ?string $navigationGroup = 'Keuangan';
 
+    public static function canAccess(array $parameters = []): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        return $user->hasPermission('invoice.view') || $user->hasPermission('invoices.view');
+    }
+
     // Override table to point to App Resource URL
     public function table(Table $table): Table
     {
