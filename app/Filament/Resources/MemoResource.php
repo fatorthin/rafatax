@@ -11,7 +11,6 @@ use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\ActionsPosition;
 use App\Filament\Resources\MemoResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\MemoResource\RelationManagers;
 
 class MemoResource extends Resource
