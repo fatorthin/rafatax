@@ -193,14 +193,33 @@ $totalFeeFormatted = 'Rp.' . number_format($memo->total_fee, 0, ',', '.');
         menandatangani surat ini dan menyerahkan kepada Pihak Kedua.
     </div>
 
-    <div class="signature-section">
-        <div>Ditandatangani di Sukoharjo</div>
-        <div>Pada tanggal {{ \Carbon\Carbon::parse($memo->tanggal_ttd)->locale('id')->translatedFormat('d F Y') }}</div>
-        <div class="font-bold underline" style="margin-bottom: 80px;">Pihak Pertama</div>
-
-        <div class="font-bold underline">ANTIN OKFITASARI, S.E.,S.H.,Msi., Ak., CA.AB., BKP.,CATr.,ACPA</div>
-        <div>OWNER KKP ANTIN OKFITASARI (RAFATAX)</div>
-    </div>
+    <table style="width: 100%; margin-top: 40px; break-inside: avoid; text-align: center; border: none;">
+        <tr>
+            <td style="width: 50%; border: none;"></td>
+            <td style="width: 50%; border: none;">
+                <div>Ditandatangani di Sukoharjo</div>
+                <div>Pada tanggal {{ \Carbon\Carbon::parse($memo->tanggal_ttd)->locale('id')->translatedFormat('d F Y') }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 50%; border: none; padding-top: 10px;">
+                <div class="font-bold underline" style="margin-bottom: 80px;">Pihak Kedua</div>
+            </td>
+            <td style="width: 50%; border: none; padding-top: 10px;">
+                <div class="font-bold underline" style="margin-bottom: 80px;">Pihak Pertama</div>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 50%; border: none;">
+                <div class="font-bold underline">{{ strtoupper($memo->nama_klien) }}</div>
+                <div>{{ strtoupper($memo->instansi_klien) }}</div>
+            </td>
+            <td style="width: 50%; border: none;">
+                <div class="font-bold underline">ANTIN OKFITASARI, S.E.,S.H.,Msi., Ak., CA.AB., BKP.,CATr.,ACPA</div>
+                <div>OWNER KKP ANTIN OKFITASARI (RAFATAX)</div>
+            </td>
+        </tr>
+    </table>
 </body>
 
 </html>
