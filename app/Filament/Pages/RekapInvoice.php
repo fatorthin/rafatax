@@ -48,6 +48,9 @@ class RekapInvoice extends Page implements HasTable
             ->columns([
                 TextColumn::make('invoice_type')
                     ->label('Tipe Invoice')
+                    ->formatStateUsing(function ($state) {
+                        return strtoupper($state);
+                    })
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('invoice_count')
@@ -55,7 +58,7 @@ class RekapInvoice extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('total_amount')
                     ->label('Total Nilai')
-                    ->money('IDR')
+                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
                     ->sortable(),
             ])
             ->actions([
@@ -92,5 +95,16 @@ class RekapInvoice extends Page implements HasTable
         return Invoice::query()
             ->where('invoice_type', $key)
             ->first();
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('rekap_tahunan')
+                ->label('Rekap Tahunan')
+                ->url(RekapInvoiceTahunan::getUrl())
+                ->color('primary')
+                ->icon('heroicon-o-calendar-days'),
+        ];
     }
 }
