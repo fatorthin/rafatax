@@ -217,7 +217,8 @@ class PayrollDetailResource extends Resource
         $halfday = (int) ($get('halfday_count') ?? 0);
         $leave = (int) ($get('leave_count') ?? 0);
 
-        $bonusOvertime = $overtimeCount * 10000;
+        $overtimeMultiplier = (int) ($get('overtime_multiplier') ?? 0);
+        $bonusOvertime = $overtimeCount * $overtimeMultiplier;
         $bonusVisitSolo = $visitSoloCount * 10000;
         $bonusVisitLuarSolo = $visitLuarSoloCount * 15000;
 
@@ -300,7 +301,7 @@ class PayrollDetailResource extends Resource
                 Tables\Columns\TextColumn::make('bonus_lembur')
                     ->label('Bonus Lembur')
                     ->getStateUsing(function ($record) {
-                        return $record->overtime_count * 10000;
+                        return $record->overtime_count * $record->overtime_multiplier;
                     })
                     ->formatStateUsing(function ($state) {
                         return number_format($state, 0, ',', '.');
@@ -395,7 +396,7 @@ class PayrollDetailResource extends Resource
                 Tables\Columns\TextColumn::make('total_bonus')
                     ->label('Total Bonus')
                     ->getStateUsing(function ($record) {
-                        return ($record->overtime_count * 10000) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain;
+                        return ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain;
                     })
                     ->formatStateUsing(function ($state) {
                         return number_format($state, 0, ',', '.');
@@ -415,7 +416,7 @@ class PayrollDetailResource extends Resource
                 Tables\Columns\TextColumn::make('total_salary')
                     ->label('Total Salary')
                     ->getStateUsing(function ($record) {
-                        return $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * 10000) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
+                        return $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
                     })
                     ->formatStateUsing(function ($state) {
                         return number_format($state, 0, ',', '.');

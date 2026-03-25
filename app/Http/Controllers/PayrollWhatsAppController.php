@@ -267,7 +267,7 @@ class PayrollWhatsAppController extends Controller
     {
         try {
             // Hitung komponen gaji
-            $bonusLembur = $detail->overtime_count * 10000;
+            $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
             $bonusVisitSolo = $detail->visit_solo_count * 10000;
             $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
             $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;
@@ -334,7 +334,7 @@ class PayrollWhatsAppController extends Controller
 
     private function calculateTotalSalary(PayrollDetail $detail): float
     {
-        $bonusLembur = $detail->overtime_count * 10000;
+        $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
         $bonusVisitSolo = $detail->visit_solo_count * 10000;
         $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
         $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;
@@ -363,7 +363,7 @@ class PayrollWhatsAppController extends Controller
             Log::info('Starting downloadSlip for detail ID: ' . $detail->id);
 
             // Hitung komponen gaji
-            $bonusLembur = $detail->overtime_count * 10000;
+            $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
             $bonusVisitSolo = $detail->visit_solo_count * 10000;
             $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
             $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;

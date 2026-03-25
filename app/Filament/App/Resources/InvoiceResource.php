@@ -15,7 +15,7 @@ use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\InvoiceResource\Pages;
-use App\Filament\App\Resources\InvoiceResource\RelationManagers;
+use Filament\Tables\Enums\ActionsPosition;
 
 class InvoiceResource extends Resource
 {
@@ -388,6 +388,10 @@ class InvoiceResource extends Resource
                     ->modalHeading('Update Status Bayar')
                     ->modalDescription('Pilih rekening transfer untuk menandai invoice sebagai Paid.')
                     ->form([
+                        Forms\Components\DatePicker::make('tgl_transfer')
+                            ->label('Tanggal Transfer')
+                            ->default(now())
+                            ->required(),
                         Forms\Components\Select::make('rek_transfer')
                             ->label('Rekening Transfer')
                             ->options([
@@ -430,7 +434,7 @@ class InvoiceResource extends Resource
                                 'type' => 'debit',
                                 'debit_amount' => $costItem->amount,
                                 'credit_amount' => 0,
-                                'transaction_date' => now(),
+                                'transaction_date' => $data['tgl_transfer'],
                             ]);
 
                             if ($firstCashReportId === null) {
@@ -454,7 +458,7 @@ class InvoiceResource extends Resource
                     })
                     ->visible(fn(Invoice $record): bool => $record->invoice_status !== 'paid'),
                 Tables\Actions\DeleteAction::make()->color('danger'),
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

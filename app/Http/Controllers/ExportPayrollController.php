@@ -60,7 +60,7 @@ class ExportPayrollController extends Controller
         // Rows
         $row = 2;
         foreach ($details as $idx => $d) {
-            $bonusLembur = $d->overtime_count * 10000;
+            $bonusLembur = $d->overtime_count * $d->overtime_multiplier;
             $bonusVisitSolo = $d->visit_solo_count * 10000;
             $bonusVisitLuar = $d->visit_luar_solo_count * 15000;
             $cutSakit = $d->sick_leave_count * 0.5 * $d->salary / 25;
@@ -129,7 +129,7 @@ class ExportPayrollController extends Controller
     {
         $detail->load(['staff', 'payroll']);
 
-        $bonusLembur = $detail->overtime_count * 10000;
+        $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
         $bonusVisitSolo = $detail->visit_solo_count * 10000;
         $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
         $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;

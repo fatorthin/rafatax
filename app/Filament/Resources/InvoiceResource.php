@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\InvoiceResource\Pages;
-use App\Filament\Resources\InvoiceResource\RelationManagers;
 use App\Models\CashReport;
 use App\Models\Invoice;
 use App\Models\MoU;
@@ -12,10 +11,10 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Enums\ActionsPosition;
 
 class InvoiceResource extends Resource
 {
@@ -211,7 +210,7 @@ class InvoiceResource extends Resource
             ->paginated([10, 25, 50, 100])
             ->columns(static::getTableColumns())
             ->filters(static::getTableFilters())
-            ->actions(static::getTableActions())
+            ->actions(static::getTableActions(), position: ActionsPosition::BeforeCells)
             ->bulkActions(static::getTableBulkActions())
             ->defaultSort('invoice_date', 'desc')
             ->deferLoading();
@@ -419,6 +418,10 @@ class InvoiceResource extends Resource
                 ->modalHeading('Update Status Bayar')
                 ->modalDescription('Pilih rekening transfer untuk menandai invoice sebagai Paid.')
                 ->form([
+                    Forms\Components\DatePicker::make('tgl_transfer')
+                        ->label('Tanggal Transfer')
+                        ->default(now())
+                        ->required(),
                     Forms\Components\Select::make('rek_transfer')
                         ->label('Rekening Transfer')
                         ->options([
@@ -461,7 +464,7 @@ class InvoiceResource extends Resource
                             'type' => 'debit',
                             'debit_amount' => $costItem->amount,
                             'credit_amount' => 0,
-                            'transaction_date' => now(),
+                            'transaction_date' => $data['tgl_transfer'],
                         ]);
 
                         if ($firstCashReportId === null) {
