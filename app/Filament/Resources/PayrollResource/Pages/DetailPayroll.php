@@ -127,7 +127,7 @@ class DetailPayroll extends Page implements HasTable
                             ->state(function () {
                                 $details = PayrollDetail::where('payroll_id', $this->record->id)->get();
                                 $sum = $details->sum(function ($d) {
-                                    $bonusLembur = $d->overtime_count * 10000;
+                                    $bonusLembur = $d->overtime_count * $d->overtime_multiplier;
                                     $bonusVisitSolo = $d->visit_solo_count * 10000;
                                     $bonusVisitLuar = $d->visit_luar_solo_count * 15000;
                                     $cutSakit = $d->sick_leave_count * 0.5 * $d->salary / 25;

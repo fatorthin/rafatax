@@ -30,6 +30,7 @@ return new class extends Migration
             $table->double('cut_bpjs_ketenagakerjaan')->default(0);
             $table->double('cut_lain')->default(0);
             $table->double('cut_hutang')->default(0);
+            $table->double('overtime_multiplier')->default(0);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
