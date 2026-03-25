@@ -2,7 +2,6 @@
 
 namespace App\Filament\App\Resources\MouResource\Widgets;
 
-use App\Models\MoU;
 use App\Models\CashReport;
 use Filament\Forms;
 use Filament\Tables;
