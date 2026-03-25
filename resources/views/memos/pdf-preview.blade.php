@@ -198,7 +198,8 @@ $totalFeeFormatted = 'Rp.' . number_format($memo->total_fee, 0, ',', '.');
             <td style="width: 50%; border: none;"></td>
             <td style="width: 50%; border: none;">
                 <div>Ditandatangani di Sukoharjo</div>
-                <div>Pada tanggal {{ \Carbon\Carbon::parse($memo->tanggal_ttd)->locale('id')->translatedFormat('d F Y') }}</div>
+                <div>Pada tanggal
+                    {{ \Carbon\Carbon::parse($memo->tanggal_ttd)->locale('id')->translatedFormat('d F Y') }}</div>
             </td>
         </tr>
         <tr>
@@ -215,7 +216,7 @@ $totalFeeFormatted = 'Rp.' . number_format($memo->total_fee, 0, ',', '.');
                 <div>{{ strtoupper($memo->instansi_klien) }}</div>
             </td>
             <td style="width: 50%; border: none;">
-                <div class="font-bold underline">ANTIN OKFITASARI, S.E.,S.H.,Msi., Ak., CA.AB., BKP.,CATr.,ACPA</div>
+                <div class="font-bold underline">ANTIN OKFITASARI, S.E.,S.H.,M.Si., Ak., CA.AB., BKP.,CATr.,ACPA</div>
                 <div>OWNER KKP ANTIN OKFITASARI (RAFATAX)</div>
             </td>
         </tr>

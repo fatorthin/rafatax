@@ -632,8 +632,8 @@
                                         <img src="{{ public_path('images/ttd_antin.png') }}" alt="Tanda Tangan"
                                             style="height: 100px;">
                                         <div class="signature-line"></div>
-                                        <p class="signature-name">ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB.,
-                                            BKP.,CATr.ACPA</p>
+                                        <p class="signature-name">ANTIN OKFITASARI, S.E.,S.H.,M.Si., Ak., CA.AB.,
+                                            BKP.,CATr.,ACPA</p>
                                         <p class="signature-title">DIREKTUR PT AGHNIA OASIS KONSULTINDO (RAFATAX)</p>
                                     </div>
                                 </div>

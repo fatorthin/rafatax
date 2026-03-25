@@ -234,7 +234,7 @@
                     <td></td>
                     <td><strong>Alamat</strong></td>
                     <td>:</td>
-                    <td>DK NAMPAN RT 01 RW 02 MADEGONDO GROGOL SUKOHARJO</td>
+                    <td>DK NAMPAN RT 02 RW 01 MADEGONDO GROGOL SUKOHARJO</td>
                 </tr>
                 <tr>
                     <td></td>
@@ -432,8 +432,7 @@
                     <div class="signature-line" style="border:none; height: 0px;"></div>
                     <div
                         style="border-bottom: 1px solid black; display: inline-block; min-width: 150px; padding-bottom: 2px;">
-                        ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB.,
-                        BKP.,CATr.ACPA</div>
+                        ANTIN OKFITASARI, S.E.,S.H.,M.Si., Ak., CA.AB., BKP.,CATr.,ACPA</div>
                     <p>DIREKTUR PT AGHNIA OASIS KONSULTINDO (RAFATAX)</p>
                 </div>
             </div>

@@ -387,8 +387,7 @@
                     <div class="signature-line" style="border:none; height: 0px;"></div>
                     <div
                         style="border-bottom: 1px solid black; display: inline-block; min-width: 150px; padding-bottom: 2px;">
-                        ANTIN OKFITASARI, SE.,Msi., Ak., CA.AB.,
-                        BKP.,CATr.ACPA</div>
+                        ANTIN OKFITASARI, S.E.,S.H.,M.Si., Ak., CA.AB., BKP.,CATr.,ACPA</div>
                     <p>DIREKTUR PT AGHNIA OASIS KONSULTINDO (RAFATAX)</p>
                 </div>
             </div>
