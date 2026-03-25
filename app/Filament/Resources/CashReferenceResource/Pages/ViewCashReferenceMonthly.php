@@ -13,12 +13,10 @@ use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\CashReferenceResource;
-use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
 use Filament\Tables\Actions\Action;
 use Filament\Forms;
@@ -47,12 +45,15 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                     ->select([
                         DB::raw('YEAR(transaction_date) as year'),
                         DB::raw('MONTH(transaction_date) as month'),
+                        DB::raw('COALESCE(SUM(SUM(debit_amount - credit_amount)) OVER (ORDER BY YEAR(transaction_date) ASC, MONTH(transaction_date) ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) as previous_balance'),
                         DB::raw('SUM(debit_amount) as total_debit'),
                         DB::raw('SUM(credit_amount) as total_credit'),
-                        DB::raw('SUM(debit_amount - credit_amount) as monthly_balance'),
+                        DB::raw('SUM(SUM(debit_amount - credit_amount)) OVER (ORDER BY YEAR(transaction_date) ASC, MONTH(transaction_date) ASC) as monthly_balance'),
                         DB::raw('COUNT(*) as transaction_count')
                     ])
                     ->groupBy('year', 'month')
+                    ->orderBy('year', 'asc')
+                    ->orderBy('month', 'asc')
             )
             ->columns([
                 TextColumn::make('year')
@@ -68,6 +69,13 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                     ->label('# of Transactions')
                     ->sortable()
                     ->alignCenter(),
+                TextColumn::make('previous_balance')
+                    ->label('Previous Balance')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 2, ',', '.');
+                    })
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('total_debit')
                     ->label('Total Debit')
                     ->formatStateUsing(function ($state) {
@@ -99,12 +107,6 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                     ->formatStateUsing(function ($state) {
                         return number_format((float) $state, 2, ',', '.');
                     })
-                    ->summarize(
-                        Sum::make()
-                            ->formatStateUsing(function ($state) {
-                                return number_format((float) $state, 2, ',', '.');
-                            })
-                    )
                     ->sortable()
                     ->alignEnd(),
             ])
