@@ -241,12 +241,16 @@ class InvoiceResource extends Resource
                         'kkp' => 'KKP',
                     ])
                     ->sortable(),
-                Tables\Columns\SelectColumn::make('invoice_status')
-                    ->options([
-                        'unpaid' => 'Unpaid',
-                        'paid' => 'Paid',
-                    ])
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('invoice_status')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'paid' => 'success',
+                        'unpaid' => 'warning',
+                        'overdue' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => ucfirst($state)),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->alignEnd()
