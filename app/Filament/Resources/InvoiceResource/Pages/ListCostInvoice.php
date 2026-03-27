@@ -207,7 +207,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $clientName = $this->invoice->mou ? $this->invoice->mou->client->company_name : ($this->invoice->memo ? $this->invoice->memo->nama_klien : 'Client');
 
                         // Calculate total amount
-                        $totalAmount = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
+                        $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
                         $formattedAmount = number_format($totalAmount, 0, ',', '.');
 
                         // Create WhatsApp message
@@ -249,7 +249,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $wablasService->sendMessage($phone, $message);
 
                         // 2. Generate PDF using DOMPDF
-                        $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
+                        $costLists = CostListInvoice::where('invoice_id', $this->invoice->id)->get();
 
                         if ($typeNormalized === 'kkp') {
                             $view = 'invoices.pdf-kkp';

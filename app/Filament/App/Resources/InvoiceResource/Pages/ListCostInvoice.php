@@ -221,7 +221,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $clientName = $this->invoice->mou ? $this->invoice->mou->client->company_name : ($this->invoice->memo ? $this->invoice->memo->nama_klien : 'Client');
 
                         // Calculate total amount
-                        $totalAmount = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
+                        $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
                         $formattedAmount = number_format($totalAmount, 0, ',', '.');
 
                         // Create WhatsApp message
@@ -268,7 +268,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         // but since this is an action, we might need to replicate the preparation logic or call a service.
                         // For now, I will replicate the enhanced logic here to ensure it uses the correct data.
 
-                        $costLists = \App\Models\CostListInvoice::where('invoice_id', $this->invoice->id)->get();
+                        $costLists = CostListInvoice::where('invoice_id', $this->invoice->id)->get();
 
                         if ($typeNormalized === 'kkp') {
                             $view = 'invoices.pdf-kkp';
