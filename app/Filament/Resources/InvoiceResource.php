@@ -162,6 +162,8 @@ class InvoiceResource extends Resource
                         'BCA LAMA' => 'BCA LAMA',
                         'MANDIRI' => 'MANDIRI'
                     ]),
+                Forms\Components\DatePicker::make('tgl_transfer')
+                    ->label('Tanggal Transfer'),
                 Forms\Components\Section::make('Rincian Biaya')
                     ->schema([
                         Forms\Components\Repeater::make('costListInvoices')
@@ -448,6 +450,7 @@ class InvoiceResource extends Resource
                     $record->update([
                         'invoice_status' => 'paid',
                         'rek_transfer' => $data['rek_transfer'],
+                        'tgl_transfer' => $data['tgl_transfer'],
                     ]);
 
                     // Create cash report entry per cost list invoice item (each has its own coa_id)

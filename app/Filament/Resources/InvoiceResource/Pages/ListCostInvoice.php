@@ -83,6 +83,15 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             ->label('Include PPH 23')
                             ->weight('bold')
                             ->formatStateUsing(fn(bool $state): string => $state ? 'Yes' : 'No'),
+                        TextEntry::make('rek_transfer')
+                            ->label('Rekening Transfer')
+                            ->weight('bold')
+                            ->placeholder('-'),
+                        TextEntry::make('tgl_transfer')
+                            ->label('Tanggal Transfer')
+                            ->weight('bold')
+                            ->date()
+                            ->placeholder('-'),
                     ])
                     ->columns(3)
             ]);
