@@ -41,6 +41,9 @@ class MonitoringChecklist extends Page implements HasTable
             ->query(
                 MoU::query()
                     ->with(['checklistMous', 'client', 'categoryMou'])
+                    ->whereHas('categoryMou', function ($query) {
+                        $query->whereIn('id', [3, 4]);
+                    })
             )
             ->heading('Monitoring Checklist MoU Tahun ' . $this->year)
             ->columns([

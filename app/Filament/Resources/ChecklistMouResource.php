@@ -101,6 +101,9 @@ class ChecklistMouResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            ->whereHas('mou', function ($query) {
+                $query->whereIn('category_mou_id', [3, 4]);
+            });
     }
 }
