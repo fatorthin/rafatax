@@ -174,8 +174,9 @@
             <form action="{{ route('cash-reference.transaction.store', $cashReference->id) }}" method="POST">
                 @csrf
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" required
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
+                    <input type="date" name="transaction_date" required
+                        value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}"
                         class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
@@ -189,9 +190,8 @@
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" required
-                        value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}"
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                    <input type="text" name="description" required
                         class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
