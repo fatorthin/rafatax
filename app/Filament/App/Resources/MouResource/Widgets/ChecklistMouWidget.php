@@ -35,9 +35,7 @@ class ChecklistMouWidget extends BaseWidget
 
         $validDates = [];
 
-        while ($start->lte($end)) {
-            // Check if checklist already exists for this month/year combo for this MoU
-            // Using startOfMonth date as the identifier
+        if (!in_array($mou->category_mou_id, [3, 4])) {
             $dateString = $start->format('Y-m-d');
             $validDates[] = $dateString;
 
@@ -50,8 +48,25 @@ class ChecklistMouWidget extends BaseWidget
                     'status' => 'pending',
                 ]
             );
+        } else {
+            while ($start->lte($end)) {
+                // Check if checklist already exists for this month/year combo for this MoU
+                // Using startOfMonth date as the identifier
+                $dateString = $start->format('Y-m-d');
+                $validDates[] = $dateString;
 
-            $start->addMonth();
+                ChecklistMou::firstOrCreate(
+                    [
+                        'mou_id' => $this->mouId,
+                        'checklist_date' => $dateString,
+                    ],
+                    [
+                        'status' => 'pending',
+                    ]
+                );
+
+                $start->addMonth();
+            }
         }
 
         // Hapus checklist yang berada di luar range tanggal MoU
@@ -72,7 +87,13 @@ class ChecklistMouWidget extends BaseWidget
             ->columns([
                 TextColumn::make('checklist_date')
                     ->label('Checklist Date')
-                    ->date('F Y')
+                    ->formatStateUsing(function ($state, ChecklistMou $record) {
+                        $mou = $record->mou;
+                        if ($mou && !in_array($mou->category_mou_id, [3, 4])) {
+                            return $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->created_at)->format('Y');
+                        }
+                        return \Carbon\Carbon::parse($state)->translatedFormat('F Y');
+                    })
                     ->sortable(),
                 SelectColumn::make('invoice_id')
                     ->label('Invoice')
