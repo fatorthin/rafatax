@@ -454,7 +454,7 @@
                         <!-- Header KONTEN (BUKAN GAMBAR HEADER HALAMAN) -->
                         <header class="header">
                             <p class="document-title">Surat Perjanjian Kompilasi</p>
-                            <p class="document-subtitle">Atas PEMBETULAN SPT</p>
+                            <p class="document-subtitle">Atas PEMBETULAN SPT Tahun {{ $mou->tahun_pajak }}</p>
                             <p class="document-number">NO: {{ $mou->mou_number }}</p>
                         </header>
 

@@ -173,7 +173,7 @@
         <!-- Header Content -->
         <div class="section">
             <div class="document-title">Surat Perjanjian Kompilasi</div>
-            <div class="document-subtitle">Atas PEMBETULAN SPT</div>
+            <div class="document-subtitle">Atas PEMBETULAN SPT Tahun {{ $mou->tahun_pajak }}</div>
             <div class="document-number">NO: {{ $mou->mou_number }}</div>
         </div>
 
