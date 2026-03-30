@@ -107,7 +107,7 @@ class ChecklistMouResource extends Resource
                 SoftDeletingScope::class,
             ])
             ->whereHas('mou', function ($query) {
-                $query->whereIn('category_mou_id', [3, 4]);
+                $query->whereIn('category_mou_id', [1, 2, 3, 4]);
             });
     }
 }

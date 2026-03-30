@@ -530,6 +530,7 @@ class InvoiceResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
+            ->whereYear('created_at', date('Y'))
             ->latest('created_at');
     }
 

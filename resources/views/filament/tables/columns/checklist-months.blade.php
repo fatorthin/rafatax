@@ -10,18 +10,31 @@
         fn($item) => \Carbon\Carbon::parse($item->checklist_date)->format('Y-m'),
     );
 
-    $period = \Carbon\CarbonPeriod::create($start, '1 month', $end);
+    $isSingleChecklist = in_array($record->category_mou_id, [1, 2]);
+
+    if ($isSingleChecklist) {
+        $period = [$start];
+    } else {
+        $period = \Carbon\CarbonPeriod::create($start, '1 month', $end);
+    }
 @endphp
 
 <div class="flex gap-2 w-full overflow-x-auto pb-2">
     @foreach ($period as $date)
         @php
-            $key = $date->format('Y-m');
-            $checklist = $checklists->get($key);
-            $status = $checklist ? $checklist->status : 'none';
+            if ($isSingleChecklist) {
+                $checklist = $checklists->first();
+                $dateToUse = $checklist ? \Carbon\Carbon::parse($checklist->checklist_date) : $date;
+                $actionDate = $dateToUse->format('Y-m-d');
+                $label = $record->tahun_pajak ?? $date->format('Y');
+            } else {
+                $key = $date->format('Y-m');
+                $checklist = $checklists->get($key);
+                $actionDate = $date->format('Y-m-d');
+                $label = $date->translatedFormat('M') . ' ' . $date->format('Y');
+            }
 
-            $monthName = $date->translatedFormat('M'); // Jan, Feb, etc.
-            $yearStr = $date->format('Y');
+            $status = $checklist ? $checklist->status : 'none';
 
             $colors = [
                 'none' => [
@@ -39,11 +52,10 @@
             ];
 
             $style = $colors[$status]['style'] ?? $colors['none']['style'];
-            $label = $monthName . ' ' . $yearStr;
         @endphp
 
         <button type="button"
-            wire:click="mountAction('editChecklist', { mou_id: {{ $record->id }}, date: '{{ $date->format('Y-m-d') }}' })"
+            wire:click="mountAction('editChecklist', { mou_id: {{ $record->id }}, date: '{{ $actionDate }}' })"
             class="px-2 py-1 text-xs rounded text-center min-w-[80px] shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
             style="{{ $style }}">
             {{ $label }}
