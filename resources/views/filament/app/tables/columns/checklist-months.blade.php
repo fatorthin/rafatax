@@ -10,7 +10,7 @@
         fn($item) => \Carbon\Carbon::parse($item->checklist_date)->format('Y-m'),
     );
 
-    $isSingleChecklist = in_array($record->category_mou_id, [1, 2]);
+    $isSingleChecklist = !in_array($record->category_mou_id, [3, 4]);
 
     if ($isSingleChecklist) {
         $period = [$start];
