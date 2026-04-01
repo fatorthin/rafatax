@@ -46,16 +46,42 @@ class MonitoringChecklist extends Page implements HasTable
             ->columns([
                 TextColumn::make('index')
                     ->label('No')
-                    ->rowIndex(),
+                    ->rowIndex()
+                    ->extraHeaderAttributes([
+                        'style' => 'position: sticky; left: 0; z-index: 30; background-color: inherit;',
+                        'class' => 'w-[50px] min-w-[50px]'
+                    ])
+                    ->extraAttributes([
+                        'style' => 'position: sticky; left: 0; z-index: 10;',
+                        'class' => 'bg-white dark:bg-zinc-900 w-[50px] min-w-[50px]'
+                    ]),
+                    
                 TextColumn::make('mou_number')
                     ->label('No MoU')
                     ->searchable()
                     ->sortable()
-                    ->description(fn(MoU $record) => $record->client->company_name ?? '-'),
+                    ->description(fn(MoU $record) => $record->client->company_name ?? '-')
+                    ->extraHeaderAttributes([
+                        'style' => 'position: sticky; left: 50px; z-index: 30; background-color: inherit;',
+                        'class' => 'w-[250px] min-w-[250px]'
+                    ])
+                    ->extraAttributes([
+                        'style' => 'position: sticky; left: 50px; z-index: 10;',
+                        'class' => 'bg-white dark:bg-zinc-900 w-[250px] min-w-[250px]'
+                    ]),
+                    
                 TextColumn::make('categoryMou.name')
                     ->label('Kategori')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->extraHeaderAttributes([
+                        'style' => 'position: sticky; left: 300px; z-index: 30; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                        'class' => 'w-[150px] min-w-[150px]'
+                    ])
+                    ->extraAttributes([
+                        'style' => 'position: sticky; left: 300px; z-index: 10; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                        'class' => 'bg-white dark:bg-zinc-900 w-[150px] min-w-[150px]'
+                    ]),
 
                 ViewColumn::make('checklist_months')
                     ->label('Checklist')

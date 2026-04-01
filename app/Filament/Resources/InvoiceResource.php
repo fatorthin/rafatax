@@ -215,21 +215,38 @@ class InvoiceResource extends Resource
             ->actions(static::getTableActions(), position: ActionsPosition::BeforeCells)
             ->bulkActions(static::getTableBulkActions())
             ->defaultSort('invoice_date', 'desc')
-            ->deferLoading();
+            ->deferLoading()
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-content { max-height: 75vh; overflow: auto !important; } .fi-ta-table thead { position: sticky; top: 0; z-index: 20; } .fi-ta-table thead th { background-color: #f9fafb; } .dark .fi-ta-table thead th { background-color: #18181b; }</style>'));
     }
 
     private static function getTableColumns(): array
     {
         return [
             Tables\Columns\TextColumn::make('invoice_number')
-                ->searchable(),
+                ->searchable()
+                ->extraHeaderAttributes([
+                    'style' => 'position: sticky; left: 0; z-index: 30; background-color: inherit;',
+                    'class' => 'w-[200px] min-w-[200px]'
+                ])
+                ->extraAttributes([
+                    'style' => 'position: sticky; left: 0; z-index: 10;',
+                    'class' => 'bg-white dark:bg-zinc-900 w-[200px] min-w-[200px]'
+                ]),
             Tables\Columns\TextColumn::make('reference_number')
                 ->label('MoU / Memo Number')
                 ->getStateUsing(fn($record) => $record->mou?->mou_number ?? $record->memo?->no_memo)
                 ->searchable(query: function (Builder $query, string $search): Builder {
                     return $query->whereHas('mou', fn($q) => $q->where('mou_number', 'like', "%{$search}%"))
                         ->orWhereHas('memo', fn($q) => $q->where('no_memo', 'like', "%{$search}%"));
-                }),
+                })
+                ->extraHeaderAttributes([
+                    'style' => 'position: sticky; left: 200px; z-index: 30; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                    'class' => 'w-[200px] min-w-[200px]'
+                ])
+                ->extraAttributes([
+                    'style' => 'position: sticky; left: 200px; z-index: 10; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                    'class' => 'bg-white dark:bg-zinc-900 w-[200px] min-w-[200px]'
+                ]),
             Tables\Columns\TextColumn::make('client_name')
                 ->label('Client')
                 ->getStateUsing(fn($record) => $record->mou?->client?->company_name ?? $record->memo?->nama_klien)

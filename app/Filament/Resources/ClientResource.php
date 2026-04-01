@@ -198,11 +198,28 @@ class ClientResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-content { max-height: 75vh; overflow: auto !important; } .fi-ta-table thead { position: sticky; top: 0; z-index: 20; } .fi-ta-table thead th { background-color: #f9fafb; } .dark .fi-ta-table thead th { background-color: #18181b; }</style>'))
             ->columns([
                 Tables\Columns\TextColumn::make('code')
-                    ->searchable(),
+                    ->searchable()
+                    ->extraHeaderAttributes([
+                        'style' => 'position: sticky; left: 0; z-index: 30; background-color: inherit;',
+                        'class' => 'w-[100px] min-w-[100px]'
+                    ])
+                    ->extraAttributes([
+                        'style' => 'position: sticky; left: 0; z-index: 10;',
+                        'class' => 'bg-white dark:bg-zinc-900 w-[100px] min-w-[100px]'
+                    ]),
                 Tables\Columns\TextColumn::make('company_name')
-                    ->searchable(),
+                    ->searchable()
+                    ->extraHeaderAttributes([
+                        'style' => 'position: sticky; left: 100px; z-index: 30; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                        'class' => 'w-[250px] min-w-[250px]'
+                    ])
+                    ->extraAttributes([
+                        'style' => 'position: sticky; left: 100px; z-index: 10; font-weight: 500; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                        'class' => 'bg-white dark:bg-zinc-900 w-[250px] min-w-[250px]'
+                    ]),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
