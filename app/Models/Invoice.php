@@ -27,7 +27,9 @@ class Invoice extends Model
         'rek_transfer',
         'is_include_pph23',
         'cash_report_id',
-        'tgl_transfer'
+        'tgl_transfer',
+        'is_send_invoice',
+        'send_invoice_date'
     ];
 
     protected static function booted()

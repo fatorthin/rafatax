@@ -26,7 +26,9 @@ class MoU extends Model
         'link_mou',
         'tahun_pajak',
         'tanggal_tagih_awal',
-        'tanggal_tagih_akhir'
+        'tanggal_tagih_akhir',
+        'is_send_mou',
+        'send_mou_date'
     ];
 
     public function client()

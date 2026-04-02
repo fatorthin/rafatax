@@ -26,6 +26,8 @@ return new class extends Migration
             $table->year('tahun_pajak')->nullable();
             $table->date('tanggal_tagih_awal')->nullable();
             $table->date('tanggal_tagih_akhir')->nullable();
+            $table->boolean('is_send_mou')->default(false);
+            $table->date('send_mou_date')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

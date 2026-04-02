@@ -25,6 +25,8 @@ return new class extends Migration
             $table->boolean('is_saldo_awal')->default(false);
             $table->boolean('is_include_pph23')->default(false);
             $table->date('tgl_transfer')->nullable();
+            $table->boolean('is_send_invoice')->default(false);
+            $table->date('send_invoice_date')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

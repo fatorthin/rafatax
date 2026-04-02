@@ -116,6 +116,13 @@ class DaftarAktivaTetapResource extends Resource
                     ])
                     ->default('aktif')
                     ->required(),
+                Forms\Components\Select::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->default('PT'),
             ]);
     }
 
@@ -125,6 +132,10 @@ class DaftarAktivaTetapResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('deskripsi')
                     ->label('Nama Aktiva')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('kepemilikan')
+                    ->label('Kepemilikan')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('tahun_perolehan')

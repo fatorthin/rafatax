@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('harga_perolehan');
             $table->integer('tarif_penyusutan');
             $table->enum('status', ['aktif', 'nonaktif']);
+            $table->enum('kepemilikan', ['PT', 'KKP'])->nullable();
             $table->timestamps();
             $table->softDeletes('deleted_at');
         });

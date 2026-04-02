@@ -106,6 +106,18 @@ class AdminPanelProvider extends PanelProvider
                 StaffResource::class,
                 PayrollResource::class,
             ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn (): string => '<style>
+                    /* Globally limit table height to allow vertical scrolling */
+                    .fi-ta-content { max-height: 75vh; overflow: auto !important; }
+                    /* Make all table headers sticky */
+                    .fi-ta-table thead { position: sticky; top: 0; z-index: 20; }
+                    /* Ensure overlapping body content is hidden behind header */
+                    .fi-ta-table thead th { background-color: #f9fafb; }
+                    .dark .fi-ta-table thead th { background-color: #18181b; }
+                </style>'
+            )
             ->maxContentWidth('full');
     }
 }

@@ -17,5 +17,6 @@ class DaftarAktivaTetap extends Model
         'harga_perolehan',
         'tarif_penyusutan',
         'status',
+        'kepemilikan'
     ];
 }

@@ -312,6 +312,11 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         }
 
                         if (isset($sendResult['status']) && $sendResult['status']) {
+                            $this->invoice->update([
+                                'is_send_invoice' => true,
+                                'send_invoice_date' => now()->toDateString(),
+                            ]);
+
                             \Filament\Notifications\Notification::make()
                                 ->title('Success')
                                 ->body('Invoice sent successfully via WhatsApp (PDF).')

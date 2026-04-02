@@ -482,6 +482,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         }
 
                         if (isset($sendResult['status']) && $sendResult['status']) {
+                            $this->mou->update([
+                                'is_send_mou' => true,
+                                'send_mou_date' => now()->toDateString(),
+                            ]);
+
                             Notification::make()
                                 ->title('Berhasil')
                                 ->body('MoU berhasil dikirim ke client via WhatsApp.')
