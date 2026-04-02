@@ -29,7 +29,8 @@ class Invoice extends Model
         'cash_report_id',
         'tgl_transfer',
         'is_send_invoice',
-        'send_invoice_date'
+        'send_invoice_date',
+        'discount_amount'
     ];
 
     protected static function booted()
