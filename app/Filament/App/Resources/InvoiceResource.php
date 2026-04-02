@@ -280,7 +280,7 @@ class InvoiceResource extends Resource
                         return number_format((float) $state, 0, ',', '.');
                     })
                     ->getStateUsing(function ($record) {
-                        return $record->costListInvoices()->sum('amount') - ($record->discount_amount ?? 0);
+                        return $record->costListInvoices()->sum('amount') ?? 0;
                     })
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
@@ -293,10 +293,7 @@ class InvoiceResource extends Resource
                                 $grossTotal = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
                                     ->sum('amount');
 
-                                // Calculate total discount
-                                $totalDiscount = $query->sum('discount_amount');
-
-                                return $grossTotal - $totalDiscount;
+                                return $grossTotal;
                             })
                             ->formatStateUsing(function ($state) {
                                 return 'IDR ' . number_format((float) $state, 0, ',', '.');
