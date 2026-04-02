@@ -210,11 +210,21 @@ class CaseProjectResource extends Resource
                                 ->danger()
                                 ->send();
                         }
+                    })
+                    ->hidden(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user?->hasRole('inventory-admin') ?? false;
                     }),
                 Tables\Actions\Action::make('detail')
                     ->label('Detail Tim')
                     ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
-                    ->icon('heroicon-o-information-circle'),
+                    ->icon('heroicon-o-information-circle')
+                    ->hidden(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user?->hasRole('inventory-admin') ?? false;
+                    }),
                 Tables\Actions\Action::make('editLinkDrive')
                     ->label('Edit Link Drive')
                     ->icon('heroicon-o-pencil-square')
