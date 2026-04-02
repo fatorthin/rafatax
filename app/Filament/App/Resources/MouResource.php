@@ -173,6 +173,17 @@ class MouResource extends Resource
                             ->label('Discount Amount')
                             ->numeric()
                             ->default(0),
+                        Forms\Components\Select::make('is_send_mou')
+                            ->label('Status Kirim MoU')
+                            ->options([
+                                1 => 'Sudah',
+                                0 => 'Belum',
+                            ])
+                            ->default(0),
+                        Forms\Components\DatePicker::make('send_mou_date')
+                            ->label('Tanggal Kirim MoU')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
                     ])
                     ->columns(1),
 
@@ -327,6 +338,15 @@ class MouResource extends Resource
                     })
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('is_send_mou')
+                    ->label('Status Kirim MoU')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        '1' => 'success',
+                        '0' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => $state == '1' ? 'Sudah' : 'Belum'),
                 Tables\Columns\TextColumn::make('total_mou_amount')
                     ->label('Total Nilai MoU')
                     ->numeric(locale: 'id')
@@ -371,6 +391,7 @@ class MouResource extends Resource
                     ->formatStateUsing(function ($state) {
                         return number_format((float) $state, 0, ',', '.');
                     }),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d-m-Y H:i')

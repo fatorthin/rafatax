@@ -164,6 +164,17 @@ class InvoiceResource extends Resource
                     ]),
                 Forms\Components\DatePicker::make('tgl_transfer')
                     ->label('Tanggal Transfer'),
+                Forms\Components\Select::make('is_send_invoice')
+                    ->label('Status Kirim Invoice')
+                    ->options([
+                        1 => 'Sudah',
+                        0 => 'Belum',
+                    ])
+                    ->default(0),
+                Forms\Components\DatePicker::make('send_invoice_date')
+                    ->label('Tanggal Kirim Invoice')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\Section::make('Rincian Biaya')
                     ->schema([
                         Forms\Components\Repeater::make('costListInvoices')
@@ -288,6 +299,15 @@ class InvoiceResource extends Resource
                 ->formatStateUsing(fn(string $state): string => ucfirst($state)),
             Tables\Columns\TextColumn::make('rek_transfer')
                 ->label('Rekening Transfer'),
+            Tables\Columns\TextColumn::make('is_send_invoice')
+                ->label('Status Kirim Invoice')
+                ->badge()
+                ->color(fn(string $state): string => match ($state) {
+                    '1' => 'success',
+                    '0' => 'warning',
+                    default => 'gray',
+                })
+                ->formatStateUsing(fn(string $state): string => $state == '1' ? 'Sudah' : 'Belum'),
             Tables\Columns\TextColumn::make('total_amount')
                 ->label('Total Amount')
                 ->alignEnd()
@@ -295,7 +315,7 @@ class InvoiceResource extends Resource
                     return number_format((float) $state, 0, ',', '.');
                 })
                 ->getStateUsing(function ($record) {
-                    return $record->costListInvoices()->sum('amount');
+                    return $record->costListInvoices()->sum('amount') - ($record->discount_amount ?? 0);
                 })
                 ->summarize(
                     Tables\Columns\Summarizers\Summarizer::make()
@@ -305,10 +325,13 @@ class InvoiceResource extends Resource
                             $invoiceIds = $query->pluck('id')->toArray();
 
                             // Calculate total from the cost_list_invoices table
-                            $total = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
+                            $grossTotal = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
                                 ->sum('amount');
 
-                            return $total;
+                            // Calculate total discount
+                            $totalDiscount = $query->sum('discount_amount');
+
+                            return $grossTotal - $totalDiscount;
                         })
                         ->formatStateUsing(function ($state) {
                             return 'IDR ' . number_format((float) $state, 0, ',', '.');

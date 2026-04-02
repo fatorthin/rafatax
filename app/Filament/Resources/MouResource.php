@@ -123,6 +123,17 @@ class MouResource extends Resource
                     ->label('Discount Amount')
                     ->numeric()
                     ->default(0),
+                Forms\Components\Select::make('is_send_mou')
+                    ->label('Status Kirim MoU')
+                    ->options([
+                        1 => 'Sudah',
+                        0 => 'Belum',
+                    ])
+                    ->default(0),
+                Forms\Components\DatePicker::make('send_mou_date')
+                    ->label('Tanggal Kirim MoU')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\Section::make('Cost List Details')
                     ->schema([
                         Forms\Components\Repeater::make('cost_lists')
@@ -258,6 +269,15 @@ class MouResource extends Resource
                         'unapproved' => 'Unapproved',
                     ])
                     ->searchable(),
+                Tables\Columns\TextColumn::make('is_send_mou')
+                    ->label('Status Kirim MoU')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        '1' => 'success',
+                        '0' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => $state == '1' ? 'Sudah' : 'Belum'),
                 Tables\Columns\TextColumn::make('cost_lists_sum_amount')
                     ->label('Total MoU Amount')
                     ->numeric(locale: 'id')
