@@ -30,7 +30,6 @@ class Invoice extends Model
         'tgl_transfer',
         'is_send_invoice',
         'send_invoice_date',
-        'discount_amount'
     ];
 
     protected static function booted()

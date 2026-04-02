@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MouResource\Widgets;
 
 use App\Models\CostListMou;
 use App\Models\CostListInvoice;
+use App\Models\MoU;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -33,7 +34,9 @@ class MouStatsOverview extends BaseWidget
             })
             ->sum('amount');
 
-        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid);
+        $discountAmount = MoU::where('id', $this->mouId)->value('discount_amount') ?? 0;
+
+        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid + $discountAmount);
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
@@ -48,6 +51,11 @@ class MouStatsOverview extends BaseWidget
 
             Stat::make('Total Invoice Paid', 'Rp ' . number_format($totalCostListInvoicePaid, 0, ',', '.'))
                 ->description('Total tagihan yang sudah dibayar')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color('success'),
+
+            Stat::make('Discount Amount', 'Rp ' . number_format($discountAmount, 0, ',', '.'))
+                ->description('Total diskon')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
 

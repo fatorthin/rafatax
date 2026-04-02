@@ -28,7 +28,8 @@ class MoU extends Model
         'tanggal_tagih_awal',
         'tanggal_tagih_akhir',
         'is_send_mou',
-        'send_mou_date'
+        'send_mou_date',
+        'discount_amount'
     ];
 
     public function client()

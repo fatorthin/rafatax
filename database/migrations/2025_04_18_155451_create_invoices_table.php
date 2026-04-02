@@ -27,7 +27,6 @@ return new class extends Migration
             $table->date('tgl_transfer')->nullable();
             $table->boolean('is_send_invoice')->default(false);
             $table->date('send_invoice_date')->nullable();
-            $table->double('discount_amount')->nullable()->default(0);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

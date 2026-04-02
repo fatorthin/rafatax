@@ -145,6 +145,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->color('primary')
                             ->weight('bold')
                             ->default('-'),
+                        TextEntry::make('discount_amount')
+                            ->label('Discount Amount')
+                            ->weight('bold')
+                            ->formatStateUsing(function ($state) {
+                                return number_format((float) $state, 0, ',', '.');
+                            }),
                     ])
                     ->columns(3)
             ]);

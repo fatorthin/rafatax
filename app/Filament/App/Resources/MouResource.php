@@ -169,6 +169,10 @@ class MouResource extends Resource
                         Forms\Components\TextInput::make('link_mou')
                             ->label('Link MoU')
                             ->placeholder('Masukkan link MoU'),
+                        Forms\Components\TextInput::make('discount_amount')
+                            ->label('Discount Amount')
+                            ->numeric()
+                            ->default(0),
                     ])
                     ->columns(1),
 
@@ -362,6 +366,11 @@ class MouResource extends Resource
                     })
                     ->alignEnd()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('discount_amount')
+                    ->label('Discount Amount')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d-m-Y H:i')

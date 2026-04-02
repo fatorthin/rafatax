@@ -28,6 +28,7 @@ return new class extends Migration
             $table->date('tanggal_tagih_akhir')->nullable();
             $table->boolean('is_send_mou')->default(false);
             $table->date('send_mou_date')->nullable();
+            $table->double('discount_amount')->nullable()->default(0);
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

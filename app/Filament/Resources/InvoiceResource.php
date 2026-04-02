@@ -164,10 +164,6 @@ class InvoiceResource extends Resource
                     ]),
                 Forms\Components\DatePicker::make('tgl_transfer')
                     ->label('Tanggal Transfer'),
-                Forms\Components\TextInput::make('discount_amount')
-                    ->label('Discount Amount')
-                    ->numeric()
-                    ->default(0),
                 Forms\Components\Section::make('Rincian Biaya')
                     ->schema([
                         Forms\Components\Repeater::make('costListInvoices')
@@ -292,11 +288,6 @@ class InvoiceResource extends Resource
                 ->formatStateUsing(fn(string $state): string => ucfirst($state)),
             Tables\Columns\TextColumn::make('rek_transfer')
                 ->label('Rekening Transfer'),
-            Tables\Columns\TextColumn::make('discount_amount')
-                ->label('Discount Amount')
-                ->formatStateUsing(function ($state) {
-                    return number_format((float) $state, 0, ',', '.');
-                }),
             Tables\Columns\TextColumn::make('total_amount')
                 ->label('Total Amount')
                 ->alignEnd()

@@ -119,6 +119,10 @@ class MouResource extends Resource
                 Forms\Components\TextInput::make('link_mou')
                     ->label('Link MoU')
                     ->placeholder('Masukkan link MoU'),
+                Forms\Components\TextInput::make('discount_amount')
+                    ->label('Discount Amount')
+                    ->numeric()
+                    ->default(0),
                 Forms\Components\Section::make('Cost List Details')
                     ->schema([
                         Forms\Components\Repeater::make('cost_lists')
@@ -284,6 +288,11 @@ class MouResource extends Resource
                             ->whereNotNull('invoice_id')
                             ->sum('amount');
                     })->alignEnd(),
+                Tables\Columns\TextColumn::make('discount_amount')
+                    ->label('Discount Amount')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    }),
 
             ])
             ->filters([
