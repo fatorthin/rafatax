@@ -243,14 +243,26 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     protected function getHeaderActions(): array
     {
         return [
-            $this->makeEditMouAction(),
-            $this->makeAddCostListAction(),
-            $this->makePreviewPdfAction(),
-            $this->makeExportPdfAction(),
-            $this->makeSendMouWhatsappAction(),
-            $this->makeBackAction(),
-            $this->makeCreateInvoiceAction(),
-            $this->makeCreateOldInvoiceAction(),
+            $this->makeEditMouAction()->label('Edit'),
+            $this->makeAddCostListAction()->label('Add Cost'),
+            Actions\ActionGroup::make([
+                $this->makeCreateInvoiceAction()->label('New Invoice'),
+                $this->makeCreateOldInvoiceAction()->label('Old Invoice'),
+            ])
+                ->label('Invoices')
+                ->icon('heroicon-m-document-text')
+                ->color('indigo')
+                ->button(),
+            Actions\ActionGroup::make([
+                $this->makePreviewPdfAction()->label('Preview PDF'),
+                $this->makeExportPdfAction()->label('Print PDF'),
+                $this->makeSendMouWhatsappAction()->label('WhatsApp'),
+            ])
+                ->label('Export')
+                ->icon('heroicon-m-arrow-up-tray')
+                ->color('success')
+                ->button(),
+            $this->makeBackAction()->label('Back'),
         ];
     }
 

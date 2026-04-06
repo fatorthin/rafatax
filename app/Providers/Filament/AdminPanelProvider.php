@@ -46,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Rafatax Admin')
             ->colors([
                 'primary' => Color::Amber,
+                'indigo' => Color::Indigo,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -108,7 +109,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_END,
-                fn (): string => '<style>
+                fn(): string => '<style>
                     /* Globally limit table height to allow vertical scrolling */
                     .fi-ta-content { max-height: 75vh; overflow: auto !important; }
                     /* Make all table headers sticky */
