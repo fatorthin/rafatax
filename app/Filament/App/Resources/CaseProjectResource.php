@@ -54,7 +54,9 @@ class CaseProjectResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('staff_id')
                     ->options(function (?CaseProject $record) {
-                        return Staff::when($record, fn($query) => $query->orWhereIn('id', $record->staff_id ?? []))
+                        return Staff::query()
+                            ->where('is_active', true)
+                            ->when($record, fn($query) => $query->orWhereIn('id', $record->staff_id ?? []))
                             ->pluck('name', 'id');
                     })
                     ->multiple()
