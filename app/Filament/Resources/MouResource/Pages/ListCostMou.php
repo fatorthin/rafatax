@@ -207,7 +207,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->numeric()
                             ->default(1)
                             ->required()
-                            ->reactive()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                 $price = $get('amount');
                                 $set('total_amount', floatval($state) * floatval($price));
@@ -219,7 +219,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->numeric()
                             ->required()
                             ->prefix('Rp')
-                            ->reactive()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                 $qty = $get('quantity') ?? 1;
                                 $set('total_amount', floatval($state) * floatval($qty));
@@ -296,7 +296,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->numeric()
                     ->default(1)
                     ->required()
-                    ->reactive()
+                    ->live(onBlur: true)
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         $price = $get('amount');
                         $set('total_amount', floatval($state) * floatval($price));
@@ -308,7 +308,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->numeric()
                     ->required()
                     ->prefix('Rp')
-                    ->reactive()
+                    ->live(onBlur: true)
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         $qty = $get('quantity') ?? 1;
                         $set('total_amount', floatval($state) * floatval($qty));
