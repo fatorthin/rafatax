@@ -29,19 +29,19 @@ class MouInvoicesTable extends BaseWidget
     protected function getTableQuery(): Builder
     {
         $query = Invoice::query()->when(
-            $this->mouId,
-            fn(Builder $query) => $query->where('mou_id', $this->mouId),
-            fn(Builder $query) => $query->whereNull('id')
-        );
-
-        // Calculate total here for footer
-        if ($this->mouId) {
-            $this->totalValue = CostListInvoice::where('mou_id', $this->mouId)
-                ->whereNotNull('invoice_id')
-                ->sum('amount');
-        }
-
-        return $query;
+                $this->mouId,
+                fn(Builder $query) => $query->where('mou_id', $this->mouId),
+                fn(Builder $query) => $query->whereNull('id')
+            );
+    
+            // Calculate total here for footer by using the invoices in the query
+            if ($this->mouId) {
+                $invoiceIds = $query->clone()->pluck('id')->toArray();
+                $this->totalValue = CostListInvoice::whereIn('invoice_id', $invoiceIds)
+                    ->sum('amount');
+            }
+    
+            return $query;
     }
 
     public function getTableTotalValue()
