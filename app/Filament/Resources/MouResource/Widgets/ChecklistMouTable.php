@@ -115,7 +115,7 @@ class ChecklistMouTable extends BaseWidget
 
                         // Check for special yearly row OR non-monthly categories
                         if ($state === '1000-01-01' || !in_array($mou->category_mou_id, [3, 4])) {
-                            return $state === '1000-01-01' ? 'SPT Tahunan' : ($mou->tahun_pajak ?? $mou->created_at->format('Y'));
+                            return $state === '1000-01-01' || in_array($mou->category_mou_id, [1, 2]) ? 'SPT Tahunan' : ($mou->tahun_pajak ?? $mou->created_at->format('Y'));
                         }
 
                         return \Carbon\Carbon::parse($state)->translatedFormat('F Y');
