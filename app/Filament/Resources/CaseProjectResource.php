@@ -40,6 +40,7 @@ class CaseProjectResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('case_type')
                     ->options([
+                        'SPT' => 'SPT',
                         'SP2DK' => 'SP2DK',
                         'Pembetulan' => 'PEMBETULAN',
                         'Pemeriksaan' => 'PEMERIKSAAN',
