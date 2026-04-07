@@ -154,26 +154,6 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
         $isPaid = $this->invoice->invoice_status === 'paid';
 
         return [
-            Actions\Action::make('preview_pdf')
-                ->label('Preview PDF')
-                ->icon('heroicon-o-eye')
-                ->color('info')
-                ->url(fn(): string => route('invoices.preview', ['id' => $this->invoice->id]))
-                ->openUrlInNewTab(true),
-
-            Actions\Action::make('download_jpg')
-                ->label('Download JPG')
-                ->icon('heroicon-o-photo')
-                ->color('secondary')
-                ->url(fn(): string => route('invoices.jpg', ['id' => $this->invoice->id]))
-                ->openUrlInNewTab(true),
-
-            Actions\Action::make('edit_invoice')
-                ->label('Edit Invoice')
-                ->icon('heroicon-o-pencil')
-                ->color('warning')
-                ->url(fn() => InvoiceResource::getUrl('edit', ['record' => $this->invoice->id])),
-
             Actions\Action::make('send_whatsapp')
                 ->label('Kirim Invoice')
                 ->icon('heroicon-o-paper-airplane')
@@ -263,11 +243,6 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $wablasService->sendMessage($phone, $message);
 
                         // 2. Generate PDF using DOMPDF
-                        // Logic moved to Controller or kept here? 
-                        // Since we have specific PDF generation logic in Controller, we should ideally reuse it, 
-                        // but since this is an action, we might need to replicate the preparation logic or call a service.
-                        // For now, I will replicate the enhanced logic here to ensure it uses the correct data.
-
                         $costLists = CostListInvoice::where('invoice_id', $this->invoice->id)->get();
 
                         if ($typeNormalized === 'kkp') {
@@ -357,6 +332,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         \Illuminate\Support\Facades\Log::error($e);
                     }
                 }),
+
             Actions\CreateAction::make()
                 ->label('Add Cost List')
                 ->model(CostListInvoice::class)
@@ -381,11 +357,38 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                 })
                 ->modalWidth('lg')
                 ->visible(!$isPaid),
-            Actions\Action::make('back')
-                ->label('Back to Invoice List')
-                ->url('/app/invoices')
-                ->color('info')
-                ->icon('heroicon-o-arrow-left'),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('preview_pdf')
+                    ->label('Preview PDF')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn(): string => route('invoices.preview', ['id' => $this->invoice->id]))
+                    ->openUrlInNewTab(true),
+
+                Actions\Action::make('download_jpg')
+                    ->label('Download JPG')
+                    ->icon('heroicon-o-photo')
+                    ->color('secondary')
+                    ->url(fn(): string => route('invoices.jpg', ['id' => $this->invoice->id]))
+                    ->openUrlInNewTab(true),
+
+                Actions\Action::make('edit_invoice')
+                    ->label('Edit Invoice')
+                    ->icon('heroicon-o-pencil')
+                    ->color('warning')
+                    ->url(fn() => InvoiceResource::getUrl('edit', ['record' => $this->invoice->id])),
+
+                Actions\Action::make('back')
+                    ->label('Back to Invoice List')
+                    ->url('/app/invoices')
+                    ->color('info')
+                    ->icon('heroicon-o-arrow-left'),
+            ])
+            ->label('More Options')
+            ->icon('heroicon-m-ellipsis-vertical')
+            ->color('gray')
+            ->button(),
         ];
     }
 

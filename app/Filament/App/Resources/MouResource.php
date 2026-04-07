@@ -505,8 +505,7 @@ class MouResource extends Resource
                         ->label('Export Data'),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc')
-            ->deferLoading();
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array

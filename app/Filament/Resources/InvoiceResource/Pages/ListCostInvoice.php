@@ -140,26 +140,6 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
         $isPaid = $this->invoice->invoice_status === 'paid';
 
         return [
-            Actions\Action::make('preview_pdf')
-                ->label('Preview PDF')
-                ->icon('heroicon-o-eye')
-                ->color('info')
-                ->url(fn(): string => route('invoices.preview', ['id' => $this->invoice->id]))
-                ->openUrlInNewTab(true),
-
-            Actions\Action::make('download_jpg')
-                ->label('Download JPG')
-                ->icon('heroicon-o-photo')
-                ->color('secondary')
-                ->url(fn(): string => route('invoices.jpg', ['id' => $this->invoice->id]))
-                ->openUrlInNewTab(true),
-
-            Actions\Action::make('edit_invoice')
-                ->label('Edit Invoice')
-                ->icon('heroicon-o-pencil')
-                ->color('warning')
-                ->url(fn() => InvoiceResource::getUrl('edit', ['record' => $this->invoice->id])),
-
             Actions\Action::make('send_whatsapp')
                 ->label('Kirim Invoice')
                 ->icon('heroicon-o-paper-airplane')
@@ -338,20 +318,49 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         \Illuminate\Support\Facades\Log::error($e);
                     }
                 }),
+
             Actions\CreateAction::make()
                 ->label('Add Cost List')
                 ->url(fn(): string => InvoiceResource::getUrl('cost-create', ['record' => $this->invoice->id]))
                 ->visible(!$isPaid),
-            Actions\Action::make('back')
-                ->label('Back to Invoice List')
-                ->url(InvoiceResource::getUrl('index'))
-                ->color('info')
-                ->icon('heroicon-o-arrow-left'),
-            Actions\Action::make('backToMou')
-                ->label('Back to MoU')
-                ->url(fn(): string => '/admin/mous/' . $this->invoice->mou_id . '/cost-list')
-                ->color('danger')
-                ->icon('heroicon-o-arrow-left'),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('preview_pdf')
+                    ->label('Preview PDF')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn(): string => route('invoices.preview', ['id' => $this->invoice->id]))
+                    ->openUrlInNewTab(true),
+
+                Actions\Action::make('download_jpg')
+                    ->label('Download JPG')
+                    ->icon('heroicon-o-photo')
+                    ->color('secondary')
+                    ->url(fn(): string => route('invoices.jpg', ['id' => $this->invoice->id]))
+                    ->openUrlInNewTab(true),
+
+                Actions\Action::make('edit_invoice')
+                    ->label('Edit Invoice')
+                    ->icon('heroicon-o-pencil')
+                    ->color('warning')
+                    ->url(fn() => InvoiceResource::getUrl('edit', ['record' => $this->invoice->id])),
+
+                Actions\Action::make('back')
+                    ->label('Back to Invoice List')
+                    ->url(InvoiceResource::getUrl('index'))
+                    ->color('info')
+                    ->icon('heroicon-o-arrow-left'),
+
+                Actions\Action::make('backToMou')
+                    ->label('Back to MoU')
+                    ->url(fn(): string => '/admin/mous/' . $this->invoice->mou_id . '/cost-list')
+                    ->color('danger')
+                    ->icon('heroicon-o-arrow-left'),
+            ])
+            ->label('More Options')
+            ->icon('heroicon-m-ellipsis-vertical')
+            ->color('gray')
+            ->button(),
         ];
     }
     protected function optimizeImage($path, $maxWidth)
