@@ -208,7 +208,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->default(1)
                             ->required()
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                            ->live()
+                            ->live(onBlur: true)
                             ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '1')
                             ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
@@ -223,7 +223,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->required()
                             ->prefix('Rp')
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                            ->live()
+                            ->live(onBlur: true)
                             ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
                             ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
