@@ -5,9 +5,9 @@
         {{ $this->table }}
 
         <div class="rounded-xl">
-            @if (in_array($this->mou->category_mou_id, [3, 4]))
-                @livewire(App\Filament\Resources\MouResource\Widgets\ChecklistMouTable::class, ['mouId' => $this->mou->id])
-            @endif
+            {{-- @if (in_array($this->mou->category_mou_id, [3, 4])) --}}
+            @livewire(App\Filament\Resources\MouResource\Widgets\ChecklistMouTable::class, ['mouId' => $this->mou->id])
+            {{-- @endif --}}
         </div>
 
         <div>
