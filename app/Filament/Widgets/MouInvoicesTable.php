@@ -36,7 +36,7 @@ class MouInvoicesTable extends BaseWidget
         // Calculate total here for footer
         if ($this->mouId) {
             $this->totalValue = CostListInvoice::where('mou_id', $this->mouId)
-                ->whereNotNull('invoice_id')
+                ->whereHas('invoice')
                 ->sum('amount');
         }
 

@@ -22,11 +22,11 @@ class CategoryMouStatsOverview extends BaseWidget
 
             $totalCostListMou = CostListMou::whereIn('mou_id', $mouIds)->sum('amount');
             $totalCostListInvoice = CostListInvoice::whereIn('mou_id', $mouIds)
-                ->whereNotNull('invoice_id')
+                ->whereHas('invoice')
                 ->sum('amount');
         } else {
-            $totalCostListMou = CostListMou::sum('amount');
-            $totalCostListInvoice = CostListInvoice::whereNotNull('invoice_id')->sum('amount');
+            $totalCostListMou = CostListMou::whereHas('mou')->sum('amount');
+            $totalCostListInvoice = CostListInvoice::whereHas('invoice')->sum('amount');
         }
 
         $difference = $totalCostListMou - $totalCostListInvoice;
