@@ -49,7 +49,7 @@ class DetailPayrollBonus extends Page implements HasTable
                         ->maxLength(255),
                     \Filament\Forms\Components\Select::make('case_project_ids')
                         ->label('Case Project')
-                        ->options(\App\Models\CaseProject::pluck('description', 'id'))
+                        ->options(CaseProject::where('status', 'done')->pluck('description', 'id'))
                         ->multiple()
                         ->searchable()
                         ->preload()
@@ -76,6 +76,13 @@ class DetailPayrollBonus extends Page implements HasTable
                         } else {
                             $failCount++;
                         }
+                    }
+
+                    // Update status CaseProject menjadi 'paid'
+                    $caseProjectIds = $this->record->case_project_ids ?? [];
+                    if (!empty($caseProjectIds)) {
+                        CaseProject::whereIn('id', $caseProjectIds)
+                            ->update(['status' => 'paid']);
                     }
 
                     \Filament\Notifications\Notification::make()

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PayrollBonusResource\Pages;
-use App\Filament\Resources\PayrollBonusResource\RelationManagers;
 use App\Models\PayrollBonus;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -32,7 +31,7 @@ class PayrollBonusResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('case_project_ids')
                     ->label('Case Project')
-                    ->options(\App\Models\CaseProject::pluck('description', 'id'))
+                    ->options(\App\Models\CaseProject::where('status', 'done')->pluck('description', 'id'))
                     ->multiple()
                     ->searchable()
                     ->preload()

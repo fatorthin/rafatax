@@ -93,6 +93,7 @@ class CaseProjectResource extends Resource
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
                         'done' => 'DONE',
+                        'paid' => 'PAID',
                     ])
                     ->required(),
             ]);
@@ -139,12 +140,14 @@ class CaseProjectResource extends Resource
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
                         'done' => 'DONE',
+                        'paid' => 'PAID',
                     };
                 })->color(function ($state) {
                     return match ($state) {
                         'open' => 'primary',
                         'in_progress' => 'warning',
                         'done' => 'success',
+                        'paid' => 'info',
                     };
                 }),
             ])
