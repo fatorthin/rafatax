@@ -19,6 +19,12 @@ class ChecklistMouWidget extends BaseWidget
 
     public function mount()
     {
+        // Self-healing: Reset checklist items linked to deleted invoices
+        ChecklistMou::where('mou_id', $this->mouId)
+            ->whereNotNull('invoice_id')
+            ->whereDoesntHave('invoice')
+            ->update(['invoice_id' => null, 'status' => 'pending']);
+
         $this->generateMonthlyChecklists();
     }
 
@@ -67,6 +73,22 @@ class ChecklistMouWidget extends BaseWidget
 
                 $start->addMonth();
             }
+
+            // Check if there is a CostListMou entry with coa_id 120
+            if ($mou->cost_lists()->where('coa_id', 120)->exists()) {
+                $specialDate = '1000-01-01';
+                $validDates[] = $specialDate;
+
+                ChecklistMou::firstOrCreate(
+                    [
+                        'mou_id' => $this->mouId,
+                        'checklist_date' => $specialDate,
+                    ],
+                    [
+                        'status' => 'pending',
+                    ]
+                );
+            }
         }
 
         // Hapus checklist yang berada di luar range tanggal MoU
@@ -89,9 +111,13 @@ class ChecklistMouWidget extends BaseWidget
                     ->label('Checklist Date')
                     ->formatStateUsing(function ($state, ChecklistMou $record) {
                         $mou = $record->mou;
-                        if ($mou && !in_array($mou->category_mou_id, [3, 4])) {
-                            return $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->created_at)->format('Y');
+                        if (!$mou) return \Carbon\Carbon::parse($state)->translatedFormat('F Y');
+
+                        // Check for special yearly row OR non-monthly categories
+                        if ($state === '1000-01-01' || !in_array($mou->category_mou_id, [3, 4])) {
+                            return $state === '1000-01-01' || in_array($mou->category_mou_id, [1, 2]) ? 'SPT Tahunan' : ($mou->tahun_pajak ?? $mou->created_at->format('Y'));
                         }
+
                         return \Carbon\Carbon::parse($state)->translatedFormat('F Y');
                     })
                     ->sortable(),

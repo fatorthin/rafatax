@@ -5,6 +5,7 @@ namespace App\Filament\Resources\MouResource\Pages;
 use App\Models\Coa;
 use App\Models\MoU;
 use Filament\Actions;
+use Filament\Support\RawJs;
 use App\Models\Invoice;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
@@ -204,30 +205,38 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->required(),
                         TextInput::make('quantity')
                             ->label('Qty')
-                            ->numeric()
                             ->default(1)
                             ->required()
-                            ->live(onBlur: true)
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->live()
+                            ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '1')
+                            ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                $price = $get('amount');
-                                $set('total_amount', floatval($state) * floatval($price));
+                                $qty = floatval(str_replace('.', '', $state ?? '0'));
+                                $price = floatval(str_replace('.', '', $get('amount') ?? '0'));
+                                $set('total_amount', number_format($qty * $price, 0, ',', '.'));
                             }),
                         TextInput::make('satuan_quantity')
                             ->label('Satuan'),
                         TextInput::make('amount')
                             ->label('Price')
-                            ->numeric()
                             ->required()
                             ->prefix('Rp')
-                            ->live(onBlur: true)
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->live()
+                            ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
+                            ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                $qty = $get('quantity') ?? 1;
-                                $set('total_amount', floatval($state) * floatval($qty));
+                                $price = floatval(str_replace('.', '', $state ?? '0'));
+                                $qty = floatval(str_replace('.', '', $get('quantity') ?? '1'));
+                                $set('total_amount', number_format($qty * $price, 0, ',', '.'));
                             }),
                         TextInput::make('total_amount')
                             ->label('Total')
-                            ->numeric()
-                            ->readOnly(),
+                            ->readOnly()
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '0')
+                            ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state)),
                         Textarea::make('description')
                             ->label('Description')
                             ->rows(3),
@@ -293,30 +302,38 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->required(),
                 TextInput::make('quantity')
                     ->label('Qty')
-                    ->numeric()
                     ->default(1)
                     ->required()
-                    ->live(onBlur: true)
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                    ->live()
+                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '1')
+                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        $price = $get('amount');
-                        $set('total_amount', floatval($state) * floatval($price));
+                        $qty = floatval(str_replace('.', '', $state ?? '0'));
+                        $price = floatval(str_replace('.', '', $get('amount') ?? '0'));
+                        $set('total_amount', number_format($qty * $price, 0, ',', '.'));
                     }),
                 TextInput::make('satuan_quantity')
                     ->label('Satuan'),
                 TextInput::make('amount')
                     ->label('Price')
-                    ->numeric()
                     ->required()
                     ->prefix('Rp')
-                    ->live(onBlur: true)
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                    ->live()
+                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
+                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        $qty = $get('quantity') ?? 1;
-                        $set('total_amount', floatval($state) * floatval($qty));
+                        $price = floatval(str_replace('.', '', $state ?? '0'));
+                        $qty = floatval(str_replace('.', '', $get('quantity') ?? '1'));
+                        $set('total_amount', number_format($qty * $price, 0, ',', '.'));
                     }),
                 TextInput::make('total_amount')
                     ->label('Total')
-                    ->numeric()
-                    ->readOnly(),
+                    ->readOnly()
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '0')
+                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state)),
                 Textarea::make('description')
                     ->label('Description')
                     ->rows(3),
@@ -716,8 +733,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 ]),
                             TextInput::make('amount')
                                 ->label('Harga')
-                                ->numeric()
                                 ->required()
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
+                                ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
                                 ->columnSpan([
                                     'md' => 5,
                                 ]),
