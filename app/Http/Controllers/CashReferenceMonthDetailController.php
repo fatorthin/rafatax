@@ -133,6 +133,7 @@ class CashReferenceMonthDetailController extends Controller
         $transactions = CashReport::where('cash_reference_id', $id)
             ->whereYear('transaction_date', $year)
             ->whereMonth('transaction_date', $month)
+            ->orderBy('sort_order')
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->get();
@@ -191,6 +192,12 @@ class CashReferenceMonthDetailController extends Controller
             'credit_amount' => 'required|numeric|min:0',
         ]);
 
+        // Get next sort_order for this cash_reference + month
+        $maxSortOrder = CashReport::where('cash_reference_id', $id)
+            ->whereYear('transaction_date', $validated['transaction_date'])
+            ->whereMonth('transaction_date', $validated['transaction_date'])
+            ->max('sort_order') ?? 0;
+
         CashReport::create([
             'cash_reference_id' => $id,
             'description' => $validated['description'],
@@ -201,6 +208,7 @@ class CashReferenceMonthDetailController extends Controller
             'invoice_id' => 0,
             'mou_id' => 0,
             'cost_list_invoice_id' => 0,
+            'sort_order' => $maxSortOrder + 1,
         ]);
 
         $year = Carbon::parse($validated['transaction_date'])->year;
@@ -259,5 +267,19 @@ class CashReferenceMonthDetailController extends Controller
         return redirect()
             ->route('cash-reference.month-detail', ['id' => $id, 'year' => $year, 'month' => $month])
             ->with('success', 'Transaction deleted successfully');
+    }
+
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer|exists:cash_reports,id',
+        ]);
+
+        foreach ($validated['order'] as $index => $id) {
+            CashReport::where('id', $id)->update(['sort_order' => $index + 1]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order updated successfully']);
     }
 }

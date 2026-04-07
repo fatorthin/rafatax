@@ -12,6 +12,8 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         .select2-container--default .select2-selection--single {
             height: 42px;
@@ -35,6 +37,58 @@
 
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
             background-color: #3b82f6;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #e0f2fe !important;
+        }
+
+        .sortable-chosen {
+            background-color: #f0f9ff !important;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.15);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+
+        .drag-handle:hover {
+            color: #3b82f6;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .reorder-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .reorder-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reorder-toast.success {
+            background-color: #10b981;
+        }
+
+        .reorder-toast.error {
+            background-color: #ef4444;
         }
     </style>
 </head>
@@ -103,6 +157,9 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-100">
                     <tr>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase w-10">
+                            <i class="fas fa-grip-vertical text-gray-400"></i>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">CoA</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
@@ -112,9 +169,14 @@
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody id="sortable-tbody" class="bg-white divide-y divide-gray-200">
                     @forelse($transactions as $transaction)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}" data-debit="{{ $transaction->debit_amount }}" data-credit="{{ $transaction->credit_amount }}">
+                            <td class="px-3 py-4 text-center">
+                                <span class="drag-handle" title="Drag untuk mengurutkan">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </span>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 {{ \Carbon\Carbon::parse($transaction->transaction_date)->format('d-M-Y') }}
                             </td>
@@ -152,7 +214,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-4 text-center text-gray-500">
                                 No transactions found for this month
                             </td>
                         </tr>
@@ -331,6 +393,89 @@
             if (event.target === editModal) {
                 closeEditModal();
             }
+        }
+
+        // === Sortable / Drag & Drop Reorder ===
+        const prevBalance = {{ $prevBalance }};
+
+        function recalcRunningBalances() {
+            let balance = prevBalance;
+            document.querySelectorAll('#sortable-tbody .sortable-row').forEach(function(row) {
+                const debit = parseFloat(row.dataset.debit) || 0;
+                const credit = parseFloat(row.dataset.credit) || 0;
+                balance += debit - credit;
+                // Find the balance cell (6th td after drag handle = index 6)
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 7) {
+                    cells[6].textContent = formatNumber(balance);
+                }
+            });
+        }
+
+        function formatNumber(num) {
+            return num.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function showToast(message, type) {
+            // Remove existing toasts
+            document.querySelectorAll('.reorder-toast').forEach(t => t.remove());
+
+            const toast = document.createElement('div');
+            toast.className = `reorder-toast ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function saveOrder() {
+            const rows = document.querySelectorAll('#sortable-tbody .sortable-row');
+            const order = Array.from(rows).map(row => parseInt(row.dataset.id));
+
+            fetch('{{ route("cash-reference.transaction.reorder") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ order: order })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Urutan berhasil diperbarui', 'success');
+                } else {
+                    showToast('Gagal memperbarui urutan', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Reorder error:', error);
+                showToast('Terjadi kesalahan saat memperbarui urutan', 'error');
+            });
+        }
+
+        // Initialize Sortable
+        const tbody = document.getElementById('sortable-tbody');
+        if (tbody && tbody.querySelectorAll('.sortable-row').length > 0) {
+            new Sortable(tbody, {
+                handle: '.drag-handle',
+                animation: 200,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function() {
+                    recalcRunningBalances();
+                    saveOrder();
+                }
+            });
         }
     </script>
 </body>

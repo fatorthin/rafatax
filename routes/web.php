@@ -133,6 +133,10 @@ Route::delete('/cash-reference/{id}/transaction/{transactionId}/delete', [\App\H
     ->name('cash-reference.transaction.delete')
     ->middleware('auth');
 
+Route::post('/cash-reference/transaction/reorder', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'reorder'])
+    ->name('cash-reference.transaction.reorder')
+    ->middleware('auth');
+
 Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');
 
 // Route khusus untuk menjalankan queue worker via HTTP (karena kendala cron job CLI)

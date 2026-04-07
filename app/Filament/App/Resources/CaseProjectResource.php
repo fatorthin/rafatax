@@ -49,6 +49,7 @@ class CaseProjectResource extends Resource
                         'Pemeriksaan' => 'PEMERIKSAAN',
                         'Himbauan' => 'HIMBAUAN',
                         'Lainnya' => 'LAINNYA',
+                        'SPT' => 'SPT',
                     ])
                     ->label('Kategori')
                     ->required(),
