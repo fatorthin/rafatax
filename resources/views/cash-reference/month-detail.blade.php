@@ -153,9 +153,9 @@
         @endif
 
         <!-- Transactions Table -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-white rounded-lg shadow-md overflow-auto" style="max-height: 75vh;">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-100">
+                <thead class="bg-gray-100 sticky top-0 z-10">
                     <tr>
                         <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase w-10">
                             <i class="fas fa-grip-vertical text-gray-400"></i>
