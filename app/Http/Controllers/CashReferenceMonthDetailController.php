@@ -193,9 +193,10 @@ class CashReferenceMonthDetailController extends Controller
         ]);
 
         // Get next sort_order for this cash_reference + month
+        $parsedDate = Carbon::parse($validated['transaction_date']);
         $maxSortOrder = CashReport::where('cash_reference_id', $id)
-            ->whereYear('transaction_date', $validated['transaction_date'])
-            ->whereMonth('transaction_date', $validated['transaction_date'])
+            ->whereYear('transaction_date', $parsedDate->year)
+            ->whereMonth('transaction_date', $parsedDate->month)
             ->max('sort_order') ?? 0;
 
         CashReport::create([
