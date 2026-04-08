@@ -23,14 +23,16 @@ class MouStatsOverview extends BaseWidget
         $totalCostListInvoiceUnpaid = CostListInvoice::where('mou_id', $this->mouId)
             ->whereNotNull('invoice_id')
             ->whereHas('invoice', function ($query) {
-                $query->where('invoice_status', 'unpaid');
+                $query->where('invoice_status', 'unpaid')
+                    ->where('mou_id', $this->mouId);
             })
             ->sum('amount');
 
         $totalCostListInvoicePaid = CostListInvoice::where('mou_id', $this->mouId)
             ->whereNotNull('invoice_id')
             ->whereHas('invoice', function ($query) {
-                $query->where('invoice_status', 'paid');
+                $query->where('invoice_status', 'paid')
+                    ->where('mou_id', $this->mouId);
             })
             ->sum('amount');
 
