@@ -288,24 +288,21 @@ class MouResource extends Resource
                     ->label('Total Invoice Unpaid')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
-                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'unpaid'))
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'unpaid'))
                             ->sum('amount');
                     })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_paid')
                     ->label('Total Invoice Paid')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
-                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'paid'))
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'paid'))
                             ->sum('amount');
                     })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
-                            ->whereNotNull('invoice_id')
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id))
                             ->sum('amount');
                     })->alignEnd(),
                 Tables\Columns\TextColumn::make('discount_amount')

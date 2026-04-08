@@ -20,7 +20,7 @@
                 <div class="font-bold text-gray-900 dark:text-gray-100">Total Invoiced Amount:</div>
                 <div class="font-bold text-primary-600 dark:text-primary-400">
                     IDR
-                    {{ number_format(App\Models\CostListInvoice::where('mou_id', $this->mou->id)->whereHas('invoice')->sum('amount'), 0, ',', '.') }}
+                    {{ number_format(App\Models\CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $this->mou->id))->sum('amount'), 0, ',', '.') }}
                 </div>
             </div>
         </div>
