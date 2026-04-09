@@ -464,6 +464,7 @@ class InvoiceResource extends Resource
                                 'debit_amount' => $costItem->amount,
                                 'credit_amount' => 0,
                                 'transaction_date' => $data['tgl_transfer'],
+                                'sort_order' => CashReport::whereDate('transaction_date', $data['tgl_transfer'])->max('sort_order') + 1,
                             ]);
 
                             if ($firstCashReportId === null) {
