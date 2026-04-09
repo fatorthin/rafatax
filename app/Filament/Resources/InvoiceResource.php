@@ -469,6 +469,7 @@ class InvoiceResource extends Resource
                             'BCA LAMA' => 'BCA LAMA',
                             'MANDIRI' => 'MANDIRI',
                             'KAS BESAR' => 'KAS BESAR',
+                            'KAS KECIL' => 'KAS KECIL',
                         ])
                         ->required(),
                 ])
@@ -479,6 +480,7 @@ class InvoiceResource extends Resource
                         'BCA LAMA' => 3,
                         'MANDIRI' => 5,
                         'KAS BESAR' => 6,
+                        'KAS KECIL' => 7,
                     ];
 
                     $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];

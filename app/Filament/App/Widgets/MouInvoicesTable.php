@@ -74,14 +74,8 @@ class MouInvoicesTable extends BaseWidget
                         'unpaid' => 'Unpaid',
                         'overdue' => 'Overdue',
                     ]),
-                Tables\Columns\SelectColumn::make('rek_transfer')
-                    ->label('Rekening Transfer')
-                    ->options([
-                        'BCA PT' => 'BCA PT',
-                        'BCA BARU' => 'BCA BARU',
-                        'BCA LAMA' => 'BCA LAMA',
-                        'MANDIRI' => 'MANDIRI'
-                    ]),
+                Tables\Columns\TextColumn::make('rek_transfer')
+                    ->label('Rekening Transfer'),
                 Tables\Columns\TextColumn::make('tgl_transfer')
                     ->label('Transfer Date')
                     ->getStateUsing(fn($record) => $record->invoice_status === 'paid' ? ($record->tgl_transfer ?? $record->created_at) : null)
@@ -157,6 +151,7 @@ class MouInvoicesTable extends BaseWidget
                                 'BCA LAMA' => 'BCA LAMA',
                                 'MANDIRI' => 'MANDIRI',
                                 'KAS BESAR' => 'KAS BESAR',
+                                'KAS KECIL' => 'KAS KECIL',
                             ])
                             ->required(),
                     ])
@@ -167,6 +162,7 @@ class MouInvoicesTable extends BaseWidget
                             'BCA LAMA' => 3,
                             'MANDIRI' => 5,
                             'KAS BESAR' => 6,
+                            'KAS KECIL' => 7,
                         ];
 
                         $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
