@@ -227,7 +227,7 @@ class InvoiceResource extends Resource
             ->bulkActions(static::getTableBulkActions())
             ->defaultSort('invoice_date', 'desc')
             ->deferLoading()
-            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-content { max-height: 75vh; overflow: auto !important; } .fi-ta-table thead { position: sticky; top: 0; z-index: 20; } .fi-ta-table thead th { background-color: #f9fafb; } .dark .fi-ta-table thead th { background-color: #18181b; }</style>'));
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-content { max-height: 75vh; overflow: auto !important; } .fi-ta-table thead { position: sticky; top: 0; z-index: 20; } .fi-ta-table thead th { background-color: #f9fafb; } .dark .fi-ta-table thead th { background-color: #18181b; } .invoice-sticky-column { background-color: #ffffff !important; color: #111827 !important; } .invoice-sticky-column * { color: inherit !important; } .dark .invoice-sticky-column { background-color: #18181b !important; color: #f4f4f5 !important; } .invoice-sticky-shadow { box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1); }</style>'));
     }
 
     private static function getTableColumns(): array
@@ -237,11 +237,11 @@ class InvoiceResource extends Resource
                 ->searchable()
                 ->extraHeaderAttributes([
                     'style' => 'position: sticky; left: 0; z-index: 30; background-color: inherit;',
-                    'class' => 'w-[200px] min-w-[200px]'
+                    'class' => 'invoice-sticky-column w-[200px] min-w-[200px]'
                 ])
                 ->extraAttributes([
                     'style' => 'position: sticky; left: 0; z-index: 10;',
-                    'class' => 'bg-white dark:bg-zinc-900 w-[200px] min-w-[200px]'
+                    'class' => 'invoice-sticky-column w-[200px] min-w-[200px]'
                 ]),
             Tables\Columns\TextColumn::make('reference_number')
                 ->label('MoU / Memo Number')
@@ -252,11 +252,11 @@ class InvoiceResource extends Resource
                 })
                 ->extraHeaderAttributes([
                     'style' => 'position: sticky; left: 200px; z-index: 30; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
-                    'class' => 'w-[200px] min-w-[200px]'
+                    'class' => 'invoice-sticky-column invoice-sticky-shadow w-[200px] min-w-[200px]'
                 ])
                 ->extraAttributes([
                     'style' => 'position: sticky; left: 200px; z-index: 10; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
-                    'class' => 'bg-white dark:bg-zinc-900 w-[200px] min-w-[200px]'
+                    'class' => 'invoice-sticky-column invoice-sticky-shadow w-[200px] min-w-[200px]'
                 ]),
             Tables\Columns\TextColumn::make('client_name')
                 ->label('Client')
