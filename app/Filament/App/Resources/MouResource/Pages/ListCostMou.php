@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources\MouResource\Pages;
 use App\Models\Coa;
 use App\Models\MoU;
 use Filament\Actions;
+use Filament\Actions\ActionGroup;
 use Filament\Support\RawJs;
 use App\Models\Invoice;
 use Filament\Forms\Form;
@@ -309,579 +310,631 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ]);
     }
 
+    private function getEditMouAction(): Actions\EditAction
+    {
+        return Actions\EditAction::make()
+            ->label('Edit MoU')
+            ->icon('heroicon-o-pencil')
+            ->record($this->mou)
+            ->form(fn(Form $form) => MouResource::form($form)->getComponents())
+            ->modalWidth('7xl')
+            ->successRedirectUrl(fn() => MouResource::getUrl('cost-list', ['record' => $this->mou]));
+    }
+
+    private function getCreateCostAction(): Action
+    {
+        return Action::make('createCost')
+            ->label('Tambah Biaya')
+            ->icon('heroicon-o-plus')
+            ->color('success')
+            ->visible(fn() => Auth::user()?->hasAnyPermission(['mou.create', 'mou.edit']) ?? false)
+            ->form([
+                Select::make('coa_id')
+                    ->label('CoA')
+                    ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
+                    ->searchable()
+                    ->required(),
+                TextInput::make('description')
+                    ->label('Deskripsi')
+                    ->maxLength(255),
+                TextInput::make('quantity')
+                    ->label('Qty')
+                    ->default(1)
+                    ->required()
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                    ->live()
+                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '1')
+                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        $qty = floatval(str_replace('.', '', $state ?? '0'));
+                        $price = floatval(str_replace('.', '', $get('amount') ?? '0'));
+                        $set('total_amount', number_format($qty * $price, 0, ',', '.'));
+                    }),
+                TextInput::make('satuan_quantity')
+                    ->label('Satuan'),
+                TextInput::make('amount')
+                    ->label('Harga Satuan')
+                    ->required()
+                    ->prefix('Rp')
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                    ->live()
+                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
+                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        $price = floatval(str_replace('.', '', $state ?? '0'));
+                        $qty = floatval(str_replace('.', '', $get('quantity') ?? '1'));
+                        $set('total_amount', number_format($qty * $price, 0, ',', '.'));
+                    }),
+                TextInput::make('total_amount')
+                    ->label('Total')
+                    ->readOnly()
+                    ->prefix('Rp')
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '0')
+                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state)),
+            ])
+            ->action(function (array $data) {
+                CostListMou::create([
+                    'mou_id' => $this->mou->id,
+                    'coa_id' => $data['coa_id'],
+                    'description' => $data['description'],
+                    'quantity' => $data['quantity'],
+                    'satuan_quantity' => $data['satuan_quantity'],
+                    'amount' => $data['amount'],
+                    'total_amount' => $data['total_amount'],
+                ]);
+
+                // Refresh local collections
+                $this->cost_lists = CostListMou::where('mou_id', $this->mou->id)->get();
+
+                Notification::make()
+                    ->title('Biaya berhasil ditambahkan')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    private function getPreviewPdfAction(): Actions\Action
+    {
+        return Actions\Action::make('preview_pdf')
+            ->label('Preview PDF')
+            ->icon('heroicon-o-eye')
+            ->color('warning')
+            ->url(fn() => route('mou.pdf.preview', ['id' => $this->mou->id]))
+            ->openUrlInNewTab();
+    }
+
+    private function getExportPdfAction(): Action
+    {
+        return Action::make('export_pdf')
+            ->label('Print PDF MoU')
+            ->icon('heroicon-o-printer')
+            ->color('success')
+            ->url(fn() => route('mou.print.view', ['id' => $this->mou->id]))
+            ->openUrlInNewTab();
+    }
+
+    private function getSendMouWhatsappAction(): Action
+    {
+        return Action::make('send_mou_whatsapp')
+            ->label('Kirim MoU ke Client')
+            ->icon('heroicon-o-paper-airplane')
+            ->color('success')
+            ->form([
+                TextInput::make('phone_number')
+                    ->label('WhatsApp Number')
+                    ->required()
+                    ->default(function () {
+                        $client = $this->mou->client;
+                        return $client?->phone;
+                    })
+                    ->helperText('Format: 08123456789 atau 628123456789'),
+            ])
+            ->modalHeading('Kirim MoU ke Client via WhatsApp')
+            ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
+            ->modalSubmitActionLabel('Ya, Kirim')
+            ->action(function (array $data) {
+                try {
+                    $phoneInput = $data['phone_number'];
+
+                    if (empty($phoneInput)) {
+                        Notification::make()
+                            ->title('Error')
+                            ->body('Nomor WhatsApp wajib diisi!')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    // Clean phone number
+                    $phone = preg_replace('/[^0-9]/', '', $phoneInput);
+                    if (substr($phone, 0, 1) === '0') {
+                        $phone = '62' . substr($phone, 1);
+                    } elseif (substr($phone, 0, 2) !== '62') {
+                        $phone = '62' . $phone;
+                    }
+
+                    // Build caption message
+                    $ownerName = $this->mou->client?->owner_name ?? 'Bapak/Ibu';
+                    $mouNumber = $this->mou->mou_number ?? '-';
+                    $categoryName = $this->mou->categoryMou?->name ?? '-';
+                    $companyName = $this->mou->client?->company_name ?? '-';
+
+                    $caption = "Yth. Bapak/Ibu {$ownerName}\n";
+                    $caption .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan draft MOU Kerjasama untuk tahun 2026.\n";
+                    $caption .= "Mohon dapat dipelajari dan ditandatangani sebagi bukti persetujuan.\n";
+                    $caption .= "No Mou \t\t: {$mouNumber}\n";
+                    $caption .= "Jenis Pekerjaan \t: {$categoryName} {$companyName}\n";
+                    $caption .= "Ketentuan:\n";
+                    $caption .= "- MoU wajib di Tandatangani dan di kirim kembali kepada kami Max 7 Hari setelah pesan ini di kirim.\n\n";
+                    $caption .= "Terima kasih\n";
+                    $caption .= "Admin Rafatax Consulting";
+
+                    // Generate PDF using same logic as MouPrintViewController
+                    $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
+                    $costLists = CostListMou::where('mou_id', $mou->id)->get();
+
+                    $format = $mou->type === 'pt'
+                        ? $mou->categoryMou->format_mou_pt
+                        : $mou->categoryMou->format_mou_kkp;
+
+                    if (!$format) {
+                        Notification::make()
+                            ->title('Error')
+                            ->body('Format print PDF belum diatur untuk kategori MoU ini.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    $view = 'format-mous.preview.' . $format;
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
+                        'mou' => $mou,
+                        'costLists' => $costLists,
+                        'printMode' => true,
+                        'isPdf' => true,
+                    ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
+
+                    // Save to temporary file
+                    $tempDir = storage_path('app/temp');
+                    if (!file_exists($tempDir)) {
+                        mkdir($tempDir, 0755, true);
+                    }
+
+                    $mouNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number);
+                    $filename = 'MoU-' . $mouNumberClean . '.pdf';
+                    $tempPath = $tempDir . '/' . $filename;
+
+                    $pdf->save($tempPath);
+
+                        // Send via Wablas
+                    /** @var \App\Services\WablasService $wablasService */
+                    $wablasService = app(\App\Services\WablasService::class);
+
+                    // Send text caption first
+                    $wablasService->sendMessage($phone, $caption);
+
+                    // Send PDF document
+                    $sendResult = $wablasService->sendDocument($phone, $tempPath);
+
+                    // Clean up temp file
+                    if (file_exists($tempPath)) {
+                        unlink($tempPath);
+                    }
+
+                    if (isset($sendResult['status']) && $sendResult['status']) {
+                        $this->mou->update([
+                            'is_send_mou' => true,
+                            'send_mou_date' => now()->toDateString(),
+                        ]);
+
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('MoU berhasil dikirim ke client via WhatsApp.')
+                            ->success()
+                            ->send();
+                    } else {
+                        Notification::make()
+                            ->title('Warning')
+                            ->body('Pesan terkirim, tetapi gagal mengirim PDF. ' . ($sendResult['message'] ?? ''))
+                            ->warning()
+                            ->send();
+                    }
+                } catch (\Exception $e) {
+                    Notification::make()
+                        ->title('Error')
+                        ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                        ->danger()
+                        ->send();
+                    \Illuminate\Support\Facades\Log::error($e);
+                }
+            });
+    }
+
+    private function getCreateInvoiceAction(): Action
+    {
+        return Action::make('createInvoice')
+            ->label('Buat Invoice')
+            ->icon('heroicon-o-document-currency-dollar')
+            ->color('info')
+            ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
+            ->form([
+                Select::make('mou_id')
+                    ->label('MoU')
+                    ->options(function () {
+                        return MoU::query()
+                            ->select('id', 'mou_number')
+                            ->get()
+                            ->pluck('mou_number', 'id');
+                    })
+                    ->searchable()
+                    ->required()
+                    ->default($this->mou->id),
+                TextInput::make('invoice_number')
+                    ->label('Nomor Invoice')
+                    ->required()
+                    ->maxLength(255)
+                    ->readOnly()
+                    ->unique(
+                        Invoice::class,
+                        'invoice_number',
+                        modifyRuleUsing: function ($rule) {
+                            return $rule->whereNull('deleted_at');
+                        }
+                    )
+                    ->suffixAction(
+                        \Filament\Forms\Components\Actions\Action::make('regenerate_number')
+                            ->icon('heroicon-o-arrow-path')
+                            ->tooltip('Regenerate Invoice Number')
+                            ->action(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                                InvoiceResource::generateInvoiceNumber($set, $get);
+                            })
+                    ),
+                \Filament\Forms\Components\DatePicker::make('invoice_date')
+                    ->label('Tanggal Invoice')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->live()
+                    ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                        if ($state) {
+                            $dueDate = \Carbon\Carbon::parse($state)->addWeeks(2)->toDateString();
+                            $set('due_date', $dueDate);
+                        }
+                        InvoiceResource::generateInvoiceNumber($set, $get);
+                    })
+                    ->afterStateHydrated(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get, $state) {
+                        InvoiceResource::generateInvoiceNumber($set, $get);
+                    }),
+                \Filament\Forms\Components\DatePicker::make('due_date')
+                    ->label('Tanggal Jatuh Tempo')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->required(),
+                Select::make('invoice_status')
+                    ->label('Status')
+                    ->options([
+                        'unpaid' => 'Belum Dibayar',
+                        'paid' => 'Sudah Dibayar'
+                    ])
+                    ->default('unpaid'),
+                Select::make('invoice_type')
+                    ->label('Tipe Invoice')
+                    ->required()
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP'
+                    ])
+                    ->default(fn() => $this->mou->type)
+                    ->live()
+                    ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                        InvoiceResource::generateInvoiceNumber($set, $get);
+                    }),
+                Select::make('rek_transfer')
+                    ->label('Rekening Transfer')
+                    ->options([
+                        'BCA PT' => 'BCA PT',
+                        'BCA BARU' => 'BCA BARU',
+                        'BCA LAMA' => 'BCA LAMA',
+                        'MANDIRI' => 'MANDIRI'
+                    ]),
+                Checkbox::make('is_include_pph23')
+                    ->label('Checklist Invoice PPH23')
+                    ->default(false),
+                \Filament\Forms\Components\Section::make('Rincian Biaya')
+                    ->schema([
+                        \Filament\Forms\Components\Repeater::make('costListInvoices')
+                            ->schema([
+                                Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable()
+                                    ->columnSpan([
+                                        'md' => 3,
+                                    ]),
+                                TextInput::make('description')
+                                    ->label('Deskripsi')
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                TextInput::make('amount')
+                                    ->label('Harga')
+                                    ->required()
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
+                                    ->columnSpan([
+                                        'md' => 5,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderableWithButtons()
+                            ->collapsible()
+                            ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                    ]),
+                \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
+                    ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
+                    ->options(function () {
+                        return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                            ->whereNull('invoice_id')
+                            ->orderBy('checklist_date', 'asc')
+                            ->get()
+                            ->mapWithKeys(function ($item) {
+                                if ($item->checklist_date === '1000-01-01') {
+                                    return [$item->id => 'SPT Tahunan'];
+                                }
+
+                                $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+
+                                return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
+                            });
+                    })
+                    ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
+                    ->columns(2)
+                    ->gridDirection('row')
+                    ->bulkToggleable(),
+            ])
+            ->modalWidth('7xl')
+            ->action(function (array $data) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+                    // Extract cost list items
+                    $costListItems = $data['costListInvoices'] ?? [];
+                    unset($data['costListInvoices']);
+
+                    // Extract checklist items
+                    $checklistIds = $data['checklist_mou_ids'] ?? [];
+                    unset($data['checklist_mou_ids']);
+
+                    // Create Invoice
+                    $invoice = Invoice::create($data);
+
+                    // Update Checklist Items
+                    if (!empty($checklistIds)) {
+                        $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
+                        \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
+                            'invoice_id' => $invoice->id,
+                            'status' => $checklistStatus
+                        ]);
+                    }
+
+                    // Create Cost List Items
+                    foreach ($costListItems as $item) {
+                        \App\Models\CostListInvoice::create([
+                            'invoice_id' => $invoice->id,
+                            'mou_id' => $invoice->mou_id,
+                            'coa_id' => $item['coa_id'],
+                            'description' => $item['description'],
+                            'amount' => $item['amount'],
+                        ]);
+                    }
+                });
+
+                Notification::make()
+                    ->title('Invoice berhasil dibuat')
+                    ->success()
+                    ->send();
+
+                $this->dispatch('invoice-created');
+            });
+    }
+
+    private function getCreateOldInvoiceAction(): Action
+    {
+        return Action::make('createOldInvoice')
+            ->label('Tambah Invoice Lama')
+            ->icon('heroicon-o-archive-box')
+            ->color('warning')
+            ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
+            ->form([
+                Select::make('mou_id')
+                    ->label('MoU')
+                    ->options(function () {
+                        return MoU::query()
+                            ->select('id', 'mou_number')
+                            ->get()
+                            ->pluck('mou_number', 'id');
+                    })
+                    ->searchable()
+                    ->required()
+                    ->default($this->mou->id),
+                TextInput::make('invoice_number')
+                    ->label('Nomor Invoice')
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(
+                        Invoice::class,
+                        'invoice_number',
+                        modifyRuleUsing: function ($rule) {
+                            return $rule->whereNull('deleted_at');
+                        }
+                    ),
+                \Filament\Forms\Components\DatePicker::make('invoice_date')
+                    ->label('Tanggal Invoice')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default('2025-12-31')
+                    ->live()
+                    ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
+                        if ($state) {
+                            $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
+                            $set('due_date', $dueDate);
+                        }
+                    }),
+                \Filament\Forms\Components\DatePicker::make('due_date')
+                    ->label('Tanggal Jatuh Tempo')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default('2026-01-21')
+                    ->required(),
+                Select::make('invoice_status')
+                    ->label('Status')
+                    ->options([
+                        'unpaid' => 'Belum Dibayar',
+                        'paid' => 'Sudah Dibayar',
+                    ])
+                    ->default('paid')
+                    ->required(),
+                Select::make('invoice_type')
+                    ->label('Tipe Invoice')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                    ])
+                    ->required()
+                    ->default(fn() => $this->mou->type),
+                \Filament\Forms\Components\Section::make('Rincian Biaya')
+                    ->schema([
+                        \Filament\Forms\Components\Repeater::make('costListInvoices')
+                            ->schema([
+                                Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable()
+                                    ->columnSpan([
+                                        'md' => 3,
+                                    ]),
+                                TextInput::make('description')
+                                    ->label('Deskripsi')
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                TextInput::make('amount')
+                                    ->label('Harga')
+                                    ->required()
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
+                                    ->columnSpan([
+                                        'md' => 5,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderableWithButtons()
+                            ->collapsible()
+                            ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
+                    ]),
+                \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
+                    ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
+                    ->options(function () {
+                        return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                            ->whereNull('invoice_id')
+                            ->orderBy('checklist_date', 'asc')
+                            ->get()
+                            ->mapWithKeys(function ($item) {
+                                $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+                                return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
+                            });
+                    })
+                    ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
+                    ->columns(2)
+                    ->gridDirection('row')
+                    ->bulkToggleable(),
+            ])
+            ->modalWidth('7xl')
+            ->action(function (array $data) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+                    // Extract cost list items
+                    $costListItems = $data['costListInvoices'] ?? [];
+                    unset($data['costListInvoices']);
+
+                    // Extract checklist items
+                    $checklistIds = $data['checklist_mou_ids'] ?? [];
+                    unset($data['checklist_mou_ids']);
+
+                    // Create Invoice
+                    $invoice = Invoice::create($data);
+
+                    // Update Checklist Items
+                    if (!empty($checklistIds)) {
+                        $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
+                        \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
+                            'invoice_id' => $invoice->id,
+                            'status' => $checklistStatus
+                        ]);
+                    }
+
+                    // Create Cost List Items
+                    foreach ($costListItems as $item) {
+                        \App\Models\CostListInvoice::create([
+                            'invoice_id' => $invoice->id,
+                            'mou_id' => $invoice->mou_id,
+                            'coa_id' => $item['coa_id'],
+                            'description' => $item['description'],
+                            'amount' => $item['amount'],
+                        ]);
+                    }
+                });
+
+                Notification::make()
+                    ->title('Invoice lama berhasil ditambahkan')
+                    ->success()
+                    ->send();
+
+                $this->dispatch('invoice-created');
+            });
+    }
+
+    private function getBackAction(): Action
+    {
+        return Action::make('back')
+            ->label('Kembali ke Daftar MoU')
+            ->url(MouResource::getUrl('index'))
+            ->color('primary')
+            ->icon('heroicon-o-arrow-left');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make()
-                ->label('Edit MoU')
-                ->icon('heroicon-o-pencil')
-                ->record($this->mou)
-                ->form(fn(Form $form) => MouResource::form($form)->getComponents())
-                ->modalWidth('7xl')
-                ->successRedirectUrl(fn() => MouResource::getUrl('cost-list', ['record' => $this->mou])),
-            Action::make('createCost')
-                ->label('Tambah Biaya')
+            $this->getEditMouAction(),
+            ActionGroup::make([
+                $this->getCreateCostAction(),
+                $this->getCreateInvoiceAction(),
+                $this->getCreateOldInvoiceAction(),
+            ])
+                ->label('Buat')
                 ->icon('heroicon-o-plus')
                 ->color('success')
-                ->visible(fn() => Auth::user()?->hasAnyPermission(['mou.create', 'mou.edit']) ?? false)
-                ->form([
-                    Select::make('coa_id')
-                        ->label('CoA')
-                        ->options(Coa::where('group_coa_id', '40')->pluck('name', 'id'))
-                        ->searchable()
-                        ->required(),
-                    TextInput::make('description')
-                        ->label('Deskripsi')
-                        ->maxLength(255),
-                    TextInput::make('quantity')
-                        ->label('Qty')
-                        ->default(1)
-                        ->required()
-                        ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                        ->live()
-                        ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '1')
-                        ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
-                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                            $qty = floatval(str_replace('.', '', $state ?? '0'));
-                            $price = floatval(str_replace('.', '', $get('amount') ?? '0'));
-                            $set('total_amount', number_format($qty * $price, 0, ',', '.'));
-                        }),
-                    TextInput::make('satuan_quantity')
-                        ->label('Satuan'),
-                    TextInput::make('amount')
-                        ->label('Harga Satuan')
-                        ->required()
-                        ->prefix('Rp')
-                        ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                        ->live()
-                        ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
-                        ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
-                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                            $price = floatval(str_replace('.', '', $state ?? '0'));
-                            $qty = floatval(str_replace('.', '', $get('quantity') ?? '1'));
-                            $set('total_amount', number_format($qty * $price, 0, ',', '.'));
-                        }),
-                    TextInput::make('total_amount')
-                        ->label('Total')
-                        ->readOnly()
-                        ->prefix('Rp')
-                        ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                        ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '0')
-                        ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state)),
-                ])
-                ->action(function (array $data) {
-                    CostListMou::create([
-                        'mou_id' => $this->mou->id,
-                        'coa_id' => $data['coa_id'],
-                        'description' => $data['description'],
-                        'quantity' => $data['quantity'],
-                        'satuan_quantity' => $data['satuan_quantity'],
-                        'amount' => $data['amount'],
-                        'total_amount' => $data['total_amount'],
-                    ]);
-
-                    // Refresh local collections
-                    $this->cost_lists = CostListMou::where('mou_id', $this->mou->id)->get();
-
-                    Notification::make()
-                        ->title('Biaya berhasil ditambahkan')
-                        ->success()
-                        ->send();
-                }),
-            Actions\Action::make('preview_pdf')
-                ->label('Preview PDF')
-                ->icon('heroicon-o-eye')
+                ->button(),
+            ActionGroup::make([
+                $this->getPreviewPdfAction(),
+                $this->getExportPdfAction(),
+                $this->getSendMouWhatsappAction(),
+            ])
+                ->label('Dokumen')
+                ->icon('heroicon-o-document')
                 ->color('warning')
-                ->url(fn() => route('mou.pdf.preview', ['id' => $this->mou->id]))
-                ->openUrlInNewTab(),
-            Action::make('export_pdf')
-                ->label('Print PDF MoU')
-                ->icon('heroicon-o-printer')
-                ->color('success')
-                ->url(fn() => route('mou.print.view', ['id' => $this->mou->id]))
-                ->openUrlInNewTab(),
-            Action::make('send_mou_whatsapp')
-                ->label('Kirim MoU ke Client')
-                ->icon('heroicon-o-paper-airplane')
-                ->color('success')
-                ->form([
-                    TextInput::make('phone_number')
-                        ->label('WhatsApp Number')
-                        ->required()
-                        ->default(function () {
-                            $client = $this->mou->client;
-                            return $client?->phone;
-                        })
-                        ->helperText('Format: 08123456789 atau 628123456789'),
-                ])
-                ->modalHeading('Kirim MoU ke Client via WhatsApp')
-                ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
-                ->modalSubmitActionLabel('Ya, Kirim')
-                ->action(function (array $data) {
-                    try {
-                        $phoneInput = $data['phone_number'];
-
-                        if (empty($phoneInput)) {
-                            Notification::make()
-                                ->title('Error')
-                                ->body('Nomor WhatsApp wajib diisi!')
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        // Clean phone number
-                        $phone = preg_replace('/[^0-9]/', '', $phoneInput);
-                        if (substr($phone, 0, 1) === '0') {
-                            $phone = '62' . substr($phone, 1);
-                        } elseif (substr($phone, 0, 2) !== '62') {
-                            $phone = '62' . $phone;
-                        }
-
-                        // Build caption message
-                        $ownerName = $this->mou->client?->owner_name ?? 'Bapak/Ibu';
-                        $mouNumber = $this->mou->mou_number ?? '-';
-                        $categoryName = $this->mou->categoryMou?->name ?? '-';
-                        $companyName = $this->mou->client?->company_name ?? '-';
-
-                        $caption = "Yth. Bapak/Ibu {$ownerName}\n";
-                        $caption .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan draft MOU Kerjasama untuk tahun 2026.\n";
-                        $caption .= "Mohon dapat dipelajari dan ditandatangani sebagi bukti persetujuan.\n";
-                        $caption .= "No Mou \t\t: {$mouNumber}\n";
-                        $caption .= "Jenis Pekerjaan \t: {$categoryName} {$companyName}\n";
-                        $caption .= "Ketentuan:\n";
-                        $caption .= "- MoU wajib di Tandatangani dan di kirim kembali kepada kami Max 7 Hari setelah pesan ini di kirim.\n\n";
-                        $caption .= "Terima kasih\n";
-                        $caption .= "Admin Rafatax Consulting";
-
-                        // Generate PDF using same logic as MouPrintViewController
-                        $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
-                        $costLists = CostListMou::where('mou_id', $mou->id)->get();
-
-                        $format = $mou->type === 'pt'
-                            ? $mou->categoryMou->format_mou_pt
-                            : $mou->categoryMou->format_mou_kkp;
-
-                        if (!$format) {
-                            Notification::make()
-                                ->title('Error')
-                                ->body('Format print PDF belum diatur untuk kategori MoU ini.')
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        $view = 'format-mous.preview.' . $format;
-                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
-                            'mou' => $mou,
-                            'costLists' => $costLists,
-                            'printMode' => true,
-                            'isPdf' => true,
-                        ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
-
-                        // Save to temporary file
-                        $tempDir = storage_path('app/temp');
-                        if (!file_exists($tempDir)) {
-                            mkdir($tempDir, 0755, true);
-                        }
-
-                        $mouNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number);
-                        $filename = 'MoU-' . $mouNumberClean . '.pdf';
-                        $tempPath = $tempDir . '/' . $filename;
-
-                        $pdf->save($tempPath);
-
-                        // Send via Wablas
-                        /** @var \App\Services\WablasService $wablasService */
-                        $wablasService = app(\App\Services\WablasService::class);
-
-                        // Send text caption first
-                        $wablasService->sendMessage($phone, $caption);
-
-                        // Send PDF document
-                        $sendResult = $wablasService->sendDocument($phone, $tempPath);
-
-                        // Clean up temp file
-                        if (file_exists($tempPath)) {
-                            unlink($tempPath);
-                        }
-
-                        if (isset($sendResult['status']) && $sendResult['status']) {
-                            $this->mou->update([
-                                'is_send_mou' => true,
-                                'send_mou_date' => now()->toDateString(),
-                            ]);
-
-                            Notification::make()
-                                ->title('Berhasil')
-                                ->body('MoU berhasil dikirim ke client via WhatsApp.')
-                                ->success()
-                                ->send();
-                        } else {
-                            Notification::make()
-                                ->title('Warning')
-                                ->body('Pesan terkirim, tetapi gagal mengirim PDF. ' . ($sendResult['message'] ?? ''))
-                                ->warning()
-                                ->send();
-                        }
-                    } catch (\Exception $e) {
-                        Notification::make()
-                            ->title('Error')
-                            ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
-                            ->danger()
-                            ->send();
-                        \Illuminate\Support\Facades\Log::error($e);
-                    }
-                }),
-            Action::make('createInvoice')
-                ->label('Buat Invoice')
-                ->icon('heroicon-o-document-currency-dollar')
-                ->color('info')
-                ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
-                ->form([
-                    Select::make('mou_id')
-                        ->label('MoU')
-                        ->options(function () {
-                            return MoU::query()
-                                ->select('id', 'mou_number')
-                                ->get()
-                                ->pluck('mou_number', 'id');
-                        })
-                        ->searchable()
-                        ->required()
-                        ->default($this->mou->id),
-                    TextInput::make('invoice_number')
-                        ->label('Nomor Invoice')
-                        ->required()
-                        ->maxLength(255)
-                        ->readOnly()
-                        ->unique(
-                            Invoice::class,
-                            'invoice_number',
-                            modifyRuleUsing: function ($rule) {
-                                return $rule->whereNull('deleted_at');
-                            }
-                        )
-                        ->suffixAction(
-                            \Filament\Forms\Components\Actions\Action::make('regenerate_number')
-                                ->icon('heroicon-o-arrow-path')
-                                ->tooltip('Regenerate Invoice Number')
-                                ->action(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get) {
-                                    InvoiceResource::generateInvoiceNumber($set, $get);
-                                })
-                        ),
-                    \Filament\Forms\Components\DatePicker::make('invoice_date')
-                        ->label('Tanggal Invoice')
-                        ->required()
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->live()
-                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
-                            if ($state) {
-                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(2)->toDateString();
-                                $set('due_date', $dueDate);
-                            }
-                            InvoiceResource::generateInvoiceNumber($set, $get);
-                        })
-                        ->afterStateHydrated(function (\Filament\Forms\Set $set, \Filament\Forms\Get $get, $state) {
-                            InvoiceResource::generateInvoiceNumber($set, $get);
-                        }),
-                    \Filament\Forms\Components\DatePicker::make('due_date')
-                        ->label('Tanggal Jatuh Tempo')
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->required(),
-                    Select::make('invoice_status')
-                        ->label('Status')
-                        ->options([
-                            'unpaid' => 'Belum Dibayar',
-                            'paid' => 'Sudah Dibayar'
-                        ])
-                        ->default('unpaid'),
-                    Select::make('invoice_type')
-                        ->label('Tipe Invoice')
-                        ->required()
-                        ->options([
-                            'pt' => 'PT',
-                            'kkp' => 'KKP'
-                        ])
-                        ->default(fn() => $this->mou->type)
-                        ->live()
-                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
-                            InvoiceResource::generateInvoiceNumber($set, $get);
-                        }),
-                    Select::make('rek_transfer')
-                        ->label('Rekening Transfer')
-                        ->options([
-                            'BCA PT' => 'BCA PT',
-                            'BCA BARU' => 'BCA BARU',
-                            'BCA LAMA' => 'BCA LAMA',
-                            'MANDIRI' => 'MANDIRI'
-                        ]),
-                    Checkbox::make('is_include_pph23')
-                        ->label('Checklist Invoice PPH23')
-                        ->default(false),
-                    \Filament\Forms\Components\Section::make('Rincian Biaya')
-                        ->schema([
-                            \Filament\Forms\Components\Repeater::make('costListInvoices')
-                                ->schema([
-                                    Select::make('coa_id')
-                                        ->label('CoA')
-                                        ->options(Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
-                                        ->required()
-                                        ->searchable()
-                                        ->columnSpan([
-                                            'md' => 3,
-                                        ]),
-                                    TextInput::make('description')
-                                        ->label('Deskripsi')
-                                        ->columnSpan([
-                                            'md' => 4,
-                                        ]),
-                                    TextInput::make('amount')
-                                        ->label('Harga')
-                                        ->required()
-                                        ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                        ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
-                                        ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
-                                        ->columnSpan([
-                                            'md' => 5,
-                                        ]),
-                                ])
-                                ->columns([
-                                    'md' => 12,
-                                ])
-                                ->defaultItems(0)
-                                ->reorderableWithButtons()
-                                ->collapsible()
-                                ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
-                        ]),
-                    \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
-                        ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
-                        ->options(function () {
-                            return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
-                                ->whereNull('invoice_id')
-                                ->orderBy('checklist_date', 'asc')
-                                ->get()
-                                ->mapWithKeys(function ($item) {
-                                    if ($item->checklist_date === '1000-01-01') {
-                                        return [$item->id => 'SPT Tahunan'];
-                                    }
-
-                                    $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
-
-                                    return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
-                                });
-                        })
-                        ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
-                        ->columns(2)
-                        ->gridDirection('row')
-                        ->bulkToggleable(),
-                ])
-                ->modalWidth('7xl')
-                ->action(function (array $data) {
-                    \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
-                        // Extract cost list items
-                        $costListItems = $data['costListInvoices'] ?? [];
-                        unset($data['costListInvoices']);
-
-                        // Extract checklist items
-                        $checklistIds = $data['checklist_mou_ids'] ?? [];
-                        unset($data['checklist_mou_ids']);
-
-                        // Create Invoice
-                        $invoice = Invoice::create($data);
-
-                        // Update Checklist Items
-                        if (!empty($checklistIds)) {
-                            $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
-                            \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
-                                'invoice_id' => $invoice->id,
-                                'status' => $checklistStatus
-                            ]);
-                        }
-
-                        // Create Cost List Items
-                        foreach ($costListItems as $item) {
-                            \App\Models\CostListInvoice::create([
-                                'invoice_id' => $invoice->id,
-                                'mou_id' => $invoice->mou_id,
-                                'coa_id' => $item['coa_id'],
-                                'description' => $item['description'],
-                                'amount' => $item['amount'],
-                            ]);
-                        }
-                    });
-
-                    Notification::make()
-                        ->title('Invoice berhasil dibuat')
-                        ->success()
-                        ->send();
-
-                    $this->dispatch('invoice-created');
-                }),
-            Action::make('createOldInvoice')
-                ->label('Tambah Invoice Lama')
-                ->icon('heroicon-o-archive-box')
-                ->color('warning')
-                ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
-                ->form([
-                    Select::make('mou_id')
-                        ->label('MoU')
-                        ->options(function () {
-                            return MoU::query()
-                                ->select('id', 'mou_number')
-                                ->get()
-                                ->pluck('mou_number', 'id');
-                        })
-                        ->searchable()
-                        ->required()
-                        ->default($this->mou->id),
-                    TextInput::make('invoice_number')
-                        ->label('Nomor Invoice')
-                        ->required()
-                        ->maxLength(255)
-                        ->unique(
-                            Invoice::class,
-                            'invoice_number',
-                            modifyRuleUsing: function ($rule) {
-                                return $rule->whereNull('deleted_at');
-                            }
-                        ),
-                    \Filament\Forms\Components\DatePicker::make('invoice_date')
-                        ->label('Tanggal Invoice')
-                        ->required()
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->default('2025-12-31')
-                        ->live()
-                        ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
-                            if ($state) {
-                                $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
-                                $set('due_date', $dueDate);
-                            }
-                        }),
-                    \Filament\Forms\Components\DatePicker::make('due_date')
-                        ->label('Tanggal Jatuh Tempo')
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->default('2026-01-21')
-                        ->required(),
-                    Select::make('invoice_status')
-                        ->label('Status')
-                        ->options([
-                            'unpaid' => 'Belum Dibayar',
-                            'paid' => 'Sudah Dibayar',
-                        ])
-                        ->default('paid')
-                        ->required(),
-                    Select::make('invoice_type')
-                        ->label('Tipe Invoice')
-                        ->options([
-                            'pt' => 'PT',
-                            'kkp' => 'KKP',
-                        ])
-                        ->required()
-                        ->default(fn() => $this->mou->type),
-                    \Filament\Forms\Components\Section::make('Rincian Biaya')
-                        ->schema([
-                            \Filament\Forms\Components\Repeater::make('costListInvoices')
-                                ->schema([
-                                    Select::make('coa_id')
-                                        ->label('CoA')
-                                        ->options(Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
-                                        ->required()
-                                        ->searchable()
-                                        ->columnSpan([
-                                            'md' => 3,
-                                        ]),
-                                    TextInput::make('description')
-                                        ->label('Deskripsi')
-                                        ->columnSpan([
-                                            'md' => 4,
-                                        ]),
-                                    TextInput::make('amount')
-                                        ->label('Harga')
-                                        ->required()
-                                        ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                        ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : null)
-                                        ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', $state))
-                                        ->columnSpan([
-                                            'md' => 5,
-                                        ]),
-                                ])
-                                ->columns([
-                                    'md' => 12,
-                                ])
-                                ->defaultItems(0)
-                                ->reorderableWithButtons()
-                                ->collapsible()
-                                ->itemLabel(fn(array $state): ?string => $state['description'] ?? null),
-                        ]),
-                    \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
-                        ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
-                        ->options(function () {
-                            return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
-                                ->whereNull('invoice_id')
-                                ->orderBy('checklist_date', 'asc')
-                                ->get()
-                                ->mapWithKeys(function ($item) {
-                                    $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
-                                    return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
-                                });
-                        })
-                        ->visible(fn() => in_array($this->mou->category_mou_id, [3, 4]))
-                        ->columns(2)
-                        ->gridDirection('row')
-                        ->bulkToggleable(),
-                ])
-                ->modalWidth('7xl')
-                ->action(function (array $data) {
-                    \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
-                        // Extract cost list items
-                        $costListItems = $data['costListInvoices'] ?? [];
-                        unset($data['costListInvoices']);
-
-                        // Extract checklist items
-                        $checklistIds = $data['checklist_mou_ids'] ?? [];
-                        unset($data['checklist_mou_ids']);
-
-                        // Create Invoice
-                        $invoice = Invoice::create($data);
-
-                        // Update Checklist Items
-                        if (!empty($checklistIds)) {
-                            $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
-                            \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
-                                'invoice_id' => $invoice->id,
-                                'status' => $checklistStatus
-                            ]);
-                        }
-
-                        // Create Cost List Items
-                        foreach ($costListItems as $item) {
-                            \App\Models\CostListInvoice::create([
-                                'invoice_id' => $invoice->id,
-                                'mou_id' => $invoice->mou_id,
-                                'coa_id' => $item['coa_id'],
-                                'description' => $item['description'],
-                                'amount' => $item['amount'],
-                            ]);
-                        }
-                    });
-
-                    Notification::make()
-                        ->title('Invoice lama berhasil ditambahkan')
-                        ->success()
-                        ->send();
-
-                    $this->dispatch('invoice-created');
-                }),
-            Action::make('back')
-                ->label('Kembali ke Daftar MoU')
-                ->url(MouResource::getUrl('index'))
-                ->color('primary')
-                ->icon('heroicon-o-arrow-left'),
+                ->button(),
+            $this->getBackAction(),
         ];
     }
 }
