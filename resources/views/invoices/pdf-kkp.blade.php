@@ -97,8 +97,19 @@
                 <div>Sukoharjo, {{ \Carbon\Carbon::parse($invoice->invoice_date)->locale('id')->isoFormat('D MMMM Y') }}
                 </div>
                 <div>Kepada :</div>
+                @php
+                    $resolvedClientName = '';
+
+                    if (!empty($invoice->memo_id) && empty($invoice->client_id)) {
+                        $resolvedClientName = $client_name ?? '';
+                    } elseif (!empty($invoice->memo_id) && !empty($invoice->client_id)) {
+                        $resolvedClientName = optional($invoice->client)->company_name ?? '';
+                    } elseif (!empty($invoice->mou_id) && empty($invoice->memo_id) && empty($invoice->client_id)) {
+                        $resolvedClientName = optional($invoice->mou->client)->company_name ?? '';
+                    }
+                @endphp
                 <div>
-                    <strong>{{ $client_name ?? (optional($invoice->mou->client)->name ?? (optional($invoice->mou->client)->company_name ?? '')) }}</strong>
+                    <strong>{{ $resolvedClientName }}</strong>
                 </div>
             </div>
             <div style="clear: both;"></div>
@@ -171,8 +182,7 @@
                             $paidDate = $invoice->tgl_transfer ?? $invoice->created_at;
                         @endphp
                         @if (file_exists($stampPath))
-                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents($stampPath)) }}"
-                                alt="LUNAS" style="height: 80px; opacity: 0.8;">
+                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents($stampPath)) }}" alt="LUNAS" style="height: 80px; opacity: 0.8;">
                             @if ($paidDate)
                                 <div style="margin-top: 5px; font-weight: bold; font-size: 15px; color: #1E0CD3;">
                                     {{ \Carbon\Carbon::parse($paidDate)->format('d/m/Y') }}
