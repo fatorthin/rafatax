@@ -87,6 +87,8 @@ class InvoicesRelationManager extends RelationManager
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
                     ->options(\App\Models\Client::where('status', 'active')->pluck('company_name', 'id'))
+                    ->searchable()
+                    ->preload()
                     ->visible(fn($livewire): bool => (bool) ($livewire->ownerRecord?->is_memo_talangan))
                     ->required(fn($livewire): bool => (bool) ($livewire->ownerRecord?->is_memo_talangan))
                     ->dehydrated(fn($livewire): bool => (bool) ($livewire->ownerRecord?->is_memo_talangan)),
