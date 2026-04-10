@@ -484,6 +484,11 @@ class InvoiceResource extends Resource
                     ];
 
                     $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
+                    $transferDate = \Carbon\Carbon::parse($data['tgl_transfer']);
+                    $nextSortOrder = (CashReport::where('cash_reference_id', $cashReferenceId)
+                        ->whereYear('transaction_date', $transferDate->year)
+                        ->whereMonth('transaction_date', $transferDate->month)
+                        ->max('sort_order') ?? 0) + 1;
 
                     // Update invoice status and rekening transfer
                     $record->update([
@@ -507,8 +512,10 @@ class InvoiceResource extends Resource
                             'debit_amount' => $costItem->amount,
                             'credit_amount' => 0,
                             'transaction_date' => $data['tgl_transfer'],
-                            'sort_order' => CashReport::whereDate('transaction_date', $data['tgl_transfer'])->max('sort_order') + 1,
+                            'sort_order' => $nextSortOrder,
                         ]);
+
+                        $nextSortOrder++;
 
                         if ($firstCashReportId === null) {
                             $firstCashReportId = $cashReport->id;
