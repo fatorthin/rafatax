@@ -44,6 +44,7 @@ class AppPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
                 \App\Filament\App\Pages\Profile::class,
+                \App\Filament\App\Pages\NeracaLajurBulanan::class,
             ])
             ->widgets([
                 Widgets\AccountWidget::class,
@@ -68,7 +69,7 @@ class AppPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_END,
-                fn (): string => '<style>
+                fn(): string => '<style>
                     /* Globally limit table height to allow vertical scrolling */
                     .fi-ta-content { max-height: 75vh; overflow: auto !important; }
                     /* Make all table headers sticky */
