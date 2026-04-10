@@ -125,6 +125,8 @@ class MemoResource extends Resource
                 Tables\Columns\TextColumn::make('tanggal_ttd')
                     ->date('d-m-Y')
                     ->label('Tanggal TTD'),
+                Tables\Columns\CheckboxColumn::make('is_memo_talangan')
+                    ->label('Memo Talangan'),
                 Tables\Columns\TextColumn::make('type_work')
                     ->label('Type Work')
                     ->getStateUsing(function ($record) {

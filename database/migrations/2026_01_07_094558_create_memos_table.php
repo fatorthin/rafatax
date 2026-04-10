@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('tanggal_ttd');
             $table->enum('tipe_klien', ['pt', 'kkp'])->default('pt');
             $table->double('total_fee');
+            $table->boolean('is_memo_talangan')->default(false);
             $table->softDeletes();
             $table->timestamps();
         });

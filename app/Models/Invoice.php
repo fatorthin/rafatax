@@ -30,6 +30,7 @@ class Invoice extends Model
         'tgl_transfer',
         'is_send_invoice',
         'send_invoice_date',
+        'client_id',
     ];
 
     protected static function booted()

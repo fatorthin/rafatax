@@ -27,6 +27,7 @@ return new class extends Migration
             $table->date('tgl_transfer')->nullable();
             $table->boolean('is_send_invoice')->default(false);
             $table->date('send_invoice_date')->nullable();
+            $table->foreignId('client_id')->constrained('clients')->onDelete('set null')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

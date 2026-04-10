@@ -18,7 +18,8 @@ class Memo extends Model
         'tanggal_ttd',
         'tipe_klien',
         'total_fee',
-        'no_memo'
+        'no_memo',
+        'is_memo_talangan',
     ];
 
     protected $casts = ['type_work' => 'array'];

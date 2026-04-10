@@ -7,8 +7,6 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\InvoiceResource;
 
 class InvoicesRelationManager extends RelationManager
@@ -19,9 +17,29 @@ class InvoicesRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Forms\Components\Hidden::make('memo_id')
+                    ->default(function ($livewire) {
+                        return $livewire->ownerRecord->id;
+                    }),
                 Forms\Components\TextInput::make('invoice_number')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->readOnly()
+                    ->unique(
+                        \App\Models\Invoice::class,
+                        'invoice_number',
+                        ignoreRecord: true,
+                        modifyRuleUsing: function ($rule) {
+                            return $rule->whereNull('deleted_at');
+                        }
+                    )
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('refresh_invoice_number')
+                            ->icon('heroicon-o-arrow-path')
+                            ->action(function (Forms\Set $set, Forms\Get $get) {
+                                \App\Filament\App\Resources\InvoiceResource::generateInvoiceNumber($set, $get);
+                            })
+                    ),
                 Forms\Components\Select::make('invoice_status')
                     ->options([
                         'unpaid' => 'Unpaid',
@@ -44,6 +62,36 @@ class InvoicesRelationManager extends RelationManager
                     ->required(),
                 Forms\Components\TextInput::make('description')
                     ->maxLength(255),
+                Forms\Components\Select::make('client_id')
+                    ->label('Client')
+                    ->options(\App\Models\Client::where('status', 'active')->pluck('name', 'id'))
+                    ->visible(fn($livewire): bool => (bool) ($livewire->ownerRecord?->is_memo_talangan))
+                    ->required(fn($livewire): bool => (bool) ($livewire->ownerRecord?->is_memo_talangan))
+                    ->dehydrated(fn($livewire): bool => (bool) ($livewire->ownerRecord?->is_memo_talangan)),
+                Forms\Components\Repeater::make('costListInvoices')
+                    ->relationship()
+                    ->schema([
+                        Forms\Components\Select::make('coa_id')
+                            ->label('CoA')
+                            ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
+                            ->required()
+                            ->searchable()
+                            ->columnSpan(['md' => 4]),
+                        Forms\Components\TextInput::make('description')
+                            ->label('Deskripsi')
+                            ->columnSpan(['md' => 4]),
+                        Forms\Components\TextInput::make('amount')
+                            ->label('Harga')
+                            ->numeric()
+                            ->required()
+                            ->columnSpan(['md' => 4]),
+                    ])
+                    ->columns(['md' => 12])
+                    ->defaultItems(0)
+                    ->reorderableWithButtons()
+                    ->collapsible()
+                    ->itemLabel(fn(array $state): ?string => $state['description'] ?? null)
+                    ->columnSpanFull(),
             ]);
     }
 
