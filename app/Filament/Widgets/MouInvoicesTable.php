@@ -125,7 +125,7 @@ class MouInvoicesTable extends BaseWidget
                             ->label('Rekening Transfer')
                             ->options([
                                 'BCA PT' => 'BCA PT',
-                                'BCA BARU' => 'BCA BARU',
+                                'BCA BARU' => 'BCA 425',
                                 'BCA LAMA' => 'BCA LAMA',
                                 'MANDIRI' => 'MANDIRI',
                                 'KAS BESAR' => 'KAS BESAR',

@@ -762,7 +762,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->orderBy('checklist_date', 'asc')
                     ->get()
                     ->mapWithKeys(function ($item) {
+                        if ($item->checklist_date === '1000-01-01') {
+                            return [$item->id => 'SPT Tahunan'];
+                        }
+
                         $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+
                         return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
                     });
             })
