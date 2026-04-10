@@ -14,8 +14,16 @@
             11 => 'November',
             12 => 'Desember',
         ];
-        $labaRugiData = $this->getLabaRugiData();
-        $labaRugiBersih = $labaRugiData['totalPendapatan'] - $labaRugiData['totalBeban'];
+        $data = $this->getLabaRugiData();
+
+        function formatLabaRugiNumber($number, $useParentheses = false)
+        {
+            if ($useParentheses && $number < 0) {
+                return '(' . number_format(abs($number), 0, ',', '.') . ')';
+            }
+
+            return number_format($number, 0, ',', '.');
+        }
     @endphp
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -115,60 +123,66 @@
                         <td colspan="2" class="text-lg font-bold py-3">PENDAPATAN</td>
                     </tr>
 
-                    @foreach ($labaRugiData['pendapatan'] as $item)
-                        @if ($item['is_group_header'])
-                            <tr class="bg-gray-50 border-b border-gray-200">
-                                <td colspan="2" class="font-semibold py-2">{{ $item['name'] }}</td>
-                            </tr>
-                        @elseif($item['is_group_total'])
-                            <tr class="bg-gray-100 border-b border-gray-300">
-                                <td class="font-bold py-2 pl-4">{{ $item['name'] }}</td>
-                                <td class="text-right font-bold py-2 pr-2">{{ number_format($item['amount'], 0, ',', '.') }}</td>
-                            </tr>
-                        @else
+                    @php $totalPendapatanDisplay = 0; @endphp
+                    @foreach ($data['items'] as $item)
+                        @if ($item['category'] === 'Pendapatan')
                             <tr class="border-b border-gray-200 hover:bg-gray-50">
                                 <td class="py-1 pl-8">{{ $item['code'] }} {{ $item['name'] }}</td>
                                 <td class="text-right py-1 pr-2">{{ number_format($item['amount'], 0, ',', '.') }}</td>
                             </tr>
+                            @php $totalPendapatanDisplay += $item['amount']; @endphp
                         @endif
                     @endforeach
 
                     <tr class="border-t border-gray-300 font-bold bg-gray-50">
                         <td class="py-3 pl-4">TOTAL PENDAPATAN</td>
-                        <td class="text-right py-3 pr-2">{{ number_format($labaRugiData['totalPendapatan'], 0, ',', '.') }}</td>
+                        <td class="text-right py-3 pr-2">{{ number_format($totalPendapatanDisplay, 0, ',', '.') }}</td>
                     </tr>
 
                     <tr class="border-b-2 border-gray-300">
-                        <td colspan="2" class="text-lg font-bold py-3">BEBAN</td>
+                        <td colspan="2" class="text-lg font-bold py-3">BEBAN BIAYA</td>
                     </tr>
 
-                    @foreach ($labaRugiData['beban'] as $item)
-                        @if ($item['is_group_header'])
-                            <tr class="bg-gray-50 border-b border-gray-200">
-                                <td colspan="2" class="font-semibold py-2">{{ $item['name'] }}</td>
-                            </tr>
-                        @elseif($item['is_group_total'])
-                            <tr class="bg-gray-100 border-b border-gray-300">
-                                <td class="font-bold py-2 pl-4">{{ $item['name'] }}</td>
-                                <td class="text-right font-bold py-2 pr-2">{{ number_format($item['amount'], 0, ',', '.') }}</td>
-                            </tr>
-                        @else
+                    @php $totalBebanDisplay = 0; @endphp
+                    @foreach ($data['items'] as $item)
+                        @if ($item['category'] === 'Beban')
                             <tr class="border-b border-gray-200 hover:bg-gray-50">
                                 <td class="py-1 pl-8">{{ $item['code'] }} {{ $item['name'] }}</td>
-                                <td class="text-right py-1 pr-2">{{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                <td class="text-right py-1 pr-2">{{ formatLabaRugiNumber($item['amount'], true) }}</td>
                             </tr>
+                            @php $totalBebanDisplay += $item['amount']; @endphp
                         @endif
                     @endforeach
 
                     <tr class="border-t border-gray-300 font-bold bg-gray-50">
-                        <td class="py-3 pl-4">TOTAL BEBAN</td>
-                        <td class="text-right py-3 pr-2">{{ number_format($labaRugiData['totalBeban'], 0, ',', '.') }}</td>
+                        <td class="py-3 pl-4">TOTAL BEBAN BIAYA</td>
+                        <td class="text-right py-3 pr-2">{{ formatLabaRugiNumber($totalBebanDisplay, true) }}</td>
+                    </tr>
+
+                    <tr class="border-b-2 border-gray-300">
+                        <td colspan="2" class="text-lg font-bold py-3">PENGHASILAN (BIAYA) LUAR USAHA</td>
+                    </tr>
+
+                    @php $totalExternalDisplay = 0; @endphp
+                    @foreach ($data['items'] as $item)
+                        @if ($item['category'] === 'Penghasilan (Biaya) Luar Usaha')
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="py-1 pl-8">{{ $item['code'] }} {{ $item['name'] }}</td>
+                                <td class="text-right py-1 pr-2">{{ preg_match('/^AO-7/', $item['code']) ? formatLabaRugiNumber($item['amount'], true) : number_format($item['amount'], 0, ',', '.') }}</td>
+                            </tr>
+                            @php $totalExternalDisplay += $item['amount']; @endphp
+                        @endif
+                    @endforeach
+
+                    <tr class="border-t border-gray-300 font-bold bg-gray-50">
+                        <td class="py-3 pl-4">TOTAL PENGHASILAN (BIAYA) LUAR USAHA</td>
+                        <td class="text-right py-3 pr-2">{{ formatLabaRugiNumber($totalExternalDisplay, true) }}</td>
                     </tr>
 
                     <tr class="border-t-2 border-gray-500 font-bold text-lg">
-                        <td class="py-4 pl-4">LABA (RUGI) BERSIH</td>
-                        <td class="text-right py-4 pr-2 {{ $labaRugiBersih >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                            {{ number_format(abs($labaRugiBersih), 0, ',', '.') }}
+                        <td class="py-4 pl-4">{{ $data['labaRugiBersih'] >= 0 ? 'LABA' : 'RUGI' }} BERSIH</td>
+                        <td class="text-right py-4 pr-2 {{ $data['labaRugiBersih'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                            {{ number_format(abs($data['labaRugiBersih']), 0, ',', '.') }}
                         </td>
                     </tr>
                 </tbody>
