@@ -8,6 +8,28 @@
     <title>{{ $cashReference->name }} - {{ $monthName }} {{ $year }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="shortcut icon" href="{{ asset('images/favicon.png') }}" type="image/png">
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            darkMode: 'class',
+        };
+
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('cashReferenceTheme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Select2 CSS -->
@@ -17,6 +39,65 @@
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <style>
+        html,
+        body {
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .dark body {
+            background-color: #0f172a;
+            color: #e5e7eb;
+        }
+
+        .dark header {
+            background-color: #111827 !important;
+            border-bottom: 1px solid #334155;
+        }
+
+        .dark .bg-white {
+            background-color: #111827 !important;
+        }
+
+        .dark .bg-gray-50 {
+            background-color: #1f2937 !important;
+        }
+
+        .dark .bg-gray-100 {
+            background-color: #0f172a !important;
+        }
+
+        .dark .text-gray-900 {
+            color: #f9fafb !important;
+        }
+
+        .dark .text-gray-700,
+        .dark .text-gray-600,
+        .dark .text-gray-500 {
+            color: #cbd5e1 !important;
+        }
+
+        .dark .divide-gray-300> :not([hidden])~ :not([hidden]),
+        .dark .divide-gray-200> :not([hidden])~ :not([hidden]) {
+            border-color: #334155 !important;
+        }
+
+        .dark input,
+        .dark select,
+        .dark textarea {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-color: #475569;
+        }
+
+        .dark input::placeholder,
+        .dark textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        .dark #themeToggleBtn {
+            background-color: #334155;
+        }
+
         /* Custom styling for Select2 to match Tailwind */
         .select2-container--default .select2-selection--single {
             height: 38px;
@@ -50,6 +131,18 @@
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
         }
+
+        .dark .select2-container--default .select2-selection--single,
+        .dark .select2-dropdown,
+        .dark .select2-search--dropdown .select2-search__field {
+            background-color: #1f2937;
+            border-color: #475569;
+            color: #f9fafb;
+        }
+
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f9fafb;
+        }
     </style>
 </head>
 
@@ -66,6 +159,12 @@
                         <p class="mt-1 text-sm text-gray-600">{{ $monthName }} {{ $year }}</p>
                     </div>
                     <div class="flex gap-2">
+                        <button id="themeToggleBtn" type="button"
+                            class="inline-flex items-center px-4 py-2 bg-slate-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-slate-700 focus:bg-slate-700 active:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                            onclick="toggleTheme()">
+                            <i id="themeToggleIcon" class="fas fa-moon mr-2"></i>
+                            <span id="themeToggleText">Dark</span>
+                        </button>
                         <a href="{{ url('/admin/cash-references/' . $cashReference->id . '/monthly') }}"
                             class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                             <i class="fas fa-arrow-left mr-2"></i> Back to Monthly View
@@ -472,6 +571,29 @@
     </div>
 
     <script>
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.documentElement.classList.toggle('dark', isDark);
+
+            const icon = document.getElementById('themeToggleIcon');
+            const text = document.getElementById('themeToggleText');
+
+            if (icon && text) {
+                icon.className = isDark ? 'fas fa-sun mr-2' : 'fas fa-moon mr-2';
+                text.textContent = isDark ? 'Light' : 'Dark';
+            }
+        }
+
+        function getCurrentTheme() {
+            return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+
+        function toggleTheme() {
+            const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+            applyTheme(nextTheme);
+            localStorage.setItem('cashReferenceTheme', nextTheme);
+        }
+
         // Initialize Select2 for CoA dropdown
         function initializeSelect2() {
             $('#coa_id').select2({
@@ -541,6 +663,8 @@
 
         // Check if returning from edit page
         document.addEventListener('DOMContentLoaded', function() {
+            applyTheme(getCurrentTheme());
+
             const editingId = localStorage.getItem('editingTransaction');
             const urlParams = new URLSearchParams(window.location.search);
 

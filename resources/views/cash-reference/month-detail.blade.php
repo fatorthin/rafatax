@@ -7,6 +7,28 @@
     <title>{{ $cashReference->name }} - {{ $monthName }} {{ $year }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="shortcut icon" href="{{ asset('images/favicon.png') }}" type="image/png">
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            darkMode: 'class',
+        };
+
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('cashReferenceTheme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -15,6 +37,102 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
+        html,
+        body {
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .dark body {
+            background-color: #0f172a !important;
+            color: #e5e7eb;
+        }
+
+        .dark .bg-white {
+            background-color: #111827 !important;
+        }
+
+        .dark .bg-gray-100 {
+            background-color: #1f2937 !important;
+        }
+
+        .dark .bg-gray-50 {
+            background-color: #111827 !important;
+        }
+
+        .dark .bg-blue-50 {
+            background-color: #1e3a8a33 !important;
+        }
+
+        .dark .bg-green-50 {
+            background-color: #16653433 !important;
+        }
+
+        .dark .bg-red-50 {
+            background-color: #991b1b33 !important;
+        }
+
+        .dark .bg-purple-50 {
+            background-color: #6b21a833 !important;
+        }
+
+        .dark .text-gray-800,
+        .dark .text-gray-700,
+        .dark .text-gray-600,
+        .dark .text-gray-500 {
+            color: #e5e7eb !important;
+        }
+
+        .dark .bg-blue-50 .text-blue-600 {
+            color: #93c5fd !important;
+        }
+
+        .dark .bg-green-50 .text-green-600 {
+            color: #86efac !important;
+        }
+
+        .dark .bg-red-50 .text-red-600 {
+            color: #fca5a5 !important;
+        }
+
+        .dark .bg-purple-50 .text-purple-600 {
+            color: #d8b4fe !important;
+        }
+
+        .dark .divide-gray-200> :not([hidden])~ :not([hidden]) {
+            border-color: #334155 !important;
+        }
+
+        .dark .border,
+        .dark .border-gray-300,
+        .dark .border-gray-200 {
+            border-color: #475569 !important;
+        }
+
+        .dark input,
+        .dark select,
+        .dark textarea {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-color: #475569;
+        }
+
+        .dark input::placeholder,
+        .dark textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        .dark .drag-handle {
+            color: #94a3b8;
+        }
+
+        .dark .drag-handle:hover {
+            color: #60a5fa;
+        }
+
+        .dark #themeToggleBtn {
+            background-color: #334155;
+        }
+
         .select2-container--default .select2-selection--single {
             height: 42px;
             padding: 8px 12px;
@@ -90,6 +208,18 @@
         .reorder-toast.error {
             background-color: #ef4444;
         }
+
+        .dark .select2-container--default .select2-selection--single,
+        .dark .select2-dropdown,
+        .dark .select2-search__field {
+            background-color: #1f2937;
+            border-color: #475569;
+            color: #f9fafb;
+        }
+
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f9fafb;
+        }
     </style>
 </head>
 
@@ -102,16 +232,17 @@
                     {{ $cashReference->name }} - {{ $monthName }} {{ $year }}
                 </h1>
                 <div class="flex gap-2">
-                    <a href="{{ url('/app/cash-references/' . $cashReference->id . '/monthly') }}"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button id="themeToggleBtn" type="button" onclick="toggleTheme()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                        <i id="themeToggleIcon" class="fas fa-moon"></i>
+                        <span id="themeToggleText">Dark</span>
+                    </button>
+                    <a href="{{ url('/app/cash-references/' . $cashReference->id . '/monthly') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Back to Monthly
                     </a>
-                    <button onclick="openAddModal()"
-                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onclick="openAddModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-plus"></i> Add Transaction
                     </button>
-                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}"
-                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-file-excel"></i> Export Excel
                     </a>
                 </div>
@@ -196,14 +327,10 @@
                                 {{ number_format($transaction->running_balance, 2, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                <button onclick="openEditModal({{ json_encode($transaction) }})"
-                                    class="text-blue-600 hover:text-blue-900 mr-3">
+                                <button onclick="openEditModal({{ json_encode($transaction) }})" class="text-blue-600 hover:text-blue-900 mr-3">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form
-                                    action="{{ route('cash-reference.transaction.delete', ['id' => $cashReference->id, 'transactionId' => $transaction->id]) }}"
-                                    method="POST" class="inline"
-                                    onsubmit="return confirm('Are you sure you want to delete this transaction?')">
+                                <form action="{{ route('cash-reference.transaction.delete', ['id' => $cashReference->id, 'transactionId' => $transaction->id]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this transaction?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-900">
@@ -237,14 +364,11 @@
                 @csrf
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" required
-                        value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}"
-                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="transaction_date" required value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Chart of Account</label>
-                    <select name="coa_id" id="add_coa_id" required
-                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="coa_id" id="add_coa_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select CoA</option>
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
@@ -253,28 +377,21 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" required
-                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Debit Amount</label>
-                        <input type="number" name="debit_amount" step="0.01" min="0" value="0"
-                            required
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="debit_amount" step="0.01" min="0" value="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Credit Amount</label>
-                        <input type="number" name="credit_amount" step="0.01" min="0" value="0"
-                            required
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="credit_amount" step="0.01" min="0" value="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeAddModal()"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
-                    <button type="submit"
-                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Save</button>
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Save</button>
                 </div>
             </form>
         </div>
@@ -294,13 +411,11 @@
                 @method('PUT')
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" id="edit_description" required
-                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="description" id="edit_description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Chart of Account</label>
-                    <select name="coa_id" id="edit_coa_id" required
-                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="coa_id" id="edit_coa_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
@@ -308,35 +423,52 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" id="edit_transaction_date" required
-                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="transaction_date" id="edit_transaction_date" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Debit Amount</label>
-                        <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01"
-                            min="0" required
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Credit Amount</label>
-                        <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01"
-                            min="0" required
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeEditModal()"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
-                    <button type="submit"
-                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Update</button>
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Update</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.documentElement.classList.toggle('dark', isDark);
+
+            const icon = document.getElementById('themeToggleIcon');
+            const text = document.getElementById('themeToggleText');
+            if (icon && text) {
+                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                text.textContent = isDark ? 'Light' : 'Dark';
+            }
+        }
+
+        function getCurrentTheme() {
+            return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+
+        function toggleTheme() {
+            const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+            applyTheme(nextTheme);
+            localStorage.setItem('cashReferenceTheme', nextTheme);
+        }
+
         $(document).ready(function() {
+            applyTheme(getCurrentTheme());
+
             // Initialize Select2 for Add Modal
             $('#add_coa_id').select2({
                 dropdownParent: $('#addModal'),
@@ -439,27 +571,29 @@
             const rows = document.querySelectorAll('#sortable-tbody .sortable-row');
             const order = Array.from(rows).map(row => parseInt(row.dataset.id));
 
-            fetch('{{ route("cash-reference.transaction.reorder") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ order: order })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Urutan berhasil diperbarui', 'success');
-                } else {
-                    showToast('Gagal memperbarui urutan', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Reorder error:', error);
-                showToast('Terjadi kesalahan saat memperbarui urutan', 'error');
-            });
+            fetch('{{ route('cash-reference.transaction.reorder') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        order: order
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Urutan berhasil diperbarui', 'success');
+                    } else {
+                        showToast('Gagal memperbarui urutan', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Reorder error:', error);
+                    showToast('Terjadi kesalahan saat memperbarui urutan', 'error');
+                });
         }
 
         // Initialize Sortable
