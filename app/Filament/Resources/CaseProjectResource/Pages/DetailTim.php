@@ -14,7 +14,6 @@ use Filament\Forms\Components\Select;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Infolists\Components\Section;
@@ -61,7 +60,6 @@ class DetailTim extends Page implements HasTable
                         ->numeric()
                         ->required(),
                 ]),
-
         ];
     }
 
@@ -145,27 +143,6 @@ class DetailTim extends Page implements HasTable
                             ->required(),
                     ])
                     ->action(function (CaseProjectDetail $record, array $data): void {
-                        // Hitung total bonus yang sudah ada (kecuali record yang sedang diedit)
-                        $existingTotalBonus = CaseProjectDetail::where('case_project_id', $record->case_project_id)
-                            ->where('id', '!=', $record->id)
-                            ->sum('bonus');
-
-                        // Hitung total bonus jika data diedit
-                        $newTotalBonus = $existingTotalBonus + $data['bonus'];
-
-                        // Cek apakah melebihi budget
-                        $budget = $this->record->budget;
-
-                        if ($newTotalBonus > $budget) {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Gagal Mengubah Data')
-                                ->body('Total bonus (Rp ' . number_format($newTotalBonus, 0, ',', '.') . ') akan melebihi budget proyek (Rp ' . number_format($budget, 0, ',', '.') . ')')
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
                         $record->update($data);
 
                         \Filament\Notifications\Notification::make()
