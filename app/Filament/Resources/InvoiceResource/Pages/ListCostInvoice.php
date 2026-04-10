@@ -2,14 +2,10 @@
 
 namespace App\Filament\Resources\InvoiceResource\Pages;
 
-use App\Models\Coa;
 use App\Models\Invoice;
-use App\Models\Client;
-use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\CostListInvoice;
 use Filament\Resources\Pages\Page;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
 use App\Filament\Resources\InvoiceResource;
 use Filament\Tables\Columns\TextColumn;
@@ -66,7 +62,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('client_name')
                             ->label('Client Name')
                             ->weight('bold')
-                            ->state(fn($record) => $record->mou ? $record->mou->client->company_name : ($record->memo ? $record->memo->nama_klien : '-')),
+                            ->state(fn($record) => $this->resolveClientName($record)),
                         TextEntry::make('invoice_date')
                             ->label('Invoice Date')
                             ->weight('bold')
@@ -184,7 +180,7 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         }
 
                         // Determine Client Name
-                        $clientName = $this->invoice->mou ? $this->invoice->mou->client->company_name : ($this->invoice->memo ? $this->invoice->memo->nama_klien : 'Client');
+                        $clientName = $this->resolveClientName($this->invoice) ?? 'Client';
 
                         // Calculate total amount
                         $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
@@ -357,10 +353,10 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->color('danger')
                     ->icon('heroicon-o-arrow-left'),
             ])
-            ->label('More Options')
-            ->icon('heroicon-m-ellipsis-vertical')
-            ->color('gray')
-            ->button(),
+                ->label('More Options')
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->color('gray')
+                ->button(),
         ];
     }
     protected function optimizeImage($path, $maxWidth)
@@ -422,5 +418,22 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
         imagedestroy($destination);
 
         return 'data:' . $mime . ';base64,' . base64_encode($contents);
+    }
+
+    protected function resolveClientName(Invoice $record): string
+    {
+        if ($record->memo_id && !$record->client_id) {
+            return $record->memo?->nama_klien ?? '-';
+        }
+
+        if ($record->memo_id && $record->client_id) {
+            return $record->client?->company_name ?? '-';
+        }
+
+        if ($record->mou_id && !$record->memo_id && !$record->client_id) {
+            return $record->mou?->client?->company_name ?? '-';
+        }
+
+        return '-';
     }
 }

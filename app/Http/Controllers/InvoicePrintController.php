@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\CostListInvoice;
-use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoicePrintController extends Controller
@@ -35,7 +34,7 @@ class InvoicePrintController extends Controller
 
     private function preparePdf($id)
     {
-        $invoice = Invoice::with(['mou.client', 'memo'])->findOrFail($id);
+        $invoice = Invoice::with(['mou.client', 'memo', 'client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
         // Choose view based on MoU type (use custom KKP/PT design)
@@ -75,13 +74,15 @@ class InvoicePrintController extends Controller
             $signatureImageBase64 = 'data:image/png;base64,' . base64_encode($signatureData);
         }
 
+        $clientName = $this->resolveClientName($invoice);
+
         $viewData = [
             'invoice' => $invoice,
             'costLists' => $costLists,
             'headerImage' => $headerImageBase64,
             'signatureImage' => $signatureImageBase64,
             // Pass normalized data to view to simplify template logic
-            'client_name' => $invoice->mou ? $invoice->mou->client->company_name : ($invoice->memo ? $invoice->memo->nama_klien : ''),
+            'client_name' => $clientName,
             'reference_number' => $invoice->mou ? $invoice->mou->mou_number : ($invoice->memo ? $invoice->memo->no_memo : ''),
         ];
 
@@ -93,11 +94,10 @@ class InvoicePrintController extends Controller
             '-',
             $invoice->invoice_number ?? $invoice->id
         );
-        $companyName = $invoice->mou ? optional($invoice->mou->client)->company_name : optional($invoice->memo)->nama_klien;
         $companyNameClean = str_replace(
             ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
             '-',
-            $companyName ?? ''
+            $clientName ?? ''
         );
         $filename = 'invoice-' . $invoiceNumberClean . '-' . $companyNameClean . '.pdf';
 
@@ -106,7 +106,7 @@ class InvoicePrintController extends Controller
 
     public function previewJpg($id)
     {
-        $invoice = Invoice::with(['mou.client', 'memo'])->findOrFail($id);
+        $invoice = Invoice::with(['mou.client', 'memo', 'client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
 
         // Choose view based on Invoice Type (prioritize Invoice type, fallback to MoU type)
@@ -145,6 +145,8 @@ class InvoicePrintController extends Controller
             $signatureImageBase64 = 'data:image/png;base64,' . base64_encode($signatureData);
         }
 
+        $clientName = $this->resolveClientName($invoice);
+
         $viewData = [
             'invoice' => $invoice,
             'costLists' => $costLists,
@@ -152,10 +154,27 @@ class InvoicePrintController extends Controller
             'signatureImage' => $signatureImageBase64,
             'originalView' => $view, // Pass the original view name to include
             // Pass normalized data to view to simplify template logic
-            'client_name' => $invoice->mou ? $invoice->mou->client->company_name : ($invoice->memo ? $invoice->memo->nama_klien : ''),
+            'client_name' => $clientName,
             'reference_number' => $invoice->mou ? $invoice->mou->mou_number : ($invoice->memo ? $invoice->memo->no_memo : ''),
         ];
 
         return view('invoices.jpg-preview', $viewData);
+    }
+
+    private function resolveClientName(Invoice $invoice): string
+    {
+        if ($invoice->memo_id && !$invoice->client_id) {
+            return $invoice->memo?->nama_klien ?? '';
+        }
+
+        if ($invoice->memo_id && $invoice->client_id) {
+            return $invoice->client?->company_name ?? '';
+        }
+
+        if ($invoice->mou_id && !$invoice->memo_id && !$invoice->client_id) {
+            return $invoice->mou?->client?->company_name ?? '';
+        }
+
+        return '';
     }
 }
