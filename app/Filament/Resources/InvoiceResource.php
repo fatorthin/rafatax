@@ -260,10 +260,31 @@ class InvoiceResource extends Resource
                 ]),
             Tables\Columns\TextColumn::make('client_name')
                 ->label('Client')
-                ->getStateUsing(fn($record) => $record->mou?->client?->company_name ?? $record->memo?->nama_klien)
+                ->getStateUsing(fn($record) => static::resolveClientName($record))
                 ->searchable(query: function (Builder $query, string $search): Builder {
-                    return $query->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"))
-                        ->orWhereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
+                    return $query
+                        ->where(function (Builder $query) use ($search): Builder {
+                            return $query
+                                ->where(function (Builder $query) use ($search): Builder {
+                                    return $query
+                                        ->whereNotNull('memo_id')
+                                        ->whereNull('client_id')
+                                        ->whereHas('memo', fn($q) => $q->where('nama_klien', 'like', "%{$search}%"));
+                                })
+                                ->orWhere(function (Builder $query) use ($search): Builder {
+                                    return $query
+                                        ->whereNotNull('memo_id')
+                                        ->whereNotNull('client_id')
+                                        ->whereHas('client', fn($q) => $q->where('company_name', 'like', "%{$search}%"));
+                                })
+                                ->orWhere(function (Builder $query) use ($search): Builder {
+                                    return $query
+                                        ->whereNotNull('mou_id')
+                                        ->whereNull('memo_id')
+                                        ->whereNull('client_id')
+                                        ->whereHas('mou.client', fn($q) => $q->where('company_name', 'like', "%{$search}%"));
+                                });
+                        });
                 }),
             Tables\Columns\TextColumn::make('type')
                 ->label('Type')
@@ -569,6 +590,23 @@ class InvoiceResource extends Resource
             'cost-create' => Pages\CreateCostInvoice::route('/{record}/cost-create'),
             'cost-edit' => Pages\EditCostInvoice::route('/{record}/cost-edit'),
         ];
+    }
+
+    private static function resolveClientName(Invoice $record): ?string
+    {
+        if ($record->memo_id && !$record->client_id) {
+            return $record->memo?->nama_klien;
+        }
+
+        if ($record->memo_id && $record->client_id) {
+            return $record->client?->company_name;
+        }
+
+        if ($record->mou_id && !$record->memo_id && !$record->client_id) {
+            return $record->mou?->client?->company_name;
+        }
+
+        return null;
     }
 
     public static function getEloquentQuery(): Builder
