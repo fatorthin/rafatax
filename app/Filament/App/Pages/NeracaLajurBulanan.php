@@ -99,12 +99,12 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->label('Lihat Laporan Neraca')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
-                ->url(fn() => url('/neraca-lajur/neraca?month=' . $this->month . '&year=' . $this->year)),
+                ->url(fn() => route('filament.app.pages.neraca', ['month' => $this->month, 'year' => $this->year])),
             Action::make('viewLabaRugi')
                 ->label('Lihat Laporan Laba Rugi')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
-                ->url(fn() => url('/neraca-lajur/laba-rugi?month=' . $this->month . '&year=' . $this->year)),
+                ->url(fn() => route('filament.app.pages.laba-rugi', ['month' => $this->month, 'year' => $this->year])),
             Action::make('saveNeracaSetelahAJE')
                 ->label('Simpan Data Neraca')
                 ->icon('heroicon-o-document-check')

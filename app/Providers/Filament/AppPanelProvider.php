@@ -45,6 +45,8 @@ class AppPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
                 \App\Filament\App\Pages\Profile::class,
                 \App\Filament\App\Pages\NeracaLajurBulanan::class,
+                \App\Filament\App\Pages\Neraca::class,
+                \App\Filament\App\Pages\LabaRugi::class,
             ])
             ->widgets([
                 Widgets\AccountWidget::class,
