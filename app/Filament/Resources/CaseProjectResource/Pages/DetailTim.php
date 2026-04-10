@@ -60,16 +60,7 @@ class DetailTim extends Page implements HasTable
                         ->label('Bonus (Rp)')
                         ->numeric()
                         ->required(),
-                ])
-                ->action(function (array $data): void {
-                    CaseProjectDetail::create($data);
-
-                    \Filament\Notifications\Notification::make()
-                        ->title('Berhasil')
-                        ->body('Detail tim berhasil ditambahkan')
-                        ->success()
-                        ->send();
-                }),
+                ]),
 
         ];
     }
