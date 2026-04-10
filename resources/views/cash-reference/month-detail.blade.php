@@ -167,6 +167,19 @@
             box-shadow: 0 4px 14px rgba(59, 130, 246, 0.15);
         }
 
+        .dark .hover\:bg-gray-50:hover {
+            background-color: #1e293b !important;
+        }
+
+        .dark .sortable-chosen {
+            background-color: #1e293b !important;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.5);
+        }
+
+        .dark #sortable-tbody td {
+            color: #e5e7eb;
+        }
+
         .drag-handle {
             cursor: grab;
             color: #9ca3af;
