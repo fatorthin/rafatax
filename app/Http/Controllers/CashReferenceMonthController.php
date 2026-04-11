@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CashReference;
 use App\Models\CashReport;
 use App\Models\Coa;
+use App\Models\DaftarAktivaTetap;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -110,6 +111,8 @@ class CashReferenceMonthController extends Controller
             'description' => 'required|string|max:500',
             'debit_amount' => 'required|numeric|min:0',
             'credit_amount' => 'required|numeric|min:0',
+            'tarif_penyusutan' => 'nullable|numeric|min:0|max:100',
+            'kepemilikan' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -128,6 +131,19 @@ class CashReferenceMonthController extends Controller
                 'debit_amount' => $request->debit_amount,
                 'credit_amount' => $request->credit_amount,
             ]);
+
+            // Auto-create Aktiva Tetap jika CoA = AO-126
+            $coa = Coa::find($request->coa_id);
+            if ($coa && $coa->code === 'AO-126') {
+                DaftarAktivaTetap::create([
+                    'deskripsi'        => $request->description,
+                    'tahun_perolehan'  => Carbon::parse($request->transaction_date)->year,
+                    'harga_perolehan'  => $request->debit_amount,
+                    'tarif_penyusutan' => $request->input('tarif_penyusutan', 0),
+                    'status'           => 'aktif',
+                    'kepemilikan'      => $request->input('kepemilikan'),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,

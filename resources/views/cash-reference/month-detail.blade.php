@@ -233,6 +233,19 @@
         .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
             color: #f9fafb;
         }
+
+        .dark #aktivaTetapFields {
+            background-color: #3f2d13 !important;
+            border-color: #8b6a32 !important;
+        }
+
+        .dark #aktivaTetapFields p {
+            color: #fcd34d !important;
+        }
+
+        .dark #aktivaTetapFields label {
+            color: #fde68a !important;
+        }
     </style>
 </head>
 
@@ -245,17 +258,21 @@
                     {{ $cashReference->name }} - {{ $monthName }} {{ $year }}
                 </h1>
                 <div class="flex gap-2">
-                    <button id="themeToggleBtn" type="button" onclick="toggleTheme()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button id="themeToggleBtn" type="button" onclick="toggleTheme()"
+                        class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i id="themeToggleIcon" class="fas fa-moon"></i>
                         <span id="themeToggleText">Dark</span>
                     </button>
-                    <a href="{{ url('/app/cash-references/' . $cashReference->id . '/monthly') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <a href="{{ url('/app/cash-references/' . $cashReference->id . '/monthly') }}"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Back to Monthly
                     </a>
-                    <button onclick="openAddModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onclick="openAddModal()"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-plus"></i> Add Transaction
                     </button>
-                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-file-excel"></i> Export Excel
                     </a>
                 </div>
@@ -315,7 +332,9 @@
                 </thead>
                 <tbody id="sortable-tbody" class="bg-white divide-y divide-gray-200">
                     @forelse($transactions as $transaction)
-                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}" data-debit="{{ $transaction->debit_amount }}" data-credit="{{ $transaction->credit_amount }}">
+                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}"
+                            data-debit="{{ $transaction->debit_amount }}"
+                            data-credit="{{ $transaction->credit_amount }}">
                             <td class="px-3 py-4 text-center">
                                 <span class="drag-handle" title="Drag untuk mengurutkan">
                                     <i class="fas fa-grip-vertical"></i>
@@ -340,10 +359,14 @@
                                 {{ number_format($transaction->running_balance, 2, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                <button onclick="openEditModal({{ json_encode($transaction) }})" class="text-blue-600 hover:text-blue-900 mr-3">
+                                <button onclick="openEditModal({{ json_encode($transaction) }})"
+                                    class="text-blue-600 hover:text-blue-900 mr-3">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form action="{{ route('cash-reference.transaction.delete', ['id' => $cashReference->id, 'transactionId' => $transaction->id]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this transaction?')">
+                                <form
+                                    action="{{ route('cash-reference.transaction.delete', ['id' => $cashReference->id, 'transactionId' => $transaction->id]) }}"
+                                    method="POST" class="inline"
+                                    onsubmit="return confirm('Are you sure you want to delete this transaction?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-900">
@@ -377,34 +400,69 @@
                 @csrf
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" required value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="transaction_date" required
+                        value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Chart of Account</label>
-                    <select name="coa_id" id="add_coa_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="coa_id" id="add_coa_id" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select CoA</option>
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
                     </select>
                 </div>
+
+                <!-- Aktiva Tetap Fields (muncul otomatis saat AO-126 dipilih) -->
+                <div id="aktivaTetapFields"
+                    class="hidden mb-4 border border-amber-300 bg-amber-50 rounded-lg p-4 space-y-3">
+                    <p class="text-sm font-semibold text-amber-800">
+                        <i class="fas fa-boxes mr-1"></i>
+                        Transaksi ini akan otomatis ditambahkan ke Daftar Aktiva Tetap
+                    </p>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tarif Penyusutan (%)</label>
+                        <input type="number" name="tarif_penyusutan" id="tarif_penyusutan" step="0.01"
+                            min="0" max="100" value="0"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kepemilikan</label>
+                        <select name="kepemilikan" id="kepemilikan"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih kepemilikan</option>
+                            <option value="PT">PT</option>
+                            <option value="KKP">KKP</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="description" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Debit Amount</label>
-                        <input type="number" name="debit_amount" step="0.01" min="0" value="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="debit_amount" step="0.01" min="0" value="0"
+                            required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Credit Amount</label>
-                        <input type="number" name="credit_amount" step="0.01" min="0" value="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="credit_amount" step="0.01" min="0" value="0"
+                            required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Save</button>
+                    <button type="button" onclick="closeAddModal()"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Save</button>
                 </div>
             </form>
         </div>
@@ -424,11 +482,13 @@
                 @method('PUT')
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" id="edit_description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="description" id="edit_description" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Chart of Account</label>
-                    <select name="coa_id" id="edit_coa_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="coa_id" id="edit_coa_id" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
@@ -436,27 +496,36 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" id="edit_transaction_date" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="transaction_date" id="edit_transaction_date" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Debit Amount</label>
-                        <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01"
+                            min="0" required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Credit Amount</label>
-                        <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01"
+                            min="0" required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Update</button>
+                    <button type="button" onclick="closeEditModal()"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Update</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        const coaCodeMap = @json($coaCodeMap);
+
         function applyTheme(theme) {
             const isDark = theme === 'dark';
             document.documentElement.classList.toggle('dark', isDark);
@@ -490,6 +559,17 @@
                 width: '100%'
             });
 
+            $('#add_coa_id').on('change', function() {
+                const coaId = $(this).val();
+                const code = coaCodeMap[coaId] || '';
+                const aktivaFields = document.getElementById('aktivaTetapFields');
+                if (code === 'AO-126') {
+                    aktivaFields.classList.remove('hidden');
+                } else {
+                    aktivaFields.classList.add('hidden');
+                }
+            });
+
             // Initialize Select2 for Edit Modal
             $('#edit_coa_id').select2({
                 dropdownParent: $('#editModal'),
@@ -509,6 +589,10 @@
 
         function closeAddModal() {
             document.getElementById('addModal').classList.add('hidden');
+            // Reset aktiva tetap fields
+            document.getElementById('aktivaTetapFields').classList.add('hidden');
+            document.getElementById('tarif_penyusutan').value = '0';
+            document.getElementById('kepemilikan').selectedIndex = 0;
         }
 
         function openEditModal(transaction) {
@@ -567,7 +651,8 @@
 
             const toast = document.createElement('div');
             toast.className = `reorder-toast ${type}`;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
+            toast.innerHTML =
+                `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
             document.body.appendChild(toast);
 
             requestAnimationFrame(() => {

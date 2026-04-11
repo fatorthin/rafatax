@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Coa;
 use App\Models\CashReport;
 use App\Models\CashReference;
+use App\Models\DaftarAktivaTetap;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CashReferenceMonthDetailController extends Controller
@@ -28,7 +28,9 @@ class CashReferenceMonthDetailController extends Controller
             return [$coa->id => $coa->code . ' - ' . $coa->name];
         });
 
-        return view('cash-reference.month-detail', array_merge($data, ['coaList' => $coaList]));
+        $coaCodeMap = Coa::pluck('code', 'id');
+
+        return view('cash-reference.month-detail', array_merge($data, ['coaList' => $coaList, 'coaCodeMap' => $coaCodeMap]));
     }
 
     public function export($id, Request $request)
@@ -190,6 +192,8 @@ class CashReferenceMonthDetailController extends Controller
             'transaction_date' => 'required|date',
             'debit_amount' => 'required|numeric|min:0',
             'credit_amount' => 'required|numeric|min:0',
+            'tarif_penyusutan' => 'nullable|numeric|min:0|max:100',
+            'kepemilikan' => 'nullable|in:PT,KKP',
         ]);
 
         // Get next sort_order for this cash_reference + month
@@ -211,6 +215,19 @@ class CashReferenceMonthDetailController extends Controller
             'cost_list_invoice_id' => 0,
             'sort_order' => $maxSortOrder + 1,
         ]);
+
+        // Auto-create Aktiva Tetap jika CoA = AO-126
+        $coa = Coa::find($validated['coa_id']);
+        if ($coa && $coa->code === 'AO-126') {
+            DaftarAktivaTetap::create([
+                'deskripsi'        => $validated['description'],
+                'tahun_perolehan'  => Carbon::parse($validated['transaction_date'])->year,
+                'harga_perolehan'  => $validated['debit_amount'],
+                'tarif_penyusutan' => $request->input('tarif_penyusutan', 0),
+                'status'           => 'aktif',
+                'kepemilikan'      => $request->input('kepemilikan'),
+            ]);
+        }
 
         $year = Carbon::parse($validated['transaction_date'])->year;
         $month = Carbon::parse($validated['transaction_date'])->month;

@@ -217,7 +217,8 @@
                                 <h3 class="text-lg font-medium text-gray-900">Saldo Awal</h3>
                                 <p class="text-sm text-gray-600">Balance from previous month</p>
                             </div>
-                            <div class="text-2xl font-bold {{ $prevBalance >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                            <div
+                                class="text-2xl font-bold {{ $prevBalance >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ number_format((float) $prevBalance, 2, ',', '.') }}
                             </div>
                         </div>
@@ -231,18 +232,25 @@
                             <table class="min-w-full divide-y divide-gray-300">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                                        <th scope="col"
+                                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
                                             Date</th>
-                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">CoA</th>
-                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">CoA Name
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">CoA</th>
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">CoA Name
                                         </th>
-                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                             Description</th>
-                                        <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Debit
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Debit
                                         </th>
-                                        <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Credit
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Credit
                                         </th>
-                                        <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Balance
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Balance
                                         </th>
                                         <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
                                             <span class="sr-only">Actions</span>
@@ -252,7 +260,8 @@
                                 <tbody class="divide-y divide-gray-200 bg-white">
                                     @forelse($transactionsWithBalance as $transaction)
                                         <tr class="hover:bg-gray-50">
-                                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                            <td
+                                                class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                                 {{ \Carbon\Carbon::parse($transaction->transaction_date)->format('d-M-Y') }}
                                             </td>
                                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">
@@ -270,15 +279,21 @@
                                             <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-700">
                                                 {{ number_format((float) $transaction->credit_amount, 2, ',', '.') }}
                                             </td>
-                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-semibold {{ $transaction->running_balance >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                            <td
+                                                class="whitespace-nowrap px-3 py-4 text-sm text-right font-semibold {{ $transaction->running_balance >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                                 {{ number_format((float) $transaction->running_balance, 2, ',', '.') }}
                                             </td>
-                                            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                            <td
+                                                class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                                 <div class="flex justify-end gap-2">
-                                                    <button type="button" onclick="openEditModal({{ $transaction->id }})" class="text-blue-600 hover:text-blue-900" title="Edit">
+                                                    <button type="button"
+                                                        onclick="openEditModal({{ $transaction->id }})"
+                                                        class="text-blue-600 hover:text-blue-900" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button type="button" onclick="confirmDelete({{ $transaction->id }})" class="text-red-600 hover:text-red-900" title="Delete">
+                                                    <button type="button"
+                                                        onclick="confirmDelete({{ $transaction->id }})"
+                                                        class="text-red-600 hover:text-red-900" title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -294,7 +309,8 @@
                                 </tbody>
                                 <tfoot class="bg-gray-50">
                                     <tr class="font-semibold">
-                                        <td colspan="4" class="py-3.5 pl-4 pr-3 text-right text-sm text-gray-900 sm:pl-6">
+                                        <td colspan="4"
+                                            class="py-3.5 pl-4 pr-3 text-right text-sm text-gray-900 sm:pl-6">
                                             Total:
                                         </td>
                                         <td class="whitespace-nowrap px-3 py-3.5 text-sm text-right text-gray-900">
@@ -306,10 +322,12 @@
                                         <td colspan="2" class="px-3 py-3.5 text-sm text-gray-900"></td>
                                     </tr>
                                     <tr class="font-bold text-lg">
-                                        <td colspan="6" class="py-3.5 pl-4 pr-3 text-right text-sm text-gray-900 sm:pl-6">
+                                        <td colspan="6"
+                                            class="py-3.5 pl-4 pr-3 text-right text-sm text-gray-900 sm:pl-6">
                                             Ending Balance:
                                         </td>
-                                        <td class="whitespace-nowrap px-3 py-3.5 text-right {{ $endingBalance >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        <td
+                                            class="whitespace-nowrap px-3 py-3.5 text-right {{ $endingBalance >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                             {{ number_format((float) $endingBalance, 2, ',', '.') }}
                                         </td>
                                         <td></td>
@@ -324,13 +342,16 @@
     </div>
 
     <!-- Create Transaction Modal -->
-    <div id="createModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="createModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+            <div
+                class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
                 <div class="absolute top-0 right-0 pt-4 pr-4">
-                    <button type="button" onclick="closeCreateModal()" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <button type="button" onclick="closeCreateModal()"
+                        class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none">
                         <span class="sr-only">Close</span>
                         <i class="fas fa-times text-xl"></i>
                     </button>
@@ -365,7 +386,8 @@
                                 <label for="transaction_date" class="block text-sm font-medium text-gray-700">
                                     Transaction Date <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" name="transaction_date" id="transaction_date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <input type="date" name="transaction_date" id="transaction_date" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             </div>
 
                             <!-- CoA -->
@@ -373,14 +395,41 @@
                                 <label for="coa_id" class="block text-sm font-medium text-gray-700">
                                     Chart of Account <span class="text-red-500">*</span>
                                 </label>
-                                <select name="coa_id" id="coa_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <select name="coa_id" id="coa_id" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                     <option value="">Select CoA...</option>
                                     @foreach ($coaList as $coa)
-                                        <option value="{{ $coa->id }}">{{ $coa->code }} -
+                                        <option value="{{ $coa->id }}" data-code="{{ $coa->code }}">
+                                            {{ $coa->code }} -
                                             {{ $coa->name }}
                                         </option>
                                     @endforeach
                                 </select>
+                            </div>
+
+                            <!-- Aktiva Tetap Fields (muncul otomatis saat AO-126 dipilih) -->
+                            <div id="aktivaTetapFields"
+                                class="hidden border border-amber-200 bg-amber-50 rounded-md p-4 space-y-3">
+                                <p class="text-sm font-semibold text-amber-800">
+                                    <i class="fas fa-boxes mr-1"></i>
+                                    Transaksi ini akan otomatis ditambahkan ke Daftar Aktiva Tetap
+                                </p>
+                                <div>
+                                    <label for="tarif_penyusutan" class="block text-sm font-medium text-gray-700">
+                                        Tarif Penyusutan (%)
+                                    </label>
+                                    <input type="number" name="tarif_penyusutan" id="tarif_penyusutan"
+                                        step="0.01" min="0" max="100" value="0"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="kepemilikan" class="block text-sm font-medium text-gray-700">
+                                        Kepemilikan
+                                    </label>
+                                    <input type="text" name="kepemilikan" id="kepemilikan"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                        placeholder="Nama pemilik / departemen">
+                                </div>
                             </div>
 
                             <!-- Description -->
@@ -388,7 +437,8 @@
                                 <label for="description" class="block text-sm font-medium text-gray-700">
                                     Description <span class="text-red-500">*</span>
                                 </label>
-                                <textarea name="description" id="description" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <textarea name="description" id="description" rows="3" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
                             </div>
 
                             <!-- Debit Amount -->
@@ -396,7 +446,9 @@
                                 <label for="debit_amount" class="block text-sm font-medium text-gray-700">
                                     Debit Amount <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" name="debit_amount" id="debit_amount" step="0.01" min="0" value="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <input type="number" name="debit_amount" id="debit_amount" step="0.01"
+                                    min="0" value="0" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             </div>
 
                             <!-- Credit Amount -->
@@ -404,7 +456,9 @@
                                 <label for="credit_amount" class="block text-sm font-medium text-gray-700">
                                     Credit Amount <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" name="credit_amount" id="credit_amount" step="0.01" min="0" value="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <input type="number" name="credit_amount" id="credit_amount" step="0.01"
+                                    min="0" value="0" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             </div>
                         </div>
 
@@ -429,13 +483,16 @@
     </div>
 
     <!-- Edit Transaction Modal -->
-    <div id="editModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="editModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+            <div
+                class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
                 <div class="absolute top-0 right-0 pt-4 pr-4">
-                    <button type="button" onclick="closeEditModal()" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <button type="button" onclick="closeEditModal()"
+                        class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none">
                         <span class="sr-only">Close</span>
                         <i class="fas fa-times text-xl"></i>
                     </button>
@@ -472,7 +529,8 @@
                                 <label for="edit_transaction_date" class="block text-sm font-medium text-gray-700">
                                     Transaction Date <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" name="transaction_date" id="edit_transaction_date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <input type="date" name="transaction_date" id="edit_transaction_date" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             </div>
 
                             <!-- CoA -->
@@ -480,7 +538,8 @@
                                 <label for="edit_coa_id" class="block text-sm font-medium text-gray-700">
                                     Chart of Account <span class="text-red-500">*</span>
                                 </label>
-                                <select name="coa_id" id="edit_coa_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <select name="coa_id" id="edit_coa_id" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                     <option value="">Select CoA...</option>
                                     @foreach ($coaList as $coa)
                                         <option value="{{ $coa->id }}">{{ $coa->code }} -
@@ -495,7 +554,8 @@
                                 <label for="edit_description" class="block text-sm font-medium text-gray-700">
                                     Description <span class="text-red-500">*</span>
                                 </label>
-                                <textarea name="description" id="edit_description" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <textarea name="description" id="edit_description" rows="3" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
                             </div>
 
                             <!-- Debit Amount -->
@@ -503,7 +563,9 @@
                                 <label for="edit_debit_amount" class="block text-sm font-medium text-gray-700">
                                     Debit Amount <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01" min="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01"
+                                    min="0" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             </div>
 
                             <!-- Credit Amount -->
@@ -511,7 +573,9 @@
                                 <label for="edit_credit_amount" class="block text-sm font-medium text-gray-700">
                                     Credit Amount <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01" min="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01"
+                                    min="0" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             </div>
                         </div>
 
@@ -532,13 +596,16 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="deleteModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div
+                class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
                 <div class="sm:flex sm:items-start">
-                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <div
+                        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                         <i class="fas fa-exclamation-triangle text-red-600"></i>
                     </div>
                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
@@ -571,6 +638,8 @@
     </div>
 
     <script>
+        const coaCodeMap = @json($coaList->pluck('code', 'id'));
+
         function applyTheme(theme) {
             const isDark = theme === 'dark';
             document.documentElement.classList.toggle('dark', isDark);
@@ -601,6 +670,17 @@
                 allowClear: true,
                 width: '100%',
                 dropdownParent: $('#createModal')
+            });
+
+            $('#coa_id').on('change', function() {
+                const coaId = $(this).val();
+                const code = coaCodeMap[coaId] || '';
+                const aktivaFields = document.getElementById('aktivaTetapFields');
+                if (code === 'AO-126') {
+                    aktivaFields.classList.remove('hidden');
+                } else {
+                    aktivaFields.classList.add('hidden');
+                }
             });
         }
 
@@ -853,6 +933,10 @@
             if ($('#coa_id').hasClass('select2-hidden-accessible')) {
                 $('#coa_id').val(null).trigger('change');
             }
+            // Hide aktiva tetap fields
+            document.getElementById('aktivaTetapFields').classList.add('hidden');
+            document.getElementById('tarif_penyusutan').value = '0';
+            document.getElementById('kepemilikan').value = '';
         }
 
         // Handle form submission
