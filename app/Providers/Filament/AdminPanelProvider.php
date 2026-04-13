@@ -113,10 +113,14 @@ class AdminPanelProvider extends PanelProvider
                     /* Globally limit table height to allow vertical scrolling */
                     .fi-ta-content { max-height: 75vh; overflow: auto !important; }
                     /* Make all table headers sticky */
-                    .fi-ta-table thead { position: sticky; top: 0; z-index: 20; }
+                    .fi-ta-table thead { position: sticky; top: 0; z-index: 4; }
                     /* Ensure overlapping body content is hidden behind header */
                     .fi-ta-table thead th { background-color: #f9fafb; }
                     .dark .fi-ta-table thead th { background-color: #18181b; }
+                    /* Ensure dropdown panels (filter, actions) appear above sticky table headers */
+                    .fi-dropdown-panel { z-index: 10 !important; }
+                    /* Ensure sidebar and its navigation appear above sticky table headers */
+                    .fi-sidebar { z-index: 10 !important; }
                 </style>'
             )
             ->maxContentWidth('full');
