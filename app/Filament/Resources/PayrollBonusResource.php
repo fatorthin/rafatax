@@ -29,13 +29,27 @@ class PayrollBonusResource extends Resource
                 Forms\Components\TextInput::make('description')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Toggle::make('select_all_case_projects')
+                    ->label('Pilih Semua Case Project (Status: Done)')
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            $allIds = \App\Models\CaseProject::where('status', 'done')->pluck('id')->toArray();
+                            $set('case_project_ids', $allIds);
+                        } else {
+                            $set('case_project_ids', []);
+                        }
+                    })
+                    ->dehydrated(false),
                 Forms\Components\Select::make('case_project_ids')
                     ->label('Case Project')
                     ->options(\App\Models\CaseProject::where('status', 'done')->pluck('description', 'id'))
                     ->multiple()
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->disabled(fn(\Filament\Forms\Get $get) => (bool) $get('select_all_case_projects'))
+                    ->dehydrated(true),
                 Forms\Components\DatePicker::make('payroll_date')
                     ->required(),
             ]);
