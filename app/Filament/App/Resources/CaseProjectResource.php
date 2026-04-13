@@ -175,6 +175,24 @@ class CaseProjectResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'open' => 'OPEN',
+                        'in_progress' => 'IN PROGRESS',
+                        'done' => 'DONE',
+                        'paid' => 'PAID',
+                    ])
+                    ->label('Status'),
+                Tables\Filters\SelectFilter::make('case_type')
+                    ->options([
+                        'SPT' => 'SPT',
+                        'SP2DK' => 'SP2DK',
+                        'Pembetulan' => 'PEMBETULAN',
+                        'Pemeriksaan' => 'PEMERIKSAAN',
+                        'Himbauan' => 'HIMBAUAN',
+                        'Lainnya' => 'LAINNYA',
+                    ])
+                    ->label('Jenis Kasus'),
             ])
             ->actions([
                 Tables\Actions\Action::make('sendNotification')
