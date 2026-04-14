@@ -4,14 +4,10 @@ namespace App\Filament\Resources\CaseProjectResource\Pages;
 
 use App\Filament\Exports\CaseProjectExporter;
 use App\Filament\Resources\CaseProjectResource;
-use App\Services\KpiApiService;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ManageRecords;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ManageCaseProjects extends ManageRecords
 {
