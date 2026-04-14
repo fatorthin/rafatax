@@ -43,7 +43,21 @@ class PayrollBonusResource extends Resource
                     ->dehydrated(false),
                 Forms\Components\Select::make('case_project_ids')
                     ->label('Case Project')
-                    ->options(\App\Models\CaseProject::where('status', 'done')->pluck('description', 'id'))
+                    ->options(function () {
+                        return \App\Models\CaseProject::where('status', 'done')
+                            ->with(['client', 'mou'])
+                            ->get()
+                            ->mapWithKeys(function ($item) {
+                                $label = $item->description;
+                                if ($item->client) {
+                                    $label .= ' - ' . $item->client->company_name;
+                                }
+                                if ($item->mou) {
+                                    $label .= ' [' . $item->mou->mou_number . ']';
+                                }
+                                return [$item->id => $label];
+                            });
+                    })
                     ->multiple()
                     ->searchable()
                     ->preload()
