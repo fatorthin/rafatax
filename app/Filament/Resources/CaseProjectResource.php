@@ -196,7 +196,34 @@ class CaseProjectResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
-            ], position: ActionsPosition::BeforeColumns);
+            ], position: ActionsPosition::BeforeColumns)
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('updateStatus')
+                        ->label('Ubah Status')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('status')
+                                ->label('Status')
+                                ->options([
+                                    'open' => 'OPEN',
+                                    'in_progress' => 'IN PROGRESS',
+                                    'case_done' => 'CASE DONE',
+                                    'bonus_done' => 'BONUS DONE',
+                                    'paid' => 'PAID',
+                                ])
+                                ->required(),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                            $records->each(fn($record) => $record->update(['status' => $data['status']]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array
