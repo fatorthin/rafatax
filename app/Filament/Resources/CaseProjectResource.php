@@ -104,6 +104,7 @@ class CaseProjectResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->modifyQueryUsing(fn(Builder $query) => $query->with('details'))
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
@@ -120,22 +121,14 @@ class CaseProjectResource extends Resource
                         return Staff::whereIn('id', $staffIds)->pluck('name')->join(', ');
                     })
                     ->wrap(),
-                Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
-                Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable(),
-                Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable(),
-                Tables\Columns\TextColumn::make('link_drive')
-                    ->label('Link Drive')
-                    ->formatStateUsing(fn($state) => $state ? 'Buka Link' : '-')
-                    ->url(fn($record) => $record->link_drive, shouldOpenInNewTab: true)
-                    ->color('primary')
-                    ->icon('heroicon-o-link')
-                    ->iconPosition('before'),
-                Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
-                // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
+                Tables\Columns\TextColumn::make('total_bonus')
+                    ->label('Total Bonus')
+                    ->getStateUsing(fn(CaseProject $record) => $record->details->sum('bonus'))
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->withSum('details', 'bonus')
+                            ->orderBy('details_sum_bonus', $direction);
+                    }),
                 Tables\Columns\TextColumn::make('status')->label('Status')->sortable()->searchable()->badge()->formatStateUsing(function ($state) {
                     return match ($state) {
                         'open' => 'OPEN',
@@ -153,6 +146,22 @@ class CaseProjectResource extends Resource
                         'paid' => 'success',
                     };
                 }),
+                Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
+                Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
+                Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable(),
+                Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable(),
+                Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable(),
+                Tables\Columns\TextColumn::make('link_drive')
+                    ->label('Link Drive')
+                    ->formatStateUsing(fn($state) => $state ? 'Buka Link' : '-')
+                    ->url(fn($record) => $record->link_drive, shouldOpenInNewTab: true)
+                    ->color('primary')
+                    ->icon('heroicon-o-link')
+                    ->iconPosition('before'),
+                Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
+                Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
+                // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
