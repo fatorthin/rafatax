@@ -140,15 +140,17 @@ class CaseProjectResource extends Resource
                     return match ($state) {
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
                         'paid' => 'PAID',
                     };
                 })->color(function ($state) {
                     return match ($state) {
                         'open' => 'primary',
                         'in_progress' => 'warning',
-                        'done' => 'success',
-                        'paid' => 'info',
+                        'case_done' => 'success',
+                        'bonus_done' => 'info',
+                        'paid' => 'success',
                     };
                 }),
             ])
