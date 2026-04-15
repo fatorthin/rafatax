@@ -34,7 +34,7 @@ class PayrollBonusResource extends Resource
                     ->reactive()
                     ->afterStateUpdated(function ($state, callable $set) {
                         if ($state) {
-                            $allIds = \App\Models\CaseProject::where('status', 'done')->pluck('id')->toArray();
+                            $allIds = \App\Models\CaseProject::where('status', 'bonus_done')->pluck('id')->toArray();
                             $set('case_project_ids', $allIds);
                         } else {
                             $set('case_project_ids', []);
@@ -44,7 +44,7 @@ class PayrollBonusResource extends Resource
                 Forms\Components\Select::make('case_project_ids')
                     ->label('Case Project')
                     ->options(function () {
-                        return \App\Models\CaseProject::where('status', 'done')
+                        return \App\Models\CaseProject::where('status', 'bonus_done')
                             ->with(['client', 'mou'])
                             ->get()
                             ->mapWithKeys(function ($item) {
