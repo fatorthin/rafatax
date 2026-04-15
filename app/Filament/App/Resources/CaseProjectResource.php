@@ -98,17 +98,13 @@ class CaseProjectResource extends Resource
                     ->label('Tanggal Berikan Client')
                     ->native(false)
                     ->displayFormat('d/m/Y'),
-                // Forms\Components\DatePicker::make('case_date')
-                //     ->required()
-                //     ->label('Tanggal Kasus')
-                //     ->native(false)
-                //     ->displayFormat('d/m/Y'),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
                     ])
                     ->required(),
             ]);
@@ -157,6 +153,19 @@ class CaseProjectResource extends Resource
                         return Staff::whereIn('id', $staffIds)->pluck('name')->join(', ');
                     })
                     ->wrap(),
+                Tables\Columns\TextColumn::make('total_bonus')
+                    ->label('Total Bonus')
+                    ->getStateUsing(fn(CaseProject $record) => $record->details->sum('bonus'))
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->withSum('details', 'bonus')
+                            ->orderBy('details_sum_bonus', $direction);
+                    })
+                    ->hidden(function () {
+                        /** @var \App\Models\User $user */
+                        $user = auth()->user();
+                        return $user?->hasRole('inventory-admin') ?? false;
+                    }),
                 Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
                 Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
