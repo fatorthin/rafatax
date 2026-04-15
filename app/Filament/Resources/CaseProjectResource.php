@@ -92,7 +92,8 @@ class CaseProjectResource extends Resource
                     ->options([
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
                         'paid' => 'PAID',
                     ])
                     ->required(),
@@ -157,7 +158,8 @@ class CaseProjectResource extends Resource
                     ->options([
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
                         'paid' => 'PAID',
                     ])
                     ->label('Status'),

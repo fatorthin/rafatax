@@ -90,7 +90,8 @@ class CaseProjectExporter
         $statusLabels = [
             'open'        => 'OPEN',
             'in_progress' => 'IN PROGRESS',
-            'done'        => 'DONE',
+            'case_done' => 'CASE DONE',
+            'bonus_done' => 'BONUS DONE',
             'paid'        => 'PAID',
         ];
 
