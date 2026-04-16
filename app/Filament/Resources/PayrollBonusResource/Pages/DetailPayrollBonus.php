@@ -235,13 +235,12 @@ class DetailPayrollBonus extends Page implements HasTable
                 return ['success' => false, 'message' => 'Nomor telepon staff tidak ditemukan.'];
             }
 
-            $payrollDate = $this->record->payroll_date ? \Carbon\Carbon::parse($this->record->payroll_date)->format('F Y') : '-';
             $amount = number_format($record->amount, 0, ',', '.');
 
             // Generate Message Content
             $message = "📋 *SLIP PAYROLL BONUS RAFATAX*\n\n";
             $message .= "👤 *Nama*: {$staff->name}\n";
-            $message .= "📅 *Periode*: {$payrollDate}\n";
+            $message .= "📅 *Periode*: {$this->record->description}\n";
             $message .= "💰 *Total Bonus*: Rp {$amount}\n\n";
 
             $message .= "*Rincian Project:*\n";
@@ -284,7 +283,7 @@ class DetailPayrollBonus extends Page implements HasTable
             $wablasService->sendMessage($staff->phone, $message);
 
             // Send Document
-            $result = $wablasService->sendDocument($staff->phone, $tempPath, "📄 Slip Bonus {$staff->name} - {$payrollDate}");
+            $result = $wablasService->sendDocument($staff->phone, $tempPath, "📄 Slip Bonus {$staff->name} - {$this->record->description}");
 
             // Cleanup
             if (file_exists($tempPath)) {
