@@ -105,6 +105,7 @@ class CashReferenceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->whereNotIn('id', [3, 5])
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
