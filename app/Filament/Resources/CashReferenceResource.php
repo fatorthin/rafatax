@@ -37,6 +37,9 @@ class CashReferenceResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('sort_order')
+                    ->label('#')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('description')->toggleable(isToggledHiddenByDefault: true),
@@ -53,6 +56,8 @@ class CashReferenceResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->reorderable('sort_order')
+            ->defaultSort('sort_order')
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
