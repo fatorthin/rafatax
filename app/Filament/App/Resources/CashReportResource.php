@@ -288,7 +288,6 @@ class CashReportResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->whereNotIn('id', [3, 5]);
+        return parent::getEloquentQuery();
     }
 }
