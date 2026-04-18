@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('description');
             // $table->date('case_date')->nullable();
-            $table->enum('status', ['open', 'in_progress', 'done', 'paid'])->default('open');
+            $table->enum('status', ['open', 'in_progress', 'case_done', 'bonus_done', 'paid'])->default('open');
             $table->enum('case_type', ['SP2DK', 'Pembetulan', 'Pemeriksaan', 'Himbauan', 'Lainnya'])->nullable();
             $table->json('staff_id')->nullable();
             $table->foreignId('client_id')->constrained()->onDelete('cascade');

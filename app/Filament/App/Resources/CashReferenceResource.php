@@ -65,8 +65,12 @@ class CashReferenceResource extends Resource
     {
         return $table
             ->striped()
-            ->defaultSort('created_at', 'desc')
+            ->reorderable('sort_order')
+            ->defaultSort('sort_order')
             ->columns([
+                Tables\Columns\TextColumn::make('sort_order')
+                    ->label('#')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Kas')
                     ->searchable()
@@ -144,7 +148,6 @@ class CashReferenceResource extends Resource
                         ->label('Export Data'),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc')
             ->deferLoading();
     }
 
@@ -170,7 +173,6 @@ class CashReferenceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withCount('cashReports')
-            ->latest('created_at');
+            ->withCount('cashReports');
     }
 }

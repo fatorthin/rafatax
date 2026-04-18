@@ -92,7 +92,8 @@ class CaseProjectResource extends Resource
                     ->options([
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
                         'paid' => 'PAID',
                     ])
                     ->required(),
@@ -103,6 +104,7 @@ class CaseProjectResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->modifyQueryUsing(fn(Builder $query) => $query->with('details'))
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
@@ -119,6 +121,31 @@ class CaseProjectResource extends Resource
                         return Staff::whereIn('id', $staffIds)->pluck('name')->join(', ');
                     })
                     ->wrap(),
+                Tables\Columns\TextColumn::make('total_bonus')
+                    ->label('Total Bonus')
+                    ->getStateUsing(fn(CaseProject $record) => $record->details->sum('bonus'))
+                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->withSum('details', 'bonus')
+                            ->orderBy('details_sum_bonus', $direction);
+                    }),
+                Tables\Columns\TextColumn::make('status')->label('Status')->sortable()->searchable()->badge()->formatStateUsing(function ($state) {
+                    return match ($state) {
+                        'open' => 'OPEN',
+                        'in_progress' => 'IN PROGRESS',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
+                        'paid' => 'PAID',
+                    };
+                })->color(function ($state) {
+                    return match ($state) {
+                        'open' => 'primary',
+                        'in_progress' => 'warning',
+                        'case_done' => 'success',
+                        'bonus_done' => 'info',
+                        'paid' => 'success',
+                    };
+                }),
                 Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
                 Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
@@ -135,21 +162,6 @@ class CaseProjectResource extends Resource
                 Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
                 // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('status')->label('Status')->sortable()->searchable()->badge()->formatStateUsing(function ($state) {
-                    return match ($state) {
-                        'open' => 'OPEN',
-                        'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
-                        'paid' => 'PAID',
-                    };
-                })->color(function ($state) {
-                    return match ($state) {
-                        'open' => 'primary',
-                        'in_progress' => 'warning',
-                        'done' => 'success',
-                        'paid' => 'info',
-                    };
-                }),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -157,7 +169,8 @@ class CaseProjectResource extends Resource
                     ->options([
                         'open' => 'OPEN',
                         'in_progress' => 'IN PROGRESS',
-                        'done' => 'DONE',
+                        'case_done' => 'CASE DONE',
+                        'bonus_done' => 'BONUS DONE',
                         'paid' => 'PAID',
                     ])
                     ->label('Status'),
@@ -192,7 +205,34 @@ class CaseProjectResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
-            ], position: ActionsPosition::BeforeColumns);
+            ], position: ActionsPosition::BeforeColumns)
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('updateStatus')
+                        ->label('Ubah Status')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('status')
+                                ->label('Status')
+                                ->options([
+                                    'open' => 'OPEN',
+                                    'in_progress' => 'IN PROGRESS',
+                                    'case_done' => 'CASE DONE',
+                                    'bonus_done' => 'BONUS DONE',
+                                    'paid' => 'PAID',
+                                ])
+                                ->required(),
+                        ])
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                            $records->each(fn($record) => $record->update(['status' => $data['status']]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array
