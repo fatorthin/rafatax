@@ -112,7 +112,6 @@ class CashReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('transaction_date', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('cashReference.name')
                     ->label('Referensi Kas')
@@ -284,10 +283,5 @@ class CashReportResource extends Resource
             'view' => Pages\ViewCashReport::route('/{record}'),
             'edit' => Pages\EditCashReport::route('/{record}/edit'),
         ];
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery();
     }
 }
