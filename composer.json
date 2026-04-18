@@ -15,7 +15,7 @@
         "livewire/livewire": "^3.6",
         "phpoffice/phpspreadsheet": "^4.4",
         "spatie/browsershot": "^5.1",
-        "spatie/eloquent-sortable": "*"
+        "spatie/eloquent-sortable": "^5.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

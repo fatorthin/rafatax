@@ -227,7 +227,7 @@ class CashReferenceMonthDetailController extends Controller
             DaftarAktivaTetap::create([
                 'deskripsi'        => $validated['description'],
                 'tahun_perolehan'  => $tahunPerolehan,
-                'harga_perolehan'  => $validated['debit_amount'],
+                'harga_perolehan'  => $validated['credit_amount'],
                 'tarif_penyusutan' => $request->input('tarif_penyusutan', 0),
                 'status'           => 'aktif',
                 'kepemilikan'      => $request->input('kepemilikan'),
