@@ -47,6 +47,16 @@ class MoU extends Model
         return $this->hasMany(CostListMou::class, 'mou_id');
     }
 
+    public function feeBulanan()
+    {
+        return $this->hasMany(CostListMou::class, 'mou_id')->where('coa_id', 119);
+    }
+
+    public function feeSpt()
+    {
+        return $this->hasMany(CostListMou::class, 'mou_id')->where('coa_id', 120);
+    }
+
     public function categoryMou()
     {
         return $this->belongsTo(CategoryMou::class);
