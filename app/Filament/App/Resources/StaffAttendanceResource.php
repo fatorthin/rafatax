@@ -9,7 +9,6 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\StaffAttendance;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\Fieldset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\StaffAttendanceResource\Pages;
@@ -288,13 +287,14 @@ class StaffAttendanceResource extends Resource
                         Forms\Components\Select::make('tahun')
                             ->label('Tahun')
                             ->options(function () {
-                                $years = \App\Models\StaffAttendance::query()
-                                    ->selectRaw('YEAR(tanggal) as year')
-                                    ->distinct()
-                                    ->orderBy('year', 'desc')
-                                    ->pluck('year', 'year')
-                                    ->toArray();
-                                return $years;
+                                return \Illuminate\Support\Facades\Cache::remember('staff_attendance_years', 86400, function () {
+                                    return StaffAttendance::query()
+                                        ->selectRaw('YEAR(tanggal) as year')
+                                        ->distinct()
+                                        ->orderBy('year', 'desc')
+                                        ->pluck('year', 'year')
+                                        ->toArray();
+                                });
                             })
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -332,6 +332,7 @@ class StaffAttendanceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with('staff')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
