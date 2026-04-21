@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CashReferenceResource\Pages;
-use App\Filament\Resources\CashReferenceResource\RelationManagers;
 use App\Models\CashReference;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -105,7 +104,7 @@ class CashReferenceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereNotIn('id', [3, 5])
+            // ->whereNotIn('id', [3, 5])
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

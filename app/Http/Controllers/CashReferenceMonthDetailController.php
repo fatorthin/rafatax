@@ -219,10 +219,15 @@ class CashReferenceMonthDetailController extends Controller
         // Auto-create Aktiva Tetap jika CoA = AO-126
         $coa = Coa::find($validated['coa_id']);
         if ($coa && $coa->code === 'AO-126') {
+            $tahunPerolehanInput = $request->input('tahun_perolehan');
+            $tahunPerolehan = $tahunPerolehanInput
+                ? Carbon::createFromFormat('Y-m', $tahunPerolehanInput)->startOfMonth()->toDateString()
+                : Carbon::parse($validated['transaction_date'])->startOfMonth()->toDateString();
+
             DaftarAktivaTetap::create([
                 'deskripsi'        => $validated['description'],
-                'tahun_perolehan'  => Carbon::parse($validated['transaction_date'])->year,
-                'harga_perolehan'  => $validated['debit_amount'],
+                'tahun_perolehan'  => $tahunPerolehan,
+                'harga_perolehan'  => $validated['credit_amount'],
                 'tarif_penyusutan' => $request->input('tarif_penyusutan', 0),
                 'status'           => 'aktif',
                 'kepemilikan'      => $request->input('kepemilikan'),

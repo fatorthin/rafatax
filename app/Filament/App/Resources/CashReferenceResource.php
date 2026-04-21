@@ -11,7 +11,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CashReferenceResource extends Resource
 {
@@ -174,6 +173,7 @@ class CashReferenceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->whereNotIn('id', [3, 5])
             ->withCount('cashReports');
     }
 }
