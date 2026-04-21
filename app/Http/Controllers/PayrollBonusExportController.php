@@ -17,7 +17,7 @@ class PayrollBonusExportController extends Controller
         $caseProjectDetailIds = $detail->case_project_detail_ids ?? [];
 
         // Ambil detail case project
-        $caseProjectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client'])
+        $caseProjectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client', 'caseProject.mou'])
             ->whereIn('id', $caseProjectDetailIds)
             ->get();
 

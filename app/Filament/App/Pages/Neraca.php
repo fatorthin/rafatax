@@ -23,6 +23,20 @@ class Neraca extends Page
     public $month;
     public $year;
 
+    public static function canAccess(array $parameters = []): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        return $user->hasPermission('cash-report.view') || $user->hasPermission('cash-reports.view');
+    }
+
+
     public function mount(): void
     {
         $this->month = request('month', now()->month);

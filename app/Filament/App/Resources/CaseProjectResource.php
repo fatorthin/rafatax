@@ -106,6 +106,17 @@ class CaseProjectResource extends Resource
                         'case_done' => 'CASE DONE',
                         'bonus_done' => 'BONUS DONE',
                     ])
+                    ->default(fn () => auth()->user()?->hasRole('hrd-manager') ? 'case_done' : null)
+                    ->afterStateHydrated(function (Forms\Components\Select $component, $state) {
+                        if (auth()->user()?->hasRole('hrd-manager')) {
+                            $component->state('case_done');
+                        }
+                    })
+                    ->mutateDehydratedStateUsing(function ($state) {
+                        return auth()->user()?->hasRole('hrd-manager') ? 'case_done' : $state;
+                    })
+                    ->disabled(fn () => auth()->user()?->hasRole('hrd-manager'))
+                    ->dehydrated()
                     ->required(),
             ]);
     }

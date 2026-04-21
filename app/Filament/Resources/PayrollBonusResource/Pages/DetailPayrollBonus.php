@@ -91,6 +91,88 @@ class DetailPayrollBonus extends Page implements HasTable
                         ->success()
                         ->send();
                 }),
+            Action::make('export_case_excel')
+                ->label('Export Data Case')
+                ->icon('heroicon-o-table-cells')
+                ->color('warning')
+                ->action(function () {
+                    $caseProjectIds = $this->record->case_project_ids ?? [];
+                    if (!is_array($caseProjectIds)) {
+                        $caseProjectIds = json_decode((string) $caseProjectIds, true) ?? [];
+                    }
+
+                    $caseProjects = CaseProject::with(['client', 'mou'])
+                        ->whereIn('id', $caseProjectIds)
+                        ->orderBy('case_date')
+                        ->get();
+
+                    // Aggregate total bonus per case_project in one query (no N+1)
+                    $bonusPerCase = CaseProjectDetail::whereIn('case_project_id', $caseProjectIds)
+                        ->selectRaw('case_project_id, SUM(bonus) as total_bonus')
+                        ->groupBy('case_project_id')
+                        ->pluck('total_bonus', 'case_project_id');
+
+                    $payrollDesc = $this->record->description;
+
+                    return response()->streamDownload(function () use ($caseProjects, $bonusPerCase) {
+                        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+                        $sheet = $spreadsheet->getActiveSheet();
+                        $sheet->setTitle('Data Case Payroll');
+
+                        $headers    = ['No', 'PT/KKP', 'Case Type', 'Nama Perusahaan Klien', 'No. MoU', 'Total Bonus'];
+                        $colLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+                        foreach ($headers as $i => $header) {
+                            $cell = $colLetters[$i] . '1';
+                            $sheet->setCellValue($cell, $header);
+                            $sheet->getStyle($cell)->getFont()->setBold(true);
+                            $sheet->getStyle($cell)->getFill()
+                                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                ->getStartColor()->setRGB('4472C4');
+                            $sheet->getStyle($cell)->getFont()->getColor()->setRGB('FFFFFF');
+                        }
+
+                        $row        = 2;
+                        $grandTotal = 0;
+
+                        foreach ($caseProjects as $index => $case) {
+                            $clientType  = strtoupper($case->client->type ?? '-');
+                            $companyName = $case->client->company_name ?? '-';
+                            $mouNumber   = $case->mou ? ($case->mou->mou_number ?? '-') : '-';
+                            $totalBonus  = $bonusPerCase[$case->id] ?? 0;
+                            $grandTotal += $totalBonus;
+
+                            $sheet->setCellValue('A' . $row, $index + 1);
+                            $sheet->setCellValue('B' . $row, $clientType);
+                            $sheet->setCellValue('C' . $row, $case->case_type ?? '-');
+                            $sheet->setCellValue('D' . $row, $companyName);
+                            $sheet->setCellValue('E' . $row, $mouNumber);
+                            $sheet->setCellValue('F' . $row, $totalBonus);
+                            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0');
+
+                            if ($row % 2 === 0) {
+                                $sheet->getStyle('A' . $row . ':F' . $row)->getFill()
+                                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                    ->getStartColor()->setRGB('EBF3FB');
+                            }
+
+                            $row++;
+                        }
+
+                        // Grand total row
+                        $sheet->setCellValue('E' . $row, 'TOTAL');
+                        $sheet->setCellValue('F' . $row, $grandTotal);
+                        $sheet->getStyle('E' . $row . ':F' . $row)->getFont()->setBold(true);
+                        $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0');
+
+                        foreach ($colLetters as $col) {
+                            $sheet->getColumnDimension($col)->setAutoSize(true);
+                        }
+
+                        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                        $writer->save('php://output');
+                    }, 'Export_Case_' . str_replace(' ', '_', $payrollDesc) . '_' . date('Y-m-d') . '.xlsx');
+                }),
         ];
     }
 
@@ -119,11 +201,11 @@ class DetailPayrollBonus extends Page implements HasTable
                                 }
 
                                 if (empty($ids)) {
-                                    return '-';
+                                    return ['-'];
                                 }
 
-                                // Ambil description dan company_name dari CaseProject dengan relasi client
-                                $projects = CaseProject::with('client')
+                                // Ambil description dan company_name dari CaseProject
+                                return CaseProject::with('client')
                                     ->whereIn('id', $ids)
                                     ->orderBy('case_date')
                                     ->get()
@@ -132,10 +214,11 @@ class DetailPayrollBonus extends Page implements HasTable
                                         return $project->description . ' (' . $companyName . ')';
                                     })
                                     ->toArray();
-
-                                return implode(', ', $projects);
-                            }),
-                    ])->columns(4)
+                            })
+                            ->badge()
+                            ->color('info')
+                            ->columnSpanFull(),
+                    ])->columns(3)
             ]);
     }
 
@@ -241,20 +324,14 @@ class DetailPayrollBonus extends Page implements HasTable
             $message = "📋 *SLIP PAYROLL BONUS RAFATAX*\n\n";
             $message .= "👤 *Nama*: {$staff->name}\n";
             $message .= "📅 *Periode*: {$this->record->description}\n";
-            $message .= "💰 *Total Bonus*: Rp {$amount}\n\n";
+            $message .= "💰 *Total Bonus*: Rp {$amount}\n";
 
-            $message .= "*Rincian Project:*\n";
             $caseProjectDetailIds = $record->case_project_detail_ids ?? [];
             if (!is_array($caseProjectDetailIds)) {
                 $caseProjectDetailIds = json_decode((string) $caseProjectDetailIds, true) ?? [];
             }
 
-            $projectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client'])->whereIn('id', $caseProjectDetailIds)->get();
-            foreach ($projectDetails as $detail) {
-                $projectName = $detail->caseProject->description ?? 'Unknown Project';
-                $bonusVal = number_format($detail->bonus, 0, ',', '.');
-                $message .= "- {$projectName}: Rp {$bonusVal}\n";
-            }
+            $projectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client', 'caseProject.mou'])->whereIn('id', $caseProjectDetailIds)->get();
 
             $message .= "\n📄 Slip bonus detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
             $message .= "Terima kasih atas dedikasi dan kerja kerasnya! 🙏";

@@ -128,6 +128,7 @@
                 <th class="center">No</th>
                 <th>Deskripsi Project</th>
                 <th>Client</th>
+                <th>No. MoU</th>
                 <th>Tanggal Project</th>
                 <th class="number">Bonus (Rp)</th>
             </tr>
@@ -138,6 +139,7 @@
                     <td class="center">{{ $index + 1 }}</td>
                     <td>{{ $cpDetail->caseProject->description }}</td>
                     <td>{{ $cpDetail->caseProject->client->company_name ?? '-' }}</td>
+                    <td>{{ $cpDetail->caseProject->mou->mou_number ?? '-' }}</td>
                     <td class="center">{{ \Carbon\Carbon::parse($cpDetail->caseProject->project_date)->format('d M Y') }}</td>
                     <td class="number">{{ number_format($cpDetail->bonus, 0, ',', '.') }}</td>
                 </tr>
@@ -145,7 +147,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <th colspan="4" style="text-align: right;">TOTAL BONUS</th>
+                <th colspan="5" style="text-align: right;">TOTAL BONUS</th>
                 <th class="number">{{ number_format($detail->amount, 0, ',', '.') }}</th>
             </tr>
         </tfoot>
