@@ -29,6 +29,8 @@ return new class extends Migration
             $table->boolean('is_send_mou')->default(false);
             $table->date('send_mou_date')->nullable();
             $table->double('discount_amount')->nullable()->default(0);
+            $table->boolean('is_make_case_project')->default(false);
+            $table->foreignId('case_project_id')->nullable()->constrained('case_projects')->onDelete('cascade');
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

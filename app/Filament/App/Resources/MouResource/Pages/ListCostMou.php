@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources\MouResource\Pages;
 
 use App\Models\Coa;
 use App\Models\MoU;
+use App\Models\CaseProject;
 use Filament\Actions;
 use Filament\Actions\ActionGroup;
 use Filament\Support\RawJs;
@@ -916,6 +917,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     {
         return [
             $this->getEditMouAction(),
+            $this->getCreateCaseProjectAction(),
             ActionGroup::make([
                 $this->getCreateCostAction(),
                 $this->getCreateInvoiceAction(),
@@ -936,5 +938,58 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->button(),
             $this->getBackAction(),
         ];
+    }
+
+    private function getCreateCaseProjectAction(): Action
+    {
+        return Action::make('create_case_project')
+            ->label('Buat Case Project')
+            ->icon('heroicon-o-briefcase')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Buat Case Project dari MoU Ini')
+            ->modalDescription('Tindakan ini akan membuat data Case Project baru berdasarkan MoU ini dengan status Case Done. Lanjutkan?')
+            ->modalSubmitActionLabel('Ya, Buat')
+            ->action(function () {
+                $caseProject = CaseProject::create([
+                    'mou_id'    => $this->mou->id,
+                    'client_id' => $this->mou->client_id,
+                    'status'    => 'case_done',
+                    'case_date' => now()->toDateString(),
+                ]);
+
+                $this->mou->update([
+                    'is_make_case_project' => true,
+                    'case_project_id'      => $caseProject->id,
+                ]);
+
+                Notification::make()
+                    ->title('Berhasil')
+                    ->body('Case Project berhasil dibuat dengan status Case Done.')
+                    ->success()
+                    ->send();
+
+                // Kirim notifikasi WhatsApp via Wablas
+                try {
+                    $mouNumber  = $this->mou->mou_number ?? '-';
+                    $clientName = $this->mou->client?->company_name ?? '-';
+                    $caseDate   = now()->locale('id')->translatedFormat('d F Y');
+
+                    $message  = "✅ *CASE PROJECT BERHASIL DIBUAT*\n\n";
+                    $message .= "📋 No. MoU\t\t: {$mouNumber}\n";
+                    $message .= "🏢 Klien\t\t: {$clientName}\n";
+                    $message .= "📆 Tanggal\t\t: {$caseDate}\n";
+                    $message .= "🔖 Status\t\t: Case Done\n\n";
+                    $message .= "💡 *Catatan:* Mohon dibuatkan *bonus payroll* untuk staff yang menangani case project ini.\n\n";
+                    $message .= "Terima kasih,\n";
+                    $message .= "_Sistem Rafatax_";
+
+                    /** @var \App\Services\WablasService $wablasService */
+                    $wablasService = app(\App\Services\WablasService::class);
+                    $wablasService->sendMessage('6285725380708', $message);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Gagal kirim notifikasi Wablas case project: ' . $e->getMessage());
+                }
+            });
     }
 }
