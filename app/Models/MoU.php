@@ -29,7 +29,9 @@ class MoU extends Model
         'tanggal_tagih_akhir',
         'is_send_mou',
         'send_mou_date',
-        'discount_amount'
+        'discount_amount',
+        'is_make_case_project',
+        'case_project_id',
     ];
 
     public function client()
@@ -64,5 +66,10 @@ class MoU extends Model
     public function checklistMous()
     {
         return $this->hasMany(ChecklistMou::class, 'mou_id');
+    }
+
+    public function caseProject()
+    {
+        return $this->belongsTo(CaseProject::class);
     }
 }
