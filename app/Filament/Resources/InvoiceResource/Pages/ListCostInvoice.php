@@ -186,15 +186,6 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                         $totalAmount = CostListInvoice::where('invoice_id', $this->invoice->id)->sum('amount');
                         $formattedAmount = number_format($totalAmount, 0, ',', '.');
 
-                        // Create WhatsApp message
-                        $message = "Yth. {$clientName},\n\n";
-                        $message .= "Berikut kami lampirkan invoice untuk layanan kami:\n";
-                        $message .= "No. Invoice: {$this->invoice->invoice_number}\n";
-                        $message .= "Keterangan: {$this->invoice->description}\n";
-                        // $message .= "Tanggal: " . \Carbon\Carbon::parse($this->invoice->invoice_date)->translatedFormat('d F Y') . "\n";
-                        // $message .= "Jatuh Tempo: " . \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y') . "\n";
-                        // $message .= "Total: Rp {$formattedAmount}\n\n";
-
                         // Determine Type for Signature and Bank Details
                         // Priority: Invoice Type -> MoU Type -> Memo Client Type -> null
                         $type = $this->invoice->invoice_type
@@ -209,14 +200,24 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             ? "Bank: BCA\nNo. Rekening: 785-1135-425\nAtas nama: Antin Okfitasari"
                             : "Bank: BCA\nNo. Rekening: 785-1260-513\nAtas nama: Aghnia Oasis Konsultindo PT";
 
-                        $signature = $isKkp
-                            ? "Antin Okfitasari - Konsultan Pajak\nGriya Rafa, Jl. Nampan 01, Dusun II\nMadegondo, Grogol, Sukoharjo\nPhone: +62 812-2596-210\nEmail: antin.okfitasari@gmail.com"
-                            : "Aghnia Oasis Konsultindo PT\nGriya Rafa, Jl. Nampan 01, Dusun II\nMadegondo, Grogol, Sukoharjo\nPhone: +62 813-5997-6015\nEmail: aghniaoasiskonsultindo@gmail.com";
+                        $dueDate = $this->invoice->due_date
+                            ? \Carbon\Carbon::parse($this->invoice->due_date)->translatedFormat('d F Y')
+                            : '-';
 
-                        $message .= "Pembayaran dapat dilakukan melalui transfer ke rekening berikut:\n{$bankDetails}\n\n";
-                        $message .= "Apabila telah melakukan pembayaran, dimohon untuk mengirim konfirmasi kepada kami dengan melalui nomor ini.\n\n";
-                        $message .= "Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.\n\n";
-                        $message .= "Best Regards,\nTim Finance\n\n{$signature}\n";
+                        // Create WhatsApp message
+                        $message = "Yth. Bapak/Ibu {$clientName}\n";
+                        $message .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan Invoice Tagihan.\n\n";
+                        $message .= "No Invoice    : {$this->invoice->invoice_number}\n";
+                        $message .= "Jumlah          : Rp {$formattedAmount}\n";
+                        $message .= "Jatuh Tempo: {$dueDate}\n\n";
+                        $message .= "Transfer ke: {$bankDetails}\n\n";
+                        $message .= "Note:\n";
+                        $message .= "1. Cantumkan nomor invoice di kolom \"catatan\" saat proses transfer.\n";
+                        $message .= "2. Konfirmasi pembayaran dengan mengirim bukti transfer ke Nomor Admin (+62 813 5997 6015)\n";
+                        $message .= "3. Bayar tepat waktu untuk menghindari penghentian layanan kami.\n\n";
+                        $message .= "Mohon dapat menjadi periksa & dijadwalkan pembayarannya\n";
+                        $message .= "Terima kasih\n";
+                        $message .= "Admin Rafatax Consulting";
 
                         /** @var \App\Services\WablasService $wablasService */
                         $wablasService = app(\App\Services\WablasService::class);
