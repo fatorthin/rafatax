@@ -139,7 +139,7 @@ class NeracaLajurBulanan extends Page implements HasTable
             $selisihSebelumAJE = $totalDebit - $totalKredit;
             $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
 
-            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
+            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $row->code)) {
                 $amount = $selisihSetelahAJE;
 
                 if (preg_match('/^AO-4/', $row->code)) {
@@ -683,7 +683,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;
                 $neracaKredit = $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
-                $showInLabaRugi = preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $item->code);
+                $showInLabaRugi = preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $item->code);
                 $labaRugiDebit = $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
                 $labaRugiKredit = $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
 

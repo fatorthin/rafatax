@@ -134,7 +134,7 @@ class NeracaLajurBulanan extends Page implements HasTable
             $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
 
             // Check if this is a Laba Rugi account
-            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
+            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $row->code)) {
                 $amount = $selisihSetelahAJE;
 
                 // Determine if this is pendapatan or beban based on the account code
@@ -708,7 +708,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $neracaKredit = $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
                 // Laba Rugi (AO-401 to AO-702)
-                $showInLabaRugi = preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $item->code);
+                $showInLabaRugi = preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $item->code);
                 $labaRugiDebit = $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
                 $labaRugiKredit = $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
 

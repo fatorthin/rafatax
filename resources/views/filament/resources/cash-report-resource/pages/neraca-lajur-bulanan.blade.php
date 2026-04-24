@@ -94,7 +94,7 @@
 
                     // Calculate Laba Rugi
                     $showInLabaRugi = preg_match(
-                        '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/',
+                        '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
                         $row->code,
                     );
                     $labaRugiDebit = $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
@@ -437,7 +437,7 @@
 
                                 // Perhitungan untuk kolom Laba Rugi
                                 $showInLabaRugi = preg_match(
-                                    '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/',
+                                    '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
                                     $row->code,
                                 );
                                 $labaRugiDebit = $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
