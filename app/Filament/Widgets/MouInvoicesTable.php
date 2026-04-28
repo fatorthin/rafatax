@@ -161,7 +161,7 @@ class MouInvoicesTable extends BaseWidget
                         $costListInvoices = $record->costListInvoices()->get();
                         foreach ($costListInvoices as $costItem) {
                             $cashReport = CashReport::create([
-                                'description' => 'Pembayaran Invoice ' . $record->invoice_number . ' - ' . $costItem->description . ' - ' . (function () use ($record) {
+                                'description' => (function () use ($record) {
                                     if ($record->memo_id && !$record->client_id) {
                                         return $record->memo?->nama_klien ?? '';
                                     }
@@ -172,7 +172,7 @@ class MouInvoicesTable extends BaseWidget
                                         return $record->mou?->client?->company_name ?? '';
                                     }
                                     return '';
-                                })(),
+                                })() . ' - ' . $costItem->description . ' - ' . $record->invoice_number,
                                 'cash_reference_id' => $cashReferenceId,
                                 'mou_id' => $record->mou_id,
                                 'coa_id' => $costItem->coa_id,
