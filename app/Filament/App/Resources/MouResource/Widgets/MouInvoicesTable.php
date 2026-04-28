@@ -29,19 +29,19 @@ class MouInvoicesTable extends BaseWidget
     protected function getTableQuery(): Builder
     {
         $query = Invoice::query()->when(
-                $this->mouId,
-                fn(Builder $query) => $query->where('mou_id', $this->mouId),
-                fn(Builder $query) => $query->whereNull('id')
-            );
-    
-            // Calculate total here for footer by using the invoices in the query
-            if ($this->mouId) {
-                $invoiceIds = $query->clone()->pluck('id')->toArray();
-                $this->totalValue = CostListInvoice::whereIn('invoice_id', $invoiceIds)
-                    ->sum('amount');
-            }
-    
-            return $query;
+            $this->mouId,
+            fn(Builder $query) => $query->where('mou_id', $this->mouId),
+            fn(Builder $query) => $query->whereNull('id')
+        );
+
+        // Calculate total here for footer by using the invoices in the query
+        if ($this->mouId) {
+            $invoiceIds = $query->clone()->pluck('id')->toArray();
+            $this->totalValue = CostListInvoice::whereIn('invoice_id', $invoiceIds)
+                ->sum('amount');
+        }
+
+        return $query;
     }
 
     public function getTableTotalValue()
@@ -167,7 +167,7 @@ class MouInvoicesTable extends BaseWidget
                         $costListInvoices = $record->costListInvoices()->get();
                         foreach ($costListInvoices as $costItem) {
                             $cashReport = CashReport::create([
-                                'description' => 'Pembayaran Invoice ' . $record->invoice_number . ' - ' . $costItem->description . ' - ' . (function () use ($record) {
+                                'description' => (function () use ($record) {
                                     if ($record->memo_id && !$record->client_id) {
                                         return $record->memo?->nama_klien ?? '';
                                     }
@@ -178,7 +178,7 @@ class MouInvoicesTable extends BaseWidget
                                         return $record->mou?->client?->company_name ?? '';
                                     }
                                     return '';
-                                })(),
+                                })() . ' - ' . $costItem->description . ' - ' . $record->invoice_number,
                                 'cash_reference_id' => $cashReferenceId,
                                 'mou_id' => $record->mou_id,
                                 'coa_id' => $costItem->coa_id,

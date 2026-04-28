@@ -523,7 +523,7 @@ class InvoiceResource extends Resource
                     $costListInvoices = $record->costListInvoices()->get();
                     foreach ($costListInvoices as $costItem) {
                         $cashReport = CashReport::create([
-                            'description' => 'Pembayaran Invoice ' . $record->invoice_number . ' - ' . $costItem->description . ' - ' . ($record->mou?->client?->company_name ?? ''),
+                            'description' => ($record->client?->company_name ?? $record->mou?->client?->company_name ?? $record->memo?->client?->company_name ?? '') . ' - ' . $costItem->description . ' - ' . $record->invoice_number,
                             'cash_reference_id' => $cashReferenceId,
                             'mou_id' => $record->mou_id,
                             'coa_id' => $costItem->coa_id,
