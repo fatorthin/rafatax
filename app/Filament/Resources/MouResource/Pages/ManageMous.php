@@ -16,6 +16,44 @@ class ManageMous extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('export_rekap_payment_piutang')
+                ->label('Rekap Payment & Piutang')
+                ->icon('heroicon-o-clipboard-document-list')
+                ->color('danger')
+                ->modalHeading('Export Rekap Payment & Piutang Klien')
+                ->modalDescription('Export data rekap payment dan piutang klien per tanggal yang dipilih.')
+                ->modalSubmitActionLabel('Export Excel')
+                ->form([
+                    \Filament\Forms\Components\DatePicker::make('cut_off_date')
+                        ->label('Tanggal Cut-off')
+                        ->required()
+                        ->default(now()->toDateString())
+                        ->native(false)
+                        ->displayFormat('d/m/Y')
+                        ->helperText('Data invoice akan diambil sampai tanggal ini.'),
+                    \Filament\Forms\Components\Select::make('type')
+                        ->label('Tipe MoU (Opsional)')
+                        ->options([
+                            'pt' => 'PT',
+                            'kkp' => 'KKP',
+                        ])
+                        ->placeholder('Semua Tipe'),
+                    \Filament\Forms\Components\Select::make('category_mou_id')
+                        ->label('Kategori/Case MoU (Opsional)')
+                        ->options(\App\Models\CategoryMou::pluck('name', 'id'))
+                        ->placeholder('Semua Kategori')
+                        ->searchable(),
+                    \Filament\Forms\Components\Select::make('status')
+                        ->label('Status MoU (Opsional)')
+                        ->options([
+                            'approved' => 'Approved',
+                            'unapproved' => 'Unapproved',
+                        ])
+                        ->placeholder('Semua Status'),
+                ])
+                ->action(function (array $data) {
+                    return static::exportRekapPaymentPiutang($data);
+                }),
             Actions\Action::make('export_mou_bulanan_spt')
                 ->label('Export MoU (Bulanan & SPT)')
                 ->icon('heroicon-o-table-cells')
@@ -232,5 +270,10 @@ class ManageMous extends ManageRecords
         return [
             MouListStatsOverview::class,
         ];
+    }
+
+    protected static function exportRekapPaymentPiutang(array $data)
+    {
+        return \App\Helpers\RekapPaymentExporter::export($data);
     }
 }

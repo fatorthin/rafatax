@@ -17,7 +17,7 @@ class InvoiceStats extends BaseWidget
     protected static ?string $widgetId = 'invoice-stats';
 
     // Filter properties
-    public $tableFilters = [];
+    public array $tableFilters = [];
 
     protected static ?string $pollingInterval = null;
 
@@ -42,7 +42,7 @@ class InvoiceStats extends BaseWidget
     }
 
     #[On('filament.table.filtered')]
-    public function handleTableFiltered($data): void
+    public function handleTableFiltered(mixed $data): void
     {
         // Update filters when table is filtered
         $this->tableFilters = $data ?? [];
