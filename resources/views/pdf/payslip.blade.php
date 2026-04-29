@@ -146,15 +146,15 @@
         <table>
             <tr>
                 <td>Nama</td>
-                <td>: {{ optional($detail->staff)->name }}</td>
+                <td>: {{ $detail->staff_id ? optional($detail->staff)->name : $detail->nama_non_staff }}</td>
             </tr>
             <tr>
                 <td>Jabatan</td>
-                <td>: {{ optional(optional($detail->staff)->positionReference)->name ?? '-' }}</td>
+                <td>: {{ $detail->staff_id ? (optional(optional($detail->staff)->positionReference)->name ?? '-') : 'Non Staff' }}</td>
             </tr>
             <tr>
                 <td>TMT Training</td>
-                <td>: {{ date('d-m-Y', strtotime($detail->staff->tmt_training)) }}</td>
+                <td>: {{ $detail->staff_id && $detail->staff->tmt_training ? date('d-m-Y', strtotime($detail->staff->tmt_training)) : '-' }}</td>
             </tr>
         </table>
     </div>

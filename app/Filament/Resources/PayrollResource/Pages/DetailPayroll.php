@@ -312,6 +312,7 @@ class DetailPayroll extends Page implements HasTable
 
                 TextColumn::make('staff.name')
                     ->label('Nama Staff')
+                    ->getStateUsing(fn($record) => $record->staff_id ? $record->staff->name : $record->nama_non_staff)
                     ->sortable()
                     ->searchable(),
 
@@ -475,6 +476,7 @@ class DetailPayroll extends Page implements HasTable
             ->paginated(false)
             ->striped()
             ->actions([
+                \Filament\Tables\Actions\DeleteAction::make(),
                 \Filament\Tables\Actions\Action::make('edit')
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')
@@ -666,7 +668,7 @@ class DetailPayroll extends Page implements HasTable
                             }),
                     ])
 
-                    ->modalHeading(fn($record) => "Edit Payroll Gaji - {$record->staff->name}")
+                    ->modalHeading(fn($record) => "Edit Payroll Gaji - " . ($record->staff_id ? $record->staff->name : $record->nama_non_staff))
                     ->modalSubmitActionLabel('Simpan')
                     ->action(function ($record, array $data) {
                         $record->update($data);
@@ -731,18 +733,18 @@ class DetailPayroll extends Page implements HasTable
                     ->color('info')
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Slip Gaji PDF via WhatsApp')
-                    ->modalDescription(fn($record) => "Apakah Anda yakin ingin mengirim slip gaji PDF untuk {$record->staff->name} ke nomor {$record->staff->phone}?")
+                    ->modalDescription(fn($record) => "Apakah Anda yakin ingin mengirim slip gaji PDF untuk " . ($record->staff_id ? $record->staff->name : $record->nama_non_staff) . " ke nomor " . ($record->staff_id ? $record->staff->phone : $record->no_wa_non_staff) . "?")
                     ->modalSubmitActionLabel('Kirim PDF')
                     ->action(function ($record) {
                         SendPayslipPdf::dispatch($record->id);
 
                         Notification::make()
                             ->title('Pengiriman Dijadwalkan')
-                            ->body("Slip gaji PDF untuk {$record->staff->name} akan dikirim via WhatsApp di background.")
+                            ->body("Slip gaji PDF untuk " . ($record->staff_id ? $record->staff->name : $record->nama_non_staff) . " akan dikirim via WhatsApp di background.")
                             ->success()
                             ->send();
                     })
-                    ->visible(fn($record) => !empty($record->staff->phone)),
+                    ->visible(fn($record) => !empty($record->staff_id ? $record->staff->phone : $record->no_wa_non_staff)),
             ], position: ActionsPosition::BeforeCells);
     }
 }
