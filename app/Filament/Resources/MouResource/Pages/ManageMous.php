@@ -42,6 +42,7 @@ class ManageMous extends ManageRecords
                         ->label('Kategori/Case MoU (Opsional)')
                         ->options(\App\Models\CategoryMou::pluck('name', 'id'))
                         ->placeholder('Semua Kategori')
+                        ->multiple()
                         ->searchable(),
                     \Filament\Forms\Components\Select::make('status')
                         ->label('Status MoU (Opsional)')

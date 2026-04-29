@@ -23,7 +23,7 @@ class RekapPaymentExporter
             $query->where('type', $data['type']);
         }
         if (!empty($data['category_mou_id'])) {
-            $query->where('category_mou_id', $data['category_mou_id']);
+            $query->whereIn('category_mou_id', (array) $data['category_mou_id']);
         }
         if (!empty($data['status'])) {
             $query->where('status', $data['status']);
