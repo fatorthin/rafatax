@@ -445,6 +445,7 @@ class InvoiceResource extends Resource
                 ->options([
                     'unpaid' => 'Unpaid',
                     'paid' => 'Paid',
+                    'overdue' => 'Overdue',
                 ]),
         ];
     }
