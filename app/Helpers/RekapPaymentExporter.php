@@ -253,10 +253,14 @@ class RekapPaymentExporter
 
                 // Status colors
                 foreach ($statusStyles as $color => $cells) {
-                    foreach (array_chunk($cells, 50) as $chunk) {
-                        $range = implode(',', $chunk);
-                        $sheet->getStyle($range)->getFont()->getColor()->setRGB($color);
-                        $sheet->getStyle($range)->getFont()->setBold(true);
+                    $styleArray = [
+                        'font' => [
+                            'color' => ['rgb' => $color],
+                            'bold' => true,
+                        ],
+                    ];
+                    foreach ($cells as $cell) {
+                        $sheet->getStyle($cell)->applyFromArray($styleArray);
                     }
                 }
             }
