@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('payroll_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('payroll_id')->constrained('payrolls');
-            $table->foreignId('staff_id')->constrained('staff');
+            $table->foreignId('staff_id')->constrained('staff')->nullable();
             $table->double('salary');
             $table->double('bonus_position')->default(0);
             $table->double('bonus_competency')->default(0);
@@ -31,6 +31,8 @@ return new class extends Migration
             $table->double('cut_lain')->default(0);
             $table->double('cut_hutang')->default(0);
             $table->double('overtime_multiplier')->default(0);
+            $table->string('nama_non_staff')->nullable();
+            $table->string('no_wa_non_staff')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });

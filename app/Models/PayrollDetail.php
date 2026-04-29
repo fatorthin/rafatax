@@ -29,7 +29,9 @@ class PayrollDetail extends Model
         'cut_lain',
         'cut_hutang',
         'bonus_lain',
-        'overtime_multiplier'
+        'overtime_multiplier',
+        'nama_non_staff',
+        'no_wa_non_staff'
     ];
 
     public function payroll()

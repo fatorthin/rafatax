@@ -8,7 +8,6 @@ use Filament\Actions;
 use App\Models\Payroll;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Illuminate\Bus\Batch;
 use Filament\Tables\Table;
 use App\Jobs\SendPayslipPdf;
 use App\Models\PayrollDetail;
@@ -17,8 +16,6 @@ use App\Models\StaffCompetency;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Log;
 use Filament\Forms\Components\Fieldset;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
@@ -145,6 +142,52 @@ class DetailPayroll extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('add_non_staff')
+                ->label('Tambah Non Staff')
+                ->icon('heroicon-o-user-plus')
+                ->color('warning')
+                ->form([
+                    TextInput::make('nama_non_staff')
+                        ->label('Nama Non Staff')
+                        ->required(),
+                    TextInput::make('no_wa_non_staff')
+                        ->label('No. WA Non Staff')
+                        ->tel()
+                        ->required(),
+                    TextInput::make('salary')
+                        ->label('Salary')
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    PayrollDetail::create([
+                        'payroll_id' => $this->record->id,
+                        'nama_non_staff' => $data['nama_non_staff'],
+                        'no_wa_non_staff' => $data['no_wa_non_staff'],
+                        'salary' => $data['salary'],
+                        'bonus_position' => 0,
+                        'bonus_competency' => 0,
+                        'overtime_count' => 0,
+                        'overtime_multiplier' => 0,
+                        'visit_solo_count' => 0,
+                        'visit_luar_solo_count' => 0,
+                        'sick_leave_count' => 0,
+                        'halfday_count' => 0,
+                        'leave_count' => 0,
+                        'cuti_count' => 0,
+                        'cut_bpjs_kesehatan' => 0,
+                        'cut_bpjs_ketenagakerjaan' => 0,
+                        'cut_lain' => 0,
+                        'cut_hutang' => 0,
+                        'bonus_lain' => 0,
+                    ]);
+
+                    Notification::make()
+                        ->title('Data non staff berhasil ditambahkan')
+                        ->success()
+                        ->send();
+                }),
             Actions\Action::make('export_excel')
                 ->label('Export Excel')
                 ->icon('heroicon-o-arrow-down-tray')

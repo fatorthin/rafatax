@@ -39,7 +39,7 @@ class PayrollResource extends Resource
                             ->required()
                             ->dehydrated(false)
                             ->reactive()
-                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?\App\Models\Payroll $record) {
+                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?Payroll $record) {
                                 if ($record && $record->payroll_date) {
                                     $set('payroll_month', (int) \Carbon\Carbon::parse($record->payroll_date)->format('m'));
                                 } elseif (empty($state)) {
@@ -57,7 +57,7 @@ class PayrollResource extends Resource
                             ->required()
                             ->dehydrated(false)
                             ->reactive()
-                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?\App\Models\Payroll $record) {
+                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?Payroll $record) {
                                 if ($record && $record->payroll_date) {
                                     $set('payroll_year', (int) \Carbon\Carbon::parse($record->payroll_date)->format('Y'));
                                 } elseif (empty($state)) {
@@ -72,7 +72,7 @@ class PayrollResource extends Resource
                         Forms\Components\Hidden::make('payroll_date')
                             ->required()
                             ->dehydrated(true)
-                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?\App\Models\Payroll $record, \Filament\Forms\Get $get) {
+                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?Payroll $record, \Filament\Forms\Get $get) {
                                 if ($record && $record->payroll_date) {
                                     $set('payroll_date', \Carbon\Carbon::parse($record->payroll_date)->format('Y-m-01'));
                                     return;
