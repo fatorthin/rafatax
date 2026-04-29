@@ -40,7 +40,7 @@ class RekapPaymentExporter
             ->groupBy('mou_id');
 
         $cutOffFormatted = Carbon::parse($cutOffDate)->locale('id')->translatedFormat('d F Y');
-        $lastCol = 'R'; // 18 columns A-R
+        $lastCol = 'T'; // 20 columns A-T
 
         return response()->streamDownload(function () use ($mous, $invoices, $cutOffFormatted, $lastCol) {
             $spreadsheet = new Spreadsheet();
@@ -68,17 +68,19 @@ class RekapPaymentExporter
                 'E' => 'Case / Kategori MoU',
                 'F' => 'No. MoU',
                 'G' => 'Deskripsi MoU',
-                'H' => 'Nominal Bulanan',
-                'I' => 'Nominal Tahunan',
-                'J' => 'Nominal Case',
-                'K' => 'Total Nominal MoU',
-                'L' => 'No. Invoice',
-                'M' => 'Deskripsi Invoice',
-                'N' => 'Tgl Invoice',
-                'O' => 'Due Date',
-                'P' => 'Status Invoice',
-                'Q' => 'Nominal Invoice',
-                'R' => 'Piutang (Sisa)',
+                'H' => 'Status MoU',
+                'I' => 'Nominal Bulanan',
+                'J' => 'Nominal Tahunan',
+                'K' => 'Nominal Case',
+                'L' => 'Total Nominal MoU',
+                'M' => 'No. Invoice',
+                'N' => 'Deskripsi Invoice',
+                'O' => 'Tgl Invoice',
+                'P' => 'Due Date',
+                'Q' => 'Status Invoice',
+                'R' => 'Tanggal Transfer',
+                'S' => 'Nominal Invoice',
+                'T' => 'Piutang (Sisa)',
             ];
 
             foreach ($headers as $col => $label) {
@@ -102,7 +104,7 @@ class RekapPaymentExporter
             $gtPiutang = 0;
 
             // MoU columns that get merged when there are multiple invoices
-            $mouCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'R'];
+            $mouCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'T'];
 
             foreach ($mous as $mou) {
                 $mouInvoices = $invoices->get($mou->id, collect());
@@ -142,25 +144,27 @@ class RekapPaymentExporter
                 $sheet->setCellValue("E{$row}", $mou->categoryMou->name ?? '-');
                 $sheet->setCellValue("F{$row}", $mou->mou_number ?? '-');
                 $sheet->setCellValue("G{$row}", $mou->description ?? '-');
-                $sheet->setCellValue("H{$row}", $nomBulanan);
-                $sheet->setCellValue("I{$row}", $nomTahunan);
-                $sheet->setCellValue("J{$row}", $nomCase);
-                $sheet->setCellValue("K{$row}", $totalMou);
+                $sheet->setCellValue("H{$row}", ucfirst($mou->status ?? '-'));
+                $sheet->setCellValue("I{$row}", $nomBulanan);
+                $sheet->setCellValue("J{$row}", $nomTahunan);
+                $sheet->setCellValue("K{$row}", $nomCase);
+                $sheet->setCellValue("L{$row}", $totalMou);
 
-                foreach (['H', 'I', 'J', 'K'] as $c) {
+                foreach (['I', 'J', 'K', 'L'] as $c) {
                     $sheet->getStyle("{$c}{$row}")->getNumberFormat()->setFormatCode($cf);
                 }
 
                 if ($invCount === 0) {
-                    $sheet->setCellValue("L{$row}", '-');
                     $sheet->setCellValue("M{$row}", '-');
                     $sheet->setCellValue("N{$row}", '-');
                     $sheet->setCellValue("O{$row}", '-');
-                    $sheet->setCellValue("P{$row}", 'Belum ada invoice');
-                    $sheet->setCellValue("Q{$row}", 0);
-                    $sheet->getStyle("Q{$row}")->getNumberFormat()->setFormatCode($cf);
-                    $sheet->setCellValue("R{$row}", $piutang);
-                    $sheet->getStyle("R{$row}")->getNumberFormat()->setFormatCode($cf);
+                    $sheet->setCellValue("P{$row}", '-');
+                    $sheet->setCellValue("Q{$row}", 'Belum ada invoice');
+                    $sheet->setCellValue("R{$row}", '-');
+                    $sheet->setCellValue("S{$row}", 0);
+                    $sheet->getStyle("S{$row}")->getNumberFormat()->setFormatCode($cf);
+                    $sheet->setCellValue("T{$row}", $piutang);
+                    $sheet->getStyle("T{$row}")->getNumberFormat()->setFormatCode($cf);
 
                     $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('EBF5FB');
                     $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFont()->setBold(true);
@@ -169,13 +173,14 @@ class RekapPaymentExporter
                     // Write invoice rows
                     foreach ($mouInvoices->values() as $inv) {
                         $invAmt = $inv->costListInvoices->sum('amount');
-                        $sheet->setCellValue("L{$row}", $inv->invoice_number ?? '-');
-                        $sheet->setCellValue("M{$row}", $inv->description ?? '-');
-                        $sheet->setCellValue("N{$row}", $inv->invoice_date ? Carbon::parse($inv->invoice_date)->format('d/m/Y') : '-');
-                        $sheet->setCellValue("O{$row}", $inv->due_date ? Carbon::parse($inv->due_date)->format('d/m/Y') : '-');
-                        $sheet->setCellValue("P{$row}", ucfirst($inv->invoice_status ?? '-'));
-                        $sheet->setCellValue("Q{$row}", $invAmt);
-                        $sheet->getStyle("Q{$row}")->getNumberFormat()->setFormatCode($cf);
+                        $sheet->setCellValue("M{$row}", $inv->invoice_number ?? '-');
+                        $sheet->setCellValue("N{$row}", $inv->description ?? '-');
+                        $sheet->setCellValue("O{$row}", $inv->invoice_date ? Carbon::parse($inv->invoice_date)->format('d/m/Y') : '-');
+                        $sheet->setCellValue("P{$row}", $inv->due_date ? Carbon::parse($inv->due_date)->format('d/m/Y') : '-');
+                        $sheet->setCellValue("Q{$row}", ucfirst($inv->invoice_status ?? '-'));
+                        $sheet->setCellValue("R{$row}", $inv->tgl_transfer ? Carbon::parse($inv->tgl_transfer)->format('d/m/Y') : '-');
+                        $sheet->setCellValue("S{$row}", $invAmt);
+                        $sheet->getStyle("S{$row}")->getNumberFormat()->setFormatCode($cf);
 
                         $sc = match ($inv->invoice_status) {
                             'paid' => '27AE60',
@@ -183,16 +188,16 @@ class RekapPaymentExporter
                             'overdue' => 'E74C3C',
                             default => '7F8C8D',
                         };
-                        $sheet->getStyle("P{$row}")->getFont()->getColor()->setRGB($sc);
-                        $sheet->getStyle("P{$row}")->getFont()->setBold(true);
+                        $sheet->getStyle("Q{$row}")->getFont()->getColor()->setRGB($sc);
+                        $sheet->getStyle("Q{$row}")->getFont()->setBold(true);
                         $row++;
                     }
 
                     $endRow = $row - 1;
 
                     // Piutang
-                    $sheet->setCellValue("R{$startRow}", $piutang);
-                    $sheet->getStyle("R{$startRow}")->getNumberFormat()->setFormatCode($cf);
+                    $sheet->setCellValue("T{$startRow}", $piutang);
+                    $sheet->getStyle("T{$startRow}")->getNumberFormat()->setFormatCode($cf);
 
                     // Merge MoU columns
                     if ($invCount > 1) {
@@ -202,12 +207,12 @@ class RekapPaymentExporter
                     }
 
                     // Style MoU columns
-                    $sheet->getStyle("A{$startRow}:K{$endRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('EBF5FB');
-                    $sheet->getStyle("A{$startRow}:K{$endRow}")->getFont()->setBold(true);
+                    $sheet->getStyle("A{$startRow}:L{$endRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('EBF5FB');
+                    $sheet->getStyle("A{$startRow}:L{$endRow}")->getFont()->setBold(true);
 
                     // Piutang style
-                    $sheet->getStyle("R{$startRow}:R{$endRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FDEDEC');
-                    $sheet->getStyle("R{$startRow}:R{$endRow}")->getFont()->setBold(true);
+                    $sheet->getStyle("T{$startRow}:T{$endRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FDEDEC');
+                    $sheet->getStyle("T{$startRow}:T{$endRow}")->getFont()->setBold(true);
                 }
 
                 $sheet->getStyle("A{$startRow}:{$lastCol}" . ($row - 1))->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
@@ -220,14 +225,14 @@ class RekapPaymentExporter
             $sheet->getStyle("G{$tr}")->getFont()->setBold(true)->setSize(11);
             $sheet->getStyle("G{$tr}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
-            $sheet->setCellValue("H{$tr}", $gtBulanan);
-            $sheet->setCellValue("I{$tr}", $gtTahunan);
-            $sheet->setCellValue("J{$tr}", $gtCase);
-            $sheet->setCellValue("K{$tr}", $gtMou);
-            $sheet->setCellValue("Q{$tr}", $gtInvoice);
-            $sheet->setCellValue("R{$tr}", $gtPiutang);
+            $sheet->setCellValue("I{$tr}", $gtBulanan);
+            $sheet->setCellValue("J{$tr}", $gtTahunan);
+            $sheet->setCellValue("K{$tr}", $gtCase);
+            $sheet->setCellValue("L{$tr}", $gtMou);
+            $sheet->setCellValue("S{$tr}", $gtInvoice);
+            $sheet->setCellValue("T{$tr}", $gtPiutang);
 
-            foreach (['H', 'I', 'J', 'K', 'Q', 'R'] as $c) {
+            foreach (['I', 'J', 'K', 'L', 'S', 'T'] as $c) {
                 $sheet->getStyle("{$c}{$tr}")->getNumberFormat()->setFormatCode($cf);
             }
 
@@ -261,8 +266,8 @@ class RekapPaymentExporter
             $sheet->getColumnDimension('B')->setAutoSize(false)->setWidth(30);
             $sheet->getColumnDimension('F')->setAutoSize(false)->setWidth(25);
             $sheet->getColumnDimension('G')->setAutoSize(false)->setWidth(25);
-            $sheet->getColumnDimension('L')->setAutoSize(false)->setWidth(25);
             $sheet->getColumnDimension('M')->setAutoSize(false)->setWidth(25);
+            $sheet->getColumnDimension('N')->setAutoSize(false)->setWidth(25);
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
