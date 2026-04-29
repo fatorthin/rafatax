@@ -103,8 +103,16 @@ class RekapPaymentExporter
             $gtPaid = 0;
             $gtPiutang = 0;
 
-            // MoU columns that get merged when there are multiple invoices
+            $excelData = [];
+            $mouMergeRanges = [];
+            $mouRows = [];
+            $piutangRows = [];
+            $statusStyles = [];
             $mouCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'T'];
+
+            // Fast sum helper to avoid repeated sum calls on relationships
+            // But cost_lists and costListInvoices are collections in memory so sum() is relatively fast.
+            // Still, doing it once is better.
 
             foreach ($mous as $mou) {
                 $mouInvoices = $invoices->get($mou->id, collect());
@@ -119,8 +127,11 @@ class RekapPaymentExporter
                 $totalInvAll = 0;
                 foreach ($mouInvoices as $inv) {
                     $amt = $inv->costListInvoices->sum('amount');
+                    $inv->cached_amount = $amt; // Cache to avoid recalculating
                     $totalInvAll += $amt;
-                    if ($inv->invoice_status === 'paid') $totalInvPaid += $amt;
+                    if ($inv->invoice_status === 'paid') {
+                        $totalInvPaid += $amt;
+                    }
                 }
 
                 $piutang = max($totalMou - $totalInvPaid, 0);
@@ -136,51 +147,47 @@ class RekapPaymentExporter
                 $startRow = $row;
                 $invCount = $mouInvoices->count();
 
-                // MoU data
-                $sheet->setCellValue("A{$row}", $no);
-                $sheet->setCellValue("B{$row}", $mou->client->company_name ?? '-');
-                $sheet->setCellValue("C{$row}", $mou->client->jenis_wp ? ucfirst($mou->client->jenis_wp) : ($mou->client->type ?? '-'));
-                $sheet->setCellValue("D{$row}", strtoupper($mou->type ?? '-'));
-                $sheet->setCellValue("E{$row}", $mou->categoryMou->name ?? '-');
-                $sheet->setCellValue("F{$row}", $mou->mou_number ?? '-');
-                $sheet->setCellValue("G{$row}", $mou->description ?? '-');
-                $sheet->setCellValue("H{$row}", ucfirst($mou->status ?? '-'));
-                $sheet->setCellValue("I{$row}", $nomBulanan);
-                $sheet->setCellValue("J{$row}", $nomTahunan);
-                $sheet->setCellValue("K{$row}", $nomCase);
-                $sheet->setCellValue("L{$row}", $totalMou);
-
-                foreach (['I', 'J', 'K', 'L'] as $c) {
-                    $sheet->getStyle("{$c}{$row}")->getNumberFormat()->setFormatCode($cf);
-                }
+                $baseData = [
+                    $no,
+                    $mou->client->company_name ?? '-',
+                    $mou->client->jenis_wp ? ucfirst($mou->client->jenis_wp) : ($mou->client->type ?? '-'),
+                    strtoupper($mou->type ?? '-'),
+                    $mou->categoryMou->name ?? '-',
+                    $mou->mou_number ?? '-',
+                    $mou->description ?? '-',
+                    ucfirst($mou->status ?? '-'),
+                    $nomBulanan,
+                    $nomTahunan,
+                    $nomCase,
+                    $totalMou
+                ];
 
                 if ($invCount === 0) {
-                    $sheet->setCellValue("M{$row}", '-');
-                    $sheet->setCellValue("N{$row}", '-');
-                    $sheet->setCellValue("O{$row}", '-');
-                    $sheet->setCellValue("P{$row}", '-');
-                    $sheet->setCellValue("Q{$row}", 'Belum ada invoice');
-                    $sheet->setCellValue("R{$row}", '-');
-                    $sheet->setCellValue("S{$row}", 0);
-                    $sheet->getStyle("S{$row}")->getNumberFormat()->setFormatCode($cf);
-                    $sheet->setCellValue("T{$row}", $piutang);
-                    $sheet->getStyle("T{$row}")->getNumberFormat()->setFormatCode($cf);
-
-                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('EBF5FB');
-                    $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFont()->setBold(true);
+                    $excelData[] = array_merge($baseData, [
+                        '-', '-', '-', '-', 'Belum ada invoice', '-', 0, $piutang
+                    ]);
+                    $mouRows[] = "A{$row}:L{$row}";
+                    $piutangRows[] = "T{$row}:T{$row}";
                     $row++;
                 } else {
-                    // Write invoice rows
+                    $first = true;
                     foreach ($mouInvoices->values() as $inv) {
-                        $invAmt = $inv->costListInvoices->sum('amount');
-                        $sheet->setCellValue("M{$row}", $inv->invoice_number ?? '-');
-                        $sheet->setCellValue("N{$row}", $inv->description ?? '-');
-                        $sheet->setCellValue("O{$row}", $inv->invoice_date ? Carbon::parse($inv->invoice_date)->format('d/m/Y') : '-');
-                        $sheet->setCellValue("P{$row}", $inv->due_date ? Carbon::parse($inv->due_date)->format('d/m/Y') : '-');
-                        $sheet->setCellValue("Q{$row}", ucfirst($inv->invoice_status ?? '-'));
-                        $sheet->setCellValue("R{$row}", $inv->tgl_transfer ? Carbon::parse($inv->tgl_transfer)->format('d/m/Y') : '-');
-                        $sheet->setCellValue("S{$row}", $invAmt);
-                        $sheet->getStyle("S{$row}")->getNumberFormat()->setFormatCode($cf);
+                        $invData = [
+                            $inv->invoice_number ?? '-',
+                            $inv->description ?? '-',
+                            $inv->invoice_date ? Carbon::parse($inv->invoice_date)->format('d/m/Y') : '-',
+                            $inv->due_date ? Carbon::parse($inv->due_date)->format('d/m/Y') : '-',
+                            ucfirst($inv->invoice_status ?? '-'),
+                            $inv->tgl_transfer ? Carbon::parse($inv->tgl_transfer)->format('d/m/Y') : '-',
+                            $inv->cached_amount
+                        ];
+
+                        if ($first) {
+                            $excelData[] = array_merge($baseData, $invData, [$piutang]);
+                            $first = false;
+                        } else {
+                            $excelData[] = array_merge(array_fill(0, 12, null), $invData, [null]);
+                        }
 
                         $sc = match ($inv->invoice_status) {
                             'paid' => '27AE60',
@@ -188,35 +195,70 @@ class RekapPaymentExporter
                             'overdue' => 'E74C3C',
                             default => '7F8C8D',
                         };
-                        $sheet->getStyle("Q{$row}")->getFont()->getColor()->setRGB($sc);
-                        $sheet->getStyle("Q{$row}")->getFont()->setBold(true);
+                        $statusStyles[$sc][] = "Q{$row}";
                         $row++;
                     }
 
                     $endRow = $row - 1;
-
-                    // Piutang
-                    $sheet->setCellValue("T{$startRow}", $piutang);
-                    $sheet->getStyle("T{$startRow}")->getNumberFormat()->setFormatCode($cf);
-
-                    // Merge MoU columns
                     if ($invCount > 1) {
                         foreach ($mouCols as $c) {
-                            $sheet->mergeCells("{$c}{$startRow}:{$c}{$endRow}");
+                            $mouMergeRanges[] = "{$c}{$startRow}:{$c}{$endRow}";
                         }
                     }
 
-                    // Style MoU columns
-                    $sheet->getStyle("A{$startRow}:L{$endRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('EBF5FB');
-                    $sheet->getStyle("A{$startRow}:L{$endRow}")->getFont()->setBold(true);
-
-                    // Piutang style
-                    $sheet->getStyle("T{$startRow}:T{$endRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FDEDEC');
-                    $sheet->getStyle("T{$startRow}:T{$endRow}")->getFont()->setBold(true);
+                    $mouRows[] = "A{$startRow}:L{$endRow}";
+                    $piutangRows[] = "T{$startRow}:T{$endRow}";
                 }
 
-                $sheet->getStyle("A{$startRow}:{$lastCol}" . ($row - 1))->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
                 $no++;
+            }
+
+            // Write all data at once using bulk insertion
+            if (!empty($excelData)) {
+                $sheet->fromArray($excelData, null, 'A5');
+            }
+
+            // Apply batch styling
+            $dataEndRow = $row - 1;
+            if ($dataEndRow >= 5) {
+                // Set alignment for all rows
+                $sheet->getStyle("A5:T{$dataEndRow}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+                
+                // Number formatting for entire columns
+                $sheet->getStyle("I5:L{$dataEndRow}")->getNumberFormat()->setFormatCode($cf);
+                $sheet->getStyle("S5:T{$dataEndRow}")->getNumberFormat()->setFormatCode($cf);
+
+                // Merges
+                foreach ($mouMergeRanges as $mr) {
+                    $sheet->mergeCells($mr);
+                }
+
+                // MoU Block Styles
+                $mouStyleArray = [
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EBF5FB']],
+                    'font' => ['bold' => true],
+                ];
+                foreach ($mouRows as $mr) {
+                    $sheet->getStyle($mr)->applyFromArray($mouStyleArray);
+                }
+
+                // Piutang Block Styles
+                $piutangStyleArray = [
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDEDEC']],
+                    'font' => ['bold' => true],
+                ];
+                foreach ($piutangRows as $pr) {
+                    $sheet->getStyle($pr)->applyFromArray($piutangStyleArray);
+                }
+
+                // Status colors
+                foreach ($statusStyles as $color => $cells) {
+                    foreach (array_chunk($cells, 50) as $chunk) {
+                        $range = implode(',', $chunk);
+                        $sheet->getStyle($range)->getFont()->getColor()->setRGB($color);
+                        $sheet->getStyle($range)->getFont()->setBold(true);
+                    }
+                }
             }
 
             // ─── GRAND TOTAL ───
