@@ -15,32 +15,32 @@ class InvoiceStats extends BaseWidget
 {
     // Set widget ID for targeting with events
     protected static ?string $widgetId = 'invoice-stats';
-    
+
     // Filter properties
     public $tableFilters = [];
-    
+
     protected static ?string $pollingInterval = null;
-    
+
     protected function getColumns(): int
     {
         return 4;
     }
-    
+
     public function mount(): void
     {
         // Get filters from URL on initial load
         $this->tableFilters = request('tableFilters', []);
-        
+
         // Check if URL is clean (no query parameters)
         $fullUrl = request()->fullUrl();
         $baseUrl = url()->current();
-        
+
         // If URL is base URL with no parameters, reset filters
         if ($fullUrl === $baseUrl) {
             $this->tableFilters = [];
         }
     }
-    
+
     #[On('filament.table.filtered')]
     public function handleTableFiltered($data): void
     {
@@ -48,7 +48,7 @@ class InvoiceStats extends BaseWidget
         $this->tableFilters = $data ?? [];
         $this->dispatch('refresh');
     }
-    
+
     #[On('filament.widget-refresh')]
     public function refresh(?array $params = null): void
     {
@@ -58,18 +58,18 @@ class InvoiceStats extends BaseWidget
             // If no filters provided, get from request
             $this->tableFilters = request('tableFilters', []);
         }
-        
+
         // Check if URL has no parameters - then clear filters
         $fullUrl = request()->fullUrl();
         $baseUrl = url()->current();
-        
+
         if ($fullUrl === $baseUrl) {
             $this->tableFilters = [];
         }
-        
+
         $this->dispatch('refresh');
     }
-    
+
     #[On('filter-reset')]
     public function handleFilterReset(): void
     {
@@ -77,42 +77,42 @@ class InvoiceStats extends BaseWidget
         $this->tableFilters = [];
         $this->dispatch('refresh');
     }
-    
+
     protected function getStats(): array
     {
         try {
             // Start with a base query
             $query = Invoice::query();
-            
+
             // Apply filters to query if there are any
             if (!empty($this->tableFilters)) {
                 // Date range filter (combined year and month)
                 if (isset($this->tableFilters['date_range'])) {
                     $dateRange = $this->tableFilters['date_range'];
-                    
+
                     if (isset($dateRange['year']) && !empty($dateRange['year'])) {
                         $year = $dateRange['year'];
                         $query->whereYear('invoice_date', $year);
                     }
-                    
+
                     if (isset($dateRange['month']) && !empty($dateRange['month'])) {
                         $month = $dateRange['month'];
                         $query->whereMonth('invoice_date', $month);
                     }
                 }
-                
+
                 // Backwards compatibility for separate year filter
                 elseif (isset($this->tableFilters['year']) && !empty($this->tableFilters['year']['value'])) {
                     $year = $this->tableFilters['year']['value'];
                     $query->whereYear('invoice_date', $year);
                 }
-                
+
                 // Backwards compatibility for separate month filter
                 if (isset($this->tableFilters['month']) && !empty($this->tableFilters['month']['value'])) {
                     $month = $this->tableFilters['month']['value'];
                     $query->whereMonth('invoice_date', $month);
                 }
-                
+
                 // Client filter
                 if (isset($this->tableFilters['client']) && !empty($this->tableFilters['client']['value'])) {
                     $client = $this->tableFilters['client']['value'];
@@ -122,7 +122,7 @@ class InvoiceStats extends BaseWidget
                         });
                     });
                 }
-                
+
                 // Type filter
                 if (isset($this->tableFilters['type']) && !empty($this->tableFilters['type']['value'])) {
                     $type = $this->tableFilters['type']['value'];
@@ -130,39 +130,38 @@ class InvoiceStats extends BaseWidget
                         $q->where('type', $type);
                     });
                 }
-                
+
                 // Status filter - only apply this to the main query if it's not related to the widgets we're showing
                 if (isset($this->tableFilters['invoice_status']) && !empty($this->tableFilters['invoice_status']['value'])) {
                     $status = $this->tableFilters['invoice_status']['value'];
                     $query->where('invoice_status', $status);
                 }
             }
-            
+
             // Clone the base query for different stats
             $totalQuery = clone $query;
             $paidQuery = clone $query;
             $unpaidQuery = clone $query;
             $overdueQuery = clone $query;
-            
+
             // Get total invoices count
             $totalInvoices = $totalQuery->count();
-            
+
             // Get paid invoices count
             $paidInvoices = $paidQuery->where('invoice_status', 'paid')->count();
-            
+
             // Get unpaid invoices count
             $unpaidInvoices = $unpaidQuery->where('invoice_status', 'unpaid')->count();
-            
-            // Get overdue invoices count (due date has passed and still unpaid)
+
+            // Get overdue invoices count (status sudah diset 'overdue' oleh cron job)
             $overdueInvoices = $overdueQuery
-                ->where('invoice_status', 'unpaid')
-                ->where('due_date', '<', now()->format('Y-m-d'))
+                ->where('invoice_status', 'overdue')
                 ->count();
-            
+
             // Show icon for filtered data
             $icon = !empty($this->tableFilters) ? 'heroicon-o-funnel' : null;
             $description = !empty($this->tableFilters) ? 'Filtered data' : 'All data';
-            
+
             return [
                 Stat::make('Total Invoices', $totalInvoices)
                     ->icon($icon)
@@ -194,9 +193,9 @@ class InvoiceStats extends BaseWidget
             ];
         }
     }
-    
+
     public static function canView(): bool
     {
         return true;
     }
-} 
+}
