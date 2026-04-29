@@ -18,3 +18,10 @@ Schedule::command('queue:work database --queue=default,whatsapp --stop-when-empt
 // Bersihkan failed jobs lama (lebih dari 7 hari)
 Schedule::command('queue:prune-failed --hours=168')
     ->daily();
+
+// Update status invoice menjadi "overdue" jika due_date sudah lewat dan belum paid
+// Jalan setiap hari jam 00:05 WIB
+Schedule::command('invoices:update-overdue')
+    ->dailyAt('00:05')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/invoice-overdue.log'));

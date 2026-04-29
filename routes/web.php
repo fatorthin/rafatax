@@ -169,3 +169,26 @@ Route::get('/run-queue-worker', function () {
         ], 500);
     }
 });
+
+// Route khusus untuk menjalankan update invoice overdue via HTTP (cron job Hostinger)
+// Akses: https://domain.com/run-invoice-overdue?key=rafatax-secret-worker
+Route::get('/run-invoice-overdue', function () {
+    if (request('key') !== 'rafatax-secret-worker') {
+        abort(403, 'Unauthorized');
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('invoices:update-overdue');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Invoice overdue update executed successfully',
+            'output'  => \Illuminate\Support\Facades\Artisan::output()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
