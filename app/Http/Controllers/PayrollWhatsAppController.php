@@ -46,7 +46,7 @@ class PayrollWhatsAppController extends Controller
                 $name = $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff;
 
                 // 1. Prepare Text Message
-                $message = "📋 *SLIP GAJI RAFATAX*\n\n";
+                $message = "📋 *SLIP GAJI*\n\n";
                 $message .= "👤 Nama: {$name}\n";
                 $message .= "📅 Periode: {$period}\n";
                 $message .= "💰 Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
