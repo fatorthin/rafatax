@@ -178,12 +178,11 @@ class WablasService
 
     public function sendPayslipMessage(string $phone, string $staffName, string $period, string $totalSalary): array
     {
-        $message = "📋 *SLIP GAJI RAFATAX*\n\n";
+        $message = "📋 *SLIP GAJI*\n\n";
         $message .= "👤 Nama: {$staffName}\n";
         $message .= "📅 Periode: {$period}\n";
         $message .= "💰 Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
-        $message .= "Slip gaji detail telah dikirim melalui sistem.\n";
-        $message .= "Terima kasih atas kerja keras Anda! 🙏";
+        $message .= "Terima kasih atas Kerja Cerdas dan Konstribusi anda untuk RAFATax! 🙏";
 
         return $this->sendMessage($phone, $message);
     }
@@ -191,12 +190,12 @@ class WablasService
     public function sendPayslipWithPdf(string $phone, string $staffName, string $period, string $totalSalary, string $pdfPath): array
     {
         // Kirim pesan notifikasi dulu
-        $message = "📋 *SLIP GAJI RAFATAX*\n\n";
+        $message = "📋 *SLIP GAJI*\n\n";
         $message .= "👤 Nama: {$staffName}\n";
         $message .= "📅 Periode: {$period}\n";
         $message .= "💰 Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
-        $message .= "📄 Slip gaji detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
-        $message .= "Terima kasih atas kerja keras Anda! 🙏";
+        $message .= "📄 Detail Slip Gaji dalam bentuk PDF terlampir setelah pesan ini.\n";
+        $message .= "Terima kasih atas Kerja Cerdas dan Konstribusi anda untuk RAFATax! 🙏";
 
         $messageResult = $this->sendMessage($phone, $message);
 
