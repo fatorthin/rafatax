@@ -50,8 +50,8 @@ class PayrollWhatsAppController extends Controller
                 $message .= "👤 Nama: {$name}\n";
                 $message .= "📅 Periode: {$period}\n";
                 $message .= "💰 Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
-                $message .= "📄 Slip gaji detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
-                $message .= "Terima kasih atas kerja keras Anda! 🙏";
+                $message .= "📄 Detail Slip Gaji dalam bentuk PDF terlampir setelah pesan ini.\n";
+                $message .= "Terima kasih atas Kerja Cerdas dan Konstribusi anda untuk RAFATax!🙏";
 
                 $textPayload['data'][] = [
                     'phone' => $phone,
