@@ -72,7 +72,7 @@ class ExportPayrollController extends Controller
 
             $values = [
                 $idx + 1,
-                optional($d->staff)->name,
+                $d->staff_id ? optional($d->staff)->name : $d->nama_non_staff,
                 $d->salary,
                 $d->bonus_position,
                 $d->bonus_competency,
@@ -153,6 +153,6 @@ class ExportPayrollController extends Controller
             'totalGaji' => $totalGaji,
         ])->setPaper('a5', 'portrait');
 
-        return $pdf->download('slip_gaji_' . optional($detail->staff)->name . '_' . str_replace([' ', '/'], '_', optional($detail->payroll)->name) . '.pdf');
+        return $pdf->download('slip_gaji_' . str_replace(' ', '_', $detail->staff_id ? optional($detail->staff)->name : $detail->nama_non_staff) . '_' . str_replace([' ', '/'], '_', optional($detail->payroll)->name) . '.pdf');
     }
 }

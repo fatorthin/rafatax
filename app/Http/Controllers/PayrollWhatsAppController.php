@@ -33,17 +33,21 @@ class PayrollWhatsAppController extends Controller
             }
 
             foreach ($details as $detail) {
-                if (!$detail->staff->phone) {
+                if (!$detail->staff_id && !$detail->no_wa_non_staff) {
+                    continue;
+                }
+                if ($detail->staff_id && !$detail->staff->phone) {
                     continue;
                 }
 
-                $phone = $this->formatPhoneNumber($detail->staff->phone);
+                $phone = $this->formatPhoneNumber($detail->staff_id ? $detail->staff->phone : $detail->no_wa_non_staff);
                 $period = \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F Y');
                 $totalSalary = $this->calculateTotalSalary($detail);
+                $name = $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff;
 
                 // 1. Prepare Text Message
                 $message = "📋 *SLIP GAJI RAFATAX*\n\n";
-                $message .= "👤 Nama: {$detail->staff->name}\n";
+                $message .= "👤 Nama: {$name}\n";
                 $message .= "📅 Periode: {$period}\n";
                 $message .= "💰 Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
                 $message .= "📄 Slip gaji detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
@@ -110,16 +114,24 @@ class PayrollWhatsAppController extends Controller
             Log::info('Starting sendPayslip for detail ID: ' . $detail->id);
 
             // Validasi nomor telepon
-            if (!$detail->staff->phone) {
+            if ($detail->staff_id && !$detail->staff->phone) {
                 Log::warning('No phone number for staff: ' . $detail->staff->name);
                 return response()->json([
                     'success' => false,
                     'message' => 'Nomor telepon staff tidak tersedia'
                 ], 400);
             }
+            if (!$detail->staff_id && !$detail->no_wa_non_staff) {
+                Log::warning('No phone number for non-staff: ' . $detail->nama_non_staff);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor WhatsApp Non Staff tidak tersedia'
+                ], 400);
+            }
 
             // Format nomor telepon
-            $phone = $this->formatPhoneNumber($detail->staff->phone);
+            $phone = $this->formatPhoneNumber($detail->staff_id ? $detail->staff->phone : $detail->no_wa_non_staff);
+            $name = $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff;
 
             // Hitung total gaji
             $totalSalary = $this->calculateTotalSalary($detail);
@@ -130,7 +142,7 @@ class PayrollWhatsAppController extends Controller
             // Kirim pesan WhatsApp
             $result = $this->wablasService->sendPayslipMessage(
                 $phone,
-                $detail->staff->name,
+                $name,
                 $period,
                 $totalSalary
             );
@@ -162,21 +174,29 @@ class PayrollWhatsAppController extends Controller
         try {
             Log::info('Starting sendPayslipWithPdf', [
                 'detail_id' => $detail->id,
-                'staff' => $detail->staff->name
+                'staff' => $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff
             ]);
 
             // Validasi nomor telepon
-            if (!$detail->staff->phone) {
+            if ($detail->staff_id && !$detail->staff->phone) {
                 Log::warning('No phone number', ['staff' => $detail->staff->name]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Nomor telepon staff tidak tersedia'
                 ], 400);
             }
+            if (!$detail->staff_id && !$detail->no_wa_non_staff) {
+                Log::warning('No phone number', ['non-staff' => $detail->nama_non_staff]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor WhatsApp Non Staff tidak tersedia'
+                ], 400);
+            }
 
             // Format nomor telepon
-            $phone = $this->formatPhoneNumber($detail->staff->phone);
-            Log::info('Phone formatted', ['original' => $detail->staff->phone, 'formatted' => $phone]);
+            $phone = $this->formatPhoneNumber($detail->staff_id ? $detail->staff->phone : $detail->no_wa_non_staff);
+            $name = $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff;
+            Log::info('Phone formatted', ['original' => $detail->staff_id ? $detail->staff->phone : $detail->no_wa_non_staff, 'formatted' => $phone]);
 
             // Hitung total gaji
             $totalSalary = $this->calculateTotalSalary($detail);
@@ -205,7 +225,7 @@ class PayrollWhatsAppController extends Controller
             Log::info('Sending to Wablas API...');
             $result = $this->wablasService->sendPayslipWithPdf(
                 $phone,
-                $detail->staff->name,
+                $name,
                 $period,
                 $totalSalary,
                 $pdfPath
@@ -387,7 +407,8 @@ class PayrollWhatsAppController extends Controller
                 'totalGaji' => $totalGaji,
             ])->setPaper('a4', 'portrait');
 
-            $filename = 'Slip_Gaji_' . str_replace(' ', '_', $detail->staff->name) . '_' . \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F_Y') . '.pdf';
+            $name = $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff;
+            $filename = 'Slip_Gaji_' . str_replace(' ', '_', $name) . '_' . \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F_Y') . '.pdf';
 
             return $pdf->download($filename);
         } catch (\Exception $e) {
