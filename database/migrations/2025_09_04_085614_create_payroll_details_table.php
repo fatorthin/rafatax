@@ -32,7 +32,6 @@ return new class extends Migration
             $table->double('cut_hutang')->default(0);
             $table->double('overtime_multiplier')->default(0);
             $table->string('nama_non_staff')->nullable();
-            $table->string('no_wa_non_staff')->nullable();
             $table->softDeletes('deleted_at', precision: 0);
             $table->timestamps();
         });
