@@ -150,10 +150,6 @@ class DetailPayroll extends Page implements HasTable
                     TextInput::make('nama_non_staff')
                         ->label('Nama Non Staff')
                         ->required(),
-                    TextInput::make('no_wa_non_staff')
-                        ->label('No. WA Non Staff')
-                        ->tel()
-                        ->required(),
                     TextInput::make('salary')
                         ->label('Salary')
                         ->numeric()
@@ -164,7 +160,6 @@ class DetailPayroll extends Page implements HasTable
                     PayrollDetail::create([
                         'payroll_id' => $this->record->id,
                         'nama_non_staff' => $data['nama_non_staff'],
-                        'no_wa_non_staff' => $data['no_wa_non_staff'],
                         'salary' => $data['salary'],
                         'bonus_position' => 0,
                         'bonus_competency' => 0,
