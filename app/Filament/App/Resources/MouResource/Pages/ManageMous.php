@@ -25,13 +25,18 @@ class ManageMous extends ManageRecords
                 ->modalDescription('Export data rekap payment dan piutang klien per tanggal yang dipilih.')
                 ->modalSubmitActionLabel('Export Excel')
                 ->form([
-                    \Filament\Forms\Components\DatePicker::make('cut_off_date')
-                        ->label('Tanggal Cut-off')
-                        ->required()
-                        ->default(now()->toDateString())
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->helperText('Data invoice akan diambil sampai tanggal ini.'),
+                    \Filament\Forms\Components\Select::make('year')
+                        ->label('Tahun MoU')
+                        ->options(function () {
+                            return \App\Models\MoU::selectRaw('YEAR(created_at) as year')
+                                ->whereNotNull('created_at')
+                                ->distinct()
+                                ->orderBy('year', 'desc')
+                                ->pluck('year', 'year')
+                                ->toArray();
+                        })
+                        ->placeholder('Semua Tahun')
+                        ->searchable(),
                     \Filament\Forms\Components\Select::make('type')
                         ->label('Tipe MoU (Opsional)')
                         ->options([

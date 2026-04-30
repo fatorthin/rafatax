@@ -14,10 +14,14 @@ class RekapPaymentExporter
 {
     public static function export(array $data)
     {
-        $cutOffDate = $data['cut_off_date'];
+        $year = $data['year'] ?? null;
 
         $query = \App\Models\MoU::with(['client', 'categoryMou', 'cost_lists'])
             ->whereHas('client');
+
+        if (!empty($year)) {
+            $query->whereYear('created_at', $year);
+        }
 
         if (!empty($data['type'])) {
             $query->where('type', $data['type']);
@@ -34,15 +38,14 @@ class RekapPaymentExporter
         $mouIds = $mous->pluck('id')->toArray();
         $invoices = \App\Models\Invoice::with('costListInvoices')
             ->whereIn('mou_id', $mouIds)
-            ->where('invoice_date', '<=', $cutOffDate)
             ->orderBy('invoice_date', 'asc')
             ->get()
             ->groupBy('mou_id');
 
-        $cutOffFormatted = Carbon::parse($cutOffDate)->locale('id')->translatedFormat('d F Y');
+        $yearFormatted = !empty($year) ? $year : 'Semua Tahun';
         $lastCol = 'T'; // 20 columns A-T
 
-        return response()->streamDownload(function () use ($mous, $invoices, $cutOffFormatted, $lastCol) {
+        return response()->streamDownload(function () use ($mous, $invoices, $yearFormatted, $lastCol) {
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
             $sheet->setTitle('Rekap Payment & Piutang');
@@ -53,7 +56,7 @@ class RekapPaymentExporter
             $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
             $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $sheet->setCellValue('A2', 'Per Tanggal: ' . $cutOffFormatted);
+            $sheet->setCellValue('A2', 'Tahun MoU: ' . $yearFormatted);
             $sheet->mergeCells("A2:{$lastCol}2");
             $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(11);
             $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -271,6 +274,6 @@ class RekapPaymentExporter
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
-        }, 'Rekap_Payment_Piutang_' . Carbon::parse($data['cut_off_date'])->format('Y-m-d_H-i-s') . '.xlsx');
+        }, 'Rekap_Payment_Piutang_' . ($yearFormatted !== 'Semua Tahun' ? $yearFormatted . '_' : '') . date('Y-m-d_H-i-s') . '.xlsx');
     }
 }
