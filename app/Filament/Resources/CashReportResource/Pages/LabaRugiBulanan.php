@@ -231,7 +231,7 @@ class LabaRugiBulanan extends Page
                 $row->jurnal_umum_kredit + $row->aje_kredit;
 
             // Check if this is a Laba Rugi account
-            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$/', $row->code)) {
+            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $row->code)) {
                 // Determine if this is pendapatan or beban based on the account code
                 if (preg_match('/^AO-4/', $row->code)) {
                     // Pendapatan accounts (400 series)

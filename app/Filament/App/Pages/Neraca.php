@@ -240,7 +240,7 @@ class Neraca extends Page
             ->leftJoin('journal_book_reports', 'coa.id', '=', 'journal_book_reports.coa_id')
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
-            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$'")
+            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9](\\.[1-9])?|5[1-9][0-9](\\.[1-9])?|6[0-9]{2}|70[0-2])$'")
             ->groupBy('coa.id', 'coa.code', 'coa.name')
             ->orderBy('coa.code')
             ->get();

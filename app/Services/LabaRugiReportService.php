@@ -137,7 +137,7 @@ class LabaRugiReportService
             )
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
-            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$'")
+            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9](\\.[1-9])?|5[1-9][0-9](\\.[1-9])?|6[0-9]{2}|70[0-2])$'")
             ->orderBy('coa.code')
             ->get();
 

@@ -232,7 +232,7 @@ class NeracaController extends Controller
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
             ->whereNotIn('coa.id', [78, 118]) // Exclude 'Tidak Terklasifikasi'
-            ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010|1011)$'")
+            ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010(\\.[1-9])?|1011(\\.[1-9])?)$'")
             ->orderBy('group_coas.id')
             ->orderBy('coa.id')
             ->get();
@@ -443,7 +443,7 @@ class NeracaController extends Controller
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
-            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9]|5[1-9][0-9]|6[0-9]{2}|70[0-2])$'")
+            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9](\\.[1-9])?|5[1-9][0-9](\\.[1-9])?|6[0-9]{2}|70[0-2])$'")
             ->orderBy('coa.code')
             ->get();
 
