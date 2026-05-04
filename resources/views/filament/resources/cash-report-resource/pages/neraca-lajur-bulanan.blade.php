@@ -83,7 +83,7 @@
 
                     // Calculate Neraca
                     $showInNeraca = preg_match(
-                        '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/',
+                        '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
                         $row->code,
                     );
                     $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;
@@ -429,7 +429,7 @@
 
                                 // Perhitungan untuk kolom Neraca
                                 $showInNeraca = preg_match(
-                                    '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/',
+                                    '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
                                     $row->code,
                                 );
                                 $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;

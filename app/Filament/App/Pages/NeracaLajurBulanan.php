@@ -679,7 +679,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $neracaSetelahAJEDebit = max(0, $selisihSetelahAJE);
                 $neracaSetelahAJEKredit = max(0, -$selisihSetelahAJE);
 
-                $showInNeraca = preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5])$/', $item->code);
+                $showInNeraca = preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/', $item->code);
                 $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;
                 $neracaKredit = $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
