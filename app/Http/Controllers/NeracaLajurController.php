@@ -82,7 +82,7 @@ class NeracaLajurController extends Controller
             foreach ($data as $item) {
                 // Only process items that should appear in Neraca (AO-101 to AO-305, including AO-101.1 to AO-101.5 and AO-102.1 to AO-102.5)
                 // Exclude specifically AO-101.2 from being processed
-                if (preg_match('/^AO-(?!101\.2$)(?:([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010|1011)$/', $item->code)) {
+                if (preg_match('/^AO-(?!101\.2$)(?:([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/', $item->code)) {
                     // Special handling for AO-305 (id 118)
                     if ($item->code === 'AO-305' || $item->id == 118) {
                         // For AO-305, use Laba Rugi Bersih as credit amount
@@ -225,7 +225,7 @@ class NeracaLajurController extends Controller
                 $neracaSetelahAJEKredit = max(0, -$selisihSetelahAJE);
 
                 // Neraca (AO-101 to AO-305)
-                $showInNeraca = preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5])$/', $item->code);
+                $showInNeraca = preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/', $item->code);
                 $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;
                 $neracaKredit = $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
