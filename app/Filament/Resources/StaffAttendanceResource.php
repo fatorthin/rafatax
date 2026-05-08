@@ -9,7 +9,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\StaffAttendance;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\Fieldset;
+use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\StaffAttendanceResource\Pages;
@@ -274,7 +274,7 @@ class StaffAttendanceResource extends Resource
 				Tables\Actions\DeleteAction::make(),
 				Tables\Actions\ForceDeleteAction::make(),
 				Tables\Actions\RestoreAction::make(),
-			])
+			], position: ActionsPosition::BeforeCells)
 			->bulkActions([
 				Tables\Actions\BulkActionGroup::make([
 					Tables\Actions\DeleteBulkAction::make(),

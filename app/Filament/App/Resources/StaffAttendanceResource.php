@@ -15,6 +15,7 @@ use App\Filament\App\Resources\StaffAttendanceResource\Pages;
 use Filament\Actions\Action;
 use App\Traits\HasPermissions;
 use Filament\Forms\Get;
+use Filament\Tables\Enums\ActionsPosition;
 use Closure;
 
 class StaffAttendanceResource extends Resource
@@ -309,7 +310,7 @@ class StaffAttendanceResource extends Resource
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
