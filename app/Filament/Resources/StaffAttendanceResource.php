@@ -216,6 +216,9 @@ class StaffAttendanceResource extends Resource
 					->sortable(),
 			])
 			->filters([
+				Tables\Filters\Filter::make('ada_lembur')
+					->label('Ada Lembur')
+					->query(fn (Builder $query): Builder => $query->where('durasi_lembur', '!=', 0)),
 				Tables\Filters\SelectFilter::make('staff_id')
 					->label('Nama Staff')
 					->relationship('staff', 'name'),
