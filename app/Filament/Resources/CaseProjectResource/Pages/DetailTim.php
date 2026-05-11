@@ -132,18 +132,60 @@ class DetailTim extends Page implements HasTable
             ->paginated(false)
             ->striped()
             ->headerActions([
-                \Filament\Tables\Actions\ExportAction::make()
-                    ->exporter(\App\Filament\Exports\CaseProjectDetailExporter::class)
-                    ->csvDelimiter(';')
-                    ->label('Export CSV'),
-                \Filament\Tables\Actions\Action::make('import_csv')
-                    ->label('Import CSV')
+                \Filament\Tables\Actions\Action::make('export_xlsx')
+                    ->label('Export XLSX')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function () {
+                        $details = CaseProjectDetail::with('staff')
+                            ->where('case_project_id', $this->record->id)
+                            ->get();
+
+                        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+                        $sheet = $spreadsheet->getActiveSheet();
+
+                        // Header
+                        $sheet->fromArray(['ID', 'Nama Staff', 'Bonus'], null, 'A1');
+                        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
+
+                        // Data
+                        $row = 2;
+                        foreach ($details as $detail) {
+                            $sheet->fromArray([
+                                $detail->id,
+                                $detail->staff?->name ?? '-',
+                                $detail->bonus,
+                            ], null, "A{$row}");
+                            $row++;
+                        }
+
+                        // Auto-size kolom
+                        foreach (range('A', 'C') as $col) {
+                            $sheet->getColumnDimension($col)->setAutoSize(true);
+                        }
+
+                        $fileName = 'detail_tim_' . $this->record->id . '_' . now()->format('Ymd_His') . '.xlsx';
+                        $tempPath = storage_path('app/public/' . $fileName);
+
+                        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                        $writer->save($tempPath);
+
+                        return response()->download($tempPath, $fileName, [
+                            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        ])->deleteFileAfterSend(true);
+                    }),
+
+                \Filament\Tables\Actions\Action::make('import_xlsx')
+                    ->label('Import XLSX')
                     ->icon('heroicon-o-arrow-up-tray')
                     ->color('warning')
                     ->form([
                         \Filament\Forms\Components\FileUpload::make('file')
-                            ->label('Upload File CSV')
-                            ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel', 'text/comma-separated-values'])
+                            ->label('Upload File XLSX')
+                            ->acceptedFileTypes([
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/vnd.ms-excel',
+                            ])
                             ->required(),
                     ])
                     ->action(function (array $data) {
@@ -152,51 +194,51 @@ class DetailTim extends Page implements HasTable
                             $filePath = \Illuminate\Support\Facades\Storage::disk('local')->path($data['file']);
                         }
 
-                        $content = file_get_contents($filePath);
-                        $delimiter = strpos($content, ';') !== false ? ';' : ',';
+                        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+                        $sheet = $spreadsheet->getActiveSheet();
+                        $rows = $sheet->toArray();
 
-                        $csv = \League\Csv\Reader::createFromString($content);
-                        $csv->setDelimiter($delimiter);
-                        $csv->setHeaderOffset(0);
+                        if (empty($rows)) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('File Kosong')
+                                ->body('File XLSX tidak memiliki data.')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
 
-                        $records = $csv->getRecords();
+                        // Baris pertama = header
+                        $headers = array_map(fn($h) => strtolower(trim((string) $h)), $rows[0]);
+                        $idIndex = array_search('id', $headers);
+                        $bonusIndex = array_search('bonus', $headers);
+
+                        if ($idIndex === false || $bonusIndex === false) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Format Tidak Valid')
+                                ->body('Kolom "id" dan "bonus" harus ada di baris pertama.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
                         $count = 0;
-                        foreach ($records as $record) {
-                            $recordKeys = array_keys($record);
+                        foreach (array_slice($rows, 1) as $row) {
+                            $id = isset($row[$idIndex]) ? preg_replace('/[^0-9]/', '', (string) $row[$idIndex]) : null;
+                            $bonus = isset($row[$bonusIndex]) ? preg_replace('/[^0-9]/', '', (string) $row[$bonusIndex]) : 0;
 
-                            // Deteksi jika file CSV rusak karena Excel menyatukan kolom dalam tanda kutip
-                            if (count($recordKeys) === 1 && strpos($recordKeys[0], ',') !== false) {
-                                $realHeaders = str_getcsv($recordKeys[0], ',', '"');
-                                $realData = str_getcsv(array_values($record)[0] ?? '', ',', '"');
-                                if (count($realHeaders) === count($realData)) {
-                                    $record = array_combine($realHeaders, $realData);
-                                    $recordKeys = array_keys($record);
-                                }
-                            }
-
-                            // Cari key tanpa memperdulikan case atau spasi tambahan
-                            $idKey = collect($recordKeys)->first(fn($k) => strtolower(trim($k, '"\' ')) === 'id');
-                            $bonusKey = collect($recordKeys)->first(fn($k) => strtolower(trim($k, '"\' ')) === 'bonus');
-
-                            if ($idKey && $bonusKey) {
-                                $id = preg_replace('/[^0-9]/', '', $record[$idKey]);
-                                $bonusRaw = $record[$bonusKey];
-                                $bonus = preg_replace('/[^0-9]/', '', $bonusRaw);
-
-                                if ($id) {
-                                    $model = CaseProjectDetail::find($id);
-                                    if ($model) {
-                                        $model->bonus = $bonus ?: 0;
-                                        $model->save();
-                                        $count++;
-                                    }
+                            if ($id) {
+                                $model = CaseProjectDetail::find($id);
+                                if ($model) {
+                                    $model->bonus = $bonus ?: 0;
+                                    $model->save();
+                                    $count++;
                                 }
                             }
                         }
 
                         \Filament\Notifications\Notification::make()
                             ->title('Import Berhasil')
-                            ->body("$count baris data berhasil diupdate.")
+                            ->body("{$count} baris data berhasil diupdate.")
                             ->success()
                             ->send();
                     }),
