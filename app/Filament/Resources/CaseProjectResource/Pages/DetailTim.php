@@ -86,14 +86,17 @@ class DetailTim extends Page implements HasTable
                                 'done' => 'Done',
                                 'case_done' => 'Case Done',
                                 'bonus_done' => 'Bonus Done',
+                                'paid' => 'Paid',
                                 default => $state,
                             })
+                            ->badge()
                             ->color(fn($state) => match ($state) {
                                 'open' => 'primary',
                                 'in_progress' => 'warning',
                                 'done' => 'success',
-                                'case_done' => 'success',
-                                'bonus_done' => 'success',
+                                'case_done' => 'gray',
+                                'bonus_done' => 'info',
+                                'paid' => 'success',
                                 default => 'gray',
                             }),
                     ])->columns(3)
