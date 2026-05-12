@@ -635,8 +635,9 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Rekening Transfer')
                     ->options([
                         'BCA PT' => 'BCA PT',
-                        'BCA BARU' => 'BCA BARU',
-                        'BCA LAMA' => 'BCA LAMA',
+                        'BCA 425' => 'BCA 425',
+                        'BCA 140' => 'BCA 140',
+                        'BCA 436' => 'BCA 436',
                         'MANDIRI' => 'MANDIRI'
                     ]),
                 Checkbox::make('is_include_pph23')
