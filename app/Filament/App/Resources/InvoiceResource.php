@@ -159,8 +159,9 @@ class InvoiceResource extends Resource
                     ->label('Rekening Transfer')
                     ->options([
                         'BCA PT' => 'BCA PT',
-                        'BCA BARU' => 'BCA BARU',
-                        'BCA LAMA' => 'BCA LAMA',
+                        'BCA 425' => 'BCA 425',
+                        'BCA 140' => 'BCA 140',
+                        'BCA 436' => 'BCA 436',
                         'MANDIRI' => 'MANDIRI'
                     ]),
                 Forms\Components\DatePicker::make('tgl_transfer')
@@ -444,8 +445,9 @@ class InvoiceResource extends Resource
                             ->label('Rekening Transfer')
                             ->options([
                                 'BCA PT' => 'BCA PT',
-                                'BCA BARU' => 'BCA BARU',
-                                'BCA LAMA' => 'BCA LAMA',
+                                'BCA 425' => 'BCA 425',
+                                'BCA 140' => 'BCA 140',
+                                'BCA 436' => 'BCA 436',
                                 'MANDIRI' => 'MANDIRI',
                                 'KAS BESAR' => 'KAS BESAR',
                                 'KAS KECIL' => 'KAS KECIL',
@@ -455,8 +457,9 @@ class InvoiceResource extends Resource
                     ->action(function (Invoice $record, array $data): void {
                         $rekTransferMapping = [
                             'BCA PT' => 1,
-                            'BCA BARU' => 2,
-                            'BCA LAMA' => 3,
+                            'BCA 425' => 2,
+                            'BCA 140' => 3,
+                            'BCA 436' => 4,
                             'MANDIRI' => 5,
                             'KAS BESAR' => 6,
                             'KAS KECIL' => 7,
