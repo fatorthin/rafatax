@@ -14,13 +14,13 @@ class RekapPaymentExporter
 {
     public static function export(array $data)
     {
-        $year = $data['year'] ?? null;
+        $tahunPajak = $data['tahun_pajak'] ?? null;
 
         $query = \App\Models\MoU::with(['client', 'categoryMou', 'cost_lists'])
             ->whereHas('client');
 
-        if (!empty($year)) {
-            $query->whereYear('created_at', $year);
+        if (!empty($tahunPajak)) {
+            $query->where('tahun_pajak', $tahunPajak);
         }
 
         if (!empty($data['type'])) {
@@ -42,7 +42,7 @@ class RekapPaymentExporter
             ->get()
             ->groupBy('mou_id');
 
-        $yearFormatted = !empty($year) ? $year : 'Semua Tahun';
+        $yearFormatted = !empty($tahunPajak) ? $tahunPajak : 'Semua Tahun Pajak';
         $lastCol = 'T'; // 20 columns A-T
 
         return response()->streamDownload(function () use ($mous, $invoices, $yearFormatted, $lastCol) {
@@ -56,7 +56,7 @@ class RekapPaymentExporter
             $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
             $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $sheet->setCellValue('A2', 'Tahun MoU: ' . $yearFormatted);
+            $sheet->setCellValue('A2', 'Tahun Pajak: ' . $yearFormatted);
             $sheet->mergeCells("A2:{$lastCol}2");
             $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(11);
             $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
