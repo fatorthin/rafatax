@@ -3,6 +3,7 @@
 namespace App\Filament\App\Pages;
 
 use App\Models\MoU;
+use Illuminate\Support\Facades\Auth;
 use Filament\Pages\Page;
 use Filament\Tables\Table;
 use Filament\Tables\Contracts\HasTable;
@@ -23,7 +24,7 @@ class MonitoringChecklist extends Page implements HasTable
     public static function canAccess(array $parameters = []): bool
     {
         /** @var \App\Models\User|null $user */
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return false;
         }
@@ -41,7 +42,7 @@ class MonitoringChecklist extends Page implements HasTable
 
     protected static string $view = 'filament.app.pages.monitoring-checklist';
 
-    public $year;
+    public ?string $year;
 
     public function mount()
     {
