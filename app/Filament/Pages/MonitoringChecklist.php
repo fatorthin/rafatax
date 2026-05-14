@@ -48,7 +48,7 @@ class MonitoringChecklist extends Page implements HasTable
                     ->label('No')
                     ->rowIndex()
                     ->extraHeaderAttributes([
-                        'style' => 'position: sticky; left: 0; z-index: 30; background-color: inherit;',
+                        'style' => 'position: sticky; left: 0; z-index: 20; background-color: inherit;',
                         'class' => 'w-[50px] min-w-[50px]'
                     ])
                     ->extraAttributes([
@@ -62,7 +62,7 @@ class MonitoringChecklist extends Page implements HasTable
                     ->sortable()
                     ->description(fn(MoU $record) => $record->client->company_name ?? '-')
                     ->extraHeaderAttributes([
-                        'style' => 'position: sticky; left: 50px; z-index: 30; background-color: inherit;',
+                        'style' => 'position: sticky; left: 50px; z-index: 20; background-color: inherit;',
                         'class' => 'w-[250px] min-w-[250px]'
                     ])
                     ->extraAttributes([
@@ -75,7 +75,7 @@ class MonitoringChecklist extends Page implements HasTable
                     ->sortable()
                     ->searchable()
                     ->extraHeaderAttributes([
-                        'style' => 'position: sticky; left: 300px; z-index: 30; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
+                        'style' => 'position: sticky; left: 300px; z-index: 20; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
                         'class' => 'w-[150px] min-w-[150px]'
                     ])
                     ->extraAttributes([
@@ -111,7 +111,8 @@ class MonitoringChecklist extends Page implements HasTable
                         $this->year = $year;
                         return $query->whereYear('start_date', $year);
                     }),
-            ])
+            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
             ->actions([])
             ->bulkActions([]);
     }
