@@ -98,7 +98,7 @@ class MonitoringChecklist extends Page implements HasTable
                         $this->year = $year;
                         return $query->whereYear('start_date', $year);
                     }),
-            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
+            ], layout: \Filament\Tables\Enums\FiltersLayout::Modal)
             ->filtersFormColumns(3)
             ->actions([])
             ->bulkActions([]);
