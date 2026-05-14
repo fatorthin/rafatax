@@ -94,6 +94,11 @@ class MonitoringChecklist extends Page implements HasTable
                     ->relationship('client', 'company_name')
                     ->searchable()
                     ->preload(),
+                SelectFilter::make('category_mou_id')
+                    ->label('Kategori MoU')
+                    ->relationship('categoryMou', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('year')
                     ->label('Tahun')
                     ->options(
