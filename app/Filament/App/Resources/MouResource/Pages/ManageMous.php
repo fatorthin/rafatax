@@ -25,17 +25,17 @@ class ManageMous extends ManageRecords
                 ->modalDescription('Export data rekap payment dan piutang klien per tanggal yang dipilih.')
                 ->modalSubmitActionLabel('Export Excel')
                 ->form([
-                    \Filament\Forms\Components\Select::make('year')
-                        ->label('Tahun MoU')
+                    \Filament\Forms\Components\Select::make('tahun_pajak')
+                        ->label('Tahun Pajak')
                         ->options(function () {
-                            return \App\Models\MoU::selectRaw('YEAR(created_at) as year')
-                                ->whereNotNull('created_at')
+                            return \App\Models\MoU::query()
+                                ->whereNotNull('tahun_pajak')
                                 ->distinct()
-                                ->orderBy('year', 'desc')
-                                ->pluck('year', 'year')
+                                ->orderBy('tahun_pajak', 'desc')
+                                ->pluck('tahun_pajak', 'tahun_pajak')
                                 ->toArray();
                         })
-                        ->placeholder('Semua Tahun')
+                        ->placeholder('Semua Tahun Pajak')
                         ->searchable(),
                     \Filament\Forms\Components\Select::make('type')
                         ->label('Tipe MoU (Opsional)')
@@ -73,17 +73,17 @@ class ManageMous extends ManageRecords
                         ->options(\App\Models\CategoryMou::pluck('name', 'id'))
                         ->placeholder('Semua Case')
                         ->searchable(),
-                    \Filament\Forms\Components\Select::make('year')
-                        ->label('Tahun Dibuat (Opsional)')
+                    \Filament\Forms\Components\Select::make('tahun_pajak')
+                        ->label('Tahun Pajak (Opsional)')
                         ->options(function () {
-                            return \App\Models\MoU::selectRaw('YEAR(created_at) as year')
-                                ->whereNotNull('created_at')
+                            return \App\Models\MoU::query()
+                                ->whereNotNull('tahun_pajak')
                                 ->distinct()
-                                ->orderBy('year', 'desc')
-                                ->pluck('year', 'year')
+                                ->orderBy('tahun_pajak', 'desc')
+                                ->pluck('tahun_pajak', 'tahun_pajak')
                                 ->toArray();
                         })
-                        ->placeholder('Semua Tahun')
+                        ->placeholder('Semua Tahun Pajak')
                         ->searchable(),
                     \Filament\Forms\Components\Select::make('status')
                         ->label('Berdasarkan Status')
@@ -101,8 +101,8 @@ class ManageMous extends ManageRecords
                     if (!empty($data['category_mou_id'])) {
                         $query->where('category_mou_id', $data['category_mou_id']);
                     }
-                    if (!empty($data['year'])) {
-                        $query->whereYear('created_at', $data['year']);
+                    if (!empty($data['tahun_pajak'])) {
+                        $query->where('tahun_pajak', $data['tahun_pajak']);
                     }
                     if (!empty($data['status'])) {
                         $query->where('status', $data['status']);

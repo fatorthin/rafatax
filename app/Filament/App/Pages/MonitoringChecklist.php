@@ -3,6 +3,7 @@
 namespace App\Filament\App\Pages;
 
 use App\Models\MoU;
+use Illuminate\Support\Facades\Auth;
 use Filament\Pages\Page;
 use Filament\Tables\Table;
 use Filament\Tables\Contracts\HasTable;
@@ -23,7 +24,7 @@ class MonitoringChecklist extends Page implements HasTable
     public static function canAccess(array $parameters = []): bool
     {
         /** @var \App\Models\User|null $user */
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return false;
         }
@@ -41,7 +42,7 @@ class MonitoringChecklist extends Page implements HasTable
 
     protected static string $view = 'filament.app.pages.monitoring-checklist';
 
-    public $year;
+    public ?string $year;
 
     public function mount()
     {
@@ -81,6 +82,11 @@ class MonitoringChecklist extends Page implements HasTable
                     ->relationship('client', 'company_name')
                     ->searchable()
                     ->preload(),
+                SelectFilter::make('category_mou_id')
+                    ->label('Kategori MoU')
+                    ->relationship('categoryMou', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('year')
                     ->label('Tahun')
                     ->options(
@@ -93,7 +99,8 @@ class MonitoringChecklist extends Page implements HasTable
                         $this->year = $year;
                         return $query->whereYear('start_date', $year);
                     }),
-            ])
+            ], layout: \Filament\Tables\Enums\FiltersLayout::Modal)
+            ->filtersFormColumns(3)
             ->actions([])
             ->bulkActions([]);
     }
