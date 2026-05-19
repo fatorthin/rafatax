@@ -13,7 +13,9 @@ class ManagePayrollBonuses extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Tambah Data Payroll Bonus')
+                ->icon('heroicon-o-plus-circle'),
         ];
     }
 }

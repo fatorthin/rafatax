@@ -42,6 +42,8 @@ class DetailPayrollBonus extends Page implements HasTable
         return [
             EditAction::make()
                 ->label('Edit Data Payroll Bonus')
+                ->icon('heroicon-o-pencil-square')
+                ->color('warning')
                 ->record($this->record)
                 ->form([
                     \Filament\Forms\Components\TextInput::make('description')
