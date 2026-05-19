@@ -57,6 +57,32 @@ class DetailPayrollBonus extends Page implements HasTable
                     \Filament\Forms\Components\DatePicker::make('payroll_date')
                         ->required(),
                 ]),
+            Action::make('mark_as_paid')
+                ->label('Tandai Case Paid')
+                ->icon('heroicon-o-check-circle')
+                ->color('info')
+                ->requiresConfirmation()
+                ->modalHeading('Tandai Case Project sebagai Paid')
+                ->modalDescription('Apakah Anda yakin ingin mengubah status semua Case Project pada Payroll ini menjadi Paid?')
+                ->action(function () {
+                    $caseProjectIds = $this->record->case_project_ids ?? [];
+                    if (!empty($caseProjectIds)) {
+                        CaseProject::whereIn('id', $caseProjectIds)
+                            ->update(['status' => 'paid']);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Berhasil')
+                            ->body('Status Case Project berhasil diubah menjadi Paid.')
+                            ->success()
+                            ->send();
+                    } else {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Gagal')
+                            ->body('Tidak ada Case Project pada Payroll ini.')
+                            ->warning()
+                            ->send();
+                    }
+                }),
             Action::make('send_all_wablas')
                 ->label('Kirim Semua Slip WA')
                 ->icon('heroicon-o-chat-bubble-bottom-center-text')
@@ -65,12 +91,13 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->modalHeading('Kirim Semua Slip Bonus via WhatsApp')
                 ->modalDescription('Apakah Anda yakin ingin mengirim semua slip bonus ke staff terkait?')
                 ->action(function (WablasService $wablasService) {
+                    /** @var \Illuminate\Database\Eloquent\Collection<int, PayrollBonusDetail> $details */
                     $details = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)->get();
                     $successCount = 0;
                     $failCount = 0;
 
-                    foreach ($details as $record) {
-                        $result = $this->sendBonusWablas($record, $wablasService);
+                    foreach ($details as $detail) {
+                        $result = $this->sendBonusWablas($detail, $wablasService);
                         if ($result['success']) {
                             $successCount++;
                         } else {
