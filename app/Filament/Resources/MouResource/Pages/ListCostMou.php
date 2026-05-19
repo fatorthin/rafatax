@@ -47,13 +47,15 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     public MoU $mou;
 
+    /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\CostListMou> */
     public $cost_lists;
 
+    /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Invoice> */
     public $invoices;
 
     public $pendingChecklistIds = [];
 
-    public function mount($record): void
+    public function mount(int|string $record): void
     {
         $this->mou = MoU::findOrFail($record);
 
@@ -611,7 +613,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->modalWidth('7xl');
     }
 
-    private function handlePostInvoiceCreate($record): void
+    private function handlePostInvoiceCreate(Invoice $record): void
     {
         if (!empty($this->pendingChecklistIds)) {
             $checklistStatus = $record->invoice_status === 'paid' ? 'completed' : 'pending';

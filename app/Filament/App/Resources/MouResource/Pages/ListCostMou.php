@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources\MouResource\Pages;
 use App\Models\Coa;
 use App\Models\MoU;
 use App\Models\CaseProject;
+use App\Models\ChecklistMou;
 use Filament\Actions;
 use Filament\Actions\ActionGroup;
 use Filament\Support\RawJs;
@@ -47,16 +48,18 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     public MoU $mou;
 
+    /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\CostListMou> */
     public $cost_lists;
 
+    /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Invoice> */
     public $invoices;
 
-    public function mount($record): void
+    public function mount(int|string $record): void
     {
         $this->mou = MoU::withTrashed()->findOrFail($record);
 
         // Self-healing: Reset checklist items linked to deleted invoices
-        \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+        ChecklistMou::where('mou_id', $this->mou->id)
             ->whereNotNull('invoice_id')
             ->whereDoesntHave('invoice')
             ->update(['invoice_id' => null, 'status' => 'pending']);
@@ -200,7 +203,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->visible(fn() => Auth::user()?->hasPermission('mou.edit') ?? false)
+                    ->visible(fn(): bool => $this->hasPermission('mou.edit'))
                     ->fillForm(function (CostListMou $record): array {
                         return [
                             'coa_id' => $record->coa_id,
@@ -279,7 +282,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Hapus')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn() => Auth::user()?->hasPermission('mou.delete') ?? false)
+                    ->visible(fn(): bool => $this->hasPermission('mou.delete'))
                     ->requiresConfirmation()
                     ->modalHeading('Hapus Biaya')
                     ->modalDescription('Apakah Anda yakin ingin menghapus biaya ini? Tindakan ini tidak dapat dibatalkan.')
@@ -328,7 +331,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->label('Tambah Biaya')
             ->icon('heroicon-o-plus')
             ->color('success')
-            ->visible(fn() => Auth::user()?->hasAnyPermission(['mou.create', 'mou.edit']) ?? false)
+            ->visible(fn(): bool => $this->hasAnyPermission(['mou.create', 'mou.edit']))
             ->form([
                 Select::make('coa_id')
                     ->label('CoA')
@@ -558,7 +561,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->label('Buat Invoice')
             ->icon('heroicon-o-document-currency-dollar')
             ->color('info')
-            ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
+            ->visible(fn(): bool => $this->hasAnyPermission(['invoice.create', 'mou.edit']))
             ->form([
                 Select::make('mou_id')
                     ->label('MoU')
@@ -681,7 +684,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
                     ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
                     ->options(function () {
-                        return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                        return ChecklistMou::where('mou_id', $this->mou->id)
                             ->whereNull('invoice_id')
                             ->orderBy('checklist_date', 'asc')
                             ->get()
@@ -717,7 +720,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     // Update Checklist Items
                     if (!empty($checklistIds)) {
                         $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
-                        \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
+                        ChecklistMou::whereIn('id', $checklistIds)->update([
                             'invoice_id' => $invoice->id,
                             'status' => $checklistStatus
                         ]);
@@ -750,7 +753,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->label('Tambah Invoice Lama')
             ->icon('heroicon-o-archive-box')
             ->color('warning')
-            ->visible(fn() => Auth::user()?->hasAnyPermission(['invoice.create', 'mou.edit']) ?? false)
+            ->visible(fn(): bool => $this->hasAnyPermission(['invoice.create', 'mou.edit']))
             ->form([
                 Select::make('mou_id')
                     ->label('MoU')
@@ -847,7 +850,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
                     ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
                     ->options(function () {
-                        return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                        return ChecklistMou::where('mou_id', $this->mou->id)
                             ->whereNull('invoice_id')
                             ->orderBy('checklist_date', 'asc')
                             ->get()
@@ -878,7 +881,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     // Update Checklist Items
                     if (!empty($checklistIds)) {
                         $checklistStatus = $invoice->invoice_status === 'paid' ? 'completed' : 'pending';
-                        \App\Models\ChecklistMou::whereIn('id', $checklistIds)->update([
+                        ChecklistMou::whereIn('id', $checklistIds)->update([
                             'invoice_id' => $invoice->id,
                             'status' => $checklistStatus
                         ]);
@@ -992,5 +995,19 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     \Illuminate\Support\Facades\Log::error('Gagal kirim notifikasi Wablas case project: ' . $e->getMessage());
                 }
             });
+    }
+
+    protected function hasPermission(string $permission): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        return $user?->hasPermission($permission) ?? false;
+    }
+
+    protected function hasAnyPermission(array $permissions): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        return $user?->hasAnyPermission($permissions) ?? false;
     }
 }
