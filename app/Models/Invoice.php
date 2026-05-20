@@ -35,6 +35,20 @@ class Invoice extends Model
 
     protected static function booted()
     {
+        static::saving(function ($invoice) {
+            if ($invoice->mou_id) {
+                $invoice->memo_id = null;
+            } elseif ($invoice->memo_id) {
+                $invoice->mou_id = null;
+            }
+        });
+
+        static::saved(function ($invoice) {
+            $invoice->costListInvoices()->update([
+                'mou_id' => $invoice->mou_id
+            ]);
+        });
+
         static::deleted(function ($invoice) {
             // Reset checklist invoices
             \App\Models\ChecklistMou::where('invoice_id', $invoice->id)->update([
