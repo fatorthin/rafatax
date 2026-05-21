@@ -53,7 +53,7 @@ class InvoiceResource extends Resource
                     ->label('MoU')
                     ->options(function () {
                         return MoU::query()
-                            ->select('id', 'mou_number', 'description', 'client_id')
+                            ->select(['id', 'mou_number', 'description', 'client_id'])
                             ->with('client')
                             ->get()
                             ->mapWithKeys(function ($mou) {
@@ -66,7 +66,7 @@ class InvoiceResource extends Resource
                     ->live()
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
-                            $mou = MoU::find($state);
+                            $mou = MoU::query()->find($state);
                             if ($mou) {
                                 $set('invoice_type', $mou->type);
                             }
@@ -77,7 +77,7 @@ class InvoiceResource extends Resource
                     ->label('Memo')
                     ->options(function () {
                         return \App\Models\Memo::query()
-                            ->select('id', 'no_memo', 'description')
+                            ->select(['id', 'no_memo', 'description'])
                             ->get()
                             ->mapWithKeys(function ($memo) {
                                 return [$memo->id => $memo->no_memo . ' - ' . $memo->description];
@@ -185,7 +185,7 @@ class InvoiceResource extends Resource
                                     ->default(fn(Forms\Get $get) => $get('../../mou_id')),
                                 Forms\Components\Select::make('coa_id')
                                     ->label('CoA')
-                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
+                                    ->options(\App\Models\Coa::query()->where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
                                     ->columnSpan([
@@ -347,7 +347,7 @@ class InvoiceResource extends Resource
                             $invoiceIds = $query->pluck('id')->toArray();
 
                             // Calculate total from the cost_list_invoices table
-                            $grossTotal = \App\Models\CostListInvoice::whereIn('invoice_id', $invoiceIds)
+                            $grossTotal = \App\Models\CostListInvoice::query()->whereIn('invoice_id', $invoiceIds, 'and', false)
                                 ->sum('amount');
 
                             return $grossTotal;
@@ -383,7 +383,7 @@ class InvoiceResource extends Resource
                                 ->label('Year')
                                 ->options(
                                     Invoice::query()
-                                        ->selectRaw('YEAR(invoice_date) as year')
+                                        ->selectRaw('YEAR(invoice_date) as year', [])
                                         ->distinct()
                                         ->orderBy('year', 'desc')
                                         ->pluck('year', 'year')
@@ -510,7 +510,7 @@ class InvoiceResource extends Resource
 
                     $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
                     $transferDate = \Carbon\Carbon::parse($data['tgl_transfer']);
-                    $nextSortOrder = (CashReport::where('cash_reference_id', $cashReferenceId)
+                    $nextSortOrder = (CashReport::query()->where('cash_reference_id', $cashReferenceId)
                         ->whereYear('transaction_date', $transferDate->year)
                         ->whereMonth('transaction_date', $transferDate->month)
                         ->max('sort_order') ?? 0) + 1;
@@ -553,7 +553,7 @@ class InvoiceResource extends Resource
                     }
 
                     // Update ChecklistMou status to complete for this invoice
-                    \App\Models\ChecklistMou::where('invoice_id', $record->id)
+                    \App\Models\ChecklistMou::query()->where('invoice_id', $record->id)
                         ->update(['status' => 'completed']);
 
                     Notification::make()
@@ -661,7 +661,7 @@ class InvoiceResource extends Resource
                 default => 'LN',
             };
         } elseif ($memoId) {
-            $memo = \App\Models\Memo::find($memoId);
+            $memo = \App\Models\Memo::query()->find($memoId);
             if (!$memo) return;
 
             // 1. Type
@@ -703,9 +703,9 @@ class InvoiceResource extends Resource
 
         // Find existing invoices for the same month and year AND same type
         // We look for patterns like INV/001... or INV/SA/001...
-        $invoices = Invoice::whereYear('invoice_date', $year)
-            ->whereMonth('invoice_date', $month)
-            ->where('invoice_type', $invoiceType)
+        $invoices = Invoice::query()->whereYear('invoice_date', '=', $year, 'and')
+            ->whereMonth('invoice_date', '=', $month, 'and')
+            ->where('invoice_type', '=', $invoiceType, 'and')
             ->pluck('invoice_number');
 
         foreach ($invoices as $inv) {
@@ -734,7 +734,7 @@ class InvoiceResource extends Resource
                 $result = sprintf('INV/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
             }
 
-            if (Invoice::where('invoice_number', $result)->exists()) {
+            if (Invoice::query()->where('invoice_number', $result)->exists()) {
                 $lastNumber++;
                 $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
                 $exists = true;
