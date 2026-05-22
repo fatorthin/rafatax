@@ -23,21 +23,26 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected static string $view = 'filament.resources.journal-book-reference-resource.pages.view-journal-book-month-detail';
 
     public JournalBookReference $record;
+    public ?int $year = null;
+    public ?int $month = null;
+
+    public function mount(): void
+    {
+        $this->year = (int) request('year');
+        $this->month = (int) request('month');
+    }
 
     public function getTitle(): string
     {
-        $year = request('year');
-        $month = (int) request('month');
+        $monthName = Carbon::create()->month($this->month)->format('F');
 
-        $monthName = Carbon::create()->month($month)->format('F');
-
-        return "Transactions - {$this->record->name} - {$monthName} {$year}";
+        return "Transactions - {$this->record->name} - {$monthName} {$this->year}";
     }
 
     public function table(Table $table): Table
     {
-        $year = (int) request('year');
-        $month = (int) request('month');
+        $year = $this->year;
+        $month = $this->month;
 
         if (!$year || !$month) {
             return $table->query(JournalBookReport::where('id', 0)); // Empty query if no year/month
@@ -156,15 +161,12 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ->default(0),
                     \Filament\Forms\Components\Hidden::make('transaction_date')
                         ->default(function () {
-                            $year = request('year');
-                            $month = request('month');
-                            if ($year && $month) {
-                                return \Illuminate\Support\Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
+                            if ($this->year && $this->month) {
+                                return \Illuminate\Support\Carbon::create($this->year, $this->month, 1)->endOfMonth()->format('Y-m-d');
                             }
                             return now()->format('Y-m-d');
                         }),
-                ])
-                ->successRedirectUrl(fn () => \Illuminate\Support\Facades\Request::fullUrl()),
+                ]),
             Actions\Action::make('back')
                 ->label('Back to Monthly View')
                 ->url(JournalBookReferenceResource::getUrl('viewMonthly', ['record' => $this->record]))
