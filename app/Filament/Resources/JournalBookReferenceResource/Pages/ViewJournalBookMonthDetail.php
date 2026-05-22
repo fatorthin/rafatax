@@ -115,11 +115,9 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
 
     public function modifyTableQuery(Builder $query): Builder
     {
-        // Just return the original query
         return $query;
     }
 
-    // Generate a unique key for each table record
     public function getTableRecordKey(\Illuminate\Database\Eloquent\Model $record): string
     {
         return (string) $record->getKey();
@@ -134,7 +132,7 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                 ->icon('heroicon-o-plus')
                 ->form([
                     \Filament\Forms\Components\Hidden::make('journal_book_id')
-                        ->default(fn () => $this->record->id),
+                        ->default(fn() => $this->record->id),
                     \Filament\Forms\Components\Textarea::make('description')
                         ->nullable()
                         ->maxLength(500)
