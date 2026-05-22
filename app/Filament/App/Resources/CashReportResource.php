@@ -74,7 +74,8 @@ class CashReportResource extends Resource
                                     return [$coa->id => $coa->code . ' - ' . $coa->name];
                                 });
                             })
-                            ->placeholder('Pilih chart of account'),
+                            ->placeholder('Pilih chart of account')
+                            ->hiddenOn('edit'),
                         Forms\Components\TextInput::make('description')
                             ->label('Deskripsi')
                             ->required()
