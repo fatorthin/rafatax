@@ -298,6 +298,19 @@ class MouResource extends Resource
                         return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'paid'))
                             ->sum('amount');
                     })->alignEnd(),
+                Tables\Columns\TextColumn::make('sisa_tagihan')
+                    ->label('Sisa Tagihan')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        $totalMou = $record->cost_lists()->sum('total_amount');
+
+                        $totalPaid = CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'paid'))
+                            ->sum('amount');
+
+                        $discountMou = (float) ($record->discount_amount ?? 0);
+
+                        return $totalMou - $totalPaid - $discountMou;
+                    })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice')
                     ->numeric(locale: 'id')
