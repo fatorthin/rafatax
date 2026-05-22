@@ -178,6 +178,12 @@ class CaseProjectResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $hideForHrd = function () {
+            /** @var \App\Models\User|null $user */
+            $user = \Illuminate\Support\Facades\Auth::user();
+            return $user?->hasRole('hrd-manager') ?? false;
+        };
+
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
@@ -232,7 +238,12 @@ class CaseProjectResource extends Resource
                             })
                             ->implode(', ');
                     })
-                    ->wrap(),
+                    ->wrap()
+                    ->hidden(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->hasRole('inventory-admin') ?? false;
+                    }),
 
                 Tables\Columns\TextColumn::make('total_bonus')
                     ->label('Total Bonus')
@@ -248,20 +259,28 @@ class CaseProjectResource extends Resource
                         return $user?->hasRole('inventory-admin') ?? false;
                     }),
                 Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
-                Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable(),
-                Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable(),
+                Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable()
+                    ->hidden($hideForHrd),
                 Tables\Columns\TextColumn::make('link_drive')
                     ->label('Link Drive')
                     ->formatStateUsing(fn($state) => $state ? 'Buka Link' : '-')
                     ->url(fn($record) => $record->link_drive, shouldOpenInNewTab: true)
                     ->color('primary')
                     ->icon('heroicon-o-link')
-                    ->iconPosition('before'),
-                Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
+                    ->iconPosition('before')
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
                 // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
 
             ])
