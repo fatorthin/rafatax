@@ -21,6 +21,10 @@ class NeracaLajurBulanan extends Page implements HasTable
 {
     use InteractsWithTable;
 
+    private const NERACA_GROUP_IDS = [10, 11, 12, 20, 21, 30];
+    private const LABA_RUGI_GROUP_IDS = [40, 50, 60, 70];
+    private const LABA_RUGI_PENDAPATAN_GROUP_IDS = [40, 60];
+
     protected static string $view = 'filament.resources.cash-report-resource.pages.neraca-lajur-bulanan';
     protected static ?string $title = 'Neraca Lajur Bulanan (KKP)';
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
@@ -139,10 +143,10 @@ class NeracaLajurBulanan extends Page implements HasTable
             $selisihSebelumAJE = $totalDebit - $totalKredit;
             $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
 
-            if (preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $row->code)) {
+            if (in_array($row->group_coa_id, self::LABA_RUGI_GROUP_IDS, true)) {
                 $amount = $selisihSetelahAJE;
 
-                if (preg_match('/^AO-4/', $row->code)) {
+                if (in_array($row->group_coa_id, self::LABA_RUGI_PENDAPATAN_GROUP_IDS, true)) {
                     $totalPendapatan += $amount;
                     $category = 'Pendapatan';
                 } else {
@@ -182,6 +186,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 'coa.code',
                 'coa.name',
                 'coa.type',
+                'coa.group_coa_id',
                 DB::raw('COALESCE(journal_data.neraca_awal_debit, 0) as neraca_awal_debit'),
                 DB::raw('COALESCE(journal_data.neraca_awal_kredit, 0) as neraca_awal_kredit'),
                 DB::raw('COALESCE(kas_besar_data.kas_besar_debit, 0) as kas_besar_debit'),
@@ -596,6 +601,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                 'id' => $coa->id,
                 'code' => $coa->code,
                 'name' => $coa->name,
+                'group_coa_id' => $coa->group_coa_id,
                 'neraca_awal_debit' => $neracaAwalDebit,
                 'neraca_awal_kredit' => $neracaAwalKredit,
                 'kas_besar_debit' => $kasBesarDebit,
@@ -679,11 +685,11 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $neracaSetelahAJEDebit = max(0, $selisihSetelahAJE);
                 $neracaSetelahAJEKredit = max(0, -$selisihSetelahAJE);
 
-                $showInNeraca = preg_match('/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/', $item->code);
+                $showInNeraca = in_array($item->group_coa_id, self::NERACA_GROUP_IDS, true);
                 $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;
                 $neracaKredit = $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
-                $showInLabaRugi = preg_match('/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9]|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/', $item->code);
+                $showInLabaRugi = in_array($item->group_coa_id, self::LABA_RUGI_GROUP_IDS, true);
                 $labaRugiDebit = $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
                 $labaRugiKredit = $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
 
