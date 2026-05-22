@@ -7,15 +7,12 @@ use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
 use App\Models\JournalBookReport;
 use Filament\Resources\Pages\Page;
-use Illuminate\Support\Facades\DB;
 use App\Models\JournalBookReference;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Columns\Summarizers\Summarizer;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\JournalBookReferenceResource;
 
 class ViewJournalBookMonthDetail extends Page implements HasTable
@@ -29,8 +26,8 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
 
     public function getTitle(): string
     {
-        $year = request()->query('year');
-        $month = (int) request()->query('month');
+        $year = request('year');
+        $month = (int) request('month');
 
         $monthName = Carbon::create()->month($month)->format('F');
 
@@ -39,8 +36,8 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        $year = (int) request()->query('year');
-        $month = (int) request()->query('month');
+        $year = (int) request('year');
+        $month = (int) request('month');
 
         if (!$year || !$month) {
             return $table->query(JournalBookReport::where('id', 0)); // Empty query if no year/month
@@ -119,7 +116,7 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     }
 
     // Generate a unique key for each table record
-    public function getTableRecordKey($record): string
+    public function getTableRecordKey(\Illuminate\Database\Eloquent\Model $record): string
     {
         return (string) $record->getKey();
     }
@@ -127,6 +124,65 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\CreateAction::make('addTransaction')
+                ->label('Add Transaction')
+                ->model(JournalBookReport::class)
+                ->icon('heroicon-o-plus')
+                ->form([
+                    \Filament\Forms\Components\Hidden::make('journal_book_id')
+                        ->default(fn () => $this->record->id),
+                    \Filament\Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi'),
+                    \Filament\Forms\Components\Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(function () {
+                            return \App\Models\Coa::all()->mapWithKeys(function ($coa) {
+                                return [$coa->id => $coa->code . ' - ' . $coa->name];
+                            });
+                        })
+                        ->required()
+                        ->searchable(),
+                    \Filament\Forms\Components\TextInput::make('debit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Debit')
+                        ->default(0),
+                    \Filament\Forms\Components\TextInput::make('credit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Kredit')
+                        ->default(0),
+                    \Filament\Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Tanggal Transaksi')
+                        ->default(function () {
+                            $year = request('year');
+                            $month = request('month');
+                            if ($year && $month) {
+                                return \Illuminate\Support\Carbon::create($year, $month, 1)->format('Y-m-d');
+                            }
+                            return now()->format('Y-m-d');
+                        })
+                        ->minDate(function () {
+                            $year = request('year');
+                            $month = request('month');
+                            if ($year && $month) {
+                                return \Illuminate\Support\Carbon::create($year, $month, 1)->startOfMonth();
+                            }
+                            return null;
+                        })
+                        ->maxDate(function () {
+                            $year = request('year');
+                            $month = request('month');
+                            if ($year && $month) {
+                                return \Illuminate\Support\Carbon::create($year, $month, 1)->endOfMonth();
+                            }
+                            return null;
+                        }),
+                ])
+                ->successRedirectUrl(fn () => \Illuminate\Support\Facades\Request::fullUrl()),
             Actions\Action::make('back')
                 ->label('Back to Monthly View')
                 ->url(JournalBookReferenceResource::getUrl('viewMonthly', ['record' => $this->record]))
