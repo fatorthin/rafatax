@@ -12,13 +12,23 @@ class Coa extends Model
     use SoftDeletes, HasFactory, LogsActivity;
     protected $table = 'coa';
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $coa): void {
+            if (is_null($coa->sort_order)) {
+                $coa->sort_order = (self::max('sort_order') ?? 0) + 1;
+            }
+        });
+    }
+
     protected $fillable = [
         'code',
         'name',
         'type',
         'description',
         'status',
-        'group_coa_id'
+        'group_coa_id',
+        'sort_order'
     ];
 
     public function groupCoa()
