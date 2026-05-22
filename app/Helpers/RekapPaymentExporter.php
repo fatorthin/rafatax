@@ -60,7 +60,12 @@ class RekapPaymentExporter
                 return $piutang > 0;
             })->values();
 
-            $invoices = $invoices->only($mous->pluck('id')->all());
+            // Keep grouped invoices aligned with filtered MoU IDs without using
+            // Eloquent Collection::only(), which expects model instances.
+            $filteredMouIds = $mous->pluck('id')->map(fn($id) => (int) $id)->all();
+            $invoices = $invoices->filter(function ($_, $mouId) use ($filteredMouIds) {
+                return in_array((int) $mouId, $filteredMouIds, true);
+            });
         }
 
         $yearFormatted = !empty($tahunPajak) ? $tahunPajak : 'Semua Tahun Pajak';
