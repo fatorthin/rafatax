@@ -200,7 +200,16 @@ class CashReportResource extends Resource
                     ->multiple(),
                 Tables\Filters\SelectFilter::make('coa_id')
                     ->label('Chart of Account')
-                    ->relationship('coa', 'name'),
+                    ->multiple()
+                    ->searchable()
+                    ->options(function () {
+                        return Coa::query()
+                            ->orderBy('code')
+                            ->get()
+                            ->mapWithKeys(function ($coa) {
+                                return [$coa->id => $coa->code . ' - ' . $coa->name];
+                            });
+                    }),
                 Tables\Filters\Filter::make('transaction_month')
                     ->label('Month')
                     ->form([
