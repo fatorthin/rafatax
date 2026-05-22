@@ -31,10 +31,10 @@ class NeracaLajurBulanan extends Page implements HasTable
     protected static ?string $navigationLabel = 'Neraca Lajur Bulanan';
     protected static ?string $navigationGroup = 'Keuangan';
 
-    public $month;
-    public $year;
-    public $kasbesarId;
-    public $kaskecilId;
+    public ?int $month = null;
+    public ?int $year = null;
+    public ?int $kasbesarId = null;
+    public ?int $kaskecilId = null;
 
     public static function canAccess(array $parameters = []): bool
     {
@@ -51,8 +51,8 @@ class NeracaLajurBulanan extends Page implements HasTable
 
     public function mount(): void
     {
-        $this->month = request()->query('month', now()->month);
-        $this->year = request()->query('year', now()->year);
+        $this->month = (int) request('month', now()->month);
+        $this->year = (int) request('year', now()->year);
     }
 
     protected function getHeaderActions(): array
@@ -477,7 +477,7 @@ class NeracaLajurBulanan extends Page implements HasTable
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
             ->orderBy('coa.group_coa_id')
-            ->orderBy('coa.id');
+            ->orderBy('coa.code');
 
         return $query;
     }

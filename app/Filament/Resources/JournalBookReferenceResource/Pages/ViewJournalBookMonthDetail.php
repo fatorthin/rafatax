@@ -154,32 +154,14 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ->required()
                         ->label('Kredit')
                         ->default(0),
-                    \Filament\Forms\Components\DatePicker::make('transaction_date')
-                        ->required()
-                        ->label('Tanggal Transaksi')
+                    \Filament\Forms\Components\Hidden::make('transaction_date')
                         ->default(function () {
                             $year = request('year');
                             $month = request('month');
                             if ($year && $month) {
-                                return \Illuminate\Support\Carbon::create($year, $month, 1)->format('Y-m-d');
+                                return \Illuminate\Support\Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
                             }
                             return now()->format('Y-m-d');
-                        })
-                        ->minDate(function () {
-                            $year = request('year');
-                            $month = request('month');
-                            if ($year && $month) {
-                                return \Illuminate\Support\Carbon::create($year, $month, 1)->startOfMonth();
-                            }
-                            return null;
-                        })
-                        ->maxDate(function () {
-                            $year = request('year');
-                            $month = request('month');
-                            if ($year && $month) {
-                                return \Illuminate\Support\Carbon::create($year, $month, 1)->endOfMonth();
-                            }
-                            return null;
                         }),
                 ])
                 ->successRedirectUrl(fn () => \Illuminate\Support\Facades\Request::fullUrl()),
