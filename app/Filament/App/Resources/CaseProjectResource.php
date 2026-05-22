@@ -61,10 +61,39 @@ class CaseProjectResource extends Resource
                             ->pluck('name', 'id');
                     })
                     ->multiple()
-                    ->label('Nama Staff')
+                    ->label('Tim Case Project')
                     ->searchable()
                     ->preload()
                     ->required(),
+                Forms\Components\Section::make('Detail Tim')
+                    ->schema([
+                        Forms\Components\Repeater::make('details')
+                            ->relationship('details')
+                            ->label('Nominal Bonus Staff')
+                            ->schema([
+                                Forms\Components\Select::make('staff_id')
+                                    ->label('Staff')
+                                    ->options(function (?CaseProject $record) {
+                                        return Staff::query()
+                                            ->where('is_active', true)
+                                            ->when($record, fn($query) => $query->orWhereIn('id', $record->staff_id ?? []))
+                                            ->pluck('name', 'id');
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                Forms\Components\TextInput::make('bonus')
+                                    ->label('Nominal Bonus')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Tambah Bonus Staff')
+                            ->defaultItems(0)
+                            ->helperText('Tambahkan satu baris untuk setiap staff beserta nominal bonusnya.'),
+                    ])
+                    ->columnSpanFull(),
                 Forms\Components\Select::make('mou_id')
                     ->label('No MoU')
                     ->options(MoU::with('client')->get()->mapWithKeys(fn($record) => [
@@ -106,7 +135,7 @@ class CaseProjectResource extends Resource
                         'case_done' => 'CASE DONE',
                         'bonus_done' => 'BONUS DONE',
                     ])
-                    ->default(fn () => auth()->user()?->hasRole('hrd-manager') ? 'case_done' : null)
+                    ->default(fn() => auth()->user()?->hasRole('hrd-manager') ? 'case_done' : null)
                     ->afterStateHydrated(function (Forms\Components\Select $component, $state) {
                         if (auth()->user()?->hasRole('hrd-manager')) {
                             $component->state('case_done');
@@ -115,7 +144,7 @@ class CaseProjectResource extends Resource
                     ->mutateDehydratedStateUsing(function ($state) {
                         return auth()->user()?->hasRole('hrd-manager') ? 'case_done' : $state;
                     })
-                    ->disabled(fn () => auth()->user()?->hasRole('hrd-manager'))
+                    ->disabled(fn() => auth()->user()?->hasRole('hrd-manager'))
                     ->dehydrated()
                     ->required(),
             ]);
