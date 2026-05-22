@@ -15,6 +15,7 @@ class RekapPaymentExporter
     public static function export(array $data)
     {
         $tahunPajak = $data['tahun_pajak'] ?? null;
+        $onlyWithPiutang = (bool) ($data['only_with_piutang'] ?? false);
 
         $query = \App\Models\MoU::with(['client', 'categoryMou', 'cost_lists'])
             ->whereHas('client');
@@ -41,6 +42,26 @@ class RekapPaymentExporter
             ->orderBy('invoice_date', 'asc')
             ->get()
             ->groupBy('mou_id');
+
+        if ($onlyWithPiutang) {
+            $mous = $mous->filter(function ($mou) use ($invoices) {
+                $mouInvoices = $invoices->get($mou->id, collect());
+                $totalMou = $mou->cost_lists->sum('total_amount');
+
+                $totalInvPaid = 0;
+                foreach ($mouInvoices as $inv) {
+                    if ($inv->invoice_status === 'paid') {
+                        $totalInvPaid += $inv->costListInvoices->sum('amount');
+                    }
+                }
+
+                $piutang = max($totalMou - $totalInvPaid, 0);
+
+                return $piutang > 0;
+            })->values();
+
+            $invoices = $invoices->only($mous->pluck('id')->all());
+        }
 
         $yearFormatted = !empty($tahunPajak) ? $tahunPajak : 'Semua Tahun Pajak';
         $lastCol = 'T'; // 20 columns A-T
