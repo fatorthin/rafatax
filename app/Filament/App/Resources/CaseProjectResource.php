@@ -193,6 +193,21 @@ class CaseProjectResource extends Resource
                         return Staff::whereIn('id', $staffIds)->pluck('name')->join(', ');
                     })
                     ->wrap(),
+
+                Tables\Columns\TextColumn::make('bonus_staff')
+                    ->label('Staff Penerima Bonus')
+                    ->getStateUsing(function (CaseProject $record) {
+                        return $record->details
+                            ->map(function ($detail) {
+                                $staffName = $detail->staff->name ?? '-';
+                                $bonus = number_format((float) ($detail->bonus ?? 0), 0, ',', '.');
+
+                                return $staffName . ' (Rp ' . $bonus . ')';
+                            })
+                            ->implode(', ');
+                    })
+                    ->wrap(),
+
                 Tables\Columns\TextColumn::make('total_bonus')
                     ->label('Total Bonus')
                     ->getStateUsing(fn(CaseProject $record) => $record->details->sum('bonus'))

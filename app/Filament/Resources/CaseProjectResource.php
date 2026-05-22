@@ -61,6 +61,35 @@ class CaseProjectResource extends Resource
                     ->searchable()
                     ->preload()
                     ->required(),
+                Forms\Components\Section::make('Detail Tim')
+                    ->schema([
+                        Forms\Components\Repeater::make('details')
+                            ->relationship('details')
+                            ->label('Nominal Bonus Staff')
+                            ->schema([
+                                Forms\Components\Select::make('staff_id')
+                                    ->label('Staff')
+                                    ->options(function (?CaseProject $record) {
+                                        return Staff::query()
+                                            ->where('is_active', true)
+                                            ->when($record, fn($query) => $query->orWhereIn('id', $record->staff_id ?? []))
+                                            ->pluck('name', 'id');
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                Forms\Components\TextInput::make('bonus')
+                                    ->label('Nominal Bonus')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Tambah Bonus Staff')
+                            ->defaultItems(0)
+                            ->helperText('Tambahkan satu baris untuk setiap staff beserta nominal bonusnya.'),
+                    ])
+                    ->columnSpanFull(),
                 Forms\Components\Select::make('mou_id')
                     ->label('No MoU')
                     ->options(MoU::with('client')->get()->mapWithKeys(fn($record) => [
@@ -119,6 +148,19 @@ class CaseProjectResource extends Resource
                     ->formatStateUsing(function ($state, CaseProject $record) {
                         $staffIds = $record->staff_id ?? [];
                         return Staff::whereIn('id', $staffIds)->pluck('name')->join(', ');
+                    })
+                    ->wrap(),
+                Tables\Columns\TextColumn::make('bonus_staff')
+                    ->label('Staff Penerima Bonus')
+                    ->getStateUsing(function (CaseProject $record) {
+                        return $record->details
+                            ->map(function ($detail) {
+                                $staffName = $detail->staff->name ?? '-';
+                                $bonus = number_format((float) ($detail->bonus ?? 0), 0, ',', '.');
+
+                                return $staffName . ' (Rp ' . $bonus . ')';
+                            })
+                            ->implode(', ');
                     })
                     ->wrap(),
                 Tables\Columns\TextColumn::make('total_bonus')
