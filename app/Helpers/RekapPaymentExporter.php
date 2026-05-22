@@ -47,6 +47,7 @@ class RekapPaymentExporter
             $mous = $mous->filter(function ($mou) use ($invoices) {
                 $mouInvoices = $invoices->get($mou->id, collect());
                 $totalMou = $mou->cost_lists->sum('total_amount');
+                $discountMou = (float) ($mou->discount_amount ?? 0);
 
                 $totalInvPaid = 0;
                 foreach ($mouInvoices as $inv) {
@@ -55,7 +56,7 @@ class RekapPaymentExporter
                     }
                 }
 
-                $piutang = max($totalMou - $totalInvPaid, 0);
+                $piutang = max($totalMou - $totalInvPaid - $discountMou, 0);
 
                 return $piutang > 0;
             })->values();
@@ -138,6 +139,7 @@ class RekapPaymentExporter
             foreach ($mous as $mou) {
                 $mouInvoices = $invoices->get($mou->id, collect());
                 $totalMou = $mou->cost_lists->sum('total_amount');
+                $discountMou = (float) ($mou->discount_amount ?? 0);
 
                 // Split nominal by CoA
                 $nomBulanan = $mou->cost_lists->where('coa_id', 119)->sum('total_amount');
@@ -152,7 +154,7 @@ class RekapPaymentExporter
                     if ($inv->invoice_status === 'paid') $totalInvPaid += $amt;
                 }
 
-                $piutang = max($totalMou - $totalInvPaid, 0);
+                $piutang = max($totalMou - $totalInvPaid - $discountMou, 0);
 
                 $gtMou += $totalMou;
                 $gtBulanan += $nomBulanan;
