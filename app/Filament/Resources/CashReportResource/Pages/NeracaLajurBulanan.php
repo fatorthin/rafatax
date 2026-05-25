@@ -46,40 +46,24 @@ class NeracaLajurBulanan extends Page implements HasTable
                 ->label('Filter Periode')
                 ->icon('heroicon-o-funnel')
                 ->form([
-                    Select::make('month')
-                        ->label('Bulan')
+                    Select::make('period')
+                        ->label('Periode')
                         ->options([
-                            1 => 'Januari',
-                            2 => 'Februari',
-                            3 => 'Maret',
-                            4 => 'April',
-                            5 => 'Mei',
-                            6 => 'Juni',
-                            7 => 'Juli',
-                            8 => 'Agustus',
-                            9 => 'September',
-                            10 => 'Oktober',
-                            11 => 'November',
-                            12 => 'Desember'
+                            '2025-9' => 'September 2025',
+                            '2025-10' => 'Oktober 2025',
+                            '2025-11' => 'November 2025',
+                            '2025-12' => 'Desember 2025',
+                            '2026-1' => 'Januari 2026',
+                            '2026-2' => 'Februari 2026',
+                            '2026-3' => 'Maret 2026',
                         ])
-                        ->default($this->month)
-                        ->required(),
-                    Select::make('year')
-                        ->label('Tahun')
-                        ->options(function () {
-                            $years = [];
-                            $currentYear = now()->year;
-                            for ($i = $currentYear - 5; $i <= $currentYear + 1; $i++) {
-                                $years[$i] = $i;
-                            }
-                            return $years;
-                        })
-                        ->default($this->year)
+                        ->default($this->year . '-' . $this->month)
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $this->month = $data['month'];
-                    $this->year = $data['year'];
+                    $parts = explode('-', $data['period']);
+                    $this->year = $parts[0];
+                    $this->month = $parts[1];
 
                     // Redirect to same page with query parameters to persist filter
                     $this->redirect(static::getResource()::getUrl('neraca-lajur', ['month' => $this->month, 'year' => $this->year]));
