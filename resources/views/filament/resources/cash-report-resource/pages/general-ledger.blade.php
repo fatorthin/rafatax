@@ -13,7 +13,7 @@
 
                 @if ($coa)
                     <div
-                        class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 dark:bg-gray-900 dark:border-gray-800">
+                        class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 dark:bg-gray-900 dark:border-gray-800" style="margin-bottom: 2rem;">
                         <div class="mb-4">
                             <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ $coa->code }} -
                                 {{ $coa->name }}</h3>

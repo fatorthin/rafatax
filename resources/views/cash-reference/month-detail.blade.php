@@ -234,6 +234,62 @@
             color: #f9fafb;
         }
 
+        /* Custom Select2 Multiple styling */
+        .select2-container--default .select2-selection--multiple {
+            min-height: 42px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 2px 6px;
+            background-color: #ffffff;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 0.375rem;
+            padding: 2px 8px;
+            color: #0369a1;
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #ef4444;
+            margin-right: 6px;
+            border-right: none;
+            padding: 0;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            background: none;
+            color: #b91c1c;
+        }
+
+        /* Dark Mode Select2 Multiple */
+        .dark .select2-container--default .select2-selection--multiple {
+            background-color: #1f2937 !important;
+            border-color: #475569 !important;
+        }
+
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f9fafb !important;
+        }
+
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #fca5a5 !important;
+        }
+
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #ef4444 !important;
+        }
+        
+        .dark .select2-container--default .select2-search--inline .select2-search__field {
+            color: #f9fafb !important;
+            background: transparent !important;
+        }
+
         .dark #aktivaTetapFields {
             background-color: #3f2d13 !important;
             border-color: #8b6a32 !important;
@@ -309,6 +365,46 @@
             </div>
         @endif
 
+        <!-- Search & Filter Bar -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1"><i class="fas fa-search mr-1"></i>Cari Deskripsi</label>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Ketik deskripsi transaksi..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                </div>
+                <div class="flex-1 min-w-[220px]">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1"><i class="fas fa-sitemap mr-1"></i>Filter COA</label>
+                    <select
+                        id="filterCoaId"
+                        multiple="multiple"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                        @foreach ($coaList as $id => $name)
+                            <option value="{{ $id }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <button
+                        type="button"
+                        onclick="resetFilter()"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm flex items-center gap-2"
+                        style="color: #ffffff !important;"
+                    >
+                        <i class="fas fa-times"></i> Reset Filter
+                    </button>
+                </div>
+                <div>
+                    <span id="filterCount" class="text-sm text-gray-500"></span>
+                </div>
+            </div>
+        </div>
+
         <!-- Transactions Table -->
         <div class="bg-white rounded-lg shadow-md overflow-auto" style="max-height: 75vh;">
             <table class="min-w-full divide-y divide-gray-200">
@@ -328,7 +424,7 @@
                 </thead>
                 <tbody id="sortable-tbody" class="bg-white divide-y divide-gray-200">
                     @forelse($transactions as $transaction)
-                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}" data-debit="{{ $transaction->debit_amount }}" data-credit="{{ $transaction->credit_amount }}">
+                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}" data-debit="{{ $transaction->debit_amount }}" data-credit="{{ $transaction->credit_amount }}" data-coa-id="{{ $transaction->coa_id }}" data-description="{{ strtolower($transaction->description) }}">
                             <td class="px-3 py-4 text-center">
                                 <span class="drag-handle" title="Drag untuk mengurutkan">
                                     <i class="fas fa-grip-vertical"></i>
@@ -548,6 +644,14 @@
                 allowClear: true,
                 width: '100%'
             });
+
+            // Initialize Select2 for Filter COA
+            $('#filterCoaId').select2({
+                placeholder: 'Pilih COA (bisa pilih beberapa)',
+                allowClear: true,
+                width: '100%'
+            });
+            $('#filterCoaId').on('change', filterTransactions);
         });
 
         function openAddModal() {
@@ -595,6 +699,68 @@
                 closeEditModal();
             }
         }
+
+        // === Search & Filter ===
+        function filterTransactions() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedCoas = $('#filterCoaId').val() || [];
+            const rows = document.querySelectorAll('#sortable-tbody .sortable-row');
+
+            let visibleCount = 0;
+
+            rows.forEach(function(row) {
+                const desc = row.dataset.description || '';
+                const rowCoaId = row.dataset.coaId || '';
+
+                const matchDesc = !searchText || desc.includes(searchText);
+                const matchCoa = selectedCoas.length === 0 || selectedCoas.includes(rowCoaId);
+
+                if (matchDesc && matchCoa) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update count info
+            const total = rows.length;
+            const countEl = document.getElementById('filterCount');
+            if (searchText || selectedCoas.length > 0) {
+                countEl.textContent = `Menampilkan ${visibleCount} dari ${total} transaksi`;
+            } else {
+                countEl.textContent = '';
+            }
+
+            // Recalculate running balance for visible rows only
+            recalcFilteredBalances();
+        }
+
+        function recalcFilteredBalances() {
+            let balance = prevBalance;
+            document.querySelectorAll('#sortable-tbody .sortable-row').forEach(function(row) {
+                if (row.style.display === 'none') return;
+                const debit = parseFloat(row.dataset.debit) || 0;
+                const credit = parseFloat(row.dataset.credit) || 0;
+                balance += debit - credit;
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 7) {
+                    cells[6].textContent = formatNumber(balance);
+                }
+            });
+        }
+
+        function resetFilter() {
+            document.getElementById('searchInput').value = '';
+            $('#filterCoaId').val(null).trigger('change');
+            filterTransactions();
+        }
+
+        // Attach event listeners for live filter
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.addEventListener('input', filterTransactions);
+        });
 
         // === Sortable / Drag & Drop Reorder ===
         const prevBalance = {{ $prevBalance }};

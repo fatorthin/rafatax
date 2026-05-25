@@ -42,6 +42,7 @@ class DetailAktivaTetap extends Page implements HasTable
             ->query(
                 DepresiasiAktivaTetap::query()
                     ->where('daftar_aktiva_tetap_id', $this->record->id)
+                    ->orderBy('tanggal_penyusutan')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('no')

@@ -15,7 +15,9 @@ class ListDaftarAktivaTetaps extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Tambah Aktiva Tetap')
+                ->icon('heroicon-o-plus'),
             ...DaftarAktivaTetapResource::getHeaderActions(),
         ];
     }

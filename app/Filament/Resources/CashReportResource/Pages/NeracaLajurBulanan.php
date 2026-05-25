@@ -491,7 +491,7 @@ class NeracaLajurBulanan extends Page implements HasTable
     private function getDataForExport()
     {
         // Get COA data first
-        $coaData = Coa::where('deleted_at', null)
+        $coaData = Coa::query()->where('deleted_at', null)
             ->where('type', 'kkp')
             ->orderBy('id')
             ->get();

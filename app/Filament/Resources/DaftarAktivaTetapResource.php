@@ -47,12 +47,12 @@ class DaftarAktivaTetapResource extends Resource
                 ])
                 ->action(function (array $data) {
                     $date = \Carbon\Carbon::parse($data['periode']);
-                    $assets = DaftarAktivaTetap::where('status', 'aktif')->get();
+                    $assets = DaftarAktivaTetap::query()->where('status', 'aktif')->get();
                     $count = 0;
 
                     foreach ($assets as $asset) {
                         // Hitung total penyusutan yang sudah ada
-                        $existingDepreciation = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $asset->id)->sum('jumlah_penyusutan');
+                        $existingDepreciation = DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $asset->id)->sum('jumlah_penyusutan');
 
                         // Hitung sisa nilai buku saat ini
                         $remainingValue = $asset->harga_perolehan - $existingDepreciation;
@@ -71,8 +71,23 @@ class DaftarAktivaTetapResource extends Resource
                             $monthlyDepreciation = $remainingValue;
                         }
 
-                        // Cek apakah sudah ada depresiasi di bulan yang sama (opsional, tapi bagus untuk mencegah duplikat)
-                        // Untuk saat ini kita jalankan sesuai request user saja
+                        // Cek apakah sudah ada depresiasi di bulan dan tahun yang sama (self-healing)
+                        $existingRecords = DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $asset->id)
+                            ->whereYear('tanggal_penyusutan', $date->year)
+                            ->whereMonth('tanggal_penyusutan', $date->month)
+                            ->orderBy('id')
+                            ->get();
+
+                        if ($existingRecords->count() > 0) {
+                            // Hapus duplikasi data jika ada lebih dari 1
+                            if ($existingRecords->count() > 1) {
+                                $duplicates = $existingRecords->slice(1);
+                                foreach ($duplicates as $duplicate) {
+                                    $duplicate->delete();
+                                }
+                            }
+                            continue;
+                        }
 
                         DepresiasiAktivaTetap::create([
                             'daftar_aktiva_tetap_id' => $asset->id,
@@ -165,7 +180,7 @@ class DaftarAktivaTetapResource extends Resource
                     ->label('Depresiasi Terakhir')
                     ->alignEnd()
                     ->getStateUsing(function ($record) {
-                        return DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
+                        return DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $record->id)
                             ->orderBy('tanggal_penyusutan', 'desc')
                             ->orderBy('id', 'desc')
                             ->first()?->jumlah_penyusutan ?? 0;
@@ -177,7 +192,7 @@ class DaftarAktivaTetapResource extends Resource
                     ->label('Total Penyusutan')
                     ->alignEnd()
                     ->getStateUsing(function ($record) {
-                        return DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
+                        return DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $record->id)
                             ->sum('jumlah_penyusutan');
                     })
                     ->formatStateUsing(function ($state) {
@@ -187,7 +202,7 @@ class DaftarAktivaTetapResource extends Resource
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) {
                                 $aktivaIds = $query->pluck('id');
-                                return DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
+                                return DepresiasiAktivaTetap::query()->whereIn('daftar_aktiva_tetap_id', $aktivaIds)
                                     ->sum('jumlah_penyusutan');
                             })
                             ->formatStateUsing(function ($state) {
@@ -199,7 +214,7 @@ class DaftarAktivaTetapResource extends Resource
                     ->label('Nilai Buku')
                     ->alignEnd()
                     ->getStateUsing(function ($record) {
-                        $totalPenyusutan = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
+                        $totalPenyusutan = DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $record->id)
                             ->sum('jumlah_penyusutan');
                         return $record->harga_perolehan - $totalPenyusutan;
                     })
@@ -211,7 +226,7 @@ class DaftarAktivaTetapResource extends Resource
                             ->using(function ($query) {
                                 $aktivaIds = $query->pluck('id');
                                 $totalHargaPerolehan = $query->sum('harga_perolehan');
-                                $totalPenyusutan = DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
+                                $totalPenyusutan = DepresiasiAktivaTetap::query()->whereIn('daftar_aktiva_tetap_id', $aktivaIds)
                                     ->sum('jumlah_penyusutan');
                                 return $totalHargaPerolehan - $totalPenyusutan;
                             })

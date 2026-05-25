@@ -157,16 +157,19 @@ class GeneralLedger extends Page
         $cashReferenceId = $data['cash_reference_id'] ?? null;
 
         $query = \App\Models\CashReport::query()
+            ->select('cash_reports.*')
+            ->join('coa', 'cash_reports.coa_id', '=', 'coa.id')
             ->with(['coa', 'cashReference'])
-            ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->whereNotIn('coa_id', [78, 118]);
+            ->whereBetween('cash_reports.transaction_date', [$startDate, $endDate]);
 
         if ($cashReferenceId) {
-            $query->where('cash_reference_id', $cashReferenceId);
+            $query->where('cash_reports.cash_reference_id', $cashReferenceId);
         }
 
         // Fetch data and group by CoA ID
-        $transactions = $query->orderBy('transaction_date')->get();
+        $transactions = $query->orderBy('coa.sort_order')
+            ->orderBy('cash_reports.transaction_date')
+            ->get();
 
         return $transactions->groupBy('coa_id');
     }
