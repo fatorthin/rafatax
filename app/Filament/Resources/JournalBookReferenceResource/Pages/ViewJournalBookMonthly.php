@@ -56,6 +56,8 @@ class ViewJournalBookMonthly extends Page implements HasTable
                         DB::raw('COUNT(*) as transaction_count')
                     ])
                     ->groupBy('year', 'month')
+                    ->orderBy('year', 'desc')
+                    ->orderBy('month', 'asc')
             )
             ->columns([
                 TextColumn::make('year')

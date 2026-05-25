@@ -180,6 +180,11 @@ class NeracaLajurBulanan extends Page implements HasTable
         $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
+        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', $this->year)
+            ->whereMonth('tanggal_penyusutan', $this->month)
+            ->sum('jumlah_penyusutan') ?? 0;
+
         $query = Coa::query()
             ->select([
                 'coa.id',
@@ -197,8 +202,8 @@ class NeracaLajurBulanan extends Page implements HasTable
                 DB::raw('COALESCE(bank_data.bank_kredit, 0) as bank_kredit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
-                DB::raw('COALESCE(aje_data.aje_debit, 0) as aje_debit'),
-                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit'),
+                DB::raw("COALESCE(aje_data.aje_debit, 0) + (CASE WHEN coa.code = 'AO-509' THEN {$depresiasiTotal} ELSE 0 END) as aje_debit"),
+                DB::raw("COALESCE(aje_data.aje_kredit, 0) + (CASE WHEN coa.code = 'AO-127' THEN {$depresiasiTotal} ELSE 0 END) as aje_kredit"),
                 DB::raw('COALESCE(neraca_awal_bulan_depan.neraca_awal_bulan_depan_debit, 0) as neraca_awal_bulan_depan_debit'),
                 DB::raw('COALESCE(neraca_awal_bulan_depan.neraca_awal_bulan_depan_kredit, 0) as neraca_awal_bulan_depan_kredit')
             ])
@@ -514,6 +519,11 @@ class NeracaLajurBulanan extends Page implements HasTable
         $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
+        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', $this->year)
+            ->whereMonth('tanggal_penyusutan', $this->month)
+            ->sum('jumlah_penyusutan') ?? 0;
+
         $journalData = DB::table('journal_book_reports')
             ->select('coa_id', DB::raw('SUM(debit_amount) as debit'), DB::raw('SUM(credit_amount) as credit'))
             ->whereBetween('transaction_date', [$startOfPreviousMonth, $endOfPreviousMonth])
@@ -596,6 +606,13 @@ class NeracaLajurBulanan extends Page implements HasTable
             $aje = $ajeData->get($coa->id);
             $ajeDebit = $aje ? $aje->debit : 0;
             $ajeKredit = $aje ? $aje->credit : 0;
+
+            if ($coa->code === 'AO-509') {
+                $ajeDebit += $depresiasiTotal;
+            }
+            if ($coa->code === 'AO-127') {
+                $ajeKredit += $depresiasiTotal;
+            }
 
             $result[] = (object) [
                 'id' => $coa->id,

@@ -77,6 +77,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                 ->action(function (array $data): void {
                     $this->bulan = $data['bulan'];
                     $this->tahun = $data['tahun'];
+                    $this->redirect(static::getResource()::getUrl('monthly', ['bulan' => $this->bulan, 'tahun' => $this->tahun]));
                 }),
 
             Action::make('export')

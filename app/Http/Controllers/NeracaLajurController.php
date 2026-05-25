@@ -312,6 +312,11 @@ class NeracaLajurController extends Controller
         $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($year, $month, 1)->endOfMonth();
 
+        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', $year)
+            ->whereMonth('tanggal_penyusutan', $month)
+            ->sum('jumlah_penyusutan') ?? 0;
+
         $query = Coa::query()
             ->select([
                 'coa.id',
@@ -328,8 +333,8 @@ class NeracaLajurController extends Controller
                 DB::raw('COALESCE(bank_data.bank_kredit, 0) as bank_kredit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
-                DB::raw('COALESCE(aje_data.aje_debit, 0) as aje_debit'),
-                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit')
+                DB::raw("COALESCE(aje_data.aje_debit, 0) + (CASE WHEN coa.code = 'AO-509' THEN {$depresiasiTotal} ELSE 0 END) as aje_debit"),
+                DB::raw("COALESCE(aje_data.aje_kredit, 0) + (CASE WHEN coa.code = 'AO-127' THEN {$depresiasiTotal} ELSE 0 END) as aje_kredit")
             ])
             ->leftJoin(
                 DB::raw("(
