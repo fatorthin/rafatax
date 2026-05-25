@@ -39,7 +39,7 @@ class NeracaLajurBulanan extends Page implements HasTable
     public static function canAccess(array $parameters = []): bool
     {
         /** @var \App\Models\User|null $user */
-        $user = auth()->user();
+        $user = \Illuminate\Support\Facades\Auth::user();
         if (!$user) {
             return false;
         }

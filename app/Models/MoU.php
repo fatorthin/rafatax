@@ -32,6 +32,7 @@ class MoU extends Model
         'discount_amount',
         'is_make_case_project',
         'case_project_id',
+        'approved_date'
     ];
 
     public function client()

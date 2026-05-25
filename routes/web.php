@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NeracaLajurController;
+use App\Http\Controllers\NeracaLajurPiutangController;
 use App\Http\Controllers\MouPrintViewController;
 use App\Http\Controllers\InvoicePrintController;
 use App\Http\Controllers\ExportPayrollController;
@@ -68,6 +69,10 @@ Route::middleware(['auth'])->group(function () {
     // Neraca Lajur Export & Save
     Route::get('/neraca-lajur/export', [NeracaLajurController::class, 'export'])->name('neraca-lajur.export');
     Route::get('/neraca-lajur/save-cutoff', [NeracaLajurController::class, 'saveCutOff'])->name('neraca-lajur.save-cutoff');
+
+    // Neraca Lajur Piutang Export
+    Route::get('/neraca-lajur-piutang/export-detail-jp', [NeracaLajurPiutangController::class, 'exportDetailJP'])->name('neraca-lajur-piutang.export-detail-jp');
+    Route::get('/neraca-lajur-piutang/export', [NeracaLajurPiutangController::class, 'exportNeraca'])->name('neraca-lajur-piutang.export');
 
     // Neraca Export
     Route::get('/neraca/export', [\App\Http\Controllers\NeracaController::class, 'export'])->name('neraca.export');

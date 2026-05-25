@@ -124,7 +124,7 @@ class CashReportResource extends Resource
                     })
                     ->getStateUsing(function ($record, $column) {
                         // Get all cash reports for the same cash reference, ordered by date
-                        $cashReports = CashReport::where('cash_reference_id', $record->cash_reference_id)
+                        $cashReports = CashReport::query()->where('cash_reference_id', '=', $record->cash_reference_id, 'and')
                             ->where(function ($query) use ($record) {
                                 $query->where('transaction_date', '<', $record->transaction_date)
                                     ->orWhere(function ($q) use ($record) {
@@ -156,7 +156,7 @@ class CashReportResource extends Resource
                                 }
 
                                 // Get all cash reports for this cash reference up to the last record
-                                $cashReports = CashReport::where('cash_reference_id', $lastRecord->cash_reference_id)
+                                $cashReports = CashReport::query()->where('cash_reference_id', '=', $lastRecord->cash_reference_id, 'and')
                                     ->where(function ($q) use ($lastRecord) {
                                         $q->where('transaction_date', '<', $lastRecord->transaction_date)
                                             ->orWhere(function ($innerQ) use ($lastRecord) {
@@ -192,7 +192,7 @@ class CashReportResource extends Resource
                     ->searchable()
                     ->options(function () {
                         return Coa::query()
-                            ->orderBy('code')
+                            ->orderBy('code', 'asc')
                             ->get()
                             ->mapWithKeys(function ($coa) {
                                 return [$coa->id => $coa->code . ' - ' . $coa->name];
@@ -274,11 +274,12 @@ class CashReportResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCashReports::route('/'),
-            'neraca-lajur' => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
-            'neraca' => Pages\Neraca::route('/neraca'),
-            'laba-rugi-bulanan' => Pages\LabaRugiBulanan::route('/laba-rugi-bulanan'),
-            'general-ledger' => Pages\GeneralLedger::route('/general-ledger'),
+            'index'                => Pages\ListCashReports::route('/'),
+            'neraca-lajur'         => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
+            'neraca-lajur-piutang' => Pages\NeracaLajurPiutang::route('/neraca-lajur-piutang'),
+            'neraca'               => Pages\Neraca::route('/neraca'),
+            'laba-rugi-bulanan'    => Pages\LabaRugiBulanan::route('/laba-rugi-bulanan'),
+            'general-ledger'       => Pages\GeneralLedger::route('/general-ledger'),
         ];
     }
 
@@ -291,11 +292,16 @@ class CashReportResource extends Resource
                 ->group('Histori Data')
                 ->url(static::getUrl('neraca-lajur'))
                 ->sort(2),
+            \Filament\Navigation\NavigationItem::make('Neraca Lajur (Piutang)')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->group('Histori Data')
+                ->url(static::getUrl('neraca-lajur-piutang'))
+                ->sort(3),
             \Filament\Navigation\NavigationItem::make('Buku Besar')
                 ->icon('heroicon-o-clipboard-document-list')
                 ->group('Histori Data')
                 ->url(static::getUrl('general-ledger'))
-                ->sort(3),
+                ->sort(4),
         ];
     }
 
