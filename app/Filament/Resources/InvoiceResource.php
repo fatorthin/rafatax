@@ -224,6 +224,7 @@ class InvoiceResource extends Resource
             ->paginated([10, 25, 50, 100])
             ->columns(static::getTableColumns())
             ->filters(static::getTableFilters())
+            ->filtersLayout(Tables\Enums\FiltersLayout::Modal)
             ->actions(static::getTableActions(), position: ActionsPosition::BeforeCells)
             ->bulkActions(static::getTableBulkActions())
             ->defaultSort('invoice_date', 'desc')
@@ -374,7 +375,6 @@ class InvoiceResource extends Resource
     private static function getTableFilters(): array
     {
         return [
-            Tables\Filters\TrashedFilter::make(),
             Tables\Filters\Filter::make('date_range')
                 ->form([
                     Forms\Components\Grid::make(2)

@@ -202,7 +202,7 @@ class DaftarAktivaTetapResource extends Resource
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) {
                                 $aktivaIds = $query->pluck('id');
-                                return DepresiasiAktivaTetap::query()->whereIn('daftar_aktiva_tetap_id', $aktivaIds)
+                                return DepresiasiAktivaTetap::query()->whereIn('daftar_aktiva_tetap_id', $aktivaIds, 'and', false)
                                     ->sum('jumlah_penyusutan');
                             })
                             ->formatStateUsing(function ($state) {
@@ -226,7 +226,7 @@ class DaftarAktivaTetapResource extends Resource
                             ->using(function ($query) {
                                 $aktivaIds = $query->pluck('id');
                                 $totalHargaPerolehan = $query->sum('harga_perolehan');
-                                $totalPenyusutan = DepresiasiAktivaTetap::query()->whereIn('daftar_aktiva_tetap_id', $aktivaIds)
+                                $totalPenyusutan = DepresiasiAktivaTetap::query()->whereIn('daftar_aktiva_tetap_id', $aktivaIds, 'and', false)
                                     ->sum('jumlah_penyusutan');
                                 return $totalHargaPerolehan - $totalPenyusutan;
                             })

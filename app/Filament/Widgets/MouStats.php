@@ -30,8 +30,8 @@ class MouStats extends BaseWidget
         $this->tableFilters = request('tableFilters', []);
         
         // Check if URL is clean (no query parameters)
-        $fullUrl = request()->fullUrl();
-        $baseUrl = url()->current();
+        $fullUrl = \Illuminate\Support\Facades\Request::fullUrl();
+        $baseUrl = \Illuminate\Support\Facades\URL::current();
         
         // If URL is base URL with no parameters, reset filters
         if ($fullUrl === $baseUrl) {
@@ -40,7 +40,7 @@ class MouStats extends BaseWidget
     }
     
     #[On('filament.table.filtered')]
-    public function handleTableFiltered($data): void
+    public function handleTableFiltered(?array $data): void
     {
         // Update filters when table is filtered
         $this->tableFilters = $data ?? [];
@@ -58,8 +58,8 @@ class MouStats extends BaseWidget
         }
         
         // Check if URL has no parameters - then clear filters
-        $fullUrl = request()->fullUrl();
-        $baseUrl = url()->current();
+        $fullUrl = \Illuminate\Support\Facades\Request::fullUrl();
+        $baseUrl = \Illuminate\Support\Facades\URL::current();
         
         if ($fullUrl === $baseUrl) {
             $this->tableFilters = [];
@@ -87,13 +87,13 @@ class MouStats extends BaseWidget
                 // Month filter
                 if (isset($this->tableFilters['month']) && !empty($this->tableFilters['month']['value'])) {
                     $month = $this->tableFilters['month']['value'];
-                    $query->whereMonth('start_date', $month);
+                    $query->whereMonth('start_date', '=', $month, 'and');
                 }
                 
                 // Year filter
                 if (isset($this->tableFilters['year']) && !empty($this->tableFilters['year']['value'])) {
                     $year = $this->tableFilters['year']['value'];
-                    $query->whereYear('start_date', $year);
+                    $query->whereYear('start_date', '=', $year, 'and');
                 }
                 
                 // Status filter - only apply to main query if not related to widgets
@@ -115,7 +115,7 @@ class MouStats extends BaseWidget
             $unapprovedQuery = clone $query;
             
             // Get total MoUs count
-            $totalMous = $totalQuery->count();
+            $totalMous = $totalQuery->count('*');
             
             // Get approved MoUs count
             $approvedMous = $approvedQuery->where('status', 'approved')->count();

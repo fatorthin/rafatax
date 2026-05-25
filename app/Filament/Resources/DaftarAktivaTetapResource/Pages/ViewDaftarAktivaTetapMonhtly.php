@@ -11,7 +11,6 @@ use Filament\Resources\Pages\Page;
 use App\Models\DepresiasiAktivaTetap;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\DaftarAktivaTetapResource;
 
@@ -25,8 +24,13 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
 
     protected static ?string $title = 'Daftar Aktiva Tetap Bulanan';
 
+    /** @var int|string|null */
     public $bulan;
+
+    /** @var int|string|null */
     public $tahun;
+
+    /** @var string|null */
     public $periode;
 
     public function mount()
@@ -94,7 +98,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
         $tahun = $this->tahun;
 
         return $table
-            ->query(DaftarAktivaTetap::query())
+            ->query(DaftarAktivaTetap::query()->orderBy('tahun_perolehan', 'asc'))
             ->striped()
             ->columns([
                 TextColumn::make('deskripsi')
@@ -114,7 +118,7 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->using(function ($query) use ($bulan, $tahun) {
                                 $aktivaIds = $query->pluck('id');
-                                return DaftarAktivaTetap::whereIn('id', $aktivaIds)->sum('harga_perolehan');
+                                return DaftarAktivaTetap::query()->whereIn('id', $aktivaIds, 'and', false)->sum('harga_perolehan');
                             })
                             ->formatStateUsing(function ($state) {
                                 return number_format($state, 0, ',', '.');
@@ -130,8 +134,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                     ->alignEnd()
                     ->getStateUsing(function ($record) use ($bulan, $tahun) {
                         $tanggal = Carbon::create($tahun, $bulan, 1)->startOfMonth();
-                        return DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
-                            ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
+                        return DepresiasiAktivaTetap::query()
+                            ->where('daftar_aktiva_tetap_id', '=', $record->id, 'and')
+                            ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'), 'and')
                             ->sum('jumlah_penyusutan');
                     })
                     ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
@@ -140,8 +145,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->using(function ($query) use ($bulan, $tahun) {
                                 $tanggal = Carbon::create($tahun, $bulan, 1)->startOfMonth();
                                 $aktivaIds = $query->pluck('id');
-                                return DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
-                                    ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
+                                return DepresiasiAktivaTetap::query()
+                                    ->whereIn('daftar_aktiva_tetap_id', $aktivaIds, 'and', false)
+                                    ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'), 'and')
                                     ->sum('jumlah_penyusutan');
                             })
                             ->formatStateUsing(function ($state) {
@@ -160,8 +166,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             return 0;
                         }
 
-                        $akumulasiLalu = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
-                            ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
+                        $akumulasiLalu = DepresiasiAktivaTetap::query()
+                            ->where('daftar_aktiva_tetap_id', '=', $record->id, 'and')
+                            ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'), 'and')
                             ->sum('jumlah_penyusutan');
                         return $record->harga_perolehan - $akumulasiLalu;
                     })
@@ -176,10 +183,10 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                                 $totalHargaPerolehan = $query->where('tahun_perolehan', '<=', $tanggal)
                                     ->sum('harga_perolehan');
 
-                                $totalAkumulasiLalu = DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
-                                    ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'))
+                                $totalAkumulasiLalu = DepresiasiAktivaTetap::query()
+                                    ->whereIn('daftar_aktiva_tetap_id', $aktivaIds, 'and', false)
+                                    ->where('tanggal_penyusutan', '<', $tanggal->format('Y-m-d'), 'and')
                                     ->sum('jumlah_penyusutan');
-
                                 return $totalHargaPerolehan - $totalAkumulasiLalu;
                             })
                             ->formatStateUsing(function ($state) {
@@ -193,8 +200,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                     ->getStateUsing(function ($record) use ($bulan, $tahun) {
                         $tanggalAwal = Carbon::create($tahun, $bulan, 1);
                         $tanggalAkhir = $tanggalAwal->copy()->endOfMonth();
-                        return DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
-                            ->whereBetween('tanggal_penyusutan', [$tanggalAwal, $tanggalAkhir])
+                        return DepresiasiAktivaTetap::query()
+                            ->where('daftar_aktiva_tetap_id', '=', $record->id, 'and')
+                            ->whereBetween('tanggal_penyusutan', [$tanggalAwal, $tanggalAkhir], 'and', false)
                             ->sum('jumlah_penyusutan');
                     })
                     ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
@@ -204,8 +212,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                                 $tanggalAwal = Carbon::create($tahun, $bulan, 1);
                                 $tanggalAkhir = $tanggalAwal->copy()->endOfMonth();
                                 $aktivaIds = $query->pluck('id');
-                                return DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
-                                    ->whereBetween('tanggal_penyusutan', [$tanggalAwal, $tanggalAkhir])
+                                return DepresiasiAktivaTetap::query()
+                                    ->whereIn('daftar_aktiva_tetap_id', $aktivaIds, 'and', false)
+                                    ->whereBetween('tanggal_penyusutan', [$tanggalAwal, $tanggalAkhir], 'and', false)
                                     ->sum('jumlah_penyusutan');
                             })
                             ->formatStateUsing(function ($state) {
@@ -218,8 +227,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                     ->alignEnd()
                     ->getStateUsing(function ($record) use ($bulan, $tahun) {
                         $tanggalAkhir = Carbon::create($tahun, $bulan, 1)->endOfMonth();
-                        return DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
-                            ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
+                        return DepresiasiAktivaTetap::query()
+                            ->where('daftar_aktiva_tetap_id', '=', $record->id, 'and')
+                            ->where('tanggal_penyusutan', '<=', $tanggalAkhir, 'and')
                             ->sum('jumlah_penyusutan');
                     })
                     ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
@@ -228,8 +238,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                             ->using(function ($query) use ($bulan, $tahun) {
                                 $tanggalAkhir = Carbon::create($tahun, $bulan, 1)->endOfMonth();
                                 $aktivaIds = $query->pluck('id');
-                                return DepresiasiAktivaTetap::whereIn('daftar_aktiva_tetap_id', $aktivaIds)
-                                    ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
+                                return DepresiasiAktivaTetap::query()
+                                    ->whereIn('daftar_aktiva_tetap_id', $aktivaIds, 'and', false)
+                                    ->where('tanggal_penyusutan', '<=', $tanggalAkhir, 'and')
                                     ->sum('jumlah_penyusutan');
                             })
                             ->formatStateUsing(function ($state) {
@@ -242,8 +253,9 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                     ->alignEnd()
                     ->getStateUsing(function ($record) use ($bulan, $tahun) {
                         $tanggalAkhir = Carbon::create($tahun, $bulan, 1)->endOfMonth();
-                        $akumulasi = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $record->id)
-                            ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
+                        $akumulasi = DepresiasiAktivaTetap::query()
+                            ->where('daftar_aktiva_tetap_id', '=', $record->id, 'and')
+                            ->where('tanggal_penyusutan', '<=', $tanggalAkhir, 'and')
                             ->sum('jumlah_penyusutan');
 
                         // Jika status non-aktif, tampilkan akumulasi dalam nilai minus
@@ -261,12 +273,13 @@ class ViewDaftarAktivaTetapMonhtly extends Page implements HasTable
                                 $aktivaIds = $query->pluck('id');
 
                                 // Get all aktiva with their status
-                                $allAktiva = DaftarAktivaTetap::whereIn('id', $aktivaIds)->get();
+                                $allAktiva = DaftarAktivaTetap::query()->whereIn('id', $aktivaIds, 'and', false)->get();
 
                                 $total = 0;
                                 foreach ($allAktiva as $aktiva) {
-                                    $akumulasi = DepresiasiAktivaTetap::where('daftar_aktiva_tetap_id', $aktiva->id)
-                                        ->where('tanggal_penyusutan', '<=', $tanggalAkhir)
+                                    $akumulasi = DepresiasiAktivaTetap::query()
+                                        ->where('daftar_aktiva_tetap_id', '=', $aktiva->id, 'and')
+                                        ->where('tanggal_penyusutan', '<=', $tanggalAkhir, 'and')
                                         ->sum('jumlah_penyusutan');
 
                                     // Jika status non-aktif, hitung sebagai minus akumulasi
