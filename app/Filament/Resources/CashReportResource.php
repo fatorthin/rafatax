@@ -179,18 +179,6 @@ class CashReportResource extends Resource
                     )
                     ->alignEnd()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime('d-m-Y H:i:s')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -200,7 +188,16 @@ class CashReportResource extends Resource
                     ->multiple(),
                 Tables\Filters\SelectFilter::make('coa_id')
                     ->label('Chart of Account')
-                    ->relationship('coa', 'name'),
+                    ->multiple()
+                    ->searchable()
+                    ->options(function () {
+                        return Coa::query()
+                            ->orderBy('code')
+                            ->get()
+                            ->mapWithKeys(function ($coa) {
+                                return [$coa->id => $coa->code . ' - ' . $coa->name];
+                            });
+                    }),
                 Tables\Filters\Filter::make('transaction_month')
                     ->label('Month')
                     ->form([

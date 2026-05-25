@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class LabaRugiReportService
 {
+    private const LABA_RUGI_GROUP_IDS = [40, 50, 60, 70];
+    private const PENDAPATAN_GROUP_IDS = [40, 60];
+    private const LUAR_USAHA_GROUP_IDS = [60, 70];
+
     public function getMonthlyReport(int $month, int $year): array
     {
         $startOfPreviousMonth = Carbon::create($year, $month, 1)->subMonth()->startOfMonth();
@@ -26,6 +30,7 @@ class LabaRugiReportService
                 'coa.code',
                 'coa.name',
                 'coa.type',
+                'coa.group_coa_id',
                 DB::raw('COALESCE(journal_data.neraca_awal_debit, 0) as neraca_awal_debit'),
                 DB::raw('COALESCE(journal_data.neraca_awal_kredit, 0) as neraca_awal_kredit'),
                 DB::raw('COALESCE(kas_besar_data.kas_besar_debit, 0) as kas_besar_debit'),
@@ -137,7 +142,7 @@ class LabaRugiReportService
             )
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
-            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9](\\.[1-9])?|5[1-9][0-9](\\.[1-9])?|6[0-9]{2}|70[0-2])$'")
+            ->whereIn('coa.group_coa_id', self::LABA_RUGI_GROUP_IDS)
             ->orderBy('coa.code')
             ->get();
 
@@ -154,22 +159,18 @@ class LabaRugiReportService
                 $row->kas_kecil_kredit + $row->bank_kredit +
                 $row->jurnal_umum_kredit + $row->aje_kredit;
 
-            if (preg_match('/^AO-4/', $row->code)) {
+            if (in_array($row->group_coa_id, self::PENDAPATAN_GROUP_IDS, true)) {
                 $amount = $totalKredit - $totalDebit;
                 $totalPendapatan += $amount;
-                $category = 'Pendapatan';
-            } elseif (preg_match('/^AO-6/', $row->code)) {
-                $amount = $totalKredit - $totalDebit;
-                $totalPendapatan += $amount;
-                $category = 'Penghasilan (Biaya) Luar Usaha';
-            } elseif (preg_match('/^AO-7/', $row->code)) {
-                $amount = $totalDebit - $totalKredit;
-                $totalBeban += $amount;
-                $category = 'Penghasilan (Biaya) Luar Usaha';
+                $category = in_array($row->group_coa_id, self::LUAR_USAHA_GROUP_IDS, true)
+                    ? 'Penghasilan (Biaya) Luar Usaha'
+                    : 'Pendapatan';
             } else {
                 $amount = $totalDebit - $totalKredit;
                 $totalBeban += $amount;
-                $category = 'Beban';
+                $category = in_array($row->group_coa_id, self::LUAR_USAHA_GROUP_IDS, true)
+                    ? 'Penghasilan (Biaya) Luar Usaha'
+                    : 'Beban';
             }
 
             $items[] = [

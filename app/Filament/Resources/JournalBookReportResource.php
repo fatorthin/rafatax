@@ -12,7 +12,6 @@ use App\Models\JournalBookReport;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\JournalBookReportResource\Pages;
-use App\Filament\Resources\JournalBookReportResource\RelationManagers;
 
 class JournalBookReportResource extends Resource
 {

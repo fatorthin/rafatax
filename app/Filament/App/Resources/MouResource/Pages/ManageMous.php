@@ -57,6 +57,9 @@ class ManageMous extends ManageRecords
                             'unapproved' => 'Unapproved',
                         ])
                         ->placeholder('Semua Status'),
+                    \Filament\Forms\Components\Toggle::make('only_with_piutang')
+                        ->label('Hanya tampilkan MoU yang masih punya piutang')
+                        ->default(false),
                 ])
                 ->action(function (array $data) {
                     return static::exportRekapPaymentPiutang($data);

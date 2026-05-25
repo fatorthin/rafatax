@@ -31,6 +31,12 @@ class CaseProjectResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $hideForHrd = function () {
+            /** @var \App\Models\User|null $user */
+            $user = \Illuminate\Support\Facades\Auth::user();
+            return $user?->hasRole('hrd-manager') ?? false;
+        };
+
         return $form
             ->schema([
                 Forms\Components\TextInput::make('description')
@@ -61,10 +67,39 @@ class CaseProjectResource extends Resource
                             ->pluck('name', 'id');
                     })
                     ->multiple()
-                    ->label('Nama Staff')
+                    ->label('Tim Case Project')
                     ->searchable()
                     ->preload()
                     ->required(),
+                Forms\Components\Section::make('Detail Tim')
+                    ->schema([
+                        Forms\Components\Repeater::make('details')
+                            ->relationship('details')
+                            ->label('Nominal Bonus Staff')
+                            ->schema([
+                                Forms\Components\Select::make('staff_id')
+                                    ->label('Staff')
+                                    ->options(function (?CaseProject $record) {
+                                        return Staff::query()
+                                            ->where('is_active', true)
+                                            ->when($record, fn($query) => $query->orWhereIn('id', $record->staff_id ?? []))
+                                            ->pluck('name', 'id');
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                Forms\Components\TextInput::make('bonus')
+                                    ->label('Nominal Bonus')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Tambah Bonus Staff')
+                            ->defaultItems(0)
+                            ->helperText('Tambahkan satu baris untuk setiap staff beserta nominal bonusnya.'),
+                    ])
+                    ->columnSpanFull(),
                 Forms\Components\Select::make('mou_id')
                     ->label('No MoU')
                     ->options(MoU::with('client')->get()->mapWithKeys(fn($record) => [
@@ -73,31 +108,39 @@ class CaseProjectResource extends Resource
                     ->searchable()
                     ->preload(),
                 Forms\Components\TextInput::make('case_letter_number')
-                    ->label('No Surat Kasus'),
+                    ->label('No Surat Kasus')
+                    ->hidden($hideForHrd),
                 Forms\Components\DatePicker::make('case_letter_date')
                     ->label('Tanggal Surat Kasus')
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->hidden($hideForHrd),
                 Forms\Components\TextInput::make('power_of_attorney_number')
-                    ->label('No Surat Kuasa'),
+                    ->label('No Surat Kuasa')
+                    ->hidden($hideForHrd),
                 Forms\Components\DatePicker::make('power_of_attorney_date')
                     ->label('Tanggal Surat Kuasa')
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->hidden($hideForHrd),
                 Forms\Components\DatePicker::make('filling_drive')
                     ->label('Drive Pengisian')
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->hidden($hideForHrd),
                 Forms\Components\Textarea::make('link_drive')
-                    ->label('Link Drive'),
+                    ->label('Link Drive')
+                    ->hidden($hideForHrd),
                 Forms\Components\DatePicker::make('report_date')
                     ->label('Tanggal Laporan')
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->hidden($hideForHrd),
                 Forms\Components\DatePicker::make('share_client_date')
                     ->label('Tanggal Berikan Client')
                     ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->displayFormat('d/m/Y')
+                    ->hidden($hideForHrd),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([
@@ -106,16 +149,28 @@ class CaseProjectResource extends Resource
                         'case_done' => 'CASE DONE',
                         'bonus_done' => 'BONUS DONE',
                     ])
-                    ->default(fn () => auth()->user()?->hasRole('hrd-manager') ? 'case_done' : null)
+                    ->default(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->hasRole('hrd-manager') ? 'case_done' : null;
+                    })
                     ->afterStateHydrated(function (Forms\Components\Select $component, $state) {
-                        if (auth()->user()?->hasRole('hrd-manager')) {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        if ($user?->hasRole('hrd-manager')) {
                             $component->state('case_done');
                         }
                     })
                     ->mutateDehydratedStateUsing(function ($state) {
-                        return auth()->user()?->hasRole('hrd-manager') ? 'case_done' : $state;
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->hasRole('hrd-manager') ? 'case_done' : $state;
                     })
-                    ->disabled(fn () => auth()->user()?->hasRole('hrd-manager'))
+                    ->disabled(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->hasRole('hrd-manager') ?? false;
+                    })
                     ->dehydrated()
                     ->required(),
             ]);
@@ -123,6 +178,12 @@ class CaseProjectResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $hideForHrd = function () {
+            /** @var \App\Models\User|null $user */
+            $user = \Illuminate\Support\Facades\Auth::user();
+            return $user?->hasRole('hrd-manager') ?? false;
+        };
+
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
@@ -164,6 +225,26 @@ class CaseProjectResource extends Resource
                         return Staff::whereIn('id', $staffIds)->pluck('name')->join(', ');
                     })
                     ->wrap(),
+
+                Tables\Columns\TextColumn::make('bonus_staff')
+                    ->label('Staff Penerima Bonus')
+                    ->getStateUsing(function (CaseProject $record) {
+                        return $record->details
+                            ->map(function ($detail) {
+                                $staffName = $detail->staff->name ?? '-';
+                                $bonus = number_format((float) ($detail->bonus ?? 0), 0, ',', '.');
+
+                                return $staffName . ' (Rp ' . $bonus . ')';
+                            })
+                            ->implode(', ');
+                    })
+                    ->wrap()
+                    ->hidden(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
+                        return $user?->hasRole('inventory-admin') ?? false;
+                    }),
+
                 Tables\Columns\TextColumn::make('total_bonus')
                     ->label('Total Bonus')
                     ->getStateUsing(fn(CaseProject $record) => $record->details->sum('bonus'))
@@ -173,25 +254,33 @@ class CaseProjectResource extends Resource
                             ->orderBy('details_sum_bonus', $direction);
                     })
                     ->hidden(function () {
-                        /** @var \App\Models\User $user */
-                        $user = auth()->user();
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         return $user?->hasRole('inventory-admin') ?? false;
                     }),
                 Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
-                Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable(),
-                Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable(),
+                Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('power_of_attorney_date')->label('Tanggal Surat Kuasa')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('filling_drive')->label('Drive Pengisian')->sortable()
+                    ->hidden($hideForHrd),
                 Tables\Columns\TextColumn::make('link_drive')
                     ->label('Link Drive')
                     ->formatStateUsing(fn($state) => $state ? 'Buka Link' : '-')
                     ->url(fn($record) => $record->link_drive, shouldOpenInNewTab: true)
                     ->color('primary')
                     ->icon('heroicon-o-link')
-                    ->iconPosition('before'),
-                Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable(),
-                Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable(),
+                    ->iconPosition('before')
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('report_date')->label('Tanggal Laporan')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
+                Tables\Columns\TextColumn::make('share_client_date')->label('Tanggal Berikan Client')->date('d-m-Y')->sortable()
+                    ->hidden($hideForHrd),
                 // Tables\Columns\TextColumn::make('case_date')->label('Tanggal Kasus')->date('d-m-Y')->sortable(),
 
             ])
@@ -258,8 +347,8 @@ class CaseProjectResource extends Resource
                         }
                     })
                     ->hidden(function () {
-                        /** @var \App\Models\User $user */
-                        $user = auth()->user();
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         return $user?->hasRole('inventory-admin') ?? false;
                     }),
                 Tables\Actions\Action::make('detail')
@@ -267,8 +356,8 @@ class CaseProjectResource extends Resource
                     ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
                     ->icon('heroicon-o-information-circle')
                     ->hidden(function () {
-                        /** @var \App\Models\User $user */
-                        $user = auth()->user();
+                        /** @var \App\Models\User|null $user */
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         return $user?->hasRole('inventory-admin') ?? false;
                     }),
                 Tables\Actions\Action::make('editLinkDrive')

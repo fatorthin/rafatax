@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CoaResource\Pages;
-use App\Filament\Resources\CoaResource\RelationManagers;
 use App\Models\Coa;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -47,6 +46,8 @@ class CoaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->reorderable('sort_order')
+            ->defaultSort('sort_order')
             ->columns([
                 Tables\Columns\TextColumn::make('code')
                     ->searchable(),

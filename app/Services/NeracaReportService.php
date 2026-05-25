@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\DB;
 
 class NeracaReportService
 {
+    private const NERACA_GROUP_IDS = [10, 11, 12, 20, 21, 30];
+    private const AKTIVA_GROUP_IDS = [10, 11, 12];
+    private const LABA_RUGI_GROUP_IDS = [40, 50, 60, 70];
+    private const PENDAPATAN_GROUP_IDS = [40, 60];
+
     public function getMonthlyReport(int $month, int $year): array
     {
         $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
@@ -50,7 +55,7 @@ class NeracaReportService
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
             ->whereNotIn('coa.id', [78, 118])
-            ->whereRaw("coa.code REGEXP '^AO-(([1-2][0-9]{2}|30[0-5])(\\.[1-5])?|(10[1-2])\\.[1-5]|1010(\\.[1-9])?|1011(\\.[1-9])?)$'")
+            ->whereIn('coa.group_coa_id', self::NERACA_GROUP_IDS)
             ->orderBy('group_coas.id')
             ->orderBy('coa.id')
             ->get();
@@ -78,11 +83,11 @@ class NeracaReportService
         ];
 
         foreach ($data as $row) {
-            $amount = preg_match('/^AO-1/', $row->code)
+            $amount = in_array($row->group_coa_id, self::AKTIVA_GROUP_IDS, true)
                 ? $row->debit - $row->credit
                 : $row->credit - $row->debit;
 
-            $isAktiva = preg_match('/^AO-1/', $row->code);
+            $isAktiva = in_array($row->group_coa_id, self::AKTIVA_GROUP_IDS, true);
             $target = $isAktiva ? 'aktiva' : 'pasiva';
 
             if ($currentGroup !== $row->group_coa_id) {
@@ -150,6 +155,7 @@ class NeracaReportService
                 'coa.code',
                 'coa.name',
                 'coa.type',
+                'coa.group_coa_id',
                 DB::raw('COALESCE(journal_data.neraca_awal_debit, 0) as neraca_awal_debit'),
                 DB::raw('COALESCE(journal_data.neraca_awal_kredit, 0) as neraca_awal_kredit'),
                 DB::raw('COALESCE(kas_besar_data.kas_besar_debit, 0) as kas_besar_debit'),
@@ -261,7 +267,7 @@ class NeracaReportService
             )
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
-            ->whereRaw("coa.code REGEXP '^AO-(4[0-9]{2}(\\.[1-6])?|501(\\.[1-4])?|50[0-9](\\.[1-9])?|5[1-9][0-9](\\.[1-9])?|6[0-9]{2}|70[0-2])$'")
+            ->whereIn('coa.group_coa_id', self::LABA_RUGI_GROUP_IDS)
             ->orderBy('coa.code')
             ->get();
 
@@ -277,7 +283,7 @@ class NeracaReportService
                 $row->kas_kecil_kredit + $row->bank_kredit +
                 $row->jurnal_umum_kredit + $row->aje_kredit;
 
-            if (preg_match('/^AO-4/', $row->code)) {
+            if (in_array($row->group_coa_id, self::PENDAPATAN_GROUP_IDS, true)) {
                 $amount = $totalKredit - $totalDebit;
                 $totalPendapatan += $amount;
             } else {

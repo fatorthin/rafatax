@@ -53,9 +53,9 @@ class ManageCaseProjects extends ManageRecords
                     return response()->download($filepath, $filename)->deleteFileAfterSend(true);
                 }),
             Actions\CreateAction::make()
-                ->label('Add New Case Project')
+                ->label('Tambah Data')
                 ->icon('heroicon-o-plus')
-                ->modalHeading('Add New Case Project')
+                ->modalHeading('Tambah Data')
                 ->modalWidth('2xl'),
         ];
     }

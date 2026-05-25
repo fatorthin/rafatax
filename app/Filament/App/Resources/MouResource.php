@@ -14,7 +14,6 @@ use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\ActionsPosition;
 use App\Filament\App\Resources\MouResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MouResource extends Resource
 {
@@ -356,52 +355,70 @@ class MouResource extends Resource
                     })
                     ->alignEnd()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('total_invoice_unpaid')
-                    ->label('Total Invoice Unpaid')
-                    ->numeric(locale: 'id')
-                    ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
-                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'unpaid'))
-                            ->sum('amount');
-                    })
-                    ->alignEnd()
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('total_invoice_paid')
-                    ->label('Total Invoice Paid')
-                    ->numeric(locale: 'id')
-                    ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
-                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'paid'))
-                            ->sum('amount');
-                    })
-                    ->alignEnd()
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('total_invoice_amount')
-                    ->label('Total Invoice')
-                    ->numeric(locale: 'id')
-                    ->getStateUsing(function ($record) {
-                        return CostListInvoice::where('mou_id', $record->id)
-                            ->whereNotNull('invoice_id')
-                            ->sum('amount');
-                    })
-                    ->alignEnd()
-                    ->toggleable(),
                 Tables\Columns\TextColumn::make('discount_amount')
                     ->label('Discount Amount')
                     ->formatStateUsing(function ($state) {
                         return number_format((float) $state, 0, ',', '.');
                     }),
+                Tables\Columns\TextColumn::make('sisa_tagihan')
+                    ->label('Sisa Tagihan')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        $totalMou = $record->cost_lists()->sum('total_amount');
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime('d-m-Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Diupdate')
-                    ->dateTime('d-m-Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                        $totalPaid = CostListInvoice::where('mou_id', $record->id)
+                            ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'paid'))
+                            ->sum('amount');
+
+                        $discountMou = (float) ($record->discount_amount ?? 0);
+
+                        return $totalMou - $totalPaid - $discountMou;
+                    })
+                    ->alignEnd()
+                    ->toggleable(),
+                // Tables\Columns\TextColumn::make('total_invoice_unpaid')
+                //     ->label('Total Invoice Unpaid')
+                //     ->numeric(locale: 'id')
+                //     ->getStateUsing(function ($record) {
+                //         return CostListInvoice::where('mou_id', $record->id)
+                //             ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'unpaid'))
+                //             ->sum('amount');
+                //     })
+                //     ->alignEnd()
+                //     ->toggleable(),
+                // Tables\Columns\TextColumn::make('total_invoice_paid')
+                //     ->label('Total Invoice Paid')
+                //     ->numeric(locale: 'id')
+                //     ->getStateUsing(function ($record) {
+                //         return CostListInvoice::where('mou_id', $record->id)
+                //             ->whereHas('invoice', fn($q) => $q->where('invoice_status', 'paid'))
+                //             ->sum('amount');
+                //     })
+                //     ->alignEnd()
+                //     ->toggleable(),
+
+                // Tables\Columns\TextColumn::make('total_invoice_amount')
+                //     ->label('Total Invoice')
+                //     ->numeric(locale: 'id')
+                //     ->getStateUsing(function ($record) {
+                //         return CostListInvoice::where('mou_id', $record->id)
+                //             ->whereNotNull('invoice_id')
+                //             ->sum('amount');
+                //     })
+                //     ->alignEnd()
+                //     ->toggleable(),
+
+
+                // Tables\Columns\TextColumn::make('created_at')
+                //     ->label('Dibuat')
+                //     ->dateTime('d-m-Y H:i')
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('updated_at')
+                //     ->label('Diupdate')
+                //     ->dateTime('d-m-Y H:i')
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

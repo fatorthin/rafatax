@@ -7,15 +7,12 @@ use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
 use App\Models\JournalBookReport;
 use Filament\Resources\Pages\Page;
-use Illuminate\Support\Facades\DB;
 use App\Models\JournalBookReference;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Columns\Summarizers\Summarizer;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\JournalBookReferenceResource;
 
 class ViewJournalBookMonthDetail extends Page implements HasTable
@@ -26,21 +23,26 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected static string $view = 'filament.resources.journal-book-reference-resource.pages.view-journal-book-month-detail';
 
     public JournalBookReference $record;
+    public ?int $year = null;
+    public ?int $month = null;
+
+    public function mount(): void
+    {
+        $this->year = (int) request('year');
+        $this->month = (int) request('month');
+    }
 
     public function getTitle(): string
     {
-        $year = request()->query('year');
-        $month = (int) request()->query('month');
+        $monthName = Carbon::create()->month($this->month)->format('F');
 
-        $monthName = Carbon::create()->month($month)->format('F');
-
-        return "Transactions - {$this->record->name} - {$monthName} {$year}";
+        return "Transactions - {$this->record->name} - {$monthName} {$this->year}";
     }
 
     public function table(Table $table): Table
     {
-        $year = (int) request()->query('year');
-        $month = (int) request()->query('month');
+        $year = $this->year;
+        $month = $this->month;
 
         if (!$year || !$month) {
             return $table->query(JournalBookReport::where('id', 0)); // Empty query if no year/month
@@ -102,10 +104,9 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                 // No additional filters needed here since we're already filtering by month/year
             ])
             ->actions([
-                // No actions needed here
-                // Provide an edit link to the correct JournalBookReport resource instead of an undefined CashReport route
                 \Filament\Tables\Actions\EditAction::make()
                     ->url(fn(JournalBookReport $record) => \App\Filament\Resources\JournalBookReportResource::getUrl('edit', ['record' => $record])),
+                \Filament\Tables\Actions\DeleteAction::make(),
             ])
             ->striped()
             ->defaultSort('transaction_date', 'asc')
@@ -114,12 +115,10 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
 
     public function modifyTableQuery(Builder $query): Builder
     {
-        // Just return the original query
         return $query;
     }
 
-    // Generate a unique key for each table record
-    public function getTableRecordKey($record): string
+    public function getTableRecordKey(\Illuminate\Database\Eloquent\Model $record): string
     {
         return (string) $record->getKey();
     }
@@ -127,6 +126,44 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\CreateAction::make('addTransaction')
+                ->label('Add Transaction')
+                ->model(JournalBookReport::class)
+                ->icon('heroicon-o-plus')
+                ->form([
+                    \Filament\Forms\Components\Hidden::make('journal_book_id')
+                        ->default(fn() => $this->record->id),
+                    \Filament\Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi'),
+                    \Filament\Forms\Components\Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(function () {
+                            return \App\Models\Coa::all()->mapWithKeys(function ($coa) {
+                                return [$coa->id => $coa->code . ' - ' . $coa->name];
+                            });
+                        })
+                        ->required()
+                        ->searchable(),
+                    \Filament\Forms\Components\TextInput::make('debit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Debit')
+                        ->default(0),
+                    \Filament\Forms\Components\TextInput::make('credit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Kredit')
+                        ->default(0),
+                    \Filament\Forms\Components\Hidden::make('transaction_date')
+                        ->default(function () {
+                            if ($this->year && $this->month) {
+                                return \Illuminate\Support\Carbon::create($this->year, $this->month, 1)->endOfMonth()->format('Y-m-d');
+                            }
+                            return now()->format('Y-m-d');
+                        }),
+                ]),
             Actions\Action::make('back')
                 ->label('Back to Monthly View')
                 ->url(JournalBookReferenceResource::getUrl('viewMonthly', ['record' => $this->record]))
