@@ -32,7 +32,7 @@ class DaftarAktivaTetapResource extends Resource
             Action::make('monthly')
                 ->label('Laporan Bulanan')
                 ->icon('heroicon-o-calendar')
-                ->url(fn(): string => static::getUrl('monthly'))
+                ->url(fn(): string => static::getUrl('monthly', ['bulan' => date('m'), 'tahun' => date('Y')]))
                 ->color('success'),
             Action::make('generate_depreciation')
                 ->label('Hitung Depresiasi')
