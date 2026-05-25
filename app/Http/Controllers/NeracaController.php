@@ -23,7 +23,7 @@ class NeracaController extends Controller
         return $this->generateExcel($month, $year);
     }
 
-    private function generateExcel($month, $year)
+    private function generateExcel(int $month, int $year)
     {
         // Disable memory limit and increase execution time
         ini_set('memory_limit', '1024M');
@@ -191,7 +191,7 @@ class NeracaController extends Controller
         exit;
     }
 
-    private function getNeracaData($month, $year)
+    private function getNeracaData(int $month, int $year)
     {
         // Start date of current month
         $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
@@ -324,7 +324,7 @@ class NeracaController extends Controller
         return $neracaData;
     }
 
-    private function getLabaRugiCalculation($startOfCurrentMonth, $endOfCurrentMonth)
+    private function getLabaRugiCalculation(string $startOfCurrentMonth, string $endOfCurrentMonth)
     {
         $data = Coa::query()
             ->select([

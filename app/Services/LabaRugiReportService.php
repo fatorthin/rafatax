@@ -24,6 +24,11 @@ class LabaRugiReportService
         $startOfCurrentMonthString = $startOfCurrentMonth->toDateTimeString();
         $endOfCurrentMonthString = $endOfCurrentMonth->toDateTimeString();
 
+        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', '=', $year, 'and')
+            ->whereMonth('tanggal_penyusutan', '=', $month, 'and')
+            ->sum('jumlah_penyusutan') ?? 0;
+
         $data = Coa::query()
             ->select([
                 'coa.id',
@@ -41,8 +46,10 @@ class LabaRugiReportService
                 DB::raw('COALESCE(bank_data.bank_kredit, 0) as bank_kredit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
-                DB::raw('COALESCE(aje_data.aje_debit, 0) as aje_debit'),
-                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit')
+                DB::raw('COALESCE(jurnal_pendapatan_data.jurnal_pendapatan_debit, 0) as jurnal_pendapatan_debit'),
+                DB::raw('COALESCE(jurnal_pendapatan_data.jurnal_pendapatan_kredit, 0) as jurnal_pendapatan_kredit'),
+                DB::raw("COALESCE(aje_data.aje_debit, 0) + (CASE WHEN coa.code = 'AO-509' THEN {$depresiasiTotal} ELSE 0 END) as aje_debit"),
+                DB::raw("COALESCE(aje_data.aje_kredit, 0) + (CASE WHEN coa.code = 'AO-127' THEN {$depresiasiTotal} ELSE 0 END) as aje_kredit")
             ])
             ->leftJoin(
                 DB::raw("(
@@ -140,6 +147,22 @@ class LabaRugiReportService
                 '=',
                 'aje_data.coa_id'
             )
+            ->leftJoin(
+                DB::raw("(
+                    SELECT 
+                        coa_id,
+                        SUM(debit_amount) as jurnal_pendapatan_debit,
+                        SUM(credit_amount) as jurnal_pendapatan_kredit
+                    FROM journal_book_reports 
+                    WHERE journal_book_id = 4
+                    AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
+                    AND deleted_at IS NULL
+                    GROUP BY coa_id
+                ) as jurnal_pendapatan_data"),
+                'coa.id',
+                '=',
+                'jurnal_pendapatan_data.coa_id'
+            )
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
             ->whereIn('coa.group_coa_id', self::LABA_RUGI_GROUP_IDS)
@@ -153,11 +176,11 @@ class LabaRugiReportService
         foreach ($data as $row) {
             $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
                 $row->kas_kecil_debit + $row->bank_debit +
-                $row->jurnal_umum_debit + $row->aje_debit;
+                $row->jurnal_umum_debit + $row->jurnal_pendapatan_debit + $row->aje_debit;
 
             $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit +
                 $row->kas_kecil_kredit + $row->bank_kredit +
-                $row->jurnal_umum_kredit + $row->aje_kredit;
+                $row->jurnal_umum_kredit + $row->jurnal_pendapatan_kredit + $row->aje_kredit;
 
             if (in_array($row->group_coa_id, self::PENDAPATAN_GROUP_IDS, true)) {
                 $amount = $totalKredit - $totalDebit;

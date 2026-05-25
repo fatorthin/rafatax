@@ -22,13 +22,13 @@ class Neraca extends Page
     protected static ?string $title = 'Laporan Neraca';
     protected static ?string $navigationLabel = 'Laporan Neraca';
 
-    public $month;
-    public $year;
+    public ?int $month = null;
+    public ?int $year = null;
 
     public function mount(): void
     {
-        $this->month = request('month', now()->month);
-        $this->year = request('year', now()->year);
+        $this->month = (int) request('month', now()->month);
+        $this->year = (int) request('year', now()->year);
     }
 
     protected function getHeaderActions(): array

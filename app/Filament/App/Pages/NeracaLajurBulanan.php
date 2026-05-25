@@ -134,10 +134,12 @@ class NeracaLajurBulanan extends Page implements HasTable
         foreach ($data as $row) {
             $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
                 $row->kas_kecil_debit + $row->bank_debit +
+                $row->jurnal_pendapatan_debit +
                 $row->jurnal_umum_debit;
 
             $totalKredit = $row->neraca_awal_kredit + $row->kas_besar_kredit +
                 $row->kas_kecil_kredit + $row->bank_kredit +
+                $row->jurnal_pendapatan_kredit +
                 $row->jurnal_umum_kredit;
 
             $selisihSebelumAJE = $totalDebit - $totalKredit;
@@ -181,8 +183,8 @@ class NeracaLajurBulanan extends Page implements HasTable
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
         $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', $this->year)
-            ->whereMonth('tanggal_penyusutan', $this->month)
+            ->whereYear('tanggal_penyusutan', '=', $this->year, 'and')
+            ->whereMonth('tanggal_penyusutan', '=', $this->month, 'and')
             ->sum('jumlah_penyusutan') ?? 0;
 
         $query = Coa::query()
@@ -200,6 +202,8 @@ class NeracaLajurBulanan extends Page implements HasTable
                 DB::raw('COALESCE(kas_kecil_data.kas_kecil_kredit, 0) as kas_kecil_kredit'),
                 DB::raw('COALESCE(bank_data.bank_debit, 0) as bank_debit'),
                 DB::raw('COALESCE(bank_data.bank_kredit, 0) as bank_kredit'),
+                DB::raw('COALESCE(jurnal_pendapatan_data.jurnal_pendapatan_debit, 0) as jurnal_pendapatan_debit'),
+                DB::raw('COALESCE(jurnal_pendapatan_data.jurnal_pendapatan_kredit, 0) as jurnal_pendapatan_kredit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
                 DB::raw("COALESCE(aje_data.aje_debit, 0) + (CASE WHEN coa.code = 'AO-509' THEN {$depresiasiTotal} ELSE 0 END) as aje_debit"),
@@ -433,6 +437,22 @@ class NeracaLajurBulanan extends Page implements HasTable
             )
             ->leftJoin(
                 DB::raw("(
+                     SELECT 
+                         coa_id,
+                         SUM(debit_amount) as jurnal_pendapatan_debit,
+                         SUM(credit_amount) as jurnal_pendapatan_kredit
+                     FROM journal_book_reports 
+                     WHERE journal_book_id = 4
+                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
+                     AND deleted_at IS NULL
+                     GROUP BY coa_id
+                 ) as jurnal_pendapatan_data"),
+                'coa.id',
+                '=',
+                'jurnal_pendapatan_data.coa_id'
+            )
+            ->leftJoin(
+                DB::raw("(
                     SELECT 
                         coa_id,
                         SUM(debit_amount) as jurnal_umum_debit,
@@ -509,8 +529,8 @@ class NeracaLajurBulanan extends Page implements HasTable
 
     private function getDataForExport()
     {
-        $coaData = Coa::where('deleted_at', null)
-            ->where('type', 'kkp')
+        $coaData = Coa::query()->whereNull('deleted_at', 'and', false)
+            ->where('type', '=', 'kkp')
             ->orderBy('id')
             ->get();
 
@@ -520,8 +540,8 @@ class NeracaLajurBulanan extends Page implements HasTable
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
         $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', $this->year)
-            ->whereMonth('tanggal_penyusutan', $this->month)
+            ->whereYear('tanggal_penyusutan', '=', $this->year, 'and')
+            ->whereMonth('tanggal_penyusutan', '=', $this->month, 'and')
             ->sum('jumlah_penyusutan') ?? 0;
 
         $journalData = DB::table('journal_book_reports')
@@ -540,6 +560,15 @@ class NeracaLajurBulanan extends Page implements HasTable
             ->groupBy('coa_id', 'cash_reference_id')
             ->get()
             ->groupBy('coa_id');
+
+        $jurnalPendapatanData = DB::table('journal_book_reports')
+            ->select('coa_id', DB::raw('SUM(debit_amount) as debit'), DB::raw('SUM(credit_amount) as credit'))
+            ->where('journal_book_id', 4)
+            ->whereBetween('transaction_date', [$startOfCurrentMonth, $endOfCurrentMonth])
+            ->whereNull('deleted_at')
+            ->groupBy('coa_id')
+            ->get()
+            ->keyBy('coa_id');
 
         $jurnalUmumData = DB::table('journal_book_reports')
             ->select('coa_id', DB::raw('SUM(debit_amount) as debit'), DB::raw('SUM(credit_amount) as credit'))
@@ -599,6 +628,10 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $bankKredit = $temp;
             }
 
+            $jurnalP = $jurnalPendapatanData->get($coa->id);
+            $jurnalPendapatanDebit = $jurnalP ? $jurnalP->debit : 0;
+            $jurnalPendapatanKredit = $jurnalP ? $jurnalP->credit : 0;
+
             $jurnal = $jurnalUmumData->get($coa->id);
             $jurnalUmumDebit = $jurnal ? $jurnal->debit : 0;
             $jurnalUmumKredit = $jurnal ? $jurnal->credit : 0;
@@ -627,6 +660,8 @@ class NeracaLajurBulanan extends Page implements HasTable
                 'kas_kecil_kredit' => $kasKecilKredit,
                 'bank_debit' => $bankDebit,
                 'bank_kredit' => $bankKredit,
+                'jurnal_pendapatan_debit' => $jurnalPendapatanDebit,
+                'jurnal_pendapatan_kredit' => $jurnalPendapatanKredit,
                 'jurnal_umum_debit' => $jurnalUmumDebit,
                 'jurnal_umum_kredit' => $jurnalUmumKredit,
                 'aje_debit' => $ajeDebit,
@@ -646,7 +681,7 @@ class NeracaLajurBulanan extends Page implements HasTable
         $sheet = $spreadsheet->getActiveSheet();
 
         $sheet->setCellValue('A1', $this->getTitle());
-        $sheet->mergeCells('A1:U1');
+        $sheet->mergeCells('A1:W1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -655,15 +690,16 @@ class NeracaLajurBulanan extends Page implements HasTable
         $sheet->setCellValue('D3', 'Kas Besar');
         $sheet->setCellValue('F3', 'Kas Kecil');
         $sheet->setCellValue('H3', 'Bank');
-        $sheet->setCellValue('J3', 'Jurnal Umum');
-        $sheet->setCellValue('L3', 'Neraca Sebelum AJE');
-        $sheet->setCellValue('N3', 'AJE');
-        $sheet->setCellValue('P3', 'Neraca Setelah AJE');
-        $sheet->setCellValue('R3', 'Neraca');
-        $sheet->setCellValue('T3', 'Laba Rugi');
+        $sheet->setCellValue('J3', 'Jurnal Pendapatan');
+        $sheet->setCellValue('L3', 'Jurnal Umum');
+        $sheet->setCellValue('N3', 'Neraca Sebelum AJE');
+        $sheet->setCellValue('P3', 'AJE');
+        $sheet->setCellValue('R3', 'Neraca Setelah AJE');
+        $sheet->setCellValue('T3', 'Neraca');
+        $sheet->setCellValue('V3', 'Laba Rugi');
 
         $subHeaders = ['Debit', 'Kredit'];
-        $cols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T'];
+        $cols = ['B', 'D', 'F', 'H', 'J', 'L', 'N', 'P', 'R', 'T', 'V'];
         foreach ($cols as $col) {
             $sheet->setCellValue($col . '4', $subHeaders[0]);
             $sheet->setCellValue(chr(ord($col) + 1) . '4', $subHeaders[1]);
@@ -680,19 +716,19 @@ class NeracaLajurBulanan extends Page implements HasTable
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C3C1C1']],
         ];
-        $sheet->getStyle('A3:U4')->applyFromArray($headerStyle);
+        $sheet->getStyle('A3:W4')->applyFromArray($headerStyle);
 
         $data = $this->getDataForExport();
 
         if ($data->isEmpty()) {
             $sheet->setCellValue('A5', 'Tidak ada data untuk periode ini');
-            $sheet->mergeCells('A5:U5');
+            $sheet->mergeCells('A5:W5');
             $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         } else {
             $row = 5;
             foreach ($data as $item) {
-                $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit + $item->kas_kecil_debit + $item->bank_debit + $item->jurnal_umum_debit;
-                $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit + $item->kas_kecil_kredit + $item->bank_kredit + $item->jurnal_umum_kredit;
+                $totalDebit = $item->neraca_awal_debit + $item->kas_besar_debit + $item->kas_kecil_debit + $item->bank_debit + $item->jurnal_pendapatan_debit + $item->jurnal_umum_debit;
+                $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit + $item->kas_kecil_kredit + $item->bank_kredit + $item->jurnal_pendapatan_kredit + $item->jurnal_umum_kredit;
 
                 $selisihSebelumAJE = $totalDebit - $totalKredit;
                 $neracaSebelumAJEDebit = max(0, $selisihSebelumAJE);
@@ -719,38 +755,40 @@ class NeracaLajurBulanan extends Page implements HasTable
                 $sheet->setCellValue('G' . $row, $item->kas_kecil_kredit);
                 $sheet->setCellValue('H' . $row, $item->bank_debit);
                 $sheet->setCellValue('I' . $row, $item->bank_kredit);
-                $sheet->setCellValue('J' . $row, $item->jurnal_umum_debit);
-                $sheet->setCellValue('K' . $row, $item->jurnal_umum_kredit);
-                $sheet->setCellValue('L' . $row, $neracaSebelumAJEDebit);
-                $sheet->setCellValue('M' . $row, $neracaSebelumAJEKredit);
-                $sheet->setCellValue('N' . $row, $item->aje_debit);
-                $sheet->setCellValue('O' . $row, $item->aje_kredit);
-                $sheet->setCellValue('P' . $row, $neracaSetelahAJEDebit);
-                $sheet->setCellValue('Q' . $row, $neracaSetelahAJEKredit);
-                $sheet->setCellValue('R' . $row, $neracaDebit);
-                $sheet->setCellValue('S' . $row, $neracaKredit);
-                $sheet->setCellValue('T' . $row, $labaRugiDebit);
-                $sheet->setCellValue('U' . $row, $labaRugiKredit);
+                $sheet->setCellValue('J' . $row, $item->jurnal_pendapatan_debit);
+                $sheet->setCellValue('K' . $row, $item->jurnal_pendapatan_kredit);
+                $sheet->setCellValue('L' . $row, $item->jurnal_umum_debit);
+                $sheet->setCellValue('M' . $row, $item->jurnal_umum_kredit);
+                $sheet->setCellValue('N' . $row, $neracaSebelumAJEDebit);
+                $sheet->setCellValue('O' . $row, $neracaSebelumAJEKredit);
+                $sheet->setCellValue('P' . $row, $item->aje_debit);
+                $sheet->setCellValue('Q' . $row, $item->aje_kredit);
+                $sheet->setCellValue('R' . $row, $neracaSetelahAJEDebit);
+                $sheet->setCellValue('S' . $row, $neracaSetelahAJEKredit);
+                $sheet->setCellValue('T' . $row, $neracaDebit);
+                $sheet->setCellValue('U' . $row, $neracaKredit);
+                $sheet->setCellValue('V' . $row, $labaRugiDebit);
+                $sheet->setCellValue('W' . $row, $labaRugiKredit);
 
                 $row++;
             }
 
             $totalRow = $row;
             $sheet->setCellValue('A' . $totalRow, 'Total');
-            $sheet->getStyle('A' . $totalRow . ':U' . $totalRow)->applyFromArray($headerStyle);
+            $sheet->getStyle('A' . $totalRow . ':W' . $totalRow)->applyFromArray($headerStyle);
 
-            $columns = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
+            $columns = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
             foreach ($columns as $col) {
                 $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
             }
 
-            $sheet->getStyle('A5:U' . ($totalRow - 1))->applyFromArray([
+            $sheet->getStyle('A5:W' . ($totalRow - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
             ]);
-            $sheet->getStyle('B5:U' . $totalRow)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('B5:W' . $totalRow)->getNumberFormat()->setFormatCode('#,##0');
         }
 
-        foreach (range('A', 'U') as $col) {
+        foreach (range('A', 'W') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

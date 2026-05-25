@@ -17,6 +17,8 @@
                 $totalKasKecilKredit = 0;
                 $totalBankDebit = 0;
                 $totalBankKredit = 0;
+                $totalJurnalPendapatanDebit = 0;
+                $totalJurnalPendapatanKredit = 0;
                 $totalJurnalUmumDebit = 0;
                 $totalJurnalUmumKredit = 0;
                 $totalAJEDebit = 0;
@@ -44,6 +46,8 @@
                     $totalKasKecilKredit += $row->kas_kecil_kredit;
                     $totalBankDebit += $row->bank_debit;
                     $totalBankKredit += $row->bank_kredit;
+                    $totalJurnalPendapatanDebit += $row->jurnal_pendapatan_debit;
+                    $totalJurnalPendapatanKredit += $row->jurnal_pendapatan_kredit;
                     $totalJurnalUmumDebit += $row->jurnal_umum_debit;
                     $totalJurnalUmumKredit += $row->jurnal_umum_kredit;
                     $totalAJEDebit += $row->aje_debit;
@@ -57,6 +61,7 @@
                         $row->kas_besar_debit +
                         $row->kas_kecil_debit +
                         $row->bank_debit +
+                        $row->jurnal_pendapatan_debit +
                         $row->jurnal_umum_debit;
 
                     $totalKredit =
@@ -64,6 +69,7 @@
                         $row->kas_besar_kredit +
                         $row->kas_kecil_kredit +
                         $row->bank_kredit +
+                        $row->jurnal_pendapatan_kredit +
                         $row->jurnal_umum_kredit;
 
                     $selisihSebelumAJE = $totalDebit - $totalKredit;
@@ -308,6 +314,7 @@
                             <th colspan="2" class="text-center">Kas Besar</th>
                             <th colspan="2" class="text-center">Kas Kecil</th>
                             <th colspan="2" class="text-center">Bank</th>
+                            <th colspan="2" class="text-center">Jurnal Pendapatan</th>
                             <th colspan="2" class="text-center">Jurnal Umum</th>
                             <th colspan="2" class="text-center">Neraca Sebelum AJE</th>
                             <th colspan="2" class="text-center">AJE</th>
@@ -317,6 +324,8 @@
                             <th colspan="2" class="text-center">Neraca Awal Bulan Depan</th>
                         </tr>
                         <tr>
+                            <th class="text-center">Debit</th>
+                            <th class="text-center">Kredit</th>
                             <th class="text-center">Debit</th>
                             <th class="text-center">Kredit</th>
                             <th class="text-center">Debit</th>
@@ -355,6 +364,10 @@
                             </td>
                             <td class="number-cell text-right">{{ number_format($totalBankDebit, 0, ',', '.') }}</td>
                             <td class="number-cell text-right">{{ number_format($totalBankKredit, 0, ',', '.') }}</td>
+                            <td class="number-cell text-right">
+                                {{ number_format($totalJurnalPendapatanDebit, 0, ',', '.') }}</td>
+                            <td class="number-cell text-right">
+                                {{ number_format($totalJurnalPendapatanKredit, 0, ',', '.') }}</td>
                             <td class="number-cell text-right">{{ number_format($totalJurnalUmumDebit, 0, ',', '.') }}
                             </td>
                             <td class="number-cell text-right">{{ number_format($totalJurnalUmumKredit, 0, ',', '.') }}
@@ -392,6 +405,8 @@
                             $totalKasKecilKredit = 0;
                             $totalBankDebit = 0;
                             $totalBankKredit = 0;
+                            $totalJurnalPendapatanDebit = 0;
+                            $totalJurnalPendapatanKredit = 0;
                             $totalJurnalUmumDebit = 0;
                             $totalJurnalUmumKredit = 0;
                             $grandTotal = 0;
@@ -410,6 +425,7 @@
                                     $row->kas_besar_debit +
                                     $row->kas_kecil_debit +
                                     $row->bank_debit +
+                                    $row->jurnal_pendapatan_debit +
                                     $row->jurnal_umum_debit;
 
                                 $totalKredit =
@@ -417,6 +433,7 @@
                                     $row->kas_besar_kredit +
                                     $row->kas_kecil_kredit +
                                     $row->bank_kredit +
+                                    $row->jurnal_pendapatan_kredit +
                                     $row->jurnal_umum_kredit;
 
                                 $selisihSebelumAJE = $totalDebit - $totalKredit;
@@ -462,6 +479,10 @@
                                 <td class="number-cell text-right">{{ number_format($row->bank_kredit, 0, ',', '.') }}
                                 </td>
                                 <td class="number-cell text-right">
+                                    {{ number_format($row->jurnal_pendapatan_debit, 0, ',', '.') }}</td>
+                                <td class="number-cell text-right">
+                                    {{ number_format($row->jurnal_pendapatan_kredit, 0, ',', '.') }}</td>
+                                <td class="number-cell text-right">
                                     {{ number_format($row->jurnal_umum_debit, 0, ',', '.') }}</td>
                                 <td class="number-cell text-right">
                                     {{ number_format($row->jurnal_umum_kredit, 0, ',', '.') }}</td>
@@ -490,7 +511,7 @@
                             </tr>
                             @if (in_array($row->code, ['AO-1011', 'AO-112', 'AO-127', 'AO-211', 'AO-305', 'AO-410', 'AO-525', 'AO-603']))
                                 <tr class="separator-row">
-                                    <td colspan="23"></td>
+                                    <td colspan="25"></td>
                                 </tr>
                             @endif
                         @endforeach
