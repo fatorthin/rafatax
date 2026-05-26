@@ -77,7 +77,22 @@ class MouResource extends Resource
                         'unapproved' => 'Unapproved',
                     ])
                     ->default('unapproved')
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                        if ($state === 'approved' && !$get('approved_date')) {
+                            $set('approved_date', now()->toDateString());
+                        }
+                        if ($state !== 'approved') {
+                            $set('approved_date', null);
+                        }
+                    }),
+                Forms\Components\DatePicker::make('approved_date')
+                    ->label('Approved Date')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->visible(fn(Forms\Get $get) => $get('status') === 'approved')
+                    ->dehydrateStateUsing(fn($state, Forms\Get $get) => $get('status') === 'approved' ? $state : null),
                 Forms\Components\Radio::make('type')
                     ->options([
                         'pt' => 'PT',
@@ -268,7 +283,19 @@ class MouResource extends Resource
                         'approved' => 'Approved',
                         'unapproved' => 'Unapproved',
                     ])
+                    ->afterStateUpdated(function (MoU $record, $state) {
+                        if ($state === 'approved' && !$record->approved_date) {
+                            $record->update(['approved_date' => now()->toDateString()]);
+                        } elseif ($state !== 'approved') {
+                            $record->update(['approved_date' => null]);
+                        }
+                    })
                     ->searchable(),
+                Tables\Columns\TextColumn::make('approved_date')
+                    ->label('Approved Date')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('is_send_mou')
                     ->label('Status Kirim MoU')
                     ->badge()

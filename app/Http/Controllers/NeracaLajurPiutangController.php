@@ -117,13 +117,15 @@ class NeracaLajurPiutangController extends Controller
 
         $memoTotal = $this->getMemoPiutangTotal($startOfMonth, $endOfMonth);
 
-        // Data Invoice per COA (grouped)
+        // Data Invoice per COA (grouped) — hanya yang PAID, berdasarkan tgl_transfer
         $invRows = DB::table('cost_list_invoices as cli')
             ->join('invoices as i', 'i.id', '=', 'cli.invoice_id')
             ->join('coa', 'coa.id', '=', 'cli.coa_id')
             ->whereNull('i.deleted_at')->whereNull('cli.deleted_at')
             ->where('i.invoice_type', 'kkp')
-            ->whereBetween('i.invoice_date', [$startOfMonth, $endOfMonth])
+            ->where('i.invoice_status', 'paid')
+            ->whereNotNull('i.tgl_transfer')
+            ->whereBetween('i.tgl_transfer', [$startOfMonth, $endOfMonth])
             ->groupBy('cli.coa_id', 'coa.code', 'coa.name')
             ->selectRaw('cli.coa_id, coa.code, coa.name, SUM(cli.amount) as total_inv')
             ->get()->keyBy('coa_id');
@@ -283,13 +285,13 @@ class NeracaLajurPiutangController extends Controller
         $sheetInv->getStyle('A1')->getFont()->setBold(true)->setSize(12);
         $sheetInv->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        foreach (['A3' => 'No. Invoice', 'B3' => 'Tanggal Invoice', 'C3' => 'Status',
-                  'D3' => 'No. MoU / Memo', 'E3' => 'Perusahaan Klien',
-                  'F3' => 'Kode COA', 'G3' => 'Nama COA',
-                  'H3' => 'Amount', 'I3' => 'Keterangan'] as $cell => $label) {
+        foreach (['A3' => 'No. Invoice', 'B3' => 'Tgl Transfer', 'C3' => 'Tgl Invoice',
+                  'D3' => 'Status', 'E3' => 'No. MoU / Memo', 'F3' => 'Perusahaan Klien',
+                  'G3' => 'Kode COA', 'H3' => 'Nama COA',
+                  'I3' => 'Amount', 'J3' => 'Keterangan'] as $cell => $label) {
             $sheetInv->setCellValue($cell, $label);
         }
-        $sheetInv->getStyle('A3:I3')->applyFromArray($headerStyle);
+        $sheetInv->getStyle('A3:J3')->applyFromArray($headerStyle);
 
         $invDetail = DB::table('cost_list_invoices as cli')
             ->join('invoices as i', 'i.id', '=', 'cli.invoice_id')
@@ -299,10 +301,12 @@ class NeracaLajurPiutangController extends Controller
             ->leftJoin('clients', 'clients.id', '=', 'i.client_id')
             ->whereNull('i.deleted_at')->whereNull('cli.deleted_at')
             ->where('i.invoice_type', 'kkp')
-            ->whereBetween('i.invoice_date', [$startOfMonth, $endOfMonth])
-            ->orderBy('i.invoice_date')->orderBy('i.invoice_number')
+            ->where('i.invoice_status', 'paid')
+            ->whereNotNull('i.tgl_transfer')
+            ->whereBetween('i.tgl_transfer', [$startOfMonth, $endOfMonth])
+            ->orderBy('i.tgl_transfer')->orderBy('i.invoice_number')
             ->select([
-                'i.invoice_number', 'i.invoice_date', 'i.invoice_status',
+                'i.invoice_number', 'i.tgl_transfer', 'i.invoice_date', 'i.invoice_status',
                 DB::raw('COALESCE(m.mou_number, mem.no_memo, "-") as referensi'),
                 DB::raw('COALESCE(clients.company_name, "-") as client_name'),
                 'coa.code as coa_code', 'coa.name as coa_name',
@@ -313,24 +317,25 @@ class NeracaLajurPiutangController extends Controller
         $invRow = 4; $invGrand = 0;
         foreach ($invDetail as $inv) {
             $sheetInv->setCellValue('A' . $invRow, $inv->invoice_number);
-            $sheetInv->setCellValue('B' . $invRow, $inv->invoice_date);
-            $sheetInv->setCellValue('C' . $invRow, $inv->invoice_status);
-            $sheetInv->setCellValue('D' . $invRow, $inv->referensi);
-            $sheetInv->setCellValue('E' . $invRow, $inv->client_name);
-            $sheetInv->setCellValue('F' . $invRow, $inv->coa_code);
-            $sheetInv->setCellValue('G' . $invRow, $inv->coa_name);
-            $sheetInv->setCellValue('H' . $invRow, $inv->amount);
-            $sheetInv->setCellValue('I' . $invRow, $inv->description);
-            $sheetInv->getStyle('H' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sheetInv->setCellValue('B' . $invRow, $inv->tgl_transfer);
+            $sheetInv->setCellValue('C' . $invRow, $inv->invoice_date);
+            $sheetInv->setCellValue('D' . $invRow, $inv->invoice_status);
+            $sheetInv->setCellValue('E' . $invRow, $inv->referensi);
+            $sheetInv->setCellValue('F' . $invRow, $inv->client_name);
+            $sheetInv->setCellValue('G' . $invRow, $inv->coa_code);
+            $sheetInv->setCellValue('H' . $invRow, $inv->coa_name);
+            $sheetInv->setCellValue('I' . $invRow, $inv->amount);
+            $sheetInv->setCellValue('J' . $invRow, $inv->description);
+            $sheetInv->getStyle('I' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
             $invGrand += $inv->amount;
             $invRow++;
         }
-        $sheetInv->setCellValue('G' . $invRow, 'TOTAL');
-        $sheetInv->setCellValue('H' . $invRow, $invGrand);
-        $sheetInv->getStyle('A' . $invRow . ':I' . $invRow)->applyFromArray($totalStyle);
-        $sheetInv->getStyle('H' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sheetInv->getStyle('A3:I' . $invRow)->applyFromArray(['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]]);
-        foreach (range('A', 'I') as $col) { $sheetInv->getColumnDimension($col)->setAutoSize(true); }
+        $sheetInv->setCellValue('H' . $invRow, 'TOTAL');
+        $sheetInv->setCellValue('I' . $invRow, $invGrand);
+        $sheetInv->getStyle('A' . $invRow . ':J' . $invRow)->applyFromArray($totalStyle);
+        $sheetInv->getStyle('I' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
+        $sheetInv->getStyle('A3:J' . $invRow)->applyFromArray(['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]]);
+        foreach (range('A', 'J') as $col) { $sheetInv->getColumnDimension($col)->setAutoSize(true); }
 
         // Output
         $spreadsheet->setActiveSheetIndex(0);

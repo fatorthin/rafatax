@@ -14,14 +14,18 @@ class RekapPaymentExporter
 {
     public static function export(array $data)
     {
-        $tahunPajak = $data['tahun_pajak'] ?? null;
+        $modeTahun       = $data['mode_tahun'] ?? 'tahun_pajak';
+        $tahunPajak      = $data['tahun_pajak'] ?? null;
+        $tahunDibuat     = $data['tahun_dibuat'] ?? null;
         $onlyWithPiutang = (bool) ($data['only_with_piutang'] ?? false);
 
         $query = \App\Models\MoU::with(['client', 'categoryMou', 'cost_lists'])
             ->whereHas('client');
 
-        if (!empty($tahunPajak)) {
+        if ($modeTahun === 'tahun_pajak' && !empty($tahunPajak)) {
             $query->where('tahun_pajak', $tahunPajak);
+        } elseif ($modeTahun === 'tahun_dibuat' && !empty($tahunDibuat)) {
+            $query->whereYear('created_at', $tahunDibuat);
         }
 
         if (!empty($data['type'])) {
@@ -69,7 +73,16 @@ class RekapPaymentExporter
             });
         }
 
-        $yearFormatted = !empty($tahunPajak) ? $tahunPajak : 'Semua Tahun Pajak';
+        // Label untuk header Excel
+        if ($modeTahun === 'tahun_dibuat') {
+            $yearFormatted = !empty($tahunDibuat)
+                ? 'Tahun Dibuat: ' . $tahunDibuat
+                : 'Semua Tahun Dibuat';
+        } else {
+            $yearFormatted = !empty($tahunPajak)
+                ? 'Tahun Pajak: ' . $tahunPajak
+                : 'Semua Tahun Pajak';
+        }
         $lastCol = 'T'; // 20 columns A-T
 
         return response()->streamDownload(function () use ($mous, $invoices, $yearFormatted, $lastCol) {
@@ -83,7 +96,7 @@ class RekapPaymentExporter
             $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
             $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $sheet->setCellValue('A2', 'Tahun Pajak: ' . $yearFormatted);
+            $sheet->setCellValue('A2', $yearFormatted);
             $sheet->mergeCells("A2:{$lastCol}2");
             $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(11);
             $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -302,6 +315,6 @@ class RekapPaymentExporter
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
-        }, 'Rekap_Payment_Piutang_' . ($yearFormatted !== 'Semua Tahun' ? $yearFormatted . '_' : '') . date('Y-m-d_H-i-s') . '.xlsx');
+        }, 'Rekap_Payment_Piutang_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $yearFormatted) . '_' . date('Y-m-d_H-i-s') . '.xlsx');
     }
 }

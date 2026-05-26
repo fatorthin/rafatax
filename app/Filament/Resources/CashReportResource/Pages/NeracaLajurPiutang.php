@@ -173,7 +173,7 @@ class NeracaLajurPiutang extends Page implements HasTable
     }
 
     /**
-     * Realisasi dari Invoice yang diterbitkan bulan ini.
+     * Realisasi dari Invoice yang sudah PAID pada bulan ini (berdasarkan tgl_transfer).
      * Return: [ coa_id => total_amount ] untuk sisi Debit Pendapatan (Invoice mengurangi piutang),
      *         ditambah total keseluruhan untuk sisi Kredit AO-103.
      */
@@ -184,7 +184,9 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->whereNull('i.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('i.invoice_type', 'kkp')
-            ->whereBetween('i.invoice_date', [$startOfMonth, $endOfMonth])
+            ->where('i.invoice_status', 'paid')
+            ->whereNotNull('i.tgl_transfer')
+            ->whereBetween('i.tgl_transfer', [$startOfMonth, $endOfMonth])
             ->groupBy('cli.coa_id')
             ->selectRaw('cli.coa_id, SUM(cli.amount) as total')
             ->get();
@@ -591,14 +593,16 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $memoTotal = $this->getMemoPiutangTotal($startOfMonth, $endOfMonth);
 
-        // Data Invoice per COA
+        // Data Invoice per COA — hanya yang PAID, berdasarkan tgl_transfer
         $invRows = DB::table('cost_list_invoices as cli')
             ->join('invoices as i', 'i.id', '=', 'cli.invoice_id')
             ->join('coa', 'coa.id', '=', 'cli.coa_id')
             ->whereNull('i.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('i.invoice_type', 'kkp')
-            ->whereBetween('i.invoice_date', [$startOfMonth, $endOfMonth])
+            ->where('i.invoice_status', 'paid')
+            ->whereNotNull('i.tgl_transfer')
+            ->whereBetween('i.tgl_transfer', [$startOfMonth, $endOfMonth])
             ->groupBy('cli.coa_id', 'coa.code', 'coa.name')
             ->selectRaw('cli.coa_id, coa.code, coa.name, SUM(cli.amount) as total_inv')
             ->get()
@@ -794,9 +798,9 @@ class NeracaLajurPiutang extends Page implements HasTable
         $sheetInv->getStyle('A1')->getFont()->setBold(true)->setSize(12);
         $sheetInv->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $inv_headers = ['A3' => 'No. Invoice', 'B3' => 'Tanggal Invoice', 'C3' => 'Status',
-                        'D3' => 'No. MoU / Memo', 'E3' => 'Client',
-                        'F3' => 'Kode COA', 'G3' => 'Nama COA', 'H3' => 'Amount', 'I3' => 'Keterangan'];
+        $inv_headers = ['A3' => 'No. Invoice', 'B3' => 'Tgl Transfer', 'C3' => 'Tgl Invoice',
+                        'D3' => 'Status', 'E3' => 'No. MoU / Memo', 'F3' => 'Client',
+                        'G3' => 'Kode COA', 'H3' => 'Nama COA', 'I3' => 'Amount', 'J3' => 'Keterangan'];
         foreach ($inv_headers as $cell => $label) {
             $sheetInv->setCellValue($cell, $label);
         }
@@ -811,11 +815,14 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->whereNull('i.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('i.invoice_type', 'kkp')
-            ->whereBetween('i.invoice_date', [$startOfMonth, $endOfMonth])
-            ->orderBy('i.invoice_date')
+            ->where('i.invoice_status', 'paid')
+            ->whereNotNull('i.tgl_transfer')
+            ->whereBetween('i.tgl_transfer', [$startOfMonth, $endOfMonth])
+            ->orderBy('i.tgl_transfer')
             ->orderBy('i.invoice_number')
             ->selectRaw('
                 i.invoice_number,
+                i.tgl_transfer,
                 i.invoice_date,
                 i.invoice_status,
                 COALESCE(m.mou_number, mem.no_memo, "-") as referensi,
@@ -831,24 +838,25 @@ class NeracaLajurPiutang extends Page implements HasTable
         $invGrand2 = 0;
         foreach ($invDetail as $inv) {
             $sheetInv->setCellValue('A' . $invRow, $inv->invoice_number);
-            $sheetInv->setCellValue('B' . $invRow, $inv->invoice_date);
-            $sheetInv->setCellValue('C' . $invRow, $inv->invoice_status);
-            $sheetInv->setCellValue('D' . $invRow, $inv->referensi);
-            $sheetInv->setCellValue('E' . $invRow, $inv->client_name);
-            $sheetInv->setCellValue('F' . $invRow, $inv->coa_code);
-            $sheetInv->setCellValue('G' . $invRow, $inv->coa_name);
-            $sheetInv->setCellValue('H' . $invRow, $inv->amount);
-            $sheetInv->setCellValue('I' . $invRow, $inv->description);
-            $sheetInv->getStyle('H' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sheetInv->setCellValue('B' . $invRow, $inv->tgl_transfer);
+            $sheetInv->setCellValue('C' . $invRow, $inv->invoice_date);
+            $sheetInv->setCellValue('D' . $invRow, $inv->invoice_status);
+            $sheetInv->setCellValue('E' . $invRow, $inv->referensi);
+            $sheetInv->setCellValue('F' . $invRow, $inv->client_name);
+            $sheetInv->setCellValue('G' . $invRow, $inv->coa_code);
+            $sheetInv->setCellValue('H' . $invRow, $inv->coa_name);
+            $sheetInv->setCellValue('I' . $invRow, $inv->amount);
+            $sheetInv->setCellValue('J' . $invRow, $inv->description);
+            $sheetInv->getStyle('I' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
             $invGrand2 += $inv->amount;
             $invRow++;
         }
-        $sheetInv->setCellValue('G' . $invRow, 'TOTAL');
-        $sheetInv->setCellValue('H' . $invRow, $invGrand2);
-        $sheetInv->getStyle('A' . $invRow . ':I' . $invRow)->applyFromArray($totalStyle);
-        $sheetInv->getStyle('H' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sheetInv->getStyle('A3:I' . $invRow)->applyFromArray(['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]]);
-        foreach (range('A', 'I') as $col) { $sheetInv->getColumnDimension($col)->setAutoSize(true); }
+        $sheetInv->setCellValue('H' . $invRow, 'TOTAL');
+        $sheetInv->setCellValue('I' . $invRow, $invGrand2);
+        $sheetInv->getStyle('A' . $invRow . ':J' . $invRow)->applyFromArray($totalStyle);
+        $sheetInv->getStyle('I' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
+        $sheetInv->getStyle('A3:J' . $invRow)->applyFromArray(['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]]);
+        foreach (range('A', 'J') as $col) { $sheetInv->getColumnDimension($col)->setAutoSize(true); }
 
         // Set active sheet ke ringkasan
         $spreadsheet->setActiveSheetIndex(0);

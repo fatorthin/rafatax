@@ -116,7 +116,23 @@ class MouResource extends Resource
                             ])
                             ->default('unapproved')
                             ->required()
-                            ->placeholder('Pilih status'),
+                            ->placeholder('Pilih status')
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                                if ($state === 'approved' && !$get('approved_date')) {
+                                    $set('approved_date', now()->toDateString());
+                                }
+                                if ($state !== 'approved') {
+                                    $set('approved_date', null);
+                                }
+                            }),
+                        Forms\Components\DatePicker::make('approved_date')
+                            ->label('Tanggal Disetujui')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->placeholder('Pilih tanggal persetujuan')
+                            ->visible(fn(Forms\Get $get) => $get('status') === 'approved')
+                            ->dehydrateStateUsing(fn($state, Forms\Get $get) => $get('status') === 'approved' ? $state : null),
                         Forms\Components\Radio::make('type')
                             ->label('Tipe')
                             ->options([
@@ -337,6 +353,11 @@ class MouResource extends Resource
                     })
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('approved_date')
+                    ->label('Tanggal Disetujui')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('is_send_mou')
                     ->label('Status Kirim MoU')
                     ->badge()

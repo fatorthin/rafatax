@@ -105,6 +105,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->label('Status')
                             ->weight('bold')
                             ->formatStateUsing(fn(string $state): string => ucfirst($state)),
+                        TextEntry::make('approved_date')
+                            ->label('Approved Date')
+                            ->weight('bold')
+                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : '-'),
                         TextEntry::make('type')
                             ->label('Type')
                             ->formatStateUsing(fn(string $state): string => match ($state) {

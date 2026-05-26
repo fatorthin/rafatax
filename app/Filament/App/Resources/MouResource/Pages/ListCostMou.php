@@ -108,6 +108,10 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 'unapproved' => 'Belum Disetujui',
                                 default => ucfirst($state),
                             }),
+                        TextEntry::make('approved_date')
+                            ->label('Tanggal Disetujui')
+                            ->weight('bold')
+                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : '-'),
                         TextEntry::make('type')
                             ->label('Tipe')
                             ->formatStateUsing(fn(string $state): string => match ($state) {
