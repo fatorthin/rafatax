@@ -25,8 +25,18 @@ class ManageMous extends ManageRecords
                 ->modalDescription('Export data rekap payment dan piutang klien per tanggal yang dipilih.')
                 ->modalSubmitActionLabel('Export Excel')
                 ->form([
+                    \Filament\Forms\Components\Select::make('mode_tahun')
+                        ->label('Rekap Berdasarkan')
+                        ->options([
+                            'tahun_pajak'  => 'Tahun Pajak',
+                            'tahun_dibuat' => 'Tahun Dibuat',
+                        ])
+                        ->default('tahun_pajak')
+                        ->required()
+                        ->live()
+                        ->native(false),
                     \Filament\Forms\Components\Select::make('tahun_pajak')
-                        ->label('Tahun Pajak')
+                        ->label('Pilih Tahun Pajak')
                         ->options(function () {
                             return \App\Models\MoU::query()
                                 ->whereNotNull('tahun_pajak')
@@ -36,7 +46,22 @@ class ManageMous extends ManageRecords
                                 ->toArray();
                         })
                         ->placeholder('Semua Tahun Pajak')
-                        ->searchable(),
+                        ->searchable()
+                        ->visible(fn(\Filament\Forms\Get $get) => $get('mode_tahun') === 'tahun_pajak' || !$get('mode_tahun')),
+                    \Filament\Forms\Components\Select::make('tahun_dibuat')
+                        ->label('Pilih Tahun Dibuat')
+                        ->options(function () {
+                            return \App\Models\MoU::query()
+                                ->selectRaw('YEAR(created_at) as tahun')
+                                ->whereNotNull('created_at')
+                                ->distinct()
+                                ->orderByRaw('YEAR(created_at) DESC')
+                                ->pluck('tahun', 'tahun')
+                                ->toArray();
+                        })
+                        ->placeholder('Semua Tahun Dibuat')
+                        ->searchable()
+                        ->visible(fn(\Filament\Forms\Get $get) => $get('mode_tahun') === 'tahun_dibuat'),
                     \Filament\Forms\Components\Select::make('type')
                         ->label('Tipe MoU (Opsional)')
                         ->options([
