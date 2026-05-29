@@ -57,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 InvoiceStats::class,
                 MouStats::class,
                 ClientStats::class,
+                \App\Filament\Resources\MouPiutangLamaResource\Widgets\MouPiutangLamaStatsOverview::class,
             ])
             ->middleware([
                 EncryptCookies::class,
