@@ -22,7 +22,7 @@ class MouPiutangLamaResource extends Resource
 
     protected static ?string $navigationGroup = 'Bagian Keuangan';
 
-    protected static ?string $navigationLabel = 'MoU Piutang Lama';
+    protected static ?string $navigationLabel = 'Daftar MoU Piutang Lama';
 
     protected static ?string $modelLabel = 'MoU Piutang Lama';
 
@@ -431,6 +431,13 @@ class MouPiutangLamaResource extends Resource
         ];
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            \App\Filament\Resources\MouPiutangLamaResource\Widgets\MouPiutangLamaStatsOverview::class,
+        ];
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -487,8 +494,18 @@ class MouPiutangLamaResource extends Resource
         }
 
         $romanMonths = [
-            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
-            7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII'
         ];
         $monthRoman = $romanMonths[$month];
 

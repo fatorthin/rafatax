@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MouPiutangLamaResource\Pages;
 
 use App\Filament\Resources\MouPiutangLamaResource;
+use App\Filament\Resources\MouPiutangLamaResource\Widgets\MouPiutangLamaStatsOverview;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
@@ -25,4 +26,12 @@ class ManageMouPiutangLamas extends ManageRecords
                 }),
         ];
     }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            MouPiutangLamaStatsOverview::class,
+        ];
+    }
 }
+
