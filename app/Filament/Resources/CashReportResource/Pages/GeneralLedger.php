@@ -16,14 +16,21 @@ class GeneralLedger extends Page
 
     protected static ?string $title = 'General Ledger';
 
-    public ?array $data = [];
+    #[\Livewire\Attributes\Url]
+    public ?string $bulan = null;
+
+    #[\Livewire\Attributes\Url]
+    public ?string $tahun = null;
+
+    #[\Livewire\Attributes\Url]
+    public ?string $cash_reference_id = null;
 
     public function mount(): void
     {
         $this->form->fill([
-            'start_date' => now()->startOfMonth()->format('Y-m-d'),
-            'end_date' => now()->endOfMonth()->format('Y-m-d'),
-            'cash_reference_id' => null,
+            'bulan' => $this->bulan ?? (string) now()->month,
+            'tahun' => $this->tahun ?? (string) now()->year,
+            'cash_reference_id' => $this->cash_reference_id,
         ]);
     }
 
@@ -33,14 +40,32 @@ class GeneralLedger extends Page
             ->schema([
                 \Filament\Forms\Components\Section::make()
                     ->schema([
-                        \Filament\Forms\Components\DatePicker::make('start_date')
-                            ->label('Tanggal Awal')
-                            ->default(now()->startOfMonth())
+                        \Filament\Forms\Components\Select::make('bulan')
+                            ->label('Bulan')
+                            ->options([
+                                '1' => 'Januari', '2' => 'Februari', '3' => 'Maret',
+                                '4' => 'April', '5' => 'Mei', '6' => 'Juni',
+                                '7' => 'Juli', '8' => 'Agustus', '9' => 'September',
+                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            ])
+                            ->default((string) now()->month)
                             ->required()
                             ->live(),
-                        \Filament\Forms\Components\DatePicker::make('end_date')
-                            ->label('Tanggal Akhir')
-                            ->default(now()->endOfMonth())
+                        \Filament\Forms\Components\Select::make('tahun')
+                            ->label('Tahun')
+                            ->options(function () {
+                                $years = \App\Models\CashReport::selectRaw('YEAR(transaction_date) as year')
+                                    ->distinct()
+                                    ->pluck('year', 'year')
+                                    ->toArray();
+                                $currentYear = now()->year;
+                                if (!isset($years[$currentYear])) {
+                                    $years[$currentYear] = $currentYear;
+                                }
+                                krsort($years);
+                                return $years;
+                            })
+                            ->default((string) now()->year)
                             ->required()
                             ->live(),
                         \Filament\Forms\Components\Select::make('cash_reference_id')
@@ -51,8 +76,7 @@ class GeneralLedger extends Page
                             ->live(),
                     ])
                     ->columns(3)
-            ])
-            ->statePath('data');
+            ]);
     }
 
     protected function getHeaderActions(): array
@@ -77,8 +101,11 @@ class GeneralLedger extends Page
                     $row++;
 
                     // Period
-                    $startDate = $this->data['start_date'] ?? '-';
-                    $endDate = $this->data['end_date'] ?? '-';
+                    $bulan = $this->bulan ?? now()->month;
+                    $tahun = $this->tahun ?? now()->year;
+                    $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
+                    $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
+                    
                     $sheet->setCellValue('A' . $row, "Periode: $startDate - $endDate");
                     $sheet->mergeCells("A{$row}:F{$row}");
                     $row += 2;
@@ -151,10 +178,13 @@ class GeneralLedger extends Page
 
     public function getReports()
     {
-        $data = $this->form->getState();
-        $startDate = $data['start_date'];
-        $endDate = $data['end_date'];
-        $cashReferenceId = $data['cash_reference_id'] ?? null;
+        $bulan = $this->bulan ?? now()->month;
+        $tahun = $this->tahun ?? now()->year;
+        
+        $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
+        $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
+        
+        $cashReferenceId = $this->cash_reference_id;
 
         // ── 1. Cash Reports (Kas Besar, Kas Kecil, Bank) ────────────────────
         $cashQuery = \App\Models\CashReport::query()
