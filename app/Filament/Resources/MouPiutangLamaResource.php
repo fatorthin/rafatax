@@ -1,0 +1,540 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Models\MoU;
+use Filament\Forms;
+use Filament\Tables;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use App\Models\CostListInvoice;
+use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\ActionsPosition;
+use App\Filament\Resources\MouPiutangLamaResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+class MouPiutangLamaResource extends Resource
+{
+    protected static ?string $model = MoU::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
+
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
+
+    protected static ?string $navigationLabel = 'MoU Piutang Lama';
+
+    protected static ?string $modelLabel = 'MoU Piutang Lama';
+
+    protected static ?string $pluralModelLabel = 'Daftar MoU Piutang Lama';
+
+    protected static ?string $slug = 'mou-piutang-lama';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\TextInput::make('mou_number')->label('MoU Number')
+                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
+                        return $rule->whereNull('deleted_at');
+                    })
+                    ->readOnly()
+                    ->required()
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('regenerate')
+                            ->icon('heroicon-m-arrow-path')
+                            ->action(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                                self::generateMouNumber($set, $get, $record);
+                            })
+                    ),
+                Forms\Components\TextInput::make('description')
+                    ->required(),
+                Forms\Components\DatePicker::make('start_date')
+                    ->label('Tanggal Awal Pengerjaan')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-01-01')
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                        self::generateMouNumber($set, $get, $record);
+                    }),
+                Forms\Components\DatePicker::make('end_date')
+                    ->required()
+                    ->label('Tanggal Akhir Pengerjaan')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-12-31'),
+                Forms\Components\DatePicker::make('tanggal_tagih_awal')
+                    ->required()
+                    ->label('Tanggal Awal Penagihan')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-01-01'),
+                Forms\Components\DatePicker::make('tanggal_tagih_akhir')
+                    ->required()
+                    ->label('Tanggal Akhir Penagihan')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(date('Y') . '-12-31'),
+                Forms\Components\Select::make('status')
+                    ->options([
+                        'approved' => 'Approved',
+                        'unapproved' => 'Unapproved',
+                    ])
+                    ->default('unapproved')
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                        if ($state === 'approved' && !$get('approved_date')) {
+                            $set('approved_date', now()->toDateString());
+                        }
+                        if ($state !== 'approved') {
+                            $set('approved_date', null);
+                        }
+                    }),
+                Forms\Components\DatePicker::make('approved_date')
+                    ->label('Approved Date')
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->visible(fn(Forms\Get $get) => $get('status') === 'approved')
+                    ->dehydrateStateUsing(fn($state, Forms\Get $get) => $get('status') === 'approved' ? $state : null),
+                Forms\Components\Radio::make('type')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                    ])
+                    ->default('pt')
+                    ->inline()
+                    ->inlineLabel(false)
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                        self::generateMouNumber($set, $get, $record);
+                    }),
+                Forms\Components\Select::make('client_id')
+                    ->label('Client')
+                    ->relationship('client', 'company_name')
+                    ->searchable(['company_name', 'code'])
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->company_name} - {$record->code}")
+                    ->required(),
+                Forms\Components\Select::make('category_mou_id')
+                    ->label('Category MoU')
+                    ->relationship('categoryMou', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
+                        self::generateMouNumber($set, $get, $record);
+                    }),
+                Forms\Components\TextInput::make('percentage_restitution')
+                    ->label('Percentage Restitution (optional)')
+                    ->numeric()
+                    ->default(0)
+                    ->suffix('%'),
+                Forms\Components\TextInput::make('tahun_pajak')
+                    ->label('Tahun Pajak')
+                    ->numeric()
+                    ->required(),
+                Forms\Components\TextInput::make('link_mou')
+                    ->label('Link MoU')
+                    ->placeholder('Masukkan link MoU'),
+                Forms\Components\TextInput::make('discount_amount')
+                    ->label('Discount Amount')
+                    ->numeric()
+                    ->default(0),
+                Forms\Components\Select::make('is_send_mou')
+                    ->label('Status Kirim MoU')
+                    ->options([
+                        1 => 'Sudah',
+                        0 => 'Belum',
+                    ])
+                    ->default(0),
+                Forms\Components\DatePicker::make('send_mou_date')
+                    ->label('Tanggal Kirim MoU')
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
+                Forms\Components\Checkbox::make('mou_piutang_lama')
+                    ->label('MoU Piutang Lama')
+                    ->default(true),
+                Forms\Components\Section::make('Cost List Details')
+                    ->schema([
+                        Forms\Components\Repeater::make('cost_lists')
+                            ->relationship('cost_lists')
+                            ->schema([
+                                Forms\Components\Select::make('coa_id')
+                                    ->label('CoA')
+                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->required()
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Description')
+                                    ->columnSpan([
+                                        'md' => 4,
+                                    ]),
+                                Forms\Components\TextInput::make('quantity')
+                                    ->label('Qty')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $price = $get('amount');
+                                        $total = floatval($state) * floatval($price);
+                                        $set('total_amount', number_format($total, 0, ',', '.'));
+                                    })
+                                    ->columnSpan([
+                                        'md' => 1,
+                                    ]),
+                                Forms\Components\TextInput::make('satuan_quantity')
+                                    ->label('Satuan')
+                                    ->columnSpan([
+                                        'md' => 1,
+                                    ]),
+                                Forms\Components\TextInput::make('amount')
+                                    ->label('Price')
+                                    ->numeric()
+                                    ->prefix('Rp')
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $qty = $get('quantity') ?? 1;
+                                        $total = floatval($state) * floatval($qty);
+                                        $set('total_amount', number_format($total, 0, ',', '.'));
+                                    })
+                                    ->columnSpan([
+                                        'md' => 3,
+                                    ]),
+                                Forms\Components\TextInput::make('total_amount')
+                                    ->label('Total')
+                                    ->prefix('Rp')
+                                    ->readOnly()
+                                    ->formatStateUsing(fn($state) => $state ? number_format((float) $state, 0, ',', '.') : '0')
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace('.', '', str_replace(',', '', $state ?? '0')))
+                                    ->columnSpan([
+                                        'md' => 3,
+                                    ]),
+                            ])
+                            ->columns([
+                                'md' => 12,
+                            ])
+                            ->defaultItems(0),
+                    ])
+                    ->collapsible(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->striped()
+            ->defaultSort('created_at', 'desc')
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-content { max-height: 75vh; overflow: auto !important; } .fi-ta-table thead { position: sticky; top: 0; z-index: 20; } .fi-ta-table thead th { background-color: #f9fafb; } .dark .fi-ta-table thead th { background-color: #18181b; }</style>'))
+            ->recordUrl(null)
+            ->columns([
+                Tables\Columns\TextColumn::make('mou_number')->label('MoU Number')
+                    ->searchable()
+                    ->extraHeaderAttributes([
+                        'style' => 'position: sticky; left: 0; z-index: 30; background-color: inherit;',
+                        'class' => 'w-[250px] min-w-[250px]'
+                    ])
+                    ->extraAttributes([
+                        'style' => 'position: sticky; left: 0; z-index: 10;',
+                        'class' => 'fi-sticky-col-mou-number w-[250px] min-w-[250px]'
+                    ]),
+                Tables\Columns\TextColumn::make('tahun_pajak')
+                    ->label('Tahun Pajak')
+                    ->getStateUsing(fn($record) => $record->tahun_pajak ?: ($record->start_date ? \Carbon\Carbon::parse($record->start_date)->year : null))
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('start_date')
+                    ->label('Tanggal Awal Pengerjaan')
+                    ->dateTime('d/m/Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('end_date')
+                    ->label('Tanggal Akhir Pengerjaan')
+                    ->date()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('description')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('type')
+                    ->searchable()
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                        default => $state,
+                    }),
+                Tables\Columns\TextColumn::make('client.company_name')
+                    ->label('Client Name')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('categoryMou.name')
+                    ->label('Category')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\SelectColumn::make('status')
+                    ->options([
+                        'approved' => 'Approved',
+                        'unapproved' => 'Unapproved',
+                    ])
+                    ->afterStateUpdated(function (MoU $record, $state) {
+                        if ($state === 'approved' && !$record->approved_date) {
+                            $record->update(['approved_date' => now()->toDateString()]);
+                        } elseif ($state !== 'approved') {
+                            $record->update(['approved_date' => null]);
+                        }
+                    })
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('approved_date')
+                    ->label('Approved Date')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('is_send_mou')
+                    ->label('Status Kirim MoU')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        '1' => 'success',
+                        '0' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => $state == '1' ? 'Sudah' : 'Belum'),
+                Tables\Columns\TextColumn::make('cost_lists_sum_amount')
+                    ->label('Total MoU Amount')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        return $record->cost_lists()->sum('total_amount');
+                    })->alignEnd(),
+                Tables\Columns\TextColumn::make('total_invoice_unpaid')
+                    ->label('Total Invoice Unpaid')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'unpaid'))
+                            ->sum('amount');
+                    })->alignEnd(),
+                Tables\Columns\TextColumn::make('total_invoice_paid')
+                    ->label('Total Invoice Paid')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'paid'))
+                            ->sum('amount');
+                    })->alignEnd(),
+                Tables\Columns\TextColumn::make('sisa_tagihan')
+                    ->label('Sisa Tagihan')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        $totalMou = $record->cost_lists()->sum('total_amount');
+                        $totalPaid = CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'paid'))
+                            ->sum('amount');
+                        $discountMou = (float) ($record->discount_amount ?? 0);
+                        return $totalMou - $totalPaid - $discountMou;
+                    })->alignEnd(),
+                Tables\Columns\TextColumn::make('total_invoice_amount')
+                    ->label('Total Invoice')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id))
+                            ->sum('amount');
+                    })->alignEnd(),
+                Tables\Columns\TextColumn::make('discount_amount')
+                    ->label('Discount Amount')
+                    ->formatStateUsing(function ($state) {
+                        return number_format((float) $state, 0, ',', '.');
+                    }),
+            ])
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
+                Tables\Filters\SelectFilter::make('client_id')
+                    ->preload()
+                    ->label('Client')
+                    ->relationship('client', 'company_name')
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('category_mou_id')
+                    ->label('Category')
+                    ->relationship('categoryMou', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('month')
+                    ->label('Month')
+                    ->options(
+                        collect(range(1, 12))->mapWithKeys(function ($month) {
+                            return [$month => \Carbon\Carbon::create()->month($month)->format('F')];
+                        })->toArray()
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $month) => $query->whereMonth('start_date', $month)
+                    )),
+                Tables\Filters\SelectFilter::make('year')
+                    ->label('Year')
+                    ->options(
+                        MoU::query()
+                            ->whereNotNull('mou_piutang_lama')
+                            ->selectRaw('YEAR(start_date) as year')
+                            ->distinct()
+                            ->orderBy('year', 'desc')
+                            ->pluck('year', 'year')
+                            ->toArray()
+                    )
+                    ->query(fn(Builder $query, $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $year) => $query->whereYear('start_date', $year)
+                    )),
+                Tables\Filters\Filter::make('status')
+                    ->label('Status')
+                    ->query(fn(Builder $query): Builder => $query->where('status', 'approved'))
+                    ->default()
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make()
+                    ->color('info')
+                    ->modalWidth('7xl'),
+                Tables\Actions\Action::make('viewCostList')
+                    ->label('Detail')
+                    ->url(fn($record) => "/admin/mous/{$record->id}/cost-list")
+                    ->icon('heroicon-o-eye')
+                    ->color('success')
+                    ->openUrlInNewTab(),
+                Tables\Actions\DeleteAction::make(),
+            ], position: ActionsPosition::BeforeCells)
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ManageMouPiutangLamas::route('/'),
+        ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ])
+            ->whereNotNull('mou_piutang_lama')
+            ->where('mou_piutang_lama', true)
+            ->latest('created_at');
+    }
+
+    public static function generateMouNumber(Forms\Set $set, Forms\Get $get, ?MoU $record = null): void
+    {
+        $type = $get('type');
+        $categoryId = $get('category_mou_id');
+        $startDate = $get('start_date');
+        $currentMouNumber = $get('mou_number');
+
+        if (!$type || !$categoryId || !$startDate) {
+            return;
+        }
+
+        $typeCode = $type === 'pt' ? 'PT' : 'KKP';
+
+        $category = \App\Models\CategoryMou::find($categoryId);
+        if (!$category) {
+            return;
+        }
+
+        $categoryName = $category->name;
+        $categoryCode = match ($categoryName) {
+            'Bulanan Perorangan' => 'BTH',
+            'Bulanan Perusahaan' => 'BTH',
+            'SPT Perorangan' => 'TH',
+            'SPT Perusahaan' => 'TH',
+            'Pembetulan' => 'PBT',
+            'Pembukuan' => 'PBK',
+            'Pemeriksaan' => 'PMK',
+            'Restitusi' => 'RS',
+            'SP2DK' => 'SP',
+            'Konsultasi' => 'KS',
+            'Keberatan' => 'KB',
+            'Pelatihan' => 'PL',
+            'Lainnya' => 'LN',
+            default => 'LN',
+        };
+
+        $date = \Carbon\Carbon::parse($startDate);
+        $year = $date->year;
+        if ($record && $record->created_at) {
+            $month = $record->created_at->month;
+        } else {
+            $month = now()->month;
+        }
+
+        $romanMonths = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
+            7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
+        ];
+        $monthRoman = $romanMonths[$month];
+
+        $newNumber = null;
+
+        if ($record && $record->mou_number) {
+            if (preg_match('/^(\d+)\/([A-Z]+)\/([A-Z]+)\/([IVX]+)\/(\d+)$/', $record->mou_number, $matches)) {
+                $existingSeq = $matches[1];
+                $existingTypeCode = $matches[2];
+                $existingYear = $matches[5];
+                if ($existingTypeCode === $typeCode && (int)$existingYear === (int)$year) {
+                    $newNumber = $existingSeq;
+                }
+            }
+        }
+
+        if (!$newNumber && $currentMouNumber) {
+            if (preg_match('/^(\d+)\/([A-Z]+)\/([A-Z]+)\/([IVX]+)\/(\d+)$/', $currentMouNumber, $matches)) {
+                $existingSeq = $matches[1];
+                $existingTypeCode = $matches[2];
+                $existingYear = $matches[5];
+                if ($existingTypeCode === $typeCode && (int)$existingYear === (int)$year) {
+                    $newNumber = $existingSeq;
+                }
+            }
+        }
+
+        if (!$newNumber) {
+            $lastNumber = 0;
+            $mous = MoU::whereYear('start_date', $year)
+                ->where('type', $type)
+                ->pluck('mou_number');
+
+            foreach ($mous as $num) {
+                if (preg_match('/^(\d+)\//', $num, $matches)) {
+                    $val = (int)$matches[1];
+                    if ($val > $lastNumber) {
+                        $lastNumber = $val;
+                    }
+                }
+            }
+
+            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        }
+
+        $result = sprintf('%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);
+        $set('mou_number', $result);
+    }
+}
