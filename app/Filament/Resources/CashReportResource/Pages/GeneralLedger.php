@@ -219,13 +219,15 @@ class GeneralLedger extends Page
                 return $t;
             });
 
-        // ── 4. Gabungkan & group by coa_id ──────────────────────────────────
+        // ── 4. Gabungkan & group by coa_id, lalu sort by coa.code ───────────
         $allTransactions = $cashTransactions
             ->merge($journalTransactions)
             ->merge($neracaAwalTransactions)
             ->sortBy('transaction_date');
 
-        return $allTransactions->groupBy('coa_id');
+        return $allTransactions->groupBy('coa_id')->sortBy(function ($transactions) {
+            return $transactions->first()->coa->code ?? '999999';
+        });
     }
 
     protected function getViewData(): array
