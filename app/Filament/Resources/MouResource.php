@@ -446,7 +446,7 @@ class MouResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->whereNotNull('mou_piutang_lama')
+            ->where('mou_piutang_lama', false)
             ->latest('created_at');
     }
 

@@ -568,7 +568,7 @@ class MouResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereNotNull('mou_piutang_lama')
+            ->where('mou_piutang_lama', false)
             ->latest('created_at');
     }
 
