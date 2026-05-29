@@ -86,6 +86,63 @@ class DaftarAktivaTetapResource extends Resource
                         $count++;
                     }
 
+                    $totalDepreciationAll = DepresiasiAktivaTetap::query()
+                        ->whereYear('tanggal_penyusutan', $date->year)
+                        ->whereMonth('tanggal_penyusutan', $date->month)
+                        ->sum('jumlah_penyusutan');
+
+                    if ($totalDepreciationAll > 0) {
+                        $month = $date->month;
+                        $year = $date->year;
+                        $transactionDate = $date->endOfMonth()->format('Y-m-d');
+                        $descriptionDebit = "Beban Depresiasi Aktiva Tetap " . $date->format('M Y');
+                        $descriptionKredit = "Akumulasi Depresiasi Aktiva Tetap " . $date->format('M Y');
+
+                        // CoA 139 (Debit)
+                        $journalDebit = \App\Models\JournalBookReport::where('coa_id', 139)
+                            ->whereYear('transaction_date', $year)
+                            ->whereMonth('transaction_date', $month)
+                            ->first();
+
+                        if (!$journalDebit) {
+                            \App\Models\JournalBookReport::create([
+                                'description' => $descriptionDebit,
+                                'journal_book_id' => 2, // AJE
+                                'debit_amount' => $totalDepreciationAll,
+                                'credit_amount' => 0,
+                                'coa_id' => 139,
+                                'transaction_date' => $transactionDate,
+                            ]);
+                        } elseif ($journalDebit->debit_amount != $totalDepreciationAll) {
+                            $journalDebit->update([
+                                'debit_amount' => $totalDepreciationAll,
+                                'credit_amount' => 0,
+                            ]);
+                        }
+
+                        // CoA 103 (Kredit)
+                        $journalKredit = \App\Models\JournalBookReport::where('coa_id', 103)
+                            ->whereYear('transaction_date', $year)
+                            ->whereMonth('transaction_date', $month)
+                            ->first();
+
+                        if (!$journalKredit) {
+                            \App\Models\JournalBookReport::create([
+                                'description' => $descriptionKredit,
+                                'journal_book_id' => 2, // AJE
+                                'debit_amount' => 0,
+                                'credit_amount' => $totalDepreciationAll,
+                                'coa_id' => 103,
+                                'transaction_date' => $transactionDate,
+                            ]);
+                        } elseif ($journalKredit->credit_amount != $totalDepreciationAll) {
+                            $journalKredit->update([
+                                'debit_amount' => 0,
+                                'credit_amount' => $totalDepreciationAll,
+                            ]);
+                        }
+                    }
+
                     \Filament\Notifications\Notification::make()
                         ->title('Berhasil')
                         ->body("Berhasil menghitung depresiasi untuk {$count} aktiva tetap.")
