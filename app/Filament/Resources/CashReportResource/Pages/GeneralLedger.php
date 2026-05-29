@@ -109,8 +109,8 @@ class GeneralLedger extends Page
                         $totalCredit = 0;
 
                         foreach ($transactions as $transaction) {
-                            $debit = $transaction->debit_amount ?? 0;
-                            $credit = $transaction->credit_amount ?? 0;
+                            $debit = $transaction->display_debit ?? 0;
+                            $credit = $transaction->display_credit ?? 0;
                             $balance += ($debit - $credit);
                             $totalDebit += $debit;
                             $totalCredit += $credit;
@@ -173,6 +173,9 @@ class GeneralLedger extends Page
             ->get()
             ->map(function ($t) {
                 $t->source = $t->cashReference->name ?? '-';
+                // Tukar tampilan: nominal debit di DB → tampil di kolom Kredit, dan sebaliknya
+                $t->display_debit  = $t->credit_amount ?? 0;
+                $t->display_credit = $t->debit_amount  ?? 0;
                 return $t;
             });
 
@@ -192,6 +195,9 @@ class GeneralLedger extends Page
             ->get()
             ->map(function ($t) use ($journalLabels) {
                 $t->source = $journalLabels[$t->journal_book_id] ?? 'Jurnal';
+                // Jurnal: tampilan normal (tidak ditukar)
+                $t->display_debit  = $t->debit_amount  ?? 0;
+                $t->display_credit = $t->credit_amount ?? 0;
                 return $t;
             });
 
@@ -207,6 +213,9 @@ class GeneralLedger extends Page
             ->get()
             ->map(function ($t) {
                 $t->source = 'Neraca Awal';
+                // Neraca Awal: tampilan normal (tidak ditukar)
+                $t->display_debit  = $t->debit_amount  ?? 0;
+                $t->display_credit = $t->credit_amount ?? 0;
                 return $t;
             });
 

@@ -36,17 +36,9 @@
                                 <tbody>
                                     @foreach ($transactions as $transaction)
                                         @php
-                                            $debit = $transaction->debit_amount ?? 0;
-                                            $credit = $transaction->credit_amount ?? 0;
+                                            $debit = $transaction->display_debit ?? 0;
+                                            $credit = $transaction->display_credit ?? 0;
 
-                                            // Simple logic: Assets/Expenses usually increase on Debit
-                                            // Liability/Equity/Income usually increase on Credit
-                                            // Adjust balance calculation based on Account Type if needed,
-                                            // but standard GL usually shows running balance based on D-C or C-D
-
-                                            // Let's assume standard Asset behavior for now: Balance = Balance + Debit - Credit
-// If it's a liability/income, it might be Credit - Debit.
-                                            // To keep it simple visually:
                                             $balance += $debit - $credit;
 
                                             $totalDebit += $debit;

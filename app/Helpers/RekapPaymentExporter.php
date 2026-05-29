@@ -17,6 +17,7 @@ class RekapPaymentExporter
         $modeTahun       = $data['mode_tahun'] ?? 'tahun_pajak';
         $tahunPajak      = $data['tahun_pajak'] ?? null;
         $tahunDibuat     = $data['tahun_dibuat'] ?? null;
+        $tahunApprove    = $data['tahun_approve'] ?? null;
         $onlyWithPiutang = (bool) ($data['only_with_piutang'] ?? false);
 
         $query = \App\Models\MoU::with(['client', 'categoryMou', 'cost_lists'])
@@ -26,6 +27,8 @@ class RekapPaymentExporter
             $query->where('tahun_pajak', $tahunPajak);
         } elseif ($modeTahun === 'tahun_dibuat' && !empty($tahunDibuat)) {
             $query->whereYear('created_at', $tahunDibuat);
+        } elseif ($modeTahun === 'tahun_approve' && !empty($tahunApprove)) {
+            $query->whereYear('approved_date', $tahunApprove);
         }
 
         if (!empty($data['type'])) {

@@ -28,8 +28,9 @@ class ManageMous extends ManageRecords
                     \Filament\Forms\Components\Select::make('mode_tahun')
                         ->label('Rekap Berdasarkan')
                         ->options([
-                            'tahun_pajak'  => 'Tahun Pajak',
-                            'tahun_dibuat' => 'Tahun Dibuat',
+                            'tahun_pajak'   => 'Tahun Pajak',
+                            'tahun_dibuat'  => 'Tahun Dibuat',
+                            'tahun_approve' => 'Tahun Approve',
                         ])
                         ->default('tahun_pajak')
                         ->required()
@@ -62,6 +63,20 @@ class ManageMous extends ManageRecords
                         ->placeholder('Semua Tahun Dibuat')
                         ->searchable()
                         ->visible(fn(\Filament\Forms\Get $get) => $get('mode_tahun') === 'tahun_dibuat'),
+                    \Filament\Forms\Components\Select::make('tahun_approve')
+                        ->label('Pilih Tahun Approve')
+                        ->options(function () {
+                            return \App\Models\MoU::query()
+                                ->selectRaw('YEAR(approved_date) as tahun')
+                                ->whereNotNull('approved_date')
+                                ->distinct()
+                                ->orderByRaw('YEAR(approved_date) DESC')
+                                ->pluck('tahun', 'tahun')
+                                ->toArray();
+                        })
+                        ->placeholder('Semua Tahun Approve')
+                        ->searchable()
+                        ->visible(fn(\Filament\Forms\Get $get) => $get('mode_tahun') === 'tahun_approve'),
                     \Filament\Forms\Components\Select::make('type')
                         ->label('Tipe MoU (Opsional)')
                         ->options([
