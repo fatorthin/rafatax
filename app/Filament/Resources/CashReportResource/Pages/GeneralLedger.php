@@ -117,7 +117,7 @@ class GeneralLedger extends Page
 
                             $sheet->setCellValue('A' . $row, \Carbon\Carbon::parse($transaction->transaction_date)->format('d/m/Y'));
                             $sheet->setCellValue('B' . $row, $transaction->description);
-                            $sheet->setCellValue('C' . $row, $transaction->cashReference->name ?? '-');
+                            $sheet->setCellValue('C' . $row, $transaction->source ?? '-');
                             $sheet->setCellValue('D' . $row, $debit);
                             $sheet->setCellValue('E' . $row, $credit);
                             $sheet->setCellValue('F' . $row, $balance);
@@ -156,29 +156,76 @@ class GeneralLedger extends Page
         $endDate = $data['end_date'];
         $cashReferenceId = $data['cash_reference_id'] ?? null;
 
-        $query = \App\Models\CashReport::query()
+        // ── 1. Cash Reports (Kas Besar, Kas Kecil, Bank) ────────────────────
+        $cashQuery = \App\Models\CashReport::query()
             ->select('cash_reports.*')
             ->join('coa', 'cash_reports.coa_id', '=', 'coa.id')
             ->with(['coa', 'cashReference'])
             ->whereBetween('cash_reports.transaction_date', [$startDate, $endDate]);
 
         if ($cashReferenceId) {
-            $query->where('cash_reports.cash_reference_id', $cashReferenceId);
+            $cashQuery->where('cash_reports.cash_reference_id', $cashReferenceId);
         }
 
-        // Fetch data and group by CoA ID
-        $transactions = $query->orderBy('coa.sort_order')
+        $cashTransactions = $cashQuery
+            ->orderBy('coa.sort_order')
             ->orderBy('cash_reports.transaction_date')
-            ->get();
+            ->get()
+            ->map(function ($t) {
+                $t->source = $t->cashReference->name ?? '-';
+                return $t;
+            });
 
-        return $transactions->groupBy('coa_id');
+        // ── 2. Journal Book Reports (Jurnal Umum, AJE, Jurnal Pendapatan) ──
+        //    Diambil dari rentang tanggal yang sama dengan cash_reports.
+        //    Tidak difilter by cash_reference_id (jurnal tidak terkait kas/bank).
+        $journalLabels = [
+            1 => 'Jurnal Umum',
+            2 => 'AJE',
+            4 => 'Jurnal Pendapatan',
+        ];
+
+        $journalTransactions = \App\Models\JournalBookReport::query()
+            ->with('coa')
+            ->whereIn('journal_book_id', [1, 2, 4])
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->get()
+            ->map(function ($t) use ($journalLabels) {
+                $t->source = $journalLabels[$t->journal_book_id] ?? 'Jurnal';
+                return $t;
+            });
+
+        // ── 3. Neraca Awal (journal_book_id = 3) dari bulan sebelumnya ──────
+        //    Di Neraca Lajur, neraca awal diambil dari bulan sebelum start_date.
+        $prevMonthStart = \Carbon\Carbon::parse($startDate)->subMonth()->startOfMonth();
+        $prevMonthEnd   = \Carbon\Carbon::parse($startDate)->subMonth()->endOfMonth();
+
+        $neracaAwalTransactions = \App\Models\JournalBookReport::query()
+            ->with('coa')
+            ->where('journal_book_id', 3)
+            ->whereBetween('transaction_date', [$prevMonthStart, $prevMonthEnd])
+            ->get()
+            ->map(function ($t) {
+                $t->source = 'Neraca Awal';
+                return $t;
+            });
+
+        // ── 4. Gabungkan & group by coa_id ──────────────────────────────────
+        $allTransactions = $cashTransactions
+            ->merge($journalTransactions)
+            ->merge($neracaAwalTransactions)
+            ->sortBy('transaction_date');
+
+        return $allTransactions->groupBy('coa_id');
     }
 
     protected function getViewData(): array
     {
+        $groupedTransactions = $this->getReports();
+
         return [
-            'groupedTransactions' => $this->getReports(),
-            'coas' => \App\Models\Coa::whereIn('id', $this->getReports()->keys())->get()->keyBy('id'),
+            'groupedTransactions' => $groupedTransactions,
+            'coas' => \App\Models\Coa::whereIn('id', $groupedTransactions->keys())->get()->keyBy('id'),
         ];
     }
 }

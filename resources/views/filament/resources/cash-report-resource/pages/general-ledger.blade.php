@@ -27,7 +27,7 @@
                                     <tr>
                                         <th scope="col" class="px-6 py-3">Tanggal</th>
                                         <th scope="col" class="px-6 py-3">Deskripsi</th>
-                                        <th scope="col" class="px-6 py-3">Kas/Bank Reference</th>
+                                        <th scope="col" class="px-6 py-3">Sumber</th>
                                         <th scope="col" class="px-6 py-3 text-right">Debit</th>
                                         <th scope="col" class="px-6 py-3 text-right">Kredit</th>
                                         <th scope="col" class="px-6 py-3 text-right">Saldo</th>
@@ -57,7 +57,20 @@
                                                 {{ \Carbon\Carbon::parse($transaction->transaction_date)->format('d/m/Y') }}
                                             </td>
                                             <td class="px-6 py-4">{{ $transaction->description }}</td>
-                                            <td class="px-6 py-4">{{ $transaction->cashReference->name ?? '-' }}</td>
+                                            <td class="px-6 py-4">
+                                                @php
+                                                    $sourceColors = [
+                                                        'Jurnal Umum'       => 'text-blue-600',
+                                                        'AJE'               => 'text-purple-600',
+                                                        'Jurnal Pendapatan' => 'text-emerald-600',
+                                                        'Neraca Awal'       => 'text-amber-600',
+                                                    ];
+                                                    $sourceColor = $sourceColors[$transaction->source] ?? 'text-gray-600';
+                                                @endphp
+                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ $sourceColor }} bg-gray-100 dark:bg-gray-800">
+                                                    {{ $transaction->source ?? '-' }}
+                                                </span>
+                                            </td>
                                             <td class="px-6 py-4 text-right text-green-600 font-medium">
                                                 {{ $debit > 0 ? number_format($debit, 0, ',', '.') : '-' }}
                                             </td>

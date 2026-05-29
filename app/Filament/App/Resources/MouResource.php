@@ -199,6 +199,9 @@ class MouResource extends Resource
                             ->label('Tanggal Kirim MoU')
                             ->native(false)
                             ->displayFormat('d/m/Y'),
+                        Forms\Components\Checkbox::make('mou_piutang_lama')
+                            ->label('MoU Piutang Lama')
+                            ->default(false),
                     ])
                     ->columns(1),
 
@@ -565,6 +568,7 @@ class MouResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->whereNotNull('mou_piutang_lama')
             ->latest('created_at');
     }
 

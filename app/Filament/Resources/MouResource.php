@@ -149,6 +149,9 @@ class MouResource extends Resource
                     ->label('Tanggal Kirim MoU')
                     ->native(false)
                     ->displayFormat('d/m/Y'),
+                Forms\Components\Checkbox::make('mou_piutang_lama')
+                    ->label('MoU Piutang Lama')
+                    ->default(false),
                 Forms\Components\Section::make('Cost List Details')
                     ->schema([
                         Forms\Components\Repeater::make('cost_lists')
@@ -443,6 +446,7 @@ class MouResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
+            ->whereNotNull('mou_piutang_lama')
             ->latest('created_at');
     }
 
