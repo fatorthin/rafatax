@@ -179,7 +179,7 @@ class MouResource extends Resource
                         Forms\Components\TextInput::make('tahun_pajak')
                             ->label('Tahun Pajak')
                             ->numeric()
-                            ->default(date('Y'))
+                            ->required()
                             ->placeholder(date('Y')),
                         Forms\Components\TextInput::make('link_mou')
                             ->label('Link MoU')
