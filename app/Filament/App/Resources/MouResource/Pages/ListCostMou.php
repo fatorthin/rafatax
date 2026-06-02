@@ -824,7 +824,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->schema([
                                 Select::make('coa_id')
                                     ->label('CoA')
-                                    ->options(Coa::where('group_coa_id', '40')->orWhere('id', '162')->pluck('name', 'id'))
+                                    ->options(Coa::where('group_coa_id', '40')->orWhereIn('id', [162, 181])->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
                                     ->columnSpan([
