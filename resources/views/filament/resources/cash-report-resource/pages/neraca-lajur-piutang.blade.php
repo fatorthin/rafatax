@@ -11,11 +11,9 @@
                 <div class="text-sm text-blue-800 dark:text-blue-200">
                     <p class="font-semibold">Konsep Baru: Jurnal Pendapatan berbasis Piutang</p>
                     <ul class="mt-1 list-disc pl-4 space-y-0.5">
-                        <li><strong>Debit AO-103 / Kredit Pendapatan</strong>: MoU KKP (approved bulan ini) + Memo (ttd
-                            bulan ini) → mencatat piutang</li>
-                        <li><strong>Debit Pendapatan / Kredit AO-103</strong>: Invoice KKP (diterbitkan bulan ini) →
-                            realisasi mengurangi piutang</li>
-                        <li>Memo masuk ke COA <strong>AO-126 Pendapatan Lain-lain</strong></li>
+                        <li><strong>Debit Piutang (AO-103) / Kredit AO-208 (Pendapatan Yang Belum Diterima)</strong>: MoU KKP approved bulan berjalan</li>
+                        <li><strong>Debit AO-208 / Kredit Piutang (AO-103)</strong>: Invoice KKP paid (realisasi bulan berjalan)</li>
+                        <li>Memo tidak dimasukkan ke dalam Jurnal Pendapatan karena langsung diakui sebagai pendapatan di kolom Kas & Bank berdasarkan invoice</li>
                     </ul>
                 </div>
             </div>

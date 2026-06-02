@@ -22,7 +22,9 @@ class MouListStatsOverview extends BaseWidget
             $query->where('invoice_status', 'paid');
         })->sum('amount');
 
-        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid);
+        $totalDiscount = \App\Models\MoU::where('status', 'approved')->sum('discount_amount');
+        
+        $difference = $totalCostListMou - $totalCostListInvoicePaid - $totalDiscount;
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
@@ -40,10 +42,10 @@ class MouListStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
 
-            Stat::make('Selisih', 'Rp ' . number_format(abs($difference), 0, ',', '.'))
-                ->description($difference >= 0 ? 'Sisa anggaran keseluruhan' : 'Melebihi anggaran keseluruhan')
-                ->descriptionIcon($difference >= 0 ? 'heroicon-m-arrow-trending-down' : 'heroicon-m-arrow-trending-up')
-                ->color($difference >= 0 ? 'warning' : 'danger'),
+            Stat::make('Total Sisa Piutang', 'Rp ' . number_format(max(0, $difference), 0, ',', '.'))
+                ->description('Sisa piutang keseluruhan (Total MoU - Paid - Discount)')
+                ->descriptionIcon('heroicon-m-currency-dollar')
+                ->color('danger'),
         ];
     }
 }
