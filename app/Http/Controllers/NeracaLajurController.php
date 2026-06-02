@@ -87,13 +87,13 @@ class NeracaLajurController extends Controller
                 if (preg_match('/^AO-(?!101\.2$)(?:([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/', $item->code)) {
                     // Special handling for AO-305 (id 118)
                     if ($item->code === 'AO-305' || $item->id == 118) {
-                        // For AO-305, use Laba Rugi Bersih as credit amount
+                        // Jika laba (positif) → masuk kredit, jika rugi (negatif) → masuk debit (nilai absolut)
                         if ($labaRugiBersih != 0) {
                             JournalBookReport::create([
                                 'description' => $item->code . ' - ' . $item->name,
                                 'journal_book_id' => 3,
-                                'debit_amount' => 0,
-                                'credit_amount' => $labaRugiBersih,
+                                'debit_amount' => max(0, -$labaRugiBersih),
+                                'credit_amount' => max(0, $labaRugiBersih),
                                 'coa_id' => $item->id,
                                 'transaction_date' => $transactionDate,
                             ]);
