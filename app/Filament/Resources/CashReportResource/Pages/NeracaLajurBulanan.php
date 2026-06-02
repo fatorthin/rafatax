@@ -203,7 +203,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                     WHERE transaction_date BETWEEN '{$startOfPreviousMonth}' AND '{$endOfPreviousMonth}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
-                    GROUP BY coa_idner
+                    GROUP BY coa_id
                 ) as journal_data"),
                 'coa.id',
                 '=',
