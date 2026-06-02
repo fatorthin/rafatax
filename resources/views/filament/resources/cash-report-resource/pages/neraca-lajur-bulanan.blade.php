@@ -509,7 +509,7 @@
                                 <td class="number-cell text-right">
                                     {{ number_format($row->neraca_awal_bulan_depan_kredit, 0, ',', '.') }}</td>
                             </tr>
-                            @if (in_array($row->code, ['AO-1011', 'AO-112', 'AO-127', 'AO-211', 'AO-305', 'AO-410', 'AO-525', 'AO-603']))
+                            @if (in_array($row->code, ['AO-108.3', 'AO-113', 'AO-127', 'AO-211', 'AO-305', 'AO-411', 'AO-526', 'AO-604']))
                                 <tr class="separator-row">
                                     <td colspan="25"></td>
                                 </tr>
