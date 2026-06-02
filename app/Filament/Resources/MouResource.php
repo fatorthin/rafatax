@@ -159,7 +159,10 @@ class MouResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('coa_id')
                                     ->label('CoA')
-                                    ->options(\App\Models\Coa::where('group_coa_id', '40')->pluck('name', 'id'))
+                                    ->options(
+                                        \App\Models\Coa::whereIn('code', ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'])
+                                            ->pluck('name', 'id')
+                                    )
                                     ->searchable()
                                     ->required()
                                     ->columnSpan([
