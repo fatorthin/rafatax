@@ -51,6 +51,12 @@ class DaftarAktivaTetapResource extends Resource
                     $count = 0;
 
                     foreach ($assets as $asset) {
+                        // Skip aset yang belum diperoleh pada periode yang dipilih
+                        $acquisitionDate = \Carbon\Carbon::parse($asset->tahun_perolehan)->startOfMonth();
+                        if ($date->startOfMonth()->lt($acquisitionDate)) {
+                            continue;
+                        }
+
                         // Hitung total penyusutan yang sudah ada
                         $existingDepreciation = DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $asset->id)->sum('jumlah_penyusutan');
 
