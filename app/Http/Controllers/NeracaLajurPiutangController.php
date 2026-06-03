@@ -120,6 +120,36 @@ class NeracaLajurPiutangController extends Controller
             ->selectRaw('cli.coa_id, coa.code, coa.name, SUM(cli.amount) as total_inv')
             ->get()->keyBy('coa_id');
 
+        // Map Piutang COAs to Pendapatan COAs for the Invoice rows in Ringkasan JP
+        $piutangToPendapatan = [
+            188 => 119, // AO-103.6 -> AO-401
+            182 => 120, // AO-103.7 -> AO-401.1
+            183 => 121, // AO-103.8 -> AO-401.2
+            184 => 122, // AO-103.9 -> AO-401.3
+            185 => 123, // AO-103.10 -> AO-401.4
+            186 => 124, // AO-103.11 -> AO-401.5
+            187 => 125, // AO-103.12 -> AO-401.6
+        ];
+
+        $mappedInvRows = collect();
+        foreach ($invRows as $coaId => $row) {
+            $mappedCoaId = $piutangToPendapatan[$coaId] ?? $coaId;
+            if ($mappedInvRows->has($mappedCoaId)) {
+                $existing = $mappedInvRows->get($mappedCoaId);
+                $existing->total_inv += $row->total_inv;
+            } else {
+                $coa = DB::table('coa')->where('id', $mappedCoaId)->first();
+                $newRow = (object)[
+                    'coa_id' => $mappedCoaId,
+                    'code' => $coa ? $coa->code : $row->code,
+                    'name' => $coa ? $coa->name : $row->name,
+                    'total_inv' => $row->total_inv,
+                ];
+                $mappedInvRows->put($mappedCoaId, $newRow);
+            }
+        }
+        $invRows = $mappedInvRows;
+
         $coaBelumDiterima = DB::table('coa')->where('id', self::COA_PENDAPATAN_BELUM_DITERIMA_ID)->first();
         $mouGrandTotal    = $mouRows->sum('total_mou');
         $invGrandTotal    = $invRows->sum('total_inv');

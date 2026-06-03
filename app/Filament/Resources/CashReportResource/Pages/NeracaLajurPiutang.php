@@ -281,11 +281,28 @@ class NeracaLajurPiutang extends Page implements HasTable
         $invByCoa    = $invData['by_coa'];      // [coa_id => total]
         $invTotal    = $invData['total'];
 
+        // Map Piutang COAs to Pendapatan COAs for the Kredit side of Jurnal Pendapatan
+        $piutangToPendapatan = [
+            188 => 119, // AO-103.6 -> AO-401
+            182 => 120, // AO-103.7 -> AO-401.1
+            183 => 121, // AO-103.8 -> AO-401.2
+            184 => 122, // AO-103.9 -> AO-401.3
+            185 => 123, // AO-103.10 -> AO-401.4
+            186 => 124, // AO-103.11 -> AO-401.5
+            187 => 125, // AO-103.12 -> AO-401.6
+        ];
+
+        $mappedInvByCoa = [];
+        foreach ($invByCoa as $coaId => $total) {
+            $mappedCoaId = $piutangToPendapatan[$coaId] ?? $coaId;
+            $mappedInvByCoa[$mappedCoaId] = ($mappedInvByCoa[$mappedCoaId] ?? 0) + $total;
+        }
+
         $coaBelumDiterimaId = self::COA_PENDAPATAN_BELUM_DITERIMA_ID;
 
         // Build CASE expression untuk debit
         // COA 175 (Pendapatan Yang Belum Diterima) -> $invTotal (realisasi invoice debit)
-        // COA Pendapatan (dari MoU approved) -> $mouByCoa[coa_id] (debit)
+        // COA Piutang (dari MoU approved) -> $mouByCoa[coa_id] (debit)
         $debitCases = "CASE coa.id WHEN {$coaBelumDiterimaId} THEN {$invTotal}";
         foreach ($mouByCoa as $coaId => $total) {
             if ($coaId != $coaBelumDiterimaId) {
@@ -296,9 +313,9 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         // Build CASE expression untuk kredit
         // COA 175 (Pendapatan Yang Belum Diterima) -> $mouTotal (piutang MoU kredit)
-        // COA Pendapatan (dari invoice) -> $invByCoa[coa_id] (kredit)
+        // COA Pendapatan (dari invoice mapped) -> $mappedInvByCoa[coa_id] (kredit)
         $kreditCases = "CASE coa.id WHEN {$coaBelumDiterimaId} THEN {$mouTotal}";
-        foreach ($invByCoa as $coaId => $total) {
+        foreach ($mappedInvByCoa as $coaId => $total) {
             if ($coaId != $coaBelumDiterimaId) {
                 $kreditCases .= " WHEN {$coaId} THEN {$total}";
             }
@@ -598,6 +615,36 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->selectRaw('cli.coa_id, coa.code, coa.name, SUM(cli.amount) as total_inv')
             ->get()
             ->keyBy('coa_id');
+
+        // Map Piutang COAs to Pendapatan COAs for the Invoice rows in Ringkasan JP
+        $piutangToPendapatan = [
+            188 => 119, // AO-103.6 -> AO-401
+            182 => 120, // AO-103.7 -> AO-401.1
+            183 => 121, // AO-103.8 -> AO-401.2
+            184 => 122, // AO-103.9 -> AO-401.3
+            185 => 123, // AO-103.10 -> AO-401.4
+            186 => 124, // AO-103.11 -> AO-401.5
+            187 => 125, // AO-103.12 -> AO-401.6
+        ];
+
+        $mappedInvRows = collect();
+        foreach ($invRows as $coaId => $row) {
+            $mappedCoaId = $piutangToPendapatan[$coaId] ?? $coaId;
+            if ($mappedInvRows->has($mappedCoaId)) {
+                $existing = $mappedInvRows->get($mappedCoaId);
+                $existing->total_inv += $row->total_inv;
+            } else {
+                $coa = DB::table('coa')->where('id', $mappedCoaId)->first();
+                $newRow = (object)[
+                    'coa_id' => $mappedCoaId,
+                    'code' => $coa ? $coa->code : $row->code,
+                    'name' => $coa ? $coa->name : $row->name,
+                    'total_inv' => $row->total_inv,
+                ];
+                $mappedInvRows->put($mappedCoaId, $newRow);
+            }
+        }
+        $invRows = $mappedInvRows;
 
         // Ambil COA Pendapatan Yang Belum Diterima
         $coaBelumDiterima = DB::table('coa')->where('id', self::COA_PENDAPATAN_BELUM_DITERIMA_ID)->first();
