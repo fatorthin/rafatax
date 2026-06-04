@@ -47,4 +47,15 @@ class RekapInvoice extends BasePage
                     }),
             ]);
     }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('rekap_tahunan')
+                ->label('Rekap Tahunan')
+                ->url(RekapInvoiceTahunan::getUrl())
+                ->color('primary')
+                ->icon('heroicon-o-calendar-days'),
+        ];
+    }
 }
