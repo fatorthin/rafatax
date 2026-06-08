@@ -138,6 +138,15 @@ class MemoResource extends Resource
                             $query->where('memo_id', $record->id);
                         })->sum('amount');
                     }),
+                Tables\Columns\TextColumn::make('selisih')
+                    ->label('Selisih')
+                    ->numeric(locale: 'id')
+                    ->getStateUsing(function ($record) {
+                        $totalInvoice = CostListInvoice::whereHas('invoice', function ($query) use ($record) {
+                            $query->where('memo_id', $record->id);
+                        })->sum('amount');
+                        return ($record->total_fee ?? 0) - $totalInvoice;
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tipe_klien')

@@ -313,7 +313,8 @@
                     <li>Penerapan kewajiban perpajakan klien yang sudah ada dan tahun sebelumnya.</li>
                     <li>Permintaan data informasi terkait perpajakan secara berkala.</li>
                     <li>Penyusunan SP2DK {{ $mou->client->company_name }} tahun pajak
-                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                    </li>
                 </ol>
             </div>
 
@@ -322,8 +323,9 @@
                 <ol>
                     <li>Review dalam bentuk resume kewajiban perpajakan Pihak Pertama yang telah
                         berjalan.</li>
-                    <li>Laporan SPT tahunan Pembetulan Tahun pajak
-                        {{ \Carbon\Carbon::parse($mou->start_date)->format('Y') }}.</li>
+                    <li>Laporan SPT Tahunan Pembetulan Tahun Pajak
+                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                    </li>
                 </ol>
             </div>
 

@@ -13,12 +13,10 @@ use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\App\Resources\CashReferenceResource;
-use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
 use Filament\Tables\Actions\Action;
 use Filament\Forms;
@@ -54,8 +52,8 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                         DB::raw('COUNT(*) as transaction_count')
                     ])
                     ->groupBy('year', 'month')
-                    ->orderBy('year', 'asc')
-                    ->orderBy('month', 'asc')
+                    ->orderBy('year', 'desc')
+                    ->orderBy('month', 'desc')
             )
             ->columns([
                 TextColumn::make('year')

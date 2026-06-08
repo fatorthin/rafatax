@@ -52,8 +52,8 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                         DB::raw('COUNT(*) as transaction_count')
                     ])
                     ->groupBy('year', 'month')
-                    ->orderBy('year', 'asc')
-                    ->orderBy('month', 'asc')
+                    ->orderBy('year', 'desc')
+                    ->orderBy('month', 'desc')
             )
             ->columns([
                 TextColumn::make('year')
