@@ -38,15 +38,7 @@ class MouPiutangLamaResource extends Resource
                     ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
                         return $rule->whereNull('deleted_at');
                     })
-                    ->readOnly()
-                    ->required()
-                    ->suffixAction(
-                        Forms\Components\Actions\Action::make('regenerate')
-                            ->icon('heroicon-m-arrow-path')
-                            ->action(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
-                                self::generateMouNumber($set, $get, $record);
-                            })
-                    ),
+                    ->required(),
                 Forms\Components\TextInput::make('description')
                     ->required(),
                 Forms\Components\DatePicker::make('start_date')
@@ -54,11 +46,7 @@ class MouPiutangLamaResource extends Resource
                     ->required()
                     ->native(false)
                     ->displayFormat('d/m/Y')
-                    ->default(date('Y') . '-01-01')
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
-                        self::generateMouNumber($set, $get, $record);
-                    }),
+                    ->default(date('Y') . '-01-01'),
                 Forms\Components\DatePicker::make('end_date')
                     ->required()
                     ->label('Tanggal Akhir Pengerjaan')
@@ -107,11 +95,7 @@ class MouPiutangLamaResource extends Resource
                     ->default('pt')
                     ->inline()
                     ->inlineLabel(false)
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
-                        self::generateMouNumber($set, $get, $record);
-                    }),
+                    ->required(),
                 Forms\Components\Select::make('client_id')
                     ->label('Client')
                     ->relationship('client', 'company_name')
@@ -123,11 +107,7 @@ class MouPiutangLamaResource extends Resource
                     ->relationship('categoryMou', 'name')
                     ->searchable()
                     ->preload()
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?MoU $record) {
-                        self::generateMouNumber($set, $get, $record);
-                    }),
+                    ->required(),
                 Forms\Components\TextInput::make('percentage_restitution')
                     ->label('Percentage Restitution (optional)')
                     ->numeric()
