@@ -531,7 +531,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
             ->orderBy('coa.group_coa_id')
-            ->orderBy('coa.code');
+            ->orderBy('coa.sort_order');
 
         return $query;
     }
