@@ -293,7 +293,10 @@ class GeneralLedger extends Page
             ->whereNull('clm.deleted_at')
             ->where('m.status', 'approved')
             ->where('m.type', 'kkp')
-            ->whereBetween('m.approved_date', [$startDate, $endDate])
+            ->whereBetween('m.approved_date', [
+                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                \Carbon\Carbon::parse($endDate)->endOfDay()
+            ])
             ->whereIn('clm.coa_id', array_keys($map))
             ->select([
                 'clm.coa_id',
@@ -337,7 +340,10 @@ class GeneralLedger extends Page
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
             ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7])
-            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->whereBetween('transaction_date', [
+                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                \Carbon\Carbon::parse($endDate)->endOfDay()
+            ])
             ->select([
                 'coa_id',
                 'debit_amount',
