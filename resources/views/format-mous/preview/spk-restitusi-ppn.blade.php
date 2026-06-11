@@ -287,30 +287,25 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>NO</th>
-                        <th>JENIS PEKERJAAN</th>
-                        <th>QTY</th>
-                        <th>SATUAN</th>
-                        <th>HARGA</th>
-                        <th>TOTAL</th>
+                        <th style="width: 8%;">NO</th>
+                        <th style="width: 37%;">JENIS PEKERJAAN</th>
+                        <th style="width: 25%;">FEE</th>
+                        <th style="width: 30%;">KETERANGAN</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($costLists as $i => $cost)
-                        <tr>
-                            <td style="text-align: center;">{{ $i + 1 }}</td>
-                            <td>
-                                <strong>{{ $cost->description }}</strong><br>
-                                <small>{{ $cost->coa->name ?? '-' }}</small>
-                            </td>
-                            <td style="text-align: center;">{{ $cost->quantity }}</td>
-                            <td style="text-align: center;">{{ $cost->satuan_quantity }}</td>
-                            <td style="text-align: right;">Rp
-                                {{ number_format($cost->amount, 0, ',', '.') }}</td>
-                            <td style="text-align: right;">Rp
-                                {{ number_format($cost->total_amount, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
+                    <tr>
+                        <td style="text-align: center; vertical-align: middle;">1.</td>
+                        <td style="vertical-align: middle;">
+                            <strong>Pendampingan Restitusi PPN</strong>
+                        </td>
+                        <td style="text-align: center; vertical-align: middle;">
+                            {{ $mou->percentage_restitution }}% dari Nilai Restitusi<br>yang di terima
+                        </td>
+                        <td style="vertical-align: middle;">
+                            Untuk tahun pajak {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                        </td>
+                    </tr>
                 </tbody>
             </table>
 
