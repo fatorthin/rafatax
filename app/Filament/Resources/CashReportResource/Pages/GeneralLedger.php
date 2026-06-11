@@ -249,15 +249,133 @@ class GeneralLedger extends Page
                 return $t;
             });
 
+        $dynamicJPActions = $this->getDynamicJurnalPendapatan($startDate, $endDate);
+
         // ── 4. Gabungkan & group by coa_id, lalu sort by coa.code ───────────
-        $allTransactions = $cashTransactions
+        $allTransactions = $cashTransactions->toBase()
             ->merge($journalTransactions)
             ->merge($neracaAwalTransactions)
+            ->merge($dynamicJPActions)
             ->sortBy('transaction_date');
 
         return $allTransactions->groupBy('coa_id')->sortBy(function ($transactions) {
             return $transactions->first()->coa->code ?? '999999';
         });
+    }
+
+    private function getPiutangToPendapatanMap(): array
+    {
+        return [
+            188 => 119, // AO-103.6  -> AO-401   (Fee Bulanan)
+            182 => 120, // AO-103.7  -> AO-401.1 (Fee SPT)
+            183 => 121, // AO-103.8  -> AO-401.2 (Fee SP2DK)
+            184 => 122, // AO-103.9  -> AO-401.3 (Fee Pembetulan)
+            185 => 123, // AO-103.10 -> AO-401.4 (Fee Internal)
+            186 => 124, // AO-103.11 -> AO-401.5 (Fee Restitusi)
+            187 => 125, // AO-103.12 -> AO-401.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    private function getDynamicJurnalPendapatan(string $startDate, string $endDate): \Illuminate\Support\Collection
+    {
+        $transactions = collect();
+        $coas = \App\Models\Coa::all()->keyBy('id');
+        $map = $this->getPiutangToPendapatanMap();
+        $coaBelumDiterimaId = 175; // AO-208 Pendapatan Yang Belum Diterima
+
+        // ── 1. Dari MoU approved (cost_list_mous) ──
+        // JP DEBIT  AO-103.x = piutang per CoA dari MoU
+        // JP KREDIT AO-208   = total MoU (Pendapatan Belum Diterima)
+        $mouRows = \Illuminate\Support\Facades\DB::table('cost_list_mous as clm')
+            ->join('mous as m', 'm.id', '=', 'clm.mou_id')
+            ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
+            ->whereNull('m.deleted_at')
+            ->whereNull('clm.deleted_at')
+            ->where('m.status', 'approved')
+            ->where('m.type', 'kkp')
+            ->whereBetween('m.approved_date', [$startDate, $endDate])
+            ->whereIn('clm.coa_id', array_keys($map))
+            ->select([
+                'clm.coa_id',
+                'clm.total_amount',
+                'm.approved_date',
+                'm.mou_number',
+                'c.company_name',
+            ])
+            ->get();
+
+        foreach ($mouRows as $row) {
+            $desc = "Piutang MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
+            
+            // DEBIT: Piutang CoA (AO-103.x)
+            $tDebit = new \stdClass();
+            $tDebit->coa_id = $row->coa_id;
+            $tDebit->transaction_date = $row->approved_date;
+            $tDebit->description = $desc;
+            $tDebit->source = 'Jurnal Pendapatan';
+            $tDebit->display_debit = $row->total_amount;
+            $tDebit->display_credit = 0;
+            $tDebit->coa = $coas[$row->coa_id] ?? null;
+            $transactions->push($tDebit);
+
+            // KREDIT: Pendapatan Belum Diterima (AO-208)
+            $tCredit = new \stdClass();
+            $tCredit->coa_id = $coaBelumDiterimaId;
+            $tCredit->transaction_date = $row->approved_date;
+            $tCredit->description = $desc;
+            $tCredit->source = 'Jurnal Pendapatan';
+            $tCredit->display_debit = 0;
+            $tCredit->display_credit = $row->total_amount;
+            $tCredit->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $transactions->push($tCredit);
+        }
+
+        // ── 2. Dari cash_reports (CoA AO-103.x yang muncul di kolom kas/bank) ──
+        // JP DEBIT  AO-208   = total kas diterima (pengurang accrual Pendapatan Belum Diterima)
+        // JP KREDIT AO-401.x = nilai penerimaan per CoA (pengakuan pendapatan aktual)
+        $cashRows = \Illuminate\Support\Facades\DB::table('cash_reports')
+            ->whereNull('deleted_at')
+            ->whereIn('coa_id', array_keys($map))
+            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7])
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->select([
+                'coa_id',
+                'debit_amount',
+                'transaction_date',
+                'description',
+            ])
+            ->get();
+
+        foreach ($cashRows as $row) {
+            $pendapatanCoaId = $map[$row->coa_id] ?? null;
+            if (!$pendapatanCoaId) continue;
+
+            $desc = "Penerimaan Piutang - " . ($row->description ?: 'Tanpa Keterangan');
+
+            // DEBIT: Pendapatan Belum Diterima (AO-208)
+            $tDebit = new \stdClass();
+            $tDebit->coa_id = $coaBelumDiterimaId;
+            $tDebit->transaction_date = $row->transaction_date;
+            $tDebit->description = $desc;
+            $tDebit->source = 'Jurnal Pendapatan';
+            $tDebit->display_debit = $row->debit_amount;
+            $tDebit->display_credit = 0;
+            $tDebit->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $transactions->push($tDebit);
+
+            // KREDIT: Pendapatan CoA (AO-401.x)
+            $tCredit = new \stdClass();
+            $tCredit->coa_id = $pendapatanCoaId;
+            $tCredit->transaction_date = $row->transaction_date;
+            $tCredit->description = $desc;
+            $tCredit->source = 'Jurnal Pendapatan';
+            $tCredit->display_debit = 0;
+            $tCredit->display_credit = $row->debit_amount;
+            $tCredit->coa = $coas[$pendapatanCoaId] ?? null;
+            $transactions->push($tCredit);
+        }
+
+        return $transactions;
     }
 
     protected function getViewData(): array
