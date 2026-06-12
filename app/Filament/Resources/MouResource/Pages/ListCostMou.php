@@ -414,8 +414,30 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->label('Preview PDF')
             ->icon('heroicon-o-eye')
             ->color('warning')
-            ->url(fn() => route('mou.pdf.preview', ['id' => $this->mou->id]))
-            ->openUrlInNewTab();
+            ->form([
+                \Filament\Forms\Components\Toggle::make('with_signature')
+                    ->label('Tampilkan Tanda Tangan')
+                    ->default(true),
+                \Filament\Forms\Components\Select::make('restitusi_type')
+                    ->label('Pilih Jenis Restitusi')
+                    ->options([
+                        'ppn' => 'Restitusi PPN',
+                        'pph' => 'Restitusi PPh',
+                    ])
+                    ->required()
+                    ->visible(fn () => $this->mou->category_mou_id == 8),
+            ])
+            ->action(function (array $data) {
+                $params = [
+                    'id' => $this->mou->id,
+                    'with_signature' => $data['with_signature'] ? 1 : 0,
+                ];
+                if (isset($data['restitusi_type'])) {
+                    $params['restitusi_type'] = $data['restitusi_type'];
+                }
+                $url = route('mou.pdf.preview', $params);
+                $this->js("window.open('{$url}', '_blank');");
+            });
     }
 
     private function makeExportPdfAction(): Actions\Action

@@ -58,17 +58,29 @@ class MouPrintViewController extends Controller
             ? $mou->categoryMou->format_mou_pt
             : $mou->categoryMou->format_mou_kkp;
 
+        if ($mou->category_mou_id == 8 && request()->has('restitusi_type')) {
+            $type = request('restitusi_type');
+            if ($type === 'ppn') {
+                $format = 'spk-restitusi-ppn';
+            } elseif ($type === 'pph') {
+                $format = 'spk-restitusi-pph-35';
+            }
+        }
+
         if (!$format) {
             abort(404, 'Format print PDF belum diatur untuk kategori MoU ini.');
         }
 
         $view = 'format-mous.preview.' . $format;
+        $withSignature = request('with_signature', 1);
+
         // Use DomPDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
             'mou' => $mou,
             'costLists' => $costLists,
             'printMode' => true,
             'isPdf' => true,
+            'withSignature' => $withSignature,
         ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true]);
 
         $filename = 'MoU-' . str_replace(['/', '\\'], '-', $mou->mou_number) . '-' . str_replace(['/', '\\'], '-', $mou->client->company_name ?? '') . '.pdf';
