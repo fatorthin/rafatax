@@ -25,6 +25,22 @@ class MouPiutangLamaResource extends Resource
         return 'mou';
     }
 
+    /**
+     * Control sidebar visibility for this resource based on permissions.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
+
+    /**
+     * Guard list page access for non-authorized users.
+     */
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
     protected static ?string $navigationGroup = 'Keuangan';
