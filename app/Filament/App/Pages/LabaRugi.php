@@ -15,6 +15,8 @@ class LabaRugi extends Page
 {
     protected static string $view = 'filament.app.pages.laba-rugi';
     protected static ?string $title = 'Laporan Laba Rugi';
+    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationGroup = 'Keuangan';
 
     public $month;
     public $year;

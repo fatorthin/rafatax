@@ -19,6 +19,8 @@ class Neraca extends Page
 {
     protected static string $view = 'filament.app.pages.neraca';
     protected static ?string $title = 'Laporan Neraca';
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $navigationGroup = 'Keuangan';
 
     public $month;
     public $year;
