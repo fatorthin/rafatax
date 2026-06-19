@@ -441,7 +441,7 @@
                                 @if($transaction->invoice)
                                     <div class="text-xs text-blue-600 mt-1 flex items-center gap-1 dark:text-blue-400">
                                         <i class="fas fa-file-invoice"></i>
-                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client->name ?? 'No Client' }})</span>
+                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client->company_name ?? 'No Client' }})</span>
                                     </div>
                                 @endif
                             </td>
