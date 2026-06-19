@@ -185,6 +185,15 @@ class CashReportResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\Filter::make('belum_invoice')
+                    ->label('Belum Dihubungkan ke Invoice (CoA 182-188)')
+                    ->query(function (Builder $query) {
+                        return $query->whereIn('coa_id', [182, 183, 184, 185, 186, 187, 188])
+                            ->where(function ($q) {
+                                $q->whereNull('invoice_id')
+                                  ->orWhere('invoice_id', 0);
+                            });
+                    }),
                 Tables\Filters\SelectFilter::make('cash_reference_id')
                     ->label('Referensi Kas')
                     ->options(function () {
