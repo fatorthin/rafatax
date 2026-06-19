@@ -87,4 +87,18 @@ class Invoice extends Model
     {
         return $this->belongsTo(Memo::class);
     }
+
+    public function getClientNameAttribute()
+    {
+        if ($this->client) {
+            return $this->client->company_name;
+        }
+        if ($this->mou && $this->mou->client) {
+            return $this->mou->client->company_name;
+        }
+        if ($this->memo) {
+            return $this->memo->nama_klien ?? $this->memo->instansi_klien ?? '';
+        }
+        return '';
+    }
 }

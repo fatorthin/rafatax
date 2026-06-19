@@ -441,7 +441,7 @@
                                 @if($transaction->invoice)
                                     <div class="text-xs text-blue-600 mt-1 flex items-center gap-1 dark:text-blue-400">
                                         <i class="fas fa-file-invoice"></i>
-                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client->company_name ?? 'No Client' }})</span>
+                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client_name ?: 'No Client' }})</span>
                                     </div>
                                 @endif
                             </td>
@@ -459,7 +459,7 @@
                                     @php
                                         $invoiceText = '';
                                         if ($transaction->invoice) {
-                                            $clientName = $transaction->invoice->client->name ?? 'No Client';
+                                            $clientName = $transaction->invoice->client_name ?: 'No Client';
                                             $amountFormatted = number_format($transaction->invoice->amount, 2, ',', '.');
                                             $invoiceText = "{$transaction->invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
                                         }

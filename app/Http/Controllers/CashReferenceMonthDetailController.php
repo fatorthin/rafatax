@@ -132,7 +132,7 @@ class CashReferenceMonthDetailController extends Controller
         $prevBalance = $this->getPreviousMonthBalance($id, $year, $month);
 
         // Get transactions for the month
-        $transactions = CashReport::with(['coa', 'invoice.client'])
+        $transactions = CashReport::with(['coa', 'invoice.client', 'invoice.mou.client', 'invoice.memo'])
             ->where('cash_reference_id', $id)
             ->whereYear('transaction_date', $year)
             ->whereMonth('transaction_date', $month)
@@ -310,18 +310,25 @@ class CashReferenceMonthDetailController extends Controller
     public function searchInvoices(Request $request)
     {
         $search = $request->get('q');
-        $invoices = \App\Models\Invoice::with('client')
+        $invoices = \App\Models\Invoice::with(['client', 'mou.client', 'memo'])
             ->where(function ($query) use ($search) {
                 $query->where('invoice_number', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%")
                       ->orWhereHas('client', function ($q) use ($search) {
-                          $q->where('name', 'like', "%{$search}%");
+                          $q->where('company_name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('mou.client', function ($q) use ($search) {
+                          $q->where('company_name', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('memo', function ($q) use ($search) {
+                          $q->where('nama_klien', 'like', "%{$search}%")
+                            ->orWhere('instansi_klien', 'like', "%{$search}%");
                       });
             })
             ->limit(20)
             ->get()
             ->map(function ($invoice) {
-                $clientName = $invoice->client->name ?? 'No Client';
+                $clientName = $invoice->client_name ?: 'No Client';
                 $amountFormatted = number_format($invoice->amount, 2, ',', '.');
                 $description = $invoice->description ? ' (' . $invoice->description . ')' : '';
                 return [
