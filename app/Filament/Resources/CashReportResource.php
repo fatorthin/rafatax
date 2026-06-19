@@ -248,6 +248,39 @@ class CashReportResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\Action::make('linkInvoice')
+                    ->label('Hubungkan Invoice')
+                    ->icon('heroicon-o-link')
+                    ->color('success')
+                    ->visible(fn (CashReport $record) => in_array($record->coa_id, [182, 183, 184, 185, 186, 187, 188]))
+                    ->form([
+                        Forms\Components\Select::make('invoice_id')
+                            ->label('Pilih Invoice')
+                            ->options(function () {
+                                return \App\Models\Invoice::with(['client', 'mou.client', 'memo'])
+                                    ->latest('invoice_date')
+                                    ->limit(50)
+                                    ->get()
+                                    ->mapWithKeys(function ($invoice) {
+                                        $clientName = $invoice->client_name ?: 'No Client';
+                                        $amountFormatted = number_format($invoice->amount, 0, ',', '.');
+                                        return [$invoice->id => "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}"];
+                                    });
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->default(fn (CashReport $record) => $record->invoice_id ?: null)
+                    ])
+                    ->action(function (CashReport $record, array $data): void {
+                        $record->update([
+                            'invoice_id' => $data['invoice_id'] ?: null
+                        ]);
+                        Notification::make()
+                            ->title('Invoice berhasil dihubungkan')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
