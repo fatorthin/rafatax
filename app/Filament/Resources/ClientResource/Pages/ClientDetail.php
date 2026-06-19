@@ -174,7 +174,7 @@ class ClientDetail extends Page implements HasInfolists, HasTable
                     ->label('Total MoU')
                     ->money('IDR')
                     ->getStateUsing(function ($record) {
-                        return number_format($record->cost_lists()->sum('amount'), 0, ',', '.');
+                        return number_format($record->cost_lists()->sum('total_amount'), 0, ',', '.');
                     })->alignEnd(),
             ])
             ->paginated(false)
