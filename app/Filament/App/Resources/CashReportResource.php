@@ -138,7 +138,14 @@ class CashReportResource extends Resource
                     ->label('Deskripsi')
                     ->searchable()
                     ->limit(50)
-                    ->toggleable(),
+                    ->toggleable()
+                    ->description(function (CashReport $record) {
+                        if ($record->invoice) {
+                            $clientName = $record->invoice->client_name ?: 'No Client';
+                            return "Invoice: {$record->invoice->invoice_number} ({$clientName})";
+                        }
+                        return null;
+                    }),
                 Tables\Columns\TextColumn::make('debit_amount')
                     ->label('Debit')
                     ->numeric()

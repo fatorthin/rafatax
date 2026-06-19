@@ -79,7 +79,14 @@ class CashReportResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('description')
-                    ->searchable(),
+                    ->searchable()
+                    ->description(function (CashReport $record) {
+                        if ($record->invoice) {
+                            $clientName = $record->invoice->client_name ?: 'No Client';
+                            return "Invoice: {$record->invoice->invoice_number} ({$clientName})";
+                        }
+                        return null;
+                    }),
                 Tables\Columns\TextColumn::make('invoice.mou.id')
                     ->label('MoU ID')
                     ->numeric()->toggleable(isToggledHiddenByDefault: true),
