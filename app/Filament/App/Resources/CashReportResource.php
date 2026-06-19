@@ -195,7 +195,7 @@ class CashReportResource extends Resource
                 Tables\Filters\Filter::make('belum_invoice')
                     ->label('Belum Dihubungkan ke Invoice (CoA 182-188)')
                     ->query(function (Builder $query) {
-                        return $query->whereIn('coa_id', [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126])
+                        return $query->whereIn('coa_id', [181, 182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126])
                             ->where(function ($q) {
                                 $q->whereNull('invoice_id')
                                     ->orWhere('invoice_id', 0);
@@ -267,7 +267,7 @@ class CashReportResource extends Resource
                     ->label('Hubungkan Invoice')
                     ->icon('heroicon-o-link')
                     ->color('success')
-                    ->visible(fn(CashReport $record) => in_array($record->coa_id, [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))
+                    ->visible(fn(CashReport $record) => in_array($record->coa_id, [181, 182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))
                     ->form([
                         Forms\Components\Select::make('invoice_id')
                             ->label('Pilih Invoice')
