@@ -235,7 +235,7 @@ class InvoiceResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('client_name')
                     ->label('Client')
-                    ->getStateUsing(fn($record) => static::resolveClientName($record))
+                    ->getStateUsing(fn($record) => $record->client_name)
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query
                             ->where(function (Builder $query) use ($search): Builder {
@@ -484,7 +484,7 @@ class InvoiceResource extends Resource
                         $costListInvoices = $record->costListInvoices()->get();
                         foreach ($costListInvoices as $costItem) {
                             $cashReport = CashReport::create([
-                                'description' => ($record->client?->company_name ?? $record->mou?->client?->company_name ?? $record->memo?->client?->company_name ?? '') . ' - ' . $costItem->description . ' - ' . $record->invoice_number,
+                                'description' => ($record->client_name ?: '') . ' - ' . $costItem->description . ' - ' . $record->invoice_number,
                                 'cash_reference_id' => $cashReferenceId,
                                 'mou_id' => $record->mou_id,
                                 'coa_id' => $costItem->coa_id,
@@ -541,22 +541,6 @@ class InvoiceResource extends Resource
         ];
     }
 
-    private static function resolveClientName(Invoice $record): ?string
-    {
-        if ($record->memo_id && !$record->client_id) {
-            return $record->memo?->nama_klien;
-        }
-
-        if ($record->memo_id && $record->client_id) {
-            return $record->client?->company_name;
-        }
-
-        if ($record->mou_id && !$record->memo_id && !$record->client_id) {
-            return $record->mou?->client?->company_name;
-        }
-
-        return null;
-    }
 
     public static function getEloquentQuery(): Builder
     {

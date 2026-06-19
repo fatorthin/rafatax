@@ -425,7 +425,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         'pph' => 'Restitusi PPh',
                     ])
                     ->required()
-                    ->visible(fn () => $this->mou->category_mou_id == 8),
+                    ->visible(fn() => $this->mou->category_mou_id == 8),
             ])
             ->action(function (array $data) {
                 $params = [
@@ -805,7 +805,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 ->default($this->mou->id),
                             Select::make('coa_id')
                                 ->label('CoA')
-                                ->options(Coa::where('group_coa_id', '40')->orWhereIn('id', [162, 181])->pluck('name', 'id'))
+                                ->options(Coa::whereIn('id', [181, 182, 183, 184, 185, 186, 187, 188])->pluck('name', 'id'))
                                 ->required()
                                 ->searchable()
                                 ->columnSpan([
