@@ -293,7 +293,7 @@ class CashReportResource extends Resource
                                     ->mapWithKeys(function ($invoice) {
                                         $clientName = $invoice->client_name ?: 'No Client';
                                         $amountFormatted = number_format($invoice->total_amount, 0, ',', '.');
-                                        return [$invoice->id => "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}"];
+                                        return [$invoice->id => "{$invoice->invoice_number} - {$invoice->description}- {$clientName} - Rp {$amountFormatted}"];
                                     })
                                     ->toArray();
                             })
