@@ -191,10 +191,10 @@ class CashReportResource extends Resource
                 Tables\Filters\Filter::make('belum_invoice')
                     ->label('Belum Dihubungkan ke Invoice (CoA 182-188)')
                     ->query(function (Builder $query) {
-                        return $query->whereIn('coa_id', [182, 183, 184, 185, 186, 187, 188])
+                        return $query->whereIn('coa_id', [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126])
                             ->where(function ($q) {
                                 $q->whereNull('invoice_id')
-                                  ->orWhere('invoice_id', 0);
+                                    ->orWhere('invoice_id', 0);
                             });
                     }),
                 Tables\Filters\TrashedFilter::make(),
@@ -268,7 +268,7 @@ class CashReportResource extends Resource
                     ->label('Hubungkan Invoice')
                     ->icon('heroicon-o-link')
                     ->color('success')
-                    ->visible(fn (CashReport $record) => in_array($record->coa_id, [182, 183, 184, 185, 186, 187, 188]))
+                    ->visible(fn(CashReport $record) => in_array($record->coa_id, [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))
                     ->form([
                         Forms\Components\Select::make('invoice_id')
                             ->label('Pilih Invoice')
@@ -277,17 +277,17 @@ class CashReportResource extends Resource
                                 return \App\Models\Invoice::with(['client', 'mou.client', 'memo', 'costListInvoices'])
                                     ->where(function ($query) use ($search) {
                                         $query->where('invoice_number', 'like', "%{$search}%")
-                                              ->orWhere('description', 'like', "%{$search}%")
-                                              ->orWhereHas('client', function ($q) use ($search) {
-                                                  $q->where('company_name', 'like', "%{$search}%");
-                                              })
-                                              ->orWhereHas('mou.client', function ($q) use ($search) {
-                                                  $q->where('company_name', 'like', "%{$search}%");
-                                              })
-                                              ->orWhereHas('memo', function ($q) use ($search) {
-                                                  $q->where('nama_klien', 'like', "%{$search}%")
+                                            ->orWhere('description', 'like', "%{$search}%")
+                                            ->orWhereHas('client', function ($q) use ($search) {
+                                                $q->where('company_name', 'like', "%{$search}%");
+                                            })
+                                            ->orWhereHas('mou.client', function ($q) use ($search) {
+                                                $q->where('company_name', 'like', "%{$search}%");
+                                            })
+                                            ->orWhereHas('memo', function ($q) use ($search) {
+                                                $q->where('nama_klien', 'like', "%{$search}%")
                                                     ->orWhere('instansi_klien', 'like', "%{$search}%");
-                                              });
+                                            });
                                     })
                                     ->limit(50)
                                     ->get()
@@ -306,7 +306,7 @@ class CashReportResource extends Resource
                                 return "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
                             })
                             ->nullable()
-                            ->default(fn (CashReport $record) => $record->invoice_id ?: null)
+                            ->default(fn(CashReport $record) => $record->invoice_id ?: null)
                     ])
                     ->action(function (CashReport $record, array $data): void {
                         $record->update([

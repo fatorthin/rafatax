@@ -455,7 +455,7 @@
                                 {{ number_format($transaction->running_balance, 2, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                @if(in_array($transaction->coa_id, [182, 183, 184, 185, 186, 187, 188]))
+                                @if(in_array($transaction->coa_id, [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))    
                                     @php
                                         $invoiceText = '';
                                         if ($transaction->invoice) {
