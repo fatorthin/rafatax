@@ -438,6 +438,12 @@
                             </td>
                             <td class="px-6 py-4 text-sm">
                                 {{ $transaction->description }}
+                                @if($transaction->invoice)
+                                    <div class="text-xs text-blue-600 mt-1 flex items-center gap-1 dark:text-blue-400">
+                                        <i class="fas fa-file-invoice"></i>
+                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client->name ?? 'No Client' }})</span>
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">
                                 {{ number_format($transaction->debit_amount, 2, ',', '.') }}
@@ -449,6 +455,19 @@
                                 {{ number_format($transaction->running_balance, 2, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                @if(in_array($transaction->coa_id, [182, 183, 184, 185, 186, 187, 188]))
+                                    @php
+                                        $invoiceText = '';
+                                        if ($transaction->invoice) {
+                                            $clientName = $transaction->invoice->client->name ?? 'No Client';
+                                            $amountFormatted = number_format($transaction->invoice->amount, 2, ',', '.');
+                                            $invoiceText = "{$transaction->invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
+                                        }
+                                    @endphp
+                                    <button onclick="openLinkInvoiceModal({{ $transaction->id }}, {{ $transaction->invoice_id ?? 'null' }}, '{{ addslashes($invoiceText) }}')" class="text-green-600 hover:text-green-900 mr-3" title="Hubungkan ke Invoice">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                @endif
                                 <button onclick="openEditModal({{ json_encode($transaction) }})" class="text-blue-600 hover:text-blue-900 mr-3">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -590,6 +609,39 @@
         </div>
     </div>
 
+    <!-- Link Invoice Modal -->
+    <div id="linkInvoiceModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Hubungkan Transaksi dengan Invoice</h3>
+                <button onclick="closeLinkInvoiceModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="linkInvoiceForm" method="POST">
+                @csrf
+                <div class="mb-6">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Cari & Pilih Invoice</label>
+                    <select name="invoice_id" id="link_invoice_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Pilih Invoice --</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                        Ketik nomor invoice, nama client, atau deskripsi untuk mencari.
+                    </p>
+                </div>
+                <div class="flex justify-between items-center gap-2">
+                    <button type="button" onclick="unlinkInvoice()" id="btnHapusHubungan" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors duration-200">
+                        <i class="fas fa-unlink mr-1"></i> Hapus Hubungan
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeLinkInvoiceModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm transition-colors duration-200">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors duration-200">Simpan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const coaCodeMap = @json($coaCodeMap);
 
@@ -652,6 +704,30 @@
                 width: '100%'
             });
             $('#filterCoaId').on('change', filterTransactions);
+
+            // Initialize Select2 for Link Invoice Modal
+            $('#link_invoice_id').select2({
+                dropdownParent: $('#linkInvoiceModal'),
+                placeholder: 'Cari dan pilih invoice...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '{{ route('invoices.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term // search term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data
+                        };
+                    },
+                    cache: true
+                }
+            });
         });
 
         function openAddModal() {
@@ -688,15 +764,55 @@
             document.getElementById('editModal').classList.add('hidden');
         }
 
+        let currentLinkTransactionId = null;
+
+        function openLinkInvoiceModal(transactionId, invoiceId, invoiceText) {
+            currentLinkTransactionId = transactionId;
+            const form = document.getElementById('linkInvoiceForm');
+            form.action = `/cash-reference/transaction/${transactionId}/link-invoice`;
+
+            const selectEl = $('#link_invoice_id');
+            selectEl.empty().val(null).trigger('change');
+
+            const btnHapusHubungan = document.getElementById('btnHapusHubungan');
+
+            if (invoiceId) {
+                // If there's an existing linked invoice, create the option and select it
+                const option = new Option(invoiceText, invoiceId, true, true);
+                selectEl.append(option).trigger('change');
+                btnHapusHubungan.classList.remove('hidden');
+            } else {
+                btnHapusHubungan.classList.add('hidden');
+            }
+
+            document.getElementById('linkInvoiceModal').classList.remove('hidden');
+        }
+
+        function closeLinkInvoiceModal() {
+            document.getElementById('linkInvoiceModal').classList.add('hidden');
+        }
+
+        function unlinkInvoice() {
+            if (confirm('Apakah Anda yakin ingin menghapus hubungan dengan invoice?')) {
+                const selectEl = $('#link_invoice_id');
+                selectEl.empty().val(null).trigger('change');
+                document.getElementById('linkInvoiceForm').submit();
+            }
+        }
+
         // Close modals when clicking outside
         window.onclick = function(event) {
             const addModal = document.getElementById('addModal');
             const editModal = document.getElementById('editModal');
+            const linkInvoiceModal = document.getElementById('linkInvoiceModal');
             if (event.target === addModal) {
                 closeAddModal();
             }
             if (event.target === editModal) {
                 closeEditModal();
+            }
+            if (event.target === linkInvoiceModal) {
+                closeLinkInvoiceModal();
             }
         }
 

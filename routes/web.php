@@ -142,6 +142,14 @@ Route::post('/cash-reference/transaction/reorder', [\App\Http\Controllers\CashRe
     ->name('cash-reference.transaction.reorder')
     ->middleware('auth');
 
+Route::get('/invoices/search', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'searchInvoices'])
+    ->name('invoices.search')
+    ->middleware('auth');
+
+Route::post('/cash-reference/transaction/{transactionId}/link-invoice', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'linkInvoice'])
+    ->name('cash-reference.transaction.link-invoice')
+    ->middleware('auth');
+
 Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');
 
 // Route khusus untuk menjalankan queue worker via HTTP (karena kendala cron job CLI)

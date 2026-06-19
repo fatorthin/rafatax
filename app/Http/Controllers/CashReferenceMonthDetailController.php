@@ -132,7 +132,8 @@ class CashReferenceMonthDetailController extends Controller
         $prevBalance = $this->getPreviousMonthBalance($id, $year, $month);
 
         // Get transactions for the month
-        $transactions = CashReport::where('cash_reference_id', $id)
+        $transactions = CashReport::with(['coa', 'invoice.client'])
+            ->where('cash_reference_id', $id)
             ->whereYear('transaction_date', $year)
             ->whereMonth('transaction_date', $month)
             ->orderBy('sort_order')
@@ -304,5 +305,53 @@ class CashReferenceMonthDetailController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Order updated successfully']);
+    }
+
+    public function searchInvoices(Request $request)
+    {
+        $search = $request->get('q');
+        $invoices = \App\Models\Invoice::with('client')
+            ->where(function ($query) use ($search) {
+                $query->where('invoice_number', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhereHas('client', function ($q) use ($search) {
+                          $q->where('name', 'like', "%{$search}%");
+                      });
+            })
+            ->limit(20)
+            ->get()
+            ->map(function ($invoice) {
+                $clientName = $invoice->client->name ?? 'No Client';
+                $amountFormatted = number_format($invoice->amount, 2, ',', '.');
+                $description = $invoice->description ? ' (' . $invoice->description . ')' : '';
+                return [
+                    'id' => $invoice->id,
+                    'text' => "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}{$description}"
+                ];
+            });
+
+        return response()->json($invoices);
+    }
+
+    public function linkInvoice($transactionId, Request $request)
+    {
+        $validated = $request->validate([
+            'invoice_id' => 'nullable|exists:invoices,id',
+        ]);
+
+        $transaction = CashReport::findOrFail($transactionId);
+        $transaction->invoice_id = $validated['invoice_id'] ?: null;
+        $transaction->save();
+
+        $year = Carbon::parse($transaction->transaction_date)->year;
+        $month = Carbon::parse($transaction->transaction_date)->month;
+
+        return redirect()
+            ->route('cash-reference.month-detail', [
+                'id' => $transaction->cash_reference_id,
+                'year' => $year,
+                'month' => $month,
+            ])
+            ->with('success', 'Invoice linked successfully');
     }
 }
