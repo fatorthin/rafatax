@@ -347,7 +347,7 @@ class CashReferenceMonthDetailController extends Controller
         ]);
 
         $transaction = CashReport::findOrFail($transactionId);
-        $transaction->invoice_id = $validated['invoice_id'] ?: null;
+        $transaction->invoice_id = $request->input('invoice_id') ?: null;
         $transaction->save();
 
         $year = Carbon::parse($transaction->transaction_date)->year;
