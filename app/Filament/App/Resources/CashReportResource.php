@@ -255,19 +255,39 @@ class CashReportResource extends Resource
                     ->form([
                         Forms\Components\Select::make('invoice_id')
                             ->label('Pilih Invoice')
-                            ->options(function () {
+                            ->searchable()
+                            ->getSearchResultsUsing(function (string $search): array {
                                 return \App\Models\Invoice::with(['client', 'mou.client', 'memo'])
-                                    ->latest('invoice_date')
+                                    ->where(function ($query) use ($search) {
+                                        $query->where('invoice_number', 'like', "%{$search}%")
+                                              ->orWhere('description', 'like', "%{$search}%")
+                                              ->orWhereHas('client', function ($q) use ($search) {
+                                                  $q->where('company_name', 'like', "%{$search}%");
+                                              })
+                                              ->orWhereHas('mou.client', function ($q) use ($search) {
+                                                  $q->where('company_name', 'like', "%{$search}%");
+                                              })
+                                              ->orWhereHas('memo', function ($q) use ($search) {
+                                                  $q->where('nama_klien', 'like', "%{$search}%")
+                                                    ->orWhere('instansi_klien', 'like', "%{$search}%");
+                                              });
+                                    })
                                     ->limit(50)
                                     ->get()
                                     ->mapWithKeys(function ($invoice) {
                                         $clientName = $invoice->client_name ?: 'No Client';
                                         $amountFormatted = number_format($invoice->amount, 0, ',', '.');
                                         return [$invoice->id => "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}"];
-                                    });
+                                    })
+                                    ->toArray();
                             })
-                            ->searchable()
-                            ->preload()
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                $invoice = \App\Models\Invoice::with(['client', 'mou.client', 'memo'])->find($value);
+                                if (!$invoice) return null;
+                                $clientName = $invoice->client_name ?: 'No Client';
+                                $amountFormatted = number_format($invoice->amount, 0, ',', '.');
+                                return "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
+                            })
                             ->nullable()
                             ->default(fn (CashReport $record) => $record->invoice_id ?: null)
                     ])
