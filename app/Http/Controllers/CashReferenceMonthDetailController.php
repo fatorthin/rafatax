@@ -197,12 +197,7 @@ class CashReferenceMonthDetailController extends Controller
             'kepemilikan' => 'nullable|in:PT,KKP',
         ]);
 
-        // Get next sort_order for this cash_reference + month
         $parsedDate = Carbon::parse($validated['transaction_date']);
-        $maxSortOrder = CashReport::where('cash_reference_id', $id)
-            ->whereYear('transaction_date', $parsedDate->year)
-            ->whereMonth('transaction_date', $parsedDate->month)
-            ->max('sort_order') ?? 0;
 
         CashReport::create([
             'cash_reference_id' => $id,
@@ -214,7 +209,7 @@ class CashReferenceMonthDetailController extends Controller
             'invoice_id' => 0,
             'mou_id' => 0,
             'cost_list_invoice_id' => 0,
-            'sort_order' => $maxSortOrder + 1,
+            'sort_order' => 99999, // Temp order, will be rebuilt immediately
         ]);
 
         // Auto-create Aktiva Tetap jika CoA = AO-126
@@ -235,8 +230,11 @@ class CashReferenceMonthDetailController extends Controller
             ]);
         }
 
-        $year = Carbon::parse($validated['transaction_date'])->year;
-        $month = Carbon::parse($validated['transaction_date'])->month;
+        // Reorder this month's transactions by date
+        $this->reorderTransactionsByDate($id, $parsedDate->year, $parsedDate->month);
+
+        $year = $parsedDate->year;
+        $month = $parsedDate->month;
 
         return redirect()
             ->route('cash-reference.month-detail', ['id' => $id, 'year' => $year, 'month' => $month])
@@ -266,10 +264,22 @@ class CashReferenceMonthDetailController extends Controller
         ]);
 
         $transaction = CashReport::findOrFail($transactionId);
+        $oldDate = Carbon::parse($transaction->transaction_date);
+
         $transaction->update($validated);
 
-        $year = Carbon::parse($validated['transaction_date'])->year;
-        $month = Carbon::parse($validated['transaction_date'])->month;
+        $newDate = Carbon::parse($validated['transaction_date']);
+
+        // Reorder old month/year
+        $this->reorderTransactionsByDate($transaction->cash_reference_id, $oldDate->year, $oldDate->month);
+
+        // Reorder new month/year (if different)
+        if ($oldDate->year !== $newDate->year || $oldDate->month !== $newDate->month) {
+            $this->reorderTransactionsByDate($transaction->cash_reference_id, $newDate->year, $newDate->month);
+        }
+
+        $year = $newDate->year;
+        $month = $newDate->month;
 
         return redirect()
             ->route('cash-reference.month-detail', [
@@ -285,8 +295,12 @@ class CashReferenceMonthDetailController extends Controller
         $transaction = CashReport::findOrFail($transactionId);
         $year = Carbon::parse($transaction->transaction_date)->year;
         $month = Carbon::parse($transaction->transaction_date)->month;
+        $cashReferenceId = $transaction->cash_reference_id;
 
         $transaction->delete();
+
+        // Reorder transactions to fill in gaps after deletion
+        $this->reorderTransactionsByDate($cashReferenceId, $year, $month);
 
         return redirect()
             ->route('cash-reference.month-detail', ['id' => $id, 'year' => $year, 'month' => $month])
@@ -360,5 +374,20 @@ class CashReferenceMonthDetailController extends Controller
                 'month' => $month,
             ])
             ->with('success', 'Invoice linked successfully');
+    }
+
+    private function reorderTransactionsByDate($cashReferenceId, $year, $month)
+    {
+        $transactions = CashReport::where('cash_reference_id', $cashReferenceId)
+            ->whereYear('transaction_date', $year)
+            ->whereMonth('transaction_date', $month)
+            ->orderBy('transaction_date', 'asc')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($transactions as $index => $report) {
+            $report->update(['sort_order' => $index + 1]);
+        }
     }
 }
