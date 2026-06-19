@@ -257,7 +257,7 @@ class CashReportResource extends Resource
                             ->label('Pilih Invoice')
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search): array {
-                                return \App\Models\Invoice::with(['client', 'mou.client', 'memo'])
+                                return \App\Models\Invoice::with(['client', 'mou.client', 'memo', 'costListInvoices'])
                                     ->where(function ($query) use ($search) {
                                         $query->where('invoice_number', 'like', "%{$search}%")
                                               ->orWhere('description', 'like', "%{$search}%")
@@ -276,16 +276,16 @@ class CashReportResource extends Resource
                                     ->get()
                                     ->mapWithKeys(function ($invoice) {
                                         $clientName = $invoice->client_name ?: 'No Client';
-                                        $amountFormatted = number_format($invoice->amount, 0, ',', '.');
+                                        $amountFormatted = number_format($invoice->total_amount, 0, ',', '.');
                                         return [$invoice->id => "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}"];
                                     })
                                     ->toArray();
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
-                                $invoice = \App\Models\Invoice::with(['client', 'mou.client', 'memo'])->find($value);
+                                $invoice = \App\Models\Invoice::with(['client', 'mou.client', 'memo', 'costListInvoices'])->find($value);
                                 if (!$invoice) return null;
                                 $clientName = $invoice->client_name ?: 'No Client';
-                                $amountFormatted = number_format($invoice->amount, 0, ',', '.');
+                                $amountFormatted = number_format($invoice->total_amount, 0, ',', '.');
                                 return "{$invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
                             })
                             ->nullable()

@@ -101,4 +101,12 @@ class Invoice extends Model
         }
         return '';
     }
+
+    public function getTotalAmountAttribute()
+    {
+        if ($this->relationLoaded('costListInvoices')) {
+            return $this->costListInvoices->sum('amount');
+        }
+        return $this->costListInvoices()->sum('amount') ?? 0;
+    }
 }
