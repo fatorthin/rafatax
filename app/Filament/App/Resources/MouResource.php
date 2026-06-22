@@ -113,6 +113,7 @@ class MouResource extends Resource
                             ->options([
                                 'approved' => 'Disetujui',
                                 'unapproved' => 'Belum Disetujui',
+                                'cancel' => 'Batal',
                             ])
                             ->default('unapproved')
                             ->required()
@@ -353,6 +354,7 @@ class MouResource extends Resource
                     ->formatStateUsing(fn($state) => match ($state) {
                         'approved' => 'Disetujui',
                         'unapproved' => 'Belum Disetujui',
+                        'cancel' => 'Cancel',
                         default => $state,
                     })
                     ->searchable()

@@ -75,6 +75,7 @@ class MouResource extends Resource
                     ->options([
                         'approved' => 'Approved',
                         'unapproved' => 'Unapproved',
+                        'cancel' => 'Cancel',
                     ])
                     ->default('unapproved')
                     ->required()
@@ -288,6 +289,7 @@ class MouResource extends Resource
                     ->options([
                         'approved' => 'Approved',
                         'unapproved' => 'Unapproved',
+                        'cancel' => 'Cancel',
                     ])
                     ->afterStateUpdated(function (MoU $record, $state) {
                         if ($state === 'approved' && !$record->approved_date) {
