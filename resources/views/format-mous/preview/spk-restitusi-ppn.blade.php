@@ -27,7 +27,7 @@
         /* Fixed Header */
         header {
             position: fixed;
-            top: -220px;
+            top: -200px;
             /* Adjusted based on new margin */
             left: 0;
             right: 0;
@@ -303,7 +303,8 @@
                             {{ $mou->percentage_restitution }}% dari Nilai Restitusi<br>yang di terima
                         </td>
                         <td style="vertical-align: middle;">
-                            Untuk tahun pajak {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                            Untuk tahun pajak
+                            {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
                         </td>
                     </tr>
                 </tbody>
@@ -361,7 +362,7 @@
 
                 <div class="signature-box">
                     <p>Pihak Kedua</p>
-                    @if(isset($withSignature) && $withSignature == 1)
+                    @if (isset($withSignature) && $withSignature == 1)
                         <img src="{{ public_path('images/ttd_antin.png') }}" alt="Tanda Tangan" style="height: 100px;">
                         <div class="signature-line" style="border:none; height: 0px;"></div>
                     @else

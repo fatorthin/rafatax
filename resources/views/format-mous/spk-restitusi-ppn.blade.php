@@ -566,10 +566,12 @@
                                                 <strong>Pendampingan Restitusi PPN</strong>
                                             </td>
                                             <td style="text-align: center; vertical-align: middle;">
-                                                {{ $mou->percentage_restitution }}% dari Nilai Restitusi<br>yang di terima
+                                                {{ $mou->percentage_restitution }}% dari Nilai Restitusi<br>yang di
+                                                terima
                                             </td>
                                             <td style="vertical-align: middle;">
-                                                Untuk tahun pajak {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
+                                                Untuk tahun pajak
+                                                {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}
                                             </td>
                                         </tr>
                                     </tbody>
