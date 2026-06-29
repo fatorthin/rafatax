@@ -278,6 +278,7 @@ class StaffAttendanceResource extends Resource
                                 '11' => 'November',
                                 '12' => 'Desember',
                             ])
+                            ->default(now()->month)
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
@@ -300,6 +301,7 @@ class StaffAttendanceResource extends Resource
                                         ->toArray();
                                 });
                             })
+                            ->default(now()->year)
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
