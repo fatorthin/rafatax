@@ -31,6 +31,8 @@ class Invoice extends Model
         'is_send_invoice',
         'send_invoice_date',
         'client_id',
+        'is_pph23_checked',
+        'tanggal_bukti_potong_pph23',
     ];
 
     protected static function booted()

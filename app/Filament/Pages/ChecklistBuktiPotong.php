@@ -2,14 +2,13 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\CashReport;
+use App\Models\Invoice;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\CheckboxColumn;
 use Illuminate\Database\Eloquent\Builder;
 
 class ChecklistBuktiPotong extends Page implements HasTable
@@ -30,56 +29,42 @@ class ChecklistBuktiPotong extends Page implements HasTable
     {
         return $table
             ->query(
-                CashReport::query()
-                    ->whereIn('coa_id', [180, 188, 182, 183, 184, 185, 186, 187])
-                    ->where('invoice_id', '!=', '0')
-                    ->whereHas('invoice', function (Builder $q) {
-                        $q->where(function ($q2) {
-                            $q2->whereHas('client', function ($q3) {
-                                $q3->where('type', 'pt');
-                            })->orWhereHas('mou.client', function ($q3) {
-                                $q3->where('type', 'pt');
-                            });
+                Invoice::query()
+                    ->where(function (Builder $query) {
+                        $query->whereHas('client', function (Builder $q) {
+                            $q->where('type', 'pt');
+                        })->orWhereHas('mou.client', function (Builder $q) {
+                            $q->where('type', 'pt');
                         });
                     })
             )
             ->columns([
-                TextColumn::make('transaction_date')
-                    ->label('Tanggal Transaksi')
+                TextColumn::make('invoice_date')
+                    ->label('Tanggal Invoice')
                     ->date('d/m/Y')
                     ->sortable(),
-                TextColumn::make('description')
-                    ->label('Deskripsi')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('coa.code')
-                    ->label('Kode CoA')
-                    ->sortable(),
-                TextColumn::make('coa.name')
-                    ->label('Nama CoA')
-                    ->sortable(),
-                TextColumn::make('invoice.invoice_number')
+                TextColumn::make('invoice_number')
                     ->label('No Invoice')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('client_name')
                     ->label('Nama Klien (PT)')
-                    ->getStateUsing(fn($record) => $record->invoice?->client_name)
+                    ->getStateUsing(fn($record) => $record->client_name)
                     ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->whereHas('invoice.client', function ($q) use ($search) {
+                        return $query->whereHas('client', function ($q) use ($search) {
                             $q->where('company_name', 'like', "%{$search}%");
-                        })->orWhereHas('invoice.mou.client', function ($q) use ($search) {
+                        })->orWhereHas('mou.client', function ($q) use ($search) {
                             $q->where('company_name', 'like', "%{$search}%");
                         });
                     }),
-                TextColumn::make('debit_amount')
-                    ->label('Debit')
-                    ->money('IDR', locale: 'id')
+                TextColumn::make('description')
+                    ->label('Deskripsi')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('credit_amount')
-                    ->label('Kredit')
+                TextColumn::make('total_amount')
+                    ->label('Nilai Invoice')
                     ->money('IDR', locale: 'id')
-                    ->sortable(),
+                    ->getStateUsing(fn($record) => $record->total_amount),
                 Tables\Columns\IconColumn::make('is_pph23_checked')
                     ->label('Checklist PPh23')
                     ->boolean()
@@ -117,7 +102,16 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->query(fn(Builder $query) => $query->where('is_pph23_checked', false))
                     ->toggle()
             ])
-            ->actions([])
+            ->actions([
+                Tables\Actions\Action::make('viewDetails')
+                    ->label('Detail')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->modalContent(fn ($record) => view('filament.components.invoice-details', ['record' => $record]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
+                    ->modalHeading('Detail Invoice'),
+            ])
             ->bulkActions([]);
     }
 }
