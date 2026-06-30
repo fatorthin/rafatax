@@ -4,9 +4,9 @@ namespace App\Filament\Resources\SaldoAwalPiutangResource\Pages;
 
 use App\Filament\Resources\SaldoAwalPiutangResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 
-class ListSaldoAwalPiutangs extends ListRecords
+class ManageSaldoAwalPiutangs extends ManageRecords
 {
     protected static string $resource = SaldoAwalPiutangResource::class;
 

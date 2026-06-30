@@ -131,9 +131,11 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('link_bukti_potong_pph23')
                     ->label('Link Bukti Potong')
+                    ->formatStateUsing(fn($state) => $state ? 'View' : null)
                     ->url(fn($record) => $record->link_bukti_potong_pph23, true)
-                    ->placeholder('-')
-                    ->limit(30),
+                    ->color('primary')
+                    ->icon('heroicon-m-link')
+                    ->placeholder('-'),
             ])
             ->filters([
                 Tables\Filters\Filter::make('belum_checklist')

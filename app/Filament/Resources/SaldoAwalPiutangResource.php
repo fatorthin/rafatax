@@ -82,9 +82,7 @@ class SaldoAwalPiutangResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSaldoAwalPiutangs::route('/'),
-            'create' => Pages\CreateSaldoAwalPiutang::route('/create'),
-            'edit' => Pages\EditSaldoAwalPiutang::route('/{record}/edit'),
+            'index' => Pages\ManageSaldoAwalPiutangs::route('/'),
         ];
     }
 }
