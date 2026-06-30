@@ -19,7 +19,7 @@ class SaldoAwalPiutangResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?string $navigationLabel = 'Saldo Awal Piutang';
+    protected static ?string $navigationLabel = 'Saldo Awal Piutang Klien';
 
     protected static ?string $navigationGroup = 'Bagian Keuangan';
 
