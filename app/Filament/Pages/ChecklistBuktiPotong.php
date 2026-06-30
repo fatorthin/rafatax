@@ -34,10 +34,13 @@ class ChecklistBuktiPotong extends Page implements HasTable
                 })->orWhereHas('mou.client', function (Builder $q) {
                     $q->where('type', 'pt');
                 });
-            });
+            })
+            ->with('costListInvoices');
 
-        $totalChecked = (clone $baseQuery)->where('is_pph23_checked', true)->sum('total_amount') / 98 * 2;
-        $totalUnchecked = (clone $baseQuery)->where(fn($q) => $q->where('is_pph23_checked', false)->orWhereNull('is_pph23_checked'))->sum('total_amount') / 98 * 2;
+        $records = $baseQuery->get();
+
+        $totalChecked = $records->where('is_pph23_checked', true)->sum(fn($record) => $record->total_amount) / 98 * 2;
+        $totalUnchecked = $records->where(fn($record) => !$record->is_pph23_checked)->sum(fn($record) => $record->total_amount) / 98 * 2;
 
         return [
             'checked' => $totalChecked,
