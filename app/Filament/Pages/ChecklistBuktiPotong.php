@@ -92,6 +92,8 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->label('Nominal PPh23')
                     ->money('IDR', locale: 'id')
                     ->getStateUsing(fn($record) => $record->total_amount / 98 * 2),
+                Tables\Columns\ToggleColumn::make('is_include_pph23')
+                    ->label('Include PPh23'),
                 Tables\Columns\IconColumn::make('is_pph23_checked')
                     ->label('Checklist PPh23')
                     ->boolean()
