@@ -22,7 +22,7 @@
         {{-- Tabel Neraca Lajur --}}
         <div class="shadow rounded-lg overflow-hidden">
             @php
-                $data = $this->getTableQuery()->get();
+                $data = $this->getTableData();
 
                 $totalNeracaAwalDebit = 0;
                 $totalNeracaAwalKredit = 0;

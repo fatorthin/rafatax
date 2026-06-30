@@ -24,8 +24,8 @@ class CashReport extends Model
         'debit_amount',
         'credit_amount',
         'transaction_date',
-        'invoice_id',
-        'sort_order'
+        'sort_order',
+        'is_pph23_checked'
     ];
 
     public function mou()

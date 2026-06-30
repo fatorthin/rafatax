@@ -227,7 +227,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
     protected function getLabaRugiData(): array
     {
-        $data = $this->getTableQuery()->get();
+        $data = $this->getTableData();
         $labaRugiData   = [];
         $totalPendapatan = 0;
         $totalBeban      = 0;
@@ -274,6 +274,33 @@ class NeracaLajurPiutang extends Page implements HasTable
     // ──────────────────────────────────────────────────────────────────────────
     // Query utama
     // ──────────────────────────────────────────────────────────────────────────
+
+    public function getTableData()
+    {
+        $data = $this->getTableQuery()->get();
+
+        $targetCodes = ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'];
+        $subRows = $data->filter(fn($row) => in_array($row->code, $targetCodes));
+        $mainRow = $data->first(fn($row) => $row->code === 'AO-103');
+
+        if ($mainRow && $subRows->isNotEmpty()) {
+            $columnsToSum = [
+                'kas_besar_debit', 'kas_besar_kredit',
+                'kas_kecil_debit', 'kas_kecil_kredit',
+                'bank_debit', 'bank_kredit',
+                'jurnal_pendapatan_debit', 'jurnal_pendapatan_kredit',
+                'jurnal_umum_debit', 'jurnal_umum_kredit',
+                'aje_debit', 'aje_kredit',
+                'neraca_awal_bulan_depan_debit', 'neraca_awal_bulan_depan_kredit'
+            ];
+
+            foreach ($columnsToSum as $col) {
+                $mainRow->$col = $subRows->sum($col);
+            }
+        }
+
+        return $data;
+    }
 
     protected function getTableQuery(): Builder
     {
@@ -876,7 +903,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         ];
         $sheet->getStyle('A3:W4')->applyFromArray($headerStyle);
 
-        $data = $this->getTableQuery()->get();
+        $data = $this->getTableData();
         $row  = 5;
 
         foreach ($data as $item) {
