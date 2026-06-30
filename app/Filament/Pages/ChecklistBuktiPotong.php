@@ -65,6 +65,10 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->label('Nilai Invoice')
                     ->money('IDR', locale: 'id')
                     ->getStateUsing(fn($record) => $record->total_amount),
+                TextColumn::make('nominal_pph23')
+                    ->label('Nominal PPh23')
+                    ->money('IDR', locale: 'id')
+                    ->getStateUsing(fn($record) => $record->total_amount / 98 * 2),
                 Tables\Columns\IconColumn::make('is_pph23_checked')
                     ->label('Checklist PPh23')
                     ->boolean()
@@ -107,7 +111,7 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->label('Detail')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->modalContent(fn ($record) => view('filament.components.invoice-details', ['record' => $record]))
+                    ->modalContent(fn($record) => view('filament.components.invoice-details', ['record' => $record]))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup')
                     ->modalHeading('Detail Invoice'),
