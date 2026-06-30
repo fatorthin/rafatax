@@ -25,6 +25,26 @@ class ChecklistBuktiPotong extends Page implements HasTable
 
     protected static ?string $title = 'Checklist Bukti Potong';
 
+    public function getStats(): array
+    {
+        $baseQuery = Invoice::query()
+            ->where(function (Builder $query) {
+                $query->whereHas('client', function (Builder $q) {
+                    $q->where('type', 'pt');
+                })->orWhereHas('mou.client', function (Builder $q) {
+                    $q->where('type', 'pt');
+                });
+            });
+
+        $totalChecked = (clone $baseQuery)->where('is_pph23_checked', true)->sum('total_amount') / 98 * 2;
+        $totalUnchecked = (clone $baseQuery)->where(fn($q) => $q->where('is_pph23_checked', false)->orWhereNull('is_pph23_checked'))->sum('total_amount') / 98 * 2;
+
+        return [
+            'checked' => $totalChecked,
+            'unchecked' => $totalUnchecked,
+        ];
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -74,24 +94,31 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->boolean()
                     ->action(
                         Tables\Actions\Action::make('toggleChecklist')
-                            ->form(fn($record) => $record->is_pph23_checked ? [] : [
+                            ->form(fn($record) => [
+                                \Filament\Forms\Components\Toggle::make('is_pph23_checked')
+                                    ->label('Sudah Checklist PPh23')
+                                    ->default(fn($record) => $record->is_pph23_checked)
+                                    ->reactive(),
                                 \Filament\Forms\Components\DatePicker::make('tanggal_bukti_potong_pph23')
                                     ->label('Tanggal Bukti Potong')
+                                    ->default(fn($record) => $record->tanggal_bukti_potong_pph23)
+                                    ->visible(fn($get) => $get('is_pph23_checked') === true)
                                     ->required(),
+                                \Filament\Forms\Components\TextInput::make('link_bukti_potong_pph23')
+                                    ->label('Link Bukti Potong')
+                                    ->url()
+                                    ->placeholder('https://...')
+                                    ->default(fn($record) => $record->link_bukti_potong_pph23)
+                                    ->visible(fn($get) => $get('is_pph23_checked') === true),
                             ])
-                            ->modalHeading(fn($record) => $record->is_pph23_checked ? 'Batalkan Checklist?' : 'Konfirmasi Checklist PPh23')
+                            ->modalHeading('Checklist PPh23')
                             ->action(function ($record, array $data) {
-                                if ($record->is_pph23_checked) {
-                                    $record->update([
-                                        'is_pph23_checked' => false,
-                                        'tanggal_bukti_potong_pph23' => null,
-                                    ]);
-                                } else {
-                                    $record->update([
-                                        'is_pph23_checked' => true,
-                                        'tanggal_bukti_potong_pph23' => $data['tanggal_bukti_potong_pph23'],
-                                    ]);
-                                }
+                                $isChecked = $data['is_pph23_checked'];
+                                $record->update([
+                                    'is_pph23_checked' => $isChecked,
+                                    'tanggal_bukti_potong_pph23' => $isChecked ? $data['tanggal_bukti_potong_pph23'] : null,
+                                    'link_bukti_potong_pph23' => $isChecked ? $data['link_bukti_potong_pph23'] : null,
+                                ]);
                             })
                     )
                     ->sortable(),
@@ -99,6 +126,11 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->label('Tgl Bukti Potong')
                     ->date('d/m/Y')
                     ->sortable(),
+                TextColumn::make('link_bukti_potong_pph23')
+                    ->label('Link Bukti Potong')
+                    ->url(fn($record) => $record->link_bukti_potong_pph23, true)
+                    ->placeholder('-')
+                    ->limit(30),
             ])
             ->filters([
                 Tables\Filters\Filter::make('belum_checklist')
