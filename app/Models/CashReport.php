@@ -53,4 +53,61 @@ class CashReport extends Model
     {
         return $this->belongsTo(CashReference::class);
     }
+
+    protected static $isReordering = false;
+
+    protected static function booted()
+    {
+        static::saved(function ($cashReport) {
+            if (self::$isReordering) {
+                return;
+            }
+            self::reorder($cashReport->cash_reference_id, $cashReport->transaction_date);
+
+            if ($cashReport->wasChanged('cash_reference_id') || $cashReport->wasChanged('transaction_date')) {
+                $originalCashReferenceId = $cashReport->getOriginal('cash_reference_id') ?? $cashReport->cash_reference_id;
+                $originalTransactionDate = $cashReport->getOriginal('transaction_date') ?? $cashReport->transaction_date;
+                self::reorder($originalCashReferenceId, $originalTransactionDate);
+            }
+        });
+
+        static::deleted(function ($cashReport) {
+            if (self::$isReordering) {
+                return;
+            }
+            self::reorder($cashReport->cash_reference_id, $cashReport->transaction_date);
+        });
+    }
+
+    public static function reorder($cashReferenceId, $transactionDate)
+    {
+        if (!$cashReferenceId || !$transactionDate) {
+            return;
+        }
+
+        $date = \Carbon\Carbon::parse($transactionDate);
+
+        self::$isReordering = true;
+
+        try {
+            $transactions = self::where('cash_reference_id', $cashReferenceId)
+                ->whereYear('transaction_date', $date->year)
+                ->whereMonth('transaction_date', $date->month)
+                ->orderBy('transaction_date', 'asc')
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            foreach ($transactions as $index => $report) {
+                $newSortOrder = $index + 1;
+                if ($report->sort_order !== $newSortOrder) {
+                    $report->sort_order = $newSortOrder;
+                    $report->saveQuietly();
+                }
+            }
+        } finally {
+            self::$isReordering = false;
+        }
+    }
 }
+
