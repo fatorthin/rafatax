@@ -282,10 +282,19 @@ class GeneralLedger extends Page
         $coas = \App\Models\Coa::all()->keyBy('id');
         $map = $this->getPiutangToPendapatanMap();
         $coaBelumDiterimaId = 175; // AO-208 Pendapatan Yang Belum Diterima
+        $biayaPph23Id = 91; // AO-108.1 PPh 23
+
+        $revenueToPiutangMap = [
+            119 => 188, // Fee Bulanan
+            120 => 182, // Fee SPT
+            121 => 183, // Fee SP2DK
+            122 => 184, // Fee Pembetulan
+            123 => 185, // Fee Internal
+            124 => 186, // Fee Restitusi
+            125 => 187, // Fee Pemeriksaan
+        ];
 
         // ── 1. Dari MoU approved (cost_list_mous) ──
-        // JP DEBIT  AO-103.x = piutang per CoA dari MoU
-        // JP KREDIT AO-208   = total MoU (Pendapatan Belum Diterima)
         $mouRows = \Illuminate\Support\Facades\DB::table('cost_list_mous as clm')
             ->join('mous as m', 'm.id', '=', 'clm.mou_id')
             ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
@@ -310,7 +319,6 @@ class GeneralLedger extends Page
         foreach ($mouRows as $row) {
             $desc = "Piutang MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
             
-            // DEBIT: Piutang CoA (AO-103.x)
             $tDebit = new \stdClass();
             $tDebit->coa_id = $row->coa_id;
             $tDebit->transaction_date = $row->approved_date;
@@ -321,7 +329,6 @@ class GeneralLedger extends Page
             $tDebit->coa = $coas[$row->coa_id] ?? null;
             $transactions->push($tDebit);
 
-            // KREDIT: Pendapatan Belum Diterima (AO-208)
             $tCredit = new \stdClass();
             $tCredit->coa_id = $coaBelumDiterimaId;
             $tCredit->transaction_date = $row->approved_date;
@@ -333,9 +340,7 @@ class GeneralLedger extends Page
             $transactions->push($tCredit);
         }
 
-        // ── 2. Dari cash_reports (CoA AO-103.x yang muncul di kolom kas/bank) ──
-        // JP DEBIT  AO-208   = total kas diterima (pengurang accrual Pendapatan Belum Diterima)
-        // JP KREDIT AO-401.x = nilai penerimaan per CoA (pengakuan pendapatan aktual)
+        // ── 2. Dari cash_reports ──
         $cashRows = \Illuminate\Support\Facades\DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
@@ -344,12 +349,7 @@ class GeneralLedger extends Page
                 \Carbon\Carbon::parse($startDate)->startOfDay(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()
             ])
-            ->select([
-                'coa_id',
-                'debit_amount',
-                'transaction_date',
-                'description',
-            ])
+            ->select(['coa_id', 'debit_amount', 'transaction_date', 'description'])
             ->get();
 
         foreach ($cashRows as $row) {
@@ -358,7 +358,6 @@ class GeneralLedger extends Page
 
             $desc = "Penerimaan Piutang - " . ($row->description ?: 'Tanpa Keterangan');
 
-            // DEBIT: Pendapatan Belum Diterima (AO-208)
             $tDebit = new \stdClass();
             $tDebit->coa_id = $coaBelumDiterimaId;
             $tDebit->transaction_date = $row->transaction_date;
@@ -369,7 +368,6 @@ class GeneralLedger extends Page
             $tDebit->coa = $coas[$coaBelumDiterimaId] ?? null;
             $transactions->push($tDebit);
 
-            // KREDIT: Pendapatan CoA (AO-401.x)
             $tCredit = new \stdClass();
             $tCredit->coa_id = $pendapatanCoaId;
             $tCredit->transaction_date = $row->transaction_date;
@@ -379,6 +377,93 @@ class GeneralLedger extends Page
             $tCredit->display_credit = $row->debit_amount;
             $tCredit->coa = $coas[$pendapatanCoaId] ?? null;
             $transactions->push($tCredit);
+        }
+
+        // ── 3. Dari PPh23 Include ──
+        $includeRows = \Illuminate\Support\Facades\DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
+            ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
+            ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
+            ->leftJoin('memos as mem', 'mem.id', '=', 'inv.memo_id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->where('inv.is_include_pph23', true)
+            ->whereBetween('inv.invoice_date', [\Carbon\Carbon::parse($startDate)->startOfDay(), \Carbon\Carbon::parse($endDate)->endOfDay()])
+            ->select(['inv.invoice_number', 'inv.invoice_date', 'cli.coa_id', 'cli.amount', 'c_inv.company_name as client_name_inv', 'c_mou.company_name as client_name_mou', 'mem.nama_klien as memo_nama', 'mem.instansi_klien as memo_instansi'])
+            ->get();
+
+        foreach ($includeRows as $row) {
+            $cName = $row->client_name_inv ?? $row->client_name_mou ?? $row->memo_nama ?? $row->memo_instansi ?? '';
+            $desc = "PPh23 Invoice No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
+            $coaId = isset($revenueToPiutangMap[$row->coa_id]) ? $revenueToPiutangMap[$row->coa_id] : $row->coa_id;
+            if ($coaId == 188 || $coaId == 182) $coaId = 188;
+            $pph23Amount = ($row->amount / 98) * 2;
+
+            $tDebit = new \stdClass();
+            $tDebit->coa_id = $coaId;
+            $tDebit->transaction_date = $row->invoice_date;
+            $tDebit->description = $desc;
+            $tDebit->source = 'Jurnal Pendapatan';
+            $tDebit->display_debit = $pph23Amount;
+            $tDebit->display_credit = 0;
+            $tDebit->coa = $coas[$coaId] ?? null;
+            $transactions->push($tDebit);
+
+            $tCredit = new \stdClass();
+            $tCredit->coa_id = $coaBelumDiterimaId;
+            $tCredit->transaction_date = $row->invoice_date;
+            $tCredit->description = $desc;
+            $tCredit->source = 'Jurnal Pendapatan';
+            $tCredit->display_debit = 0;
+            $tCredit->display_credit = $pph23Amount;
+            $tCredit->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $transactions->push($tCredit);
+        }
+
+        // ── 4. Dari PPh23 Checked ──
+        $checkedRows = \Illuminate\Support\Facades\DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
+            ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
+            ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
+            ->leftJoin('memos as mem', 'mem.id', '=', 'inv.memo_id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->where('inv.is_pph23_checked', true)
+            ->whereBetween('inv.tanggal_bukti_potong_pph23', [\Carbon\Carbon::parse($startDate)->startOfDay(), \Carbon\Carbon::parse($endDate)->endOfDay()])
+            ->select(['inv.id as invoice_id', 'inv.invoice_number', 'inv.tanggal_bukti_potong_pph23', 'inv.nominal_bukti_potong_pph23', 'cli.coa_id', 'cli.amount as item_amount', 'c_inv.company_name as client_name_inv', 'c_mou.company_name as client_name_mou', 'mem.nama_klien as memo_nama', 'mem.instansi_klien as memo_instansi'])
+            ->get();
+
+        $checkedInvoiceTotals = [];
+        foreach ($checkedRows as $row) {
+            $checkedInvoiceTotals[$row->invoice_id] = ($checkedInvoiceTotals[$row->invoice_id] ?? 0) + $row->item_amount;
+        }
+
+        foreach ($checkedRows as $row) {
+            $cName = $row->client_name_inv ?? $row->client_name_mou ?? $row->memo_nama ?? $row->memo_instansi ?? '';
+            $desc = "PPh23 Checklist No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
+            $coaId = $row->coa_id;
+            if (isset($revenueToPiutangMap[$coaId])) {
+                $pendapatanCoaId = $coaId; $piutangCoaId = $revenueToPiutangMap[$coaId];
+            } elseif (isset($map[$coaId])) {
+                $piutangCoaId = $coaId; $pendapatanCoaId = $map[$coaId];
+            } else {
+                $piutangCoaId = $coaId; $pendapatanCoaId = $coaId;
+            }
+            if ($piutangCoaId == 188 || $piutangCoaId == 182) { $piutangCoaId = 188; $pendapatanCoaId = 119; }
+            
+            $invoiceTotal = $checkedInvoiceTotals[$row->invoice_id] ?? 0;
+            $pph23Amount = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
+
+            $tDebit208 = new \stdClass();
+            $tDebit208->coa_id = $coaBelumDiterimaId; $tDebit208->transaction_date = $row->tanggal_bukti_potong_pph23; $tDebit208->description = $desc; $tDebit208->source = 'Jurnal Pendapatan'; $tDebit208->display_debit = $pph23Amount; $tDebit208->display_credit = 0; $tDebit208->coa = $coas[$coaBelumDiterimaId] ?? null; $transactions->push($tDebit208);
+            $tDebit518 = new \stdClass();
+            $tDebit518->coa_id = $biayaPph23Id; $tDebit518->transaction_date = $row->tanggal_bukti_potong_pph23; $tDebit518->description = $desc; $tDebit518->source = 'Jurnal Pendapatan'; $tDebit518->display_debit = $pph23Amount; $tDebit518->display_credit = 0; $tDebit518->coa = $coas[$biayaPph23Id] ?? null; $transactions->push($tDebit518);
+            $tCredit401 = new \stdClass();
+            $tCredit401->coa_id = $pendapatanCoaId; $tCredit401->transaction_date = $row->tanggal_bukti_potong_pph23; $tCredit401->description = $desc; $tCredit401->source = 'Jurnal Pendapatan'; $tCredit401->display_debit = 0; $tCredit401->display_credit = $pph23Amount; $tCredit401->coa = $coas[$pendapatanCoaId] ?? null; $transactions->push($tCredit401);
+            $tCredit103 = new \stdClass();
+            $tCredit103->coa_id = $piutangCoaId; $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23; $tCredit103->description = $desc; $tCredit103->source = 'Jurnal Pendapatan'; $tCredit103->display_debit = 0; $tCredit103->display_credit = $pph23Amount; $tCredit103->coa = $coas[$piutangCoaId] ?? null; $transactions->push($tCredit103);
         }
 
         return $transactions;

@@ -60,13 +60,13 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
         $this->mou = MoU::findOrFail($record);
 
         // Self-healing: Reset checklist items linked to deleted invoices
-        \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+        \App\Models\ChecklistMou::query()->where('mou_id', '=', $this->mou->id, 'and')
             ->whereNotNull('invoice_id')
             ->whereDoesntHave('invoice')
             ->update(['invoice_id' => null, 'status' => 'pending']);
 
-        $this->cost_lists = CostListMou::where('mou_id', $record)->get();
-        $this->invoices = Invoice::where('mou_id', $record)->get();
+        $this->cost_lists = CostListMou::query()->where('mou_id', '=', $record, 'and')->get();
+        $this->invoices = Invoice::query()->where('mou_id', '=', $record, 'and')->get();
     }
 
     public function getTitle(): string
@@ -165,7 +165,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => CostListMou::where('mou_id', $this->mou->id))
+            ->query(fn() => CostListMou::query()->where('mou_id', '=', $this->mou->id, 'and'))
             ->heading('Cost List')
             ->description('Detail biaya untuk MoU ini')
             ->columns([
@@ -207,7 +207,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->form([
                         Select::make('coa_id')
                             ->label('CoA')
-                            ->options(Coa::whereIn('code', ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'])
+                            ->options(Coa::query()->whereIn('code', ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'])
                                 ->pluck('name', 'id'))
                             ->searchable()
                             ->required(),
@@ -359,7 +359,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             ->form([
                 Select::make('coa_id')
                     ->label('CoA')
-                    ->options(Coa::whereIn('code', ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'])
+                    ->options(Coa::query()->whereIn('code', ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'])
                         ->pluck('name', 'id'))
                     ->searchable()
                     ->required(),
@@ -514,7 +514,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
             // Generate PDF using same logic as MouPrintViewController
             $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
-            $costLists = CostListMou::where('mou_id', $mou->id)->get();
+            $costLists = CostListMou::query()->where('mou_id', '=', $mou->id, 'and')->get();
 
             $format = $mou->type === 'pt'
                 ? $mou->categoryMou->format_mou_pt
@@ -645,7 +645,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     {
         if (!empty($this->pendingChecklistIds)) {
             $checklistStatus = $record->invoice_status === 'paid' ? 'completed' : 'pending';
-            \App\Models\ChecklistMou::whereIn('id', $this->pendingChecklistIds)->update([
+            \App\Models\ChecklistMou::query()->whereIn('id', $this->pendingChecklistIds, 'and', false)->update([
                 'invoice_id' => $record->id,
                 'status' => $checklistStatus
             ]);
@@ -810,7 +810,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                 ->default($this->mou->id),
                             Select::make('coa_id')
                                 ->label('CoA')
-                                ->options(Coa::whereIn('id', [181, 182, 183, 184, 185, 186, 187, 188])->pluck('name', 'id'))
+                                ->options(Coa::query()->whereIn('id', [181, 182, 183, 184, 185, 186, 187, 188])->pluck('name', 'id'))
                                 ->required()
                                 ->searchable()
                                 ->columnSpan([
@@ -848,7 +848,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
         return \Filament\Forms\Components\CheckboxList::make('checklist_mou_ids')
             ->label('Checklist Invoice (Pilih Periode yang akan ditagihkan)')
             ->options(function () {
-                return \App\Models\ChecklistMou::where('mou_id', $this->mou->id)
+                return \App\Models\ChecklistMou::query()->where('mou_id', '=', $this->mou->id, 'and')
                     ->whereNull('invoice_id')
                     ->orderBy('checklist_date', 'asc')
                     ->get()

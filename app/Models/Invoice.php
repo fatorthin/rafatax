@@ -34,6 +34,7 @@ class Invoice extends Model
         'is_pph23_checked',
         'tanggal_bukti_potong_pph23',
         'link_bukti_potong_pph23',
+        'nominal_bukti_potong_pph23'
     ];
 
     protected static function booted()

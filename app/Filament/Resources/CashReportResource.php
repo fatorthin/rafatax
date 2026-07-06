@@ -359,17 +359,17 @@ class CashReportResource extends Resource
             ...parent::getNavigationItems(),
             \Filament\Navigation\NavigationItem::make('Neraca Lajur Bulanan')
                 ->icon('heroicon-o-table-cells')
-                ->group('Histori Data')
+                ->group('Bagian Keuangan')
                 ->url(static::getUrl('neraca-lajur'))
                 ->sort(2),
             \Filament\Navigation\NavigationItem::make('Neraca Lajur (Piutang)')
                 ->icon('heroicon-o-clipboard-document-check')
-                ->group('Histori Data')
+                ->group('Bagian Keuangan')
                 ->url(static::getUrl('neraca-lajur-piutang'))
                 ->sort(3),
             \Filament\Navigation\NavigationItem::make('Buku Besar')
                 ->icon('heroicon-o-clipboard-document-list')
-                ->group('Histori Data')
+                ->group('Bagian Keuangan')
                 ->url(static::getUrl('general-ledger'))
                 ->sort(4),
         ];

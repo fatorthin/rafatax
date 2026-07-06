@@ -13,6 +13,8 @@
                     <ul class="mt-1 list-disc pl-4 space-y-0.5">
                         <li><strong>Debit Piutang (AO-103) / Kredit AO-208 (Pendapatan Yang Belum Diterima)</strong>: MoU KKP approved bulan berjalan</li>
                         <li><strong>Debit AO-208 / Kredit Piutang (AO-103)</strong>: Invoice KKP paid (realisasi bulan berjalan)</li>
+                        <li><strong>Debit Piutang (AO-103) / Kredit AO-208</strong>: Nilai nominal PPh23 (nilai invoice / 98 * 2) dari Invoice PT (include PPh23 = true) yang dibuat pada bulan berjalan. Dialokasikan ke CoA sesuai item invoice (untuk Bulanan/Tahunan dialokasikan ke AO-103.6)</li>
+                        <li><strong>Debit AO-208 & Debit AO-108.1 (PPh 23) / Kredit AO-401.x & Kredit AO-103.x</strong>: Nilai nominal PPh23 dari Invoice PT yang status is_pph23_checked = true berdasarkan tanggal bukti potong pada bulan berjalan. Dialokasikan sesuai jenis CoA (untuk Bulanan/Tahunan dialokasikan ke AO-401 & AO-103.6)</li>
                         <li>Memo tidak dimasukkan ke dalam Jurnal Pendapatan karena langsung diakui sebagai pendapatan di kolom Kas & Bank berdasarkan invoice</li>
                     </ul>
                 </div>

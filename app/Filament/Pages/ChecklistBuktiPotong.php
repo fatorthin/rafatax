@@ -92,6 +92,10 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->label('Nominal PPh23')
                     ->money('IDR', locale: 'id')
                     ->getStateUsing(fn($record) => $record->total_amount / 98 * 2),
+                TextColumn::make('nominal_bukti_potong_pph23')
+                    ->label('Nominal Bukti Potong PPh23')
+                    ->money('IDR', locale: 'id')
+                    ->getStateUsing(fn($record) => $record->nominal_bukti_potong_pph23),
                 Tables\Columns\ToggleColumn::make('is_include_pph23')
                     ->label('Include PPh23'),
                 Tables\Columns\IconColumn::make('is_pph23_checked')
@@ -115,6 +119,11 @@ class ChecklistBuktiPotong extends Page implements HasTable
                                     ->placeholder('https://...')
                                     ->default(fn($record) => $record->link_bukti_potong_pph23)
                                     ->visible(fn($get) => $get('is_pph23_checked') === true),
+                                \Filament\Forms\Components\TextInput::make('nominal_bukti_potong_pph23')
+                                    ->label('Nominal Bukti Potong')
+                                    ->numeric()
+                                    ->default(fn($record) => $record->nominal_bukti_potong_pph23 ?? round($record->total_amount / 98 * 2))
+                                    ->visible(fn($get) => $get('is_pph23_checked') === true),
                             ])
                             ->modalHeading('Checklist PPh23')
                             ->action(function ($record, array $data) {
@@ -123,6 +132,7 @@ class ChecklistBuktiPotong extends Page implements HasTable
                                     'is_pph23_checked' => $isChecked,
                                     'tanggal_bukti_potong_pph23' => $isChecked ? $data['tanggal_bukti_potong_pph23'] : null,
                                     'link_bukti_potong_pph23' => $isChecked ? $data['link_bukti_potong_pph23'] : null,
+                                    'nominal_bukti_potong_pph23' => $isChecked ? $data['nominal_bukti_potong_pph23'] : null,
                                 ]);
                             })
                     )
