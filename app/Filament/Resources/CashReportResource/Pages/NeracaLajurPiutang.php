@@ -365,6 +365,72 @@ class NeracaLajurPiutang extends Page implements HasTable
         ];
     }
 
+    /**
+     * Sumber 5 — MoU discounts (discount_amount > 0 && tgl_discount jatuh pada bulan berjalan).
+     */
+    private function getMouDiscountForJP(string $startOfMonth, string $endOfMonth): array
+    {
+        $mous = DB::table('mous as m')
+            ->whereNull('m.deleted_at')
+            ->where('m.status', 'approved')
+            ->where('m.discount_amount', '>', 0)
+            ->whereNotNull('m.tgl_discount')
+            ->whereBetween('m.tgl_discount', [$startOfMonth, $endOfMonth])
+            ->select([
+                'm.id',
+                'm.discount_amount',
+                'm.category_mou_id'
+            ])
+            ->get();
+
+        $map = $this->getPiutangToPendapatanMap();
+        
+        $debits = [];
+        $kredits = [];
+
+        foreach ($mous as $mou) {
+            $clCoa = DB::table('cost_list_mous')
+                ->where('mou_id', $mou->id)
+                ->whereNull('deleted_at')
+                ->whereIn('coa_id', array_keys($map))
+                ->value('coa_id');
+
+            if ($clCoa) {
+                $piutangCoaId = $clCoa;
+            } else {
+                $piutangCoaId = match ($mou->category_mou_id) {
+                    1, 2 => 182,
+                    3, 4 => 188,
+                    5 => 183,
+                    6 => 184,
+                    7 => 187,
+                    8 => 186,
+                    default => 188,
+                };
+            }
+
+            $pendapatanCoaId = $map[$piutangCoaId] ?? 119;
+            $discountAmount = (float) $mou->discount_amount;
+
+            // Debits:
+            // 1. AO-420 (Potongan Pendapatan: 190)
+            $debits[190] = ($debits[190] ?? 0) + $discountAmount;
+            // 2. AO-208 (Pendapatan Yang Belum Diterima: 175)
+            $debits[175] = ($debits[175] ?? 0) + $discountAmount;
+
+            // Kredits:
+            // 1. AO-103.x (Piutang: $piutangCoaId)
+            $kredits[$piutangCoaId] = ($kredits[$piutangCoaId] ?? 0) + $discountAmount;
+            // 2. AO-401.x (Pendapatan: $pendapatanCoaId)
+            $kredits[$pendapatanCoaId] = ($kredits[$pendapatanCoaId] ?? 0) + $discountAmount;
+        }
+
+        return [
+            'debits' => $debits,
+            'kredits' => $kredits
+        ];
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Data untuk laba rugi summary (header)
     // ──────────────────────────────────────────────────────────────────────────
@@ -503,6 +569,15 @@ class NeracaLajurPiutang extends Page implements HasTable
             $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
         }
         foreach ($pphCheckedJP['by_piutang_coa'] as $coaId => $total) {
+            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
+        }
+
+        // ── Sumber 5: Diskon dari MoU ──
+        $mouDiscountJP = $this->getMouDiscountForJP($startOfCurrentMonth, $endOfCurrentMonth);
+        foreach ($mouDiscountJP['debits'] as $coaId => $total) {
+            $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
+        }
+        foreach ($mouDiscountJP['kredits'] as $coaId => $total) {
             $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
         }
 

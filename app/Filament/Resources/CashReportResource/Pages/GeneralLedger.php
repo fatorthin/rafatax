@@ -466,6 +466,97 @@ class GeneralLedger extends Page
             $tCredit103->coa_id = $piutangCoaId; $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23; $tCredit103->description = $desc; $tCredit103->source = 'Jurnal Pendapatan'; $tCredit103->display_debit = 0; $tCredit103->display_credit = $pph23Amount; $tCredit103->coa = $coas[$piutangCoaId] ?? null; $transactions->push($tCredit103);
         }
 
+        // ── 5. Dari MoU Discount ──
+        $mouDiscountRows = \Illuminate\Support\Facades\DB::table('mous as m')
+            ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
+            ->whereNull('m.deleted_at')
+            ->where('m.status', 'approved')
+            ->where('m.discount_amount', '>', 0)
+            ->whereNotNull('m.tgl_discount')
+            ->whereBetween('m.tgl_discount', [
+                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                \Carbon\Carbon::parse($endDate)->endOfDay()
+            ])
+            ->select([
+                'm.id',
+                'm.mou_number',
+                'm.discount_amount',
+                'm.tgl_discount',
+                'm.category_mou_id',
+                'c.company_name'
+            ])
+            ->get();
+
+        foreach ($mouDiscountRows as $row) {
+            $clCoa = \Illuminate\Support\Facades\DB::table('cost_list_mous')
+                ->where('mou_id', $row->id)
+                ->whereNull('deleted_at')
+                ->whereIn('coa_id', array_keys($map))
+                ->value('coa_id');
+
+            if ($clCoa) {
+                $piutangCoaId = $clCoa;
+            } else {
+                $piutangCoaId = match ($row->category_mou_id) {
+                    1, 2 => 182,
+                    3, 4 => 188,
+                    5 => 183,
+                    6 => 184,
+                    7 => 187,
+                    8 => 186,
+                    default => 188,
+                };
+            }
+
+            $pendapatanCoaId = $map[$piutangCoaId] ?? 119;
+            $discountAmount = (float) $row->discount_amount;
+            $desc = "Potongan Pendapatan MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
+
+            // 1. Debit AO-420 (Potongan Pendapatan: 190)
+            $tDebit420 = new \stdClass();
+            $tDebit420->coa_id = 190;
+            $tDebit420->transaction_date = $row->tgl_discount;
+            $tDebit420->description = $desc;
+            $tDebit420->source = 'Jurnal Pendapatan';
+            $tDebit420->display_debit = $discountAmount;
+            $tDebit420->display_credit = 0;
+            $tDebit420->coa = $coas[190] ?? null;
+            $transactions->push($tDebit420);
+
+            // 2. Kredit AO-103.x (Piutang: $piutangCoaId)
+            $tCredit103 = new \stdClass();
+            $tCredit103->coa_id = $piutangCoaId;
+            $tCredit103->transaction_date = $row->tgl_discount;
+            $tCredit103->description = $desc;
+            $tCredit103->source = 'Jurnal Pendapatan';
+            $tCredit103->display_debit = 0;
+            $tCredit103->display_credit = $discountAmount;
+            $tCredit103->coa = $coas[$piutangCoaId] ?? null;
+            $transactions->push($tCredit103);
+
+            // 3. Debit AO-208 (Pendapatan Belum Diterima: 175)
+            $tDebit208 = new \stdClass();
+            $tDebit208->coa_id = 175;
+            $tDebit208->transaction_date = $row->tgl_discount;
+            $tDebit208->description = $desc;
+            $tDebit208->source = 'Jurnal Pendapatan';
+            $tDebit208->display_debit = $discountAmount;
+            $tDebit208->display_credit = 0;
+            $tDebit208->coa = $coas[175] ?? null;
+            $transactions->push($tDebit208);
+
+            // 4. Kredit AO-401.x (Pendapatan: $pendapatanCoaId)
+            $tCredit401 = new \stdClass();
+            $tCredit401->coa_id = $pendapatanCoaId;
+            $tCredit401->transaction_date = $row->tgl_discount;
+            $tCredit401->description = $desc;
+            $tCredit401->source = 'Jurnal Pendapatan';
+            $tCredit401->display_debit = 0;
+            $tCredit401->display_credit = $discountAmount;
+            $tCredit401->coa = $coas[$pendapatanCoaId] ?? null;
+            $transactions->push($tCredit401);
+        }
+
         return $transactions;
     }
 
