@@ -188,7 +188,14 @@ class MouResource extends Resource
                         Forms\Components\TextInput::make('discount_amount')
                             ->label('Discount Amount')
                             ->numeric()
-                            ->default(0),
+                            ->default(0)
+                            ->live(onBlur: true),
+                        Forms\Components\DatePicker::make('tgl_discount')
+                            ->label('Tanggal Discount')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->placeholder('Pilih tanggal discount')
+                            ->required(fn(Forms\Get $get): bool => filled($get('discount_amount')) && (float) $get('discount_amount') != 0),
                         Forms\Components\Select::make('is_send_mou')
                             ->label('Status Kirim MoU')
                             ->options([

@@ -6,6 +6,7 @@ use App\Models\Coa;
 use App\Models\MoU;
 use App\Models\CaseProject;
 use App\Models\ChecklistMou;
+use Carbon\Carbon;
 use Filament\Actions;
 use Filament\Actions\ActionGroup;
 use Filament\Support\RawJs;
@@ -111,7 +112,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('approved_date')
                             ->label('Tanggal Disetujui')
                             ->weight('bold')
-                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : '-'),
+                            ->formatStateUsing(fn($state) => $state ? Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : '-'),
                         TextEntry::make('type')
                             ->label('Tipe')
                             ->formatStateUsing(fn(string $state): string => match ($state) {
@@ -123,23 +124,23 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         TextEntry::make('start_date')
                             ->label('Tanggal Awal Pengerjaan')
                             ->weight('bold')
-                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
+                            ->formatStateUsing(fn($state) => $state ? Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
                         TextEntry::make('end_date')
                             ->label('Tanggal Akhir Pengerjaan')
                             ->weight('bold')
-                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
+                            ->formatStateUsing(fn($state) => $state ? Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
                         TextEntry::make('tahun_pajak')
                             ->label('Tahun Pajak')
                             ->weight('bold')
-                            ->getStateUsing(fn($record) => $record->tahun_pajak ?: ($record->start_date ? \Carbon\Carbon::parse($record->start_date)->year : null)),
+                            ->getStateUsing(fn($record) => $record->tahun_pajak ?: ($record->start_date ? Carbon::parse($record->start_date)->year : null)),
                         TextEntry::make('tanggal_tagih_awal')
                             ->label('Tanggal Tagih Awal')
                             ->weight('bold')
-                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
+                            ->formatStateUsing(fn($state) => $state ? Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
                         TextEntry::make('tanggal_tagih_akhir')
                             ->label('Tanggal Tagih Akhir')
                             ->weight('bold')
-                            ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
+                            ->formatStateUsing(fn($state) => $state ? Carbon::parse($state)->locale('id')->translatedFormat('d F Y') : null),
                         TextEntry::make('client.contact_person')
                             ->label('Kontak Person')
                             ->weight('bold'),
@@ -630,7 +631,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->live()
                     ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                         if ($state) {
-                            $dueDate = \Carbon\Carbon::parse($state)->addWeeks(2)->toDateString();
+                            $dueDate = Carbon::parse($state)->addWeeks(2)->toDateString();
                             $set('due_date', $dueDate);
                         }
                         InvoiceResource::generateInvoiceNumber($set, $get);
@@ -726,7 +727,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                                     return [$item->id => 'SPT Tahunan'];
                                 }
 
-                                $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+                                $date = Carbon::parse($item->checklist_date)->translatedFormat('F Y');
 
                                 return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
                             });
@@ -819,7 +820,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->live()
                     ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
                         if ($state) {
-                            $dueDate = \Carbon\Carbon::parse($state)->addWeeks(3)->toDateString();
+                            $dueDate = Carbon::parse($state)->addWeeks(3)->toDateString();
                             $set('due_date', $dueDate);
                         }
                     }),
@@ -888,7 +889,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->orderBy('checklist_date', 'asc')
                             ->get()
                             ->mapWithKeys(function ($item) {
-                                $date = \Carbon\Carbon::parse($item->checklist_date)->translatedFormat('F Y');
+                                $date = Carbon::parse($item->checklist_date)->translatedFormat('F Y');
                                 return [$item->id => "Periode: {$date} (" . ($item->notes ?? '-') . ")"];
                             });
                     })
