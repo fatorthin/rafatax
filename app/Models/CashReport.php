@@ -79,7 +79,7 @@ class CashReport extends Model
         });
     }
 
-    public static function reorder($cashReferenceId, $transactionDate)
+    public static function reorder(int|string|null $cashReferenceId, string|null $transactionDate): void
     {
         if (!$cashReferenceId || !$transactionDate) {
             return;
@@ -90,7 +90,7 @@ class CashReport extends Model
         self::$isReordering = true;
 
         try {
-            $transactions = self::where('cash_reference_id', $cashReferenceId)
+            $transactions = self::query()->where('cash_reference_id', $cashReferenceId)
                 ->whereYear('transaction_date', $date->year)
                 ->whereMonth('transaction_date', $date->month)
                 ->orderBy('transaction_date', 'asc')

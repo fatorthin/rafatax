@@ -661,6 +661,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     ->live()
                     ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
                         InvoiceResource::generateInvoiceNumber($set, $get);
+                        if ($state === 'pt') {
+                            $set('is_include_pph23', true);
+                        } else {
+                            $set('is_include_pph23', false);
+                        }
                     }),
                 Select::make('rek_transfer')
                     ->label('Rekening Transfer')
