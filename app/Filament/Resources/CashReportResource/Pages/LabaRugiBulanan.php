@@ -154,7 +154,7 @@ class LabaRugiBulanan extends Page
                         SUM(credit_amount) as kas_kecil_debit,
                         SUM(debit_amount) as kas_kecil_kredit
                     FROM cash_reports
-                    WHERE cash_reference_id = 7
+                    WHERE cash_reference_id IN (7, 9)
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
                     GROUP BY coa_id

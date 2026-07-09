@@ -258,7 +258,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE cash_reference_id IN (7, 9)
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 77
@@ -272,7 +272,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE cash_reference_id IN (7, 9)
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -601,7 +601,7 @@ class NeracaLajurBulanan extends Page implements HasTable
                         $kasBesarDebit += $cash->credit;
                         $kasBesarKredit += $cash->debit;
                     }
-                } elseif ($cash->cash_reference_id == 7) { // Kas Kecil
+                } elseif (in_array($cash->cash_reference_id, [7, 9])) { // Kas Kecil
                     if ($coa->id == 76) { // AO-101.1 special case
                         $kasKecilDebit += $cash->debit;
                         $kasKecilKredit += $cash->credit;

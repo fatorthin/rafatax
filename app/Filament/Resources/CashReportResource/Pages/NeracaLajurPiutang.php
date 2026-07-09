@@ -198,7 +198,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         $rows = DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7]) // bank + kas besar + kas kecil
+            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9]) // bank + kas besar + kas kecil
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
             ->groupBy('coa_id')
             ->selectRaw('coa_id, SUM(debit_amount) as total')
@@ -258,7 +258,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         foreach ($rows as $row) {
             $coaId = $row->coa_id;
-            
+
             // Map revenue CoA to piutang CoA
             if (isset($revenueToPiutangMap[$coaId])) {
                 $coaId = $revenueToPiutangMap[$coaId];
@@ -332,7 +332,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         foreach ($rows as $row) {
             $coaId = $row->coa_id;
-            
+
             if (isset($revenueToPiutangMap[$coaId])) {
                 $pendapatanCoaId = $coaId;
                 $piutangCoaId = $revenueToPiutangMap[$coaId];
@@ -384,7 +384,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->get();
 
         $map = $this->getPiutangToPendapatanMap();
-        
+
         $debits = [];
         $kredits = [];
 
@@ -495,13 +495,20 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         if ($mainRow && $subRows->isNotEmpty()) {
             $columnsToSum = [
-                'kas_besar_debit', 'kas_besar_kredit',
-                'kas_kecil_debit', 'kas_kecil_kredit',
-                'bank_debit', 'bank_kredit',
-                'jurnal_pendapatan_debit', 'jurnal_pendapatan_kredit',
-                'jurnal_umum_debit', 'jurnal_umum_kredit',
-                'aje_debit', 'aje_kredit',
-                'neraca_awal_bulan_depan_debit', 'neraca_awal_bulan_depan_kredit'
+                'kas_besar_debit',
+                'kas_besar_kredit',
+                'kas_kecil_debit',
+                'kas_kecil_kredit',
+                'bank_debit',
+                'bank_kredit',
+                'jurnal_pendapatan_debit',
+                'jurnal_pendapatan_kredit',
+                'jurnal_umum_debit',
+                'jurnal_umum_kredit',
+                'aje_debit',
+                'aje_kredit',
+                'neraca_awal_bulan_depan_debit',
+                'neraca_awal_bulan_depan_kredit'
             ];
 
             foreach ($columnsToSum as $col) {
@@ -690,7 +697,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE cash_reference_id IN (7, 9)
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 77
@@ -703,7 +710,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE cash_reference_id IN (7, 9)
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -955,7 +962,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         $cashRows = DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', $piutangCoaIds)
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7])
+            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
             ->groupBy('coa_id')
             ->selectRaw('coa_id as piutang_coa_id, SUM(debit_amount) as total')
@@ -1131,7 +1138,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->join('cash_references as cref', 'cref.id', '=', 'cr.cash_reference_id')
             ->whereNull('cr.deleted_at')
             ->whereIn('cr.coa_id', $piutangCoaIds)
-            ->whereIn('cr.cash_reference_id', [1, 2, 3, 4, 5, 6, 7])
+            ->whereIn('cr.cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
             ->whereBetween('cr.transaction_date', [$startOfMonth, $endOfMonth])
             ->orderBy('cr.transaction_date')
             ->orderBy('cr.id')
@@ -1230,7 +1237,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $pphRow = 4;
         $pphGrand = 0;
-        
+
         $revenueToPiutangMap = [
             119 => 188, // Fee Bulanan
             120 => 182, // Fee SPT
@@ -1284,7 +1291,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         $sheetPph->getStyle('A' . $pphRow . ':G' . $pphRow)->applyFromArray($totalStyle);
         $sheetPph->getStyle('F' . $pphRow)->getNumberFormat()->setFormatCode($numberFmt);
         $sheetPph->getStyle('A3:G' . $pphRow)->applyFromArray(['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]]);
-        
+
         foreach (range('A', 'G') as $col) {
             $sheetPph->getColumnDimension($col)->setAutoSize(true);
         }

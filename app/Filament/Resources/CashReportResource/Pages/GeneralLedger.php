@@ -344,7 +344,7 @@ class GeneralLedger extends Page
         $cashRows = \Illuminate\Support\Facades\DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7])
+            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
             ->whereBetween('transaction_date', [
                 \Carbon\Carbon::parse($startDate)->startOfDay(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()
