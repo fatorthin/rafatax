@@ -52,6 +52,7 @@ class PayrollResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('payroll_date', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('name'),
                 Tables\Columns\TextColumn::make('payroll_date')
@@ -60,6 +61,21 @@ class PayrollResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('payroll_year')
+                    ->label('Tahun')
+                    ->options(function () {
+                        return \App\Models\Payroll::query()
+                            ->selectRaw('YEAR(payroll_date) as year')
+                            ->distinct()
+                            ->orderBy('year', 'desc')
+                            ->pluck('year', 'year')
+                            ->toArray();
+                    })
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['value'])) {
+                            $query->whereYear('payroll_date', $data['value']);
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('detail')
