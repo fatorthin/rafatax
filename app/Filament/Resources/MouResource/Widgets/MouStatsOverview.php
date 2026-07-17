@@ -37,7 +37,7 @@ class MouStatsOverview extends BaseWidget
         $discountAmount = $mou->discount_amount ?? 0;
         $cancelMouAmount = $mou->cancel_mou_amount ?? 0;
 
-        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid + $discountAmount + $cancelMouAmount);
+        $difference = $totalCostListMou - ($totalCostListInvoicePaid + $discountAmount + $cancelMouAmount);
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
@@ -65,7 +65,7 @@ class MouStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger'),
 
-            Stat::make('Selisih', 'Rp ' . number_format(abs($difference), 0, ',', '.'))
+            Stat::make('Sisa Tagihan', 'Rp ' . number_format(abs($difference), 0, ',', '.'))
                 ->description($difference >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran')
                 ->descriptionIcon($difference >= 0 ? 'heroicon-m-arrow-trending-down' : 'heroicon-m-arrow-trending-up')
                 ->color($difference >= 0 ? 'warning' : 'danger'),
