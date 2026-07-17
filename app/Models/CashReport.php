@@ -26,8 +26,14 @@ class CashReport extends Model
         'transaction_date',
         'sort_order',
         'is_pph23_checked',
-        'tanggal_bukti_potong_pph23'
+        'tanggal_bukti_potong_pph23',
+        'client_id'
     ];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
 
     public function mou()
     {
@@ -110,4 +116,3 @@ class CashReport extends Model
         }
     }
 }
-

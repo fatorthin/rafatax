@@ -33,7 +33,10 @@ class MoU extends Model
         'is_make_case_project',
         'case_project_id',
         'approved_date',
-        'mou_piutang_lama'
+        'mou_piutang_lama',
+        'tgl_discount',
+        'cancel_mou_amount',
+        'tgl_cancel_mou'
     ];
 
     public function client()
