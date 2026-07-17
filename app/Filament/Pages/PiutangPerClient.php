@@ -181,9 +181,16 @@ class PiutangPerClient extends Page implements HasTable
         // 3. Payments (CashReport - Only from 2026-01-01 onwards)
         $cashReports = \App\Models\CashReport::query()
             ->where(function($q) use ($client) {
-                $q->where('client_id', $client->id)
-                  ->orWhereIn('mou_id', function($sub) use ($client) {
+                $q->where('cash_reports.client_id', $client->id)
+                  ->orWhereIn('cash_reports.mou_id', function($sub) use ($client) {
                       $sub->select('id')->from('mous')->where('client_id', $client->id);
+                  })
+                  ->orWhereIn('cash_reports.invoice_id', function($sub) use ($client) {
+                      $sub->select('id')->from('invoices')
+                          ->where('client_id', $client->id)
+                          ->orWhereIn('mou_id', function($sub2) use ($client) {
+                              $sub2->select('id')->from('mous')->where('client_id', $client->id);
+                          });
                   });
             })
             ->whereNull('deleted_at')
