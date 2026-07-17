@@ -397,8 +397,7 @@ class MouResource extends Resource
                 Tables\Columns\TextColumn::make('cancel_mou_amount')
                     ->label('Cancel MoU Amount')
                     ->numeric(locale: 'id')
-                    ->alignEnd()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('sisa_tagihan')
                     ->label('Sisa Tagihan')
                     ->numeric(locale: 'id')

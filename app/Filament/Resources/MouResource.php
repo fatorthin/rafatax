@@ -380,8 +380,7 @@ class MouResource extends Resource
                 Tables\Columns\TextColumn::make('cancel_mou_amount')
                     ->label('Cancel MoU Amount')
                     ->numeric(locale: 'id')
-                    ->alignEnd()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->alignEnd(),
 
             ])
             ->filters([
