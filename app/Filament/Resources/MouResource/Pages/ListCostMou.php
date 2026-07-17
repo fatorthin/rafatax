@@ -263,6 +263,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             $this->makeEditMouAction()->label('Edit'),
             $this->makeAddCostListAction()->label('Add Cost'),
             $this->makeCreateCaseProjectAction(),
+            $this->makeCancelMouAction(),
             Actions\ActionGroup::make([
                 $this->makeCreateInvoiceAction()->label('New Invoice'),
                 $this->makeCreateOldInvoiceAction()->label('Old Invoice'),
@@ -282,6 +283,41 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->button(),
             $this->makeBackAction()->label('Back'),
         ];
+    }
+
+    private function makeCancelMouAction(): Action
+    {
+        return Action::make('cancel_mou')
+            ->label('Cancel MoU')
+            ->icon('heroicon-o-x-circle')
+            ->color('danger')
+            ->form([
+                TextInput::make('cancel_mou_amount')
+                    ->label('Nominal Cancel')
+                    ->numeric()
+                    ->required()
+                    ->prefix('Rp')
+                    ->default(fn() => $this->mou->cancel_mou_amount),
+                DatePicker::make('tgl_cancel_mou')
+                    ->label('Tanggal Cancel')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(fn() => $this->mou->tgl_cancel_mou ?: now()->toDateString()),
+            ])
+            ->action(function (array $data) {
+                $this->mou->update([
+                    'cancel_mou_amount' => $data['cancel_mou_amount'],
+                    'tgl_cancel_mou' => $data['tgl_cancel_mou'],
+                ]);
+
+                \Filament\Notifications\Notification::make()
+                    ->title('Data Cancel MoU berhasil disimpan')
+                    ->success()
+                    ->send();
+
+                $this->redirect(MouResource::getUrl('viewCostList', ['record' => $this->mou]));
+            });
     }
 
     private function makeCreateCaseProjectAction(): Action

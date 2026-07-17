@@ -956,6 +956,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
         return [
             $this->getEditMouAction(),
             $this->getCreateCaseProjectAction(),
+            $this->getCancelMouAction(),
             ActionGroup::make([
                 $this->getCreateCostAction(),
                 $this->getCreateInvoiceAction(),
@@ -976,6 +977,42 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                 ->button(),
             $this->getBackAction(),
         ];
+    }
+
+    private function getCancelMouAction(): Action
+    {
+        return Action::make('cancel_mou')
+            ->label('Cancel MoU')
+            ->icon('heroicon-o-x-circle')
+            ->color('danger')
+            ->visible(fn(): bool => $this->hasPermission('mou.edit'))
+            ->form([
+                TextInput::make('cancel_mou_amount')
+                    ->label('Nominal Cancel')
+                    ->numeric()
+                    ->required()
+                    ->prefix('Rp')
+                    ->default(fn() => $this->mou->cancel_mou_amount),
+                \Filament\Forms\Components\DatePicker::make('tgl_cancel_mou')
+                    ->label('Tanggal Cancel')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->default(fn() => $this->mou->tgl_cancel_mou ?: now()->toDateString()),
+            ])
+            ->action(function (array $data) {
+                $this->mou->update([
+                    'cancel_mou_amount' => $data['cancel_mou_amount'],
+                    'tgl_cancel_mou' => $data['tgl_cancel_mou'],
+                ]);
+
+                Notification::make()
+                    ->title('Data Cancel MoU berhasil disimpan')
+                    ->success()
+                    ->send();
+
+                $this->redirect(MouResource::getUrl('cost-list', ['record' => $this->mou]));
+            });
     }
 
     private function getCreateCaseProjectAction(): Action

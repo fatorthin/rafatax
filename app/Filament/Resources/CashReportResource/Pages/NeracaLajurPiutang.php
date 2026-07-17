@@ -431,6 +431,68 @@ class NeracaLajurPiutang extends Page implements HasTable
         ];
     }
 
+    /**
+     * Sumber 6 — MoU cancellations (cancel_mou_amount > 0 && tgl_cancel_mou jatuh pada bulan berjalan).
+     */
+    private function getMouCancellationForJP(string $startOfMonth, string $endOfMonth): array
+    {
+        $mous = DB::table('mous as m')
+            ->whereNull('m.deleted_at')
+            ->where('m.status', 'approved')
+            ->where('m.cancel_mou_amount', '>', 0)
+            ->whereNotNull('m.tgl_cancel_mou')
+            ->whereBetween('m.tgl_cancel_mou', [$startOfMonth, $endOfMonth])
+            ->select([
+                'm.id',
+                'm.cancel_mou_amount',
+                'm.category_mou_id'
+            ])
+            ->get();
+
+        $map = $this->getPiutangToPendapatanMap();
+
+        $debits = [];
+        $kredits = [];
+
+        foreach ($mous as $mou) {
+            $clCoa = DB::table('cost_list_mous')
+                ->where('mou_id', $mou->id)
+                ->whereNull('deleted_at')
+                ->whereIn('coa_id', array_keys($map))
+                ->value('coa_id');
+
+            if ($clCoa) {
+                $piutangCoaId = $clCoa;
+            } else {
+                $piutangCoaId = match ($mou->category_mou_id) {
+                    1, 2 => 182,
+                    3, 4 => 188,
+                    5 => 183,
+                    6 => 184,
+                    7 => 187,
+                    8 => 186,
+                    default => 188,
+                };
+            }
+
+            $cancelAmount = (float) $mou->cancel_mou_amount;
+
+            // Debits:
+            // 1. AO-208 (Pendapatan Yang Belum Diterima: 175)
+            $debits[175] = ($debits[175] ?? 0) + $cancelAmount;
+
+            // Kredits:
+            // 1. AO-103.x (Piutang: $piutangCoaId)
+            $kredits[$piutangCoaId] = ($kredits[$piutangCoaId] ?? 0) + $cancelAmount;
+        }
+
+        return [
+            'debits' => $debits,
+            'kredits' => $kredits
+        ];
+    }
+
+
     // ──────────────────────────────────────────────────────────────────────────
     // Data untuk laba rugi summary (header)
     // ──────────────────────────────────────────────────────────────────────────
@@ -585,6 +647,15 @@ class NeracaLajurPiutang extends Page implements HasTable
             $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
         }
         foreach ($mouDiscountJP['kredits'] as $coaId => $total) {
+            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
+        }
+
+        // ── Sumber 6: Cancel dari MoU ──
+        $mouCancelJP = $this->getMouCancellationForJP($startOfCurrentMonth, $endOfCurrentMonth);
+        foreach ($mouCancelJP['debits'] as $coaId => $total) {
+            $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
+        }
+        foreach ($mouCancelJP['kredits'] as $coaId => $total) {
             $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
         }
 
@@ -1088,9 +1159,85 @@ class NeracaLajurPiutang extends Page implements HasTable
             $sumRow++;
         }
 
+        // ── Bagian 5: MoU Discounts (DR AO-420 & DR AO-208 / CR AO-103.x & CR AO-401.x) ──
+        $mouDiscountJP = $this->getMouDiscountForJP($startOfMonth, $endOfMonth);
+        $discountDebits = $mouDiscountJP['debits'];
+        $discountKredits = $mouDiscountJP['kredits'];
+
+        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 5: MoU Discounts (Diskon MoU) ───');
+        $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
+        $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
+        $sumRow++;
+
+        $discountTotalDebits = 0;
+        foreach ($discountDebits as $coaId => $total) {
+            $coaRecord = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $coaRecord ? $coaRecord->code : $coaId);
+            $sheetSum->setCellValue('B' . $sumRow, $coaRecord ? $coaRecord->name : '-');
+            $sheetSum->setCellValue('C' . $sumRow, 'MoU Discount');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
+            $sheetSum->setCellValue('F' . $sumRow, '');
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $discountTotalDebits += $total;
+            $sumRow++;
+        }
+
+        $discountTotalKredits = 0;
+        foreach ($discountKredits as $coaId => $total) {
+            $coaRecord = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $coaRecord ? $coaRecord->code : $coaId);
+            $sheetSum->setCellValue('B' . $sumRow, $coaRecord ? $coaRecord->name : '-');
+            $sheetSum->setCellValue('C' . $sumRow, 'MoU Discount');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, '');
+            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $discountTotalKredits += $total;
+            $sumRow++;
+        }
+
+        // ── Bagian 6: MoU Cancellations (DR AO-208 / CR AO-103.x) ──
+        $mouCancelJP = $this->getMouCancellationForJP($startOfMonth, $endOfMonth);
+        $cancelDebits = $mouCancelJP['debits'];
+        $cancelKredits = $mouCancelJP['kredits'];
+
+        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 6: MoU Cancellations (Pembatalan MoU) ───');
+        $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
+        $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
+        $sumRow++;
+
+        $cancelTotalDebits = 0;
+        foreach ($cancelDebits as $coaId => $total) {
+            $coaRecord = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $coaRecord ? $coaRecord->code : $coaId);
+            $sheetSum->setCellValue('B' . $sumRow, $coaRecord ? $coaRecord->name : '-');
+            $sheetSum->setCellValue('C' . $sumRow, 'MoU Cancellation');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
+            $sheetSum->setCellValue('F' . $sumRow, '');
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $cancelTotalDebits += $total;
+            $sumRow++;
+        }
+
+        $cancelTotalKredits = 0;
+        foreach ($cancelKredits as $coaId => $total) {
+            $coaRecord = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $coaRecord ? $coaRecord->code : $coaId);
+            $sheetSum->setCellValue('B' . $sumRow, $coaRecord ? $coaRecord->name : '-');
+            $sheetSum->setCellValue('C' . $sumRow, 'MoU Cancellation');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, '');
+            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $cancelTotalKredits += $total;
+            $sumRow++;
+        }
+
         // Baris Grand Total
-        $jpDebitTotal  = $mouTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2);
-        $jpKreditTotal = $mouTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2);
+        $jpDebitTotal  = $mouTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalDebits + $cancelTotalDebits;
+        $jpKreditTotal = $mouTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalKredits + $cancelTotalKredits;
         $sheetSum->setCellValue('A' . $sumRow, 'TOTAL');
         $sheetSum->mergeCells('A' . $sumRow . ':C' . $sumRow);
         $sheetSum->setCellValue('D' . $sumRow, '');
