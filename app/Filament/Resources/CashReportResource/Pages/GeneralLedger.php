@@ -557,6 +557,74 @@ class GeneralLedger extends Page
             $transactions->push($tCredit401);
         }
 
+        // ── 6. Dari MoU Cancellations ──
+        $mouCancelRows = \Illuminate\Support\Facades\DB::table('mous as m')
+            ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
+            ->whereNull('m.deleted_at')
+            ->where('m.status', 'approved')
+            ->where('m.cancel_mou_amount', '>', 0)
+            ->whereNotNull('m.tgl_cancel_mou')
+            ->whereBetween('m.tgl_cancel_mou', [
+                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                \Carbon\Carbon::parse($endDate)->endOfDay()
+            ])
+            ->select([
+                'm.id',
+                'm.mou_number',
+                'm.cancel_mou_amount',
+                'm.tgl_cancel_mou',
+                'm.category_mou_id',
+                'c.company_name'
+            ])
+            ->get();
+
+        foreach ($mouCancelRows as $row) {
+            $clCoa = \Illuminate\Support\Facades\DB::table('cost_list_mous')
+                ->where('mou_id', $row->id)
+                ->whereNull('deleted_at')
+                ->whereIn('coa_id', array_keys($map))
+                ->value('coa_id');
+
+            if ($clCoa) {
+                $piutangCoaId = $clCoa;
+            } else {
+                $piutangCoaId = match ($row->category_mou_id) {
+                    1, 2 => 182,
+                    3, 4 => 188,
+                    5 => 183,
+                    6 => 184,
+                    7 => 187,
+                    8 => 186,
+                    default => 188,
+                };
+            }
+
+            $cancelAmount = (float) $row->cancel_mou_amount;
+            $desc = "Pembatalan MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
+
+            // 1. Debit AO-208 (Pendapatan Belum Diterima: 175)
+            $tDebit208 = new \stdClass();
+            $tDebit208->coa_id = 175;
+            $tDebit208->transaction_date = $row->tgl_cancel_mou;
+            $tDebit208->description = $desc;
+            $tDebit208->source = 'Jurnal Pendapatan';
+            $tDebit208->display_debit = $cancelAmount;
+            $tDebit208->display_credit = 0;
+            $tDebit208->coa = $coas[175] ?? null;
+            $transactions->push($tDebit208);
+
+            // 2. Kredit AO-103.x (Piutang: $piutangCoaId)
+            $tCredit103 = new \stdClass();
+            $tCredit103->coa_id = $piutangCoaId;
+            $tCredit103->transaction_date = $row->tgl_cancel_mou;
+            $tCredit103->description = $desc;
+            $tCredit103->source = 'Jurnal Pendapatan';
+            $tCredit103->display_debit = 0;
+            $tCredit103->display_credit = $cancelAmount;
+            $tCredit103->coa = $coas[$piutangCoaId] ?? null;
+            $transactions->push($tCredit103);
+        }
+
         return $transactions;
     }
 
