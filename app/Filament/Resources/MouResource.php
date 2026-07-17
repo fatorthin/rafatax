@@ -361,8 +361,9 @@ class MouResource extends Resource
                             ->sum('amount');
 
                         $discountMou = (float) ($record->discount_amount ?? 0);
+                        $cancelMou = (float) ($record->cancel_mou_amount ?? 0);
 
-                        return $totalMou - $totalPaid - $discountMou;
+                        return $totalMou - $totalPaid - $discountMou - $cancelMou;
                     })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_amount')
                     ->label('Total Invoice')

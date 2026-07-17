@@ -162,6 +162,13 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->formatStateUsing(function ($state) {
                                 return number_format((float) $state, 0, ',', '.');
                             }),
+                        TextEntry::make('cancel_mou_amount')
+                            ->label('Cancel MoU Amount')
+                            ->weight('bold')
+                            ->formatStateUsing(function ($state) {
+                                return number_format((float) $state, 0, ',', '.');
+                            })
+                            ->visible(fn($record) => (float) ($record->cancel_mou_amount ?? 0) > 0),
                     ])
                     ->columns(3)
             ]);
