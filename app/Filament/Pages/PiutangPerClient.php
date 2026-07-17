@@ -152,7 +152,7 @@ class PiutangPerClient extends Page implements HasTable
             ];
         }
 
-        // 2. Invoices
+        // 2. Invoices (Only from 2026-01-01 onwards)
         $invoices = \App\Models\Invoice::query()
             ->where(function($q) use ($client) {
                 $q->where('client_id', $client->id)
@@ -160,6 +160,7 @@ class PiutangPerClient extends Page implements HasTable
                       $sub->select('id')->from('mous')->where('client_id', $client->id);
                   });
             })
+            ->where('invoice_date', '>=', '2026-01-01')
             ->with('costListInvoices')
             ->get();
 
@@ -177,7 +178,7 @@ class PiutangPerClient extends Page implements HasTable
             ];
         }
 
-        // 3. Payments (CashReport)
+        // 3. Payments (CashReport - Only from 2026-01-01 onwards)
         $cashReports = \App\Models\CashReport::query()
             ->where(function($q) use ($client) {
                 $q->where('client_id', $client->id)
@@ -186,6 +187,7 @@ class PiutangPerClient extends Page implements HasTable
                   });
             })
             ->whereNull('deleted_at')
+            ->where('transaction_date', '>=', '2026-01-01')
             ->with(['cashReference', 'invoice'])
             ->get();
 
