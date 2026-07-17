@@ -29,9 +29,11 @@ class MouStatsOverview extends BaseWidget
         })
             ->sum('amount');
 
-        $discountAmount = MoU::where('id', $this->mouId)->value('discount_amount') ?? 0;
+        $mou = MoU::find($this->mouId);
+        $discountAmount = $mou->discount_amount ?? 0;
+        $cancelMouAmount = $mou->cancel_mou_amount ?? 0;
 
-        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid + $discountAmount);
+        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid + $discountAmount + $cancelMouAmount);
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
@@ -53,6 +55,11 @@ class MouStatsOverview extends BaseWidget
                 ->description('Total diskon')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
+
+            Stat::make('Cancel MoU Amount', 'Rp ' . number_format($cancelMouAmount, 0, ',', '.'))
+                ->description('Total pembatalan MoU')
+                ->descriptionIcon('heroicon-m-x-circle')
+                ->color('danger'),
 
             Stat::make('Selisih', 'Rp ' . number_format(abs($difference), 0, ',', '.'))
                 ->description($difference >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran')

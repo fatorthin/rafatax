@@ -394,6 +394,11 @@ class MouResource extends Resource
                     ->formatStateUsing(function ($state) {
                         return number_format((float) $state, 0, ',', '.');
                     }),
+                Tables\Columns\TextColumn::make('cancel_mou_amount')
+                    ->label('Cancel MoU Amount')
+                    ->numeric(locale: 'id')
+                    ->alignEnd()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('sisa_tagihan')
                     ->label('Sisa Tagihan')
                     ->numeric(locale: 'id')
