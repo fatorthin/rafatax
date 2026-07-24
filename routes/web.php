@@ -122,6 +122,10 @@ Route::get('/cash-reference/{id}/month-detail', [\App\Http\Controllers\CashRefer
     ->name('cash-reference.month-detail')
     ->middleware('auth');
 
+Route::get('/piutang-per-client/{id}/detail', [\App\Http\Controllers\PiutangDetailController::class, 'show'])
+    ->name('piutang-per-client.detail')
+    ->middleware('auth');
+
 Route::get('/cash-reference/{id}/month-detail/export', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'export'])
     ->name('cash-reference.month-detail.export')
     ->middleware('auth');

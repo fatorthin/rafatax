@@ -135,13 +135,8 @@ class PiutangPerClient extends Page implements HasTable
                     ->label('Lihat Detail')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->modalContent(fn($record) => view('filament.pages.piutang-detail-modal', [
-                        'client' => $record,
-                        'transactions' => $this->getClientTransactions($record),
-                    ]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelAction(false)
-                    ->modalWidth('5xl'),
+                    ->url(fn($record) => route('piutang-per-client.detail', $record))
+                    ->openUrlInNewTab(),
             ]);
     }
 
