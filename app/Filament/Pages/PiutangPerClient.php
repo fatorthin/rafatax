@@ -39,6 +39,7 @@ class PiutangPerClient extends Page implements HasTable
                         FROM cost_list_invoices cli
                         JOIN invoices i ON cli.invoice_id = i.id
                         WHERE (i.client_id = clients.id OR (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
+                        AND i.invoice_date >= \'2026-01-01\'
                         AND i.deleted_at IS NULL
                         AND cli.deleted_at IS NULL
                     ), 0) as total_invoice')
@@ -49,7 +50,14 @@ class PiutangPerClient extends Page implements HasTable
                             (cr.client_id IS NOT NULL AND cr.client_id <> 0 AND cr.client_id = clients.id)
                             OR
                             (cr.mou_id IS NOT NULL AND cr.mou_id <> \'0\' AND cr.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id))
+                            OR
+                            (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id IN (
+                                SELECT id FROM invoices 
+                                WHERE (client_id = clients.id OR (mou_id IS NOT NULL AND mou_id <> 0 AND mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
+                                AND deleted_at IS NULL
+                            ))
                         )
+                        AND cr.transaction_date >= \'2026-01-01\'
                         AND cr.deleted_at IS NULL
                     ), 0) as total_pembayaran')
                     ->selectRaw('(
@@ -60,6 +68,7 @@ class PiutangPerClient extends Page implements HasTable
                             FROM cost_list_invoices cli
                             JOIN invoices i ON cli.invoice_id = i.id
                             WHERE (i.client_id = clients.id OR (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
+                            AND i.invoice_date >= \'2026-01-01\'
                             AND i.deleted_at IS NULL
                             AND cli.deleted_at IS NULL
                         ), 0)
@@ -71,7 +80,14 @@ class PiutangPerClient extends Page implements HasTable
                                 (cr.client_id IS NOT NULL AND cr.client_id <> 0 AND cr.client_id = clients.id)
                                 OR
                                 (cr.mou_id IS NOT NULL AND cr.mou_id <> \'0\' AND cr.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id))
+                                OR
+                                (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id IN (
+                                    SELECT id FROM invoices 
+                                    WHERE (client_id = clients.id OR (mou_id IS NOT NULL AND mou_id <> 0 AND mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
+                                    AND deleted_at IS NULL
+                                ))
                             )
+                            AND cr.transaction_date >= \'2026-01-01\'
                             AND cr.deleted_at IS NULL
                         ), 0)
                     ) as total_piutang')
