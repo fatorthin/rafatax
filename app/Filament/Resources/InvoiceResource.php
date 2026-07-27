@@ -605,9 +605,6 @@ class InvoiceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ])
             ->whereYear('created_at', date('Y'))
             ->latest('created_at');
     }

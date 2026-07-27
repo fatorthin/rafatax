@@ -54,6 +54,7 @@ class ManageInvoices extends ManageRecords
                         ->options([
                             'paid' => 'Paid',
                             'unpaid' => 'Unpaid',
+                            'overdue' => 'Overdue'
                         ])
                         ->placeholder('Semua Status Bayar'),
                 ])
@@ -140,47 +141,63 @@ class ManageInvoices extends ManageRecords
                     \Filament\Forms\Components\Select::make('month')
                         ->label('Bulan (Opsional)')
                         ->options([
-                            '1' => 'Januari', '2' => 'Februari', '3' => 'Maret',
-                            '4' => 'April', '5' => 'Mei', '6' => 'Juni',
-                            '7' => 'Juli', '8' => 'Agustus', '9' => 'September',
-                            '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                            '1' => 'Januari',
+                            '2' => 'Februari',
+                            '3' => 'Maret',
+                            '4' => 'April',
+                            '5' => 'Mei',
+                            '6' => 'Juni',
+                            '7' => 'Juli',
+                            '8' => 'Agustus',
+                            '9' => 'September',
+                            '10' => 'Oktober',
+                            '11' => 'November',
+                            '12' => 'Desember',
                         ])
                         ->placeholder('Semua Bulan'),
                 ])
                 ->action(function (array $data) {
                     $query = \App\Models\Invoice::with(['costListInvoices'])
                         ->whereNotNull('invoice_date');
-                        
+
                     if (!empty($data['year'])) {
                         $query->whereYear('invoice_date', $data['year']);
                     }
                     if (!empty($data['month'])) {
                         $query->whereMonth('invoice_date', $data['month']);
                     }
-                    
+
                     $invoices = $query->get();
-                    
-                    $grouped = $invoices->groupBy(function($invoice) {
+
+                    $grouped = $invoices->groupBy(function ($invoice) {
                         return \Carbon\Carbon::parse($invoice->invoice_date)->format('n');
                     });
-                    
+
                     $monthNames = [
-                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-                        4 => 'April', 5 => 'Mei', 6 => 'Juni',
-                        7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-                        10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                        1 => 'Januari',
+                        2 => 'Februari',
+                        3 => 'Maret',
+                        4 => 'April',
+                        5 => 'Mei',
+                        6 => 'Juni',
+                        7 => 'Juli',
+                        8 => 'Agustus',
+                        9 => 'September',
+                        10 => 'Oktober',
+                        11 => 'November',
+                        12 => 'Desember',
                     ];
-                    
+
                     return response()->streamDownload(function () use ($grouped, $monthNames, $data) {
                         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
                         $sheet = $spreadsheet->getActiveSheet();
                         $sheet->setTitle('Rekap Piutang');
-                        
+
                         $yearTitle = $data['year'] ?? 'Semua Tahun';
                         $sheet->setCellValue('A1', 'Rekap Piutang Bulanan - Tahun ' . $yearTitle);
                         $sheet->mergeCells('A1:D1');
                         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-                        
+
                         $headers = ['Bulan', 'Total Tagihan', 'Total Terbayar (Paid)', 'Total Piutang (Unpaid)'];
                         $col = 'A';
                         foreach ($headers as $header) {
@@ -188,21 +205,21 @@ class ManageInvoices extends ManageRecords
                             $sheet->getStyle($col . '3')->getFont()->setBold(true);
                             $col++;
                         }
-                        
+
                         $row = 4;
                         $grandTotalTagihan = 0;
                         $grandTotalPaid = 0;
                         $grandTotalUnpaid = 0;
-                        
+
                         $monthsToIterate = !empty($data['month']) ? [(int)$data['month']] : range(1, 12);
-                        
+
                         foreach ($monthsToIterate as $m) {
                             $monthInvoices = $grouped->get($m, collect());
-                            
+
                             $totalTagihan = 0;
                             $totalPaid = 0;
                             $totalUnpaid = 0;
-                            
+
                             foreach ($monthInvoices as $inv) {
                                 $amt = $inv->costListInvoices->sum('amount');
                                 $totalTagihan += $amt;
@@ -212,34 +229,34 @@ class ManageInvoices extends ManageRecords
                                     $totalUnpaid += $amt;
                                 }
                             }
-                            
+
                             if ($monthInvoices->isNotEmpty() || !empty($data['month'])) {
                                 $sheet->setCellValue('A' . $row, $monthNames[$m]);
                                 $sheet->setCellValue('B' . $row, $totalTagihan);
                                 $sheet->setCellValue('C' . $row, $totalPaid);
                                 $sheet->setCellValue('D' . $row, $totalUnpaid);
-                                
+
                                 $grandTotalTagihan += $totalTagihan;
                                 $grandTotalPaid += $totalPaid;
                                 $grandTotalUnpaid += $totalUnpaid;
-                                
+
                                 $row++;
                             }
                         }
-                        
+
                         $sheet->setCellValue('A' . $row, 'TOTAL');
                         $sheet->setCellValue('B' . $row, $grandTotalTagihan);
                         $sheet->setCellValue('C' . $row, $grandTotalPaid);
                         $sheet->setCellValue('D' . $row, $grandTotalUnpaid);
                         $sheet->getStyle("A{$row}:D{$row}")->getFont()->setBold(true);
-                        
+
                         foreach (['B', 'C', 'D'] as $col) {
                             $sheet->getStyle($col . '4:' . $col . $row)->getNumberFormat()->setFormatCode('#,##0');
                         }
                         foreach (range('A', 'D') as $col) {
                             $sheet->getColumnDimension($col)->setAutoSize(true);
                         }
-                        
+
                         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
                         $writer->save('php://output');
                     }, 'Rekap_Piutang_Bulanan_' . date('Y-m-d_H-i-s') . '.xlsx');
