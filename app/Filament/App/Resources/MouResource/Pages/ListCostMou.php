@@ -469,6 +469,9 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         return $client?->phone;
                     })
                     ->helperText('Format: 08123456789 atau 628123456789'),
+                Checkbox::make('with_signature')
+                    ->label('Bubuhkan Tanda Tangan')
+                    ->default(true),
             ])
             ->modalHeading('Kirim MoU ke Client via WhatsApp')
             ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
@@ -533,6 +536,7 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                         'costLists' => $costLists,
                         'printMode' => true,
                         'isPdf' => true,
+                        'withSignature' => isset($data['with_signature']) && $data['with_signature'] ? 1 : 0,
                     ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
 
                     // Save to temporary file
