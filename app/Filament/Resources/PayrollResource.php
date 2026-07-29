@@ -3,10 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PayrollResource\Pages;
-use App\Filament\Resources\PayrollResource\RelationManagers;
 use App\Models\Payroll;
+use App\Models\PayrollDetail;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -35,36 +38,36 @@ class PayrollResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('payroll_month')
                             ->label('Bulan')
-                            ->options(collect(range(1, 12))->mapWithKeys(fn($m) => [$m => \Carbon\Carbon::create(null, $m, 1)->translatedFormat('F')])->toArray())
+                            ->options(collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => Carbon::create(null, $m, 1)->translatedFormat('F')])->toArray())
                             ->required()
                             ->dehydrated(false)
                             ->reactive()
-                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?Payroll $record) {
+                            ->afterStateHydrated(function ($state, Set $set, ?Payroll $record) {
                                 if ($record && $record->payroll_date) {
-                                    $set('payroll_month', (int) \Carbon\Carbon::parse($record->payroll_date)->format('m'));
+                                    $set('payroll_month', (int) Carbon::parse($record->payroll_date)->format('m'));
                                 } elseif (empty($state)) {
                                     $set('payroll_month', (int) now()->month);
                                 }
                             })
-                            ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                            ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                 $year = (int) ($get('payroll_year') ?: now()->year);
                                 $month = (int) $state;
                                 $set('payroll_date', sprintf('%04d-%02d-01', $year, $month));
                             }),
                         Forms\Components\Select::make('payroll_year')
                             ->label('Tahun')
-                            ->options(collect(range((int) now()->year, (int) now()->year - 5))->mapWithKeys(fn($y) => [$y => (string) $y])->toArray())
+                            ->options(collect(range((int) now()->year, (int) now()->year - 5))->mapWithKeys(fn ($y) => [$y => (string) $y])->toArray())
                             ->required()
                             ->dehydrated(false)
                             ->reactive()
-                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?Payroll $record) {
+                            ->afterStateHydrated(function ($state, Set $set, ?Payroll $record) {
                                 if ($record && $record->payroll_date) {
-                                    $set('payroll_year', (int) \Carbon\Carbon::parse($record->payroll_date)->format('Y'));
+                                    $set('payroll_year', (int) Carbon::parse($record->payroll_date)->format('Y'));
                                 } elseif (empty($state)) {
                                     $set('payroll_year', (int) now()->year);
                                 }
                             })
-                            ->afterStateUpdated(function ($state, \Filament\Forms\Set $set, \Filament\Forms\Get $get) {
+                            ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                 $month = (int) ($get('payroll_month') ?: now()->month);
                                 $year = (int) $state;
                                 $set('payroll_date', sprintf('%04d-%02d-01', $year, $month));
@@ -72,9 +75,10 @@ class PayrollResource extends Resource
                         Forms\Components\Hidden::make('payroll_date')
                             ->required()
                             ->dehydrated(true)
-                            ->afterStateHydrated(function ($state, \Filament\Forms\Set $set, ?Payroll $record, \Filament\Forms\Get $get) {
+                            ->afterStateHydrated(function ($state, Set $set, ?Payroll $record, Get $get) {
                                 if ($record && $record->payroll_date) {
-                                    $set('payroll_date', \Carbon\Carbon::parse($record->payroll_date)->format('Y-m-01'));
+                                    $set('payroll_date', Carbon::parse($record->payroll_date)->format('Y-m-01'));
+
                                     return;
                                 }
                                 $year = (int) ($get('payroll_year') ?: now()->year);
@@ -98,7 +102,7 @@ class PayrollResource extends Resource
                 Tables\Columns\TextColumn::make('total_payroll')
                     ->label('Total Payroll')
                     ->getStateUsing(function ($record) {
-                        $details = \App\Models\PayrollDetail::where('payroll_id', $record->id)->get();
+                        $details = PayrollDetail::where('payroll_id', $record->id)->get();
                         $total = $details->sum(function ($d) {
                             $bonusLembur = $d->overtime_count * $d->overtime_multiplier;
                             $bonusVisitSolo = $d->visit_solo_count * 10000;
@@ -109,9 +113,10 @@ class PayrollResource extends Resource
 
                             return $d->salary + $d->bonus_position + $d->bonus_competency + $d->bonus_transport + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain - $d->cut_bpjs_kesehatan - $d->cut_bpjs_ketenagakerjaan - $d->cut_lain - $d->cut_hutang - $cutSakit - $cutHalfday - $cutIjin;
                         });
+
                         return $total;
                     })
-                    ->formatStateUsing(fn($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
             ])
@@ -120,7 +125,7 @@ class PayrollResource extends Resource
                 Tables\Filters\SelectFilter::make('payroll_year')
                     ->label('Tahun')
                     ->options(function () {
-                        return \App\Models\Payroll::query()
+                        return Payroll::query()
                             ->selectRaw('YEAR(payroll_date) as year')
                             ->distinct()
                             ->orderBy('year', 'desc')
@@ -128,7 +133,7 @@ class PayrollResource extends Resource
                             ->toArray();
                     })
                     ->query(function (Builder $query, array $data) {
-                        if (!empty($data['value'])) {
+                        if (! empty($data['value'])) {
                             $query->whereYear('payroll_date', $data['value']);
                         }
                     }),
@@ -137,7 +142,7 @@ class PayrollResource extends Resource
                 Tables\Actions\Action::make('detail')
                     ->label('Detail')
                     ->icon('heroicon-o-eye')
-                    ->url(fn($record) => static::getUrl('detail', ['record' => $record]))
+                    ->url(fn ($record) => static::getUrl('detail', ['record' => $record]))
                     ->color('primary'),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\LogsActivity;
 
 class PayrollDetail extends Model
 {
-    use SoftDeletes;
     use LogsActivity;
+    use SoftDeletes;
 
     protected $fillable = [
         'payroll_id',
@@ -31,7 +31,7 @@ class PayrollDetail extends Model
         'bonus_lain',
         'overtime_multiplier',
         'nama_non_staff',
-        'bonus_transport'
+        'bonus_transport',
     ];
 
     public function payroll()

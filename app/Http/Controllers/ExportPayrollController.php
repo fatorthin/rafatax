@@ -22,6 +22,9 @@ class ExportPayrollController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Payroll '.$payroll->name);
 
+        $hasVisitSolo = $details->sum('visit_solo_count') > 0;
+        $hasVisitLuar = $details->sum('visit_luar_solo_count') > 0;
+
         // Header columns
         $headers = [
             'No',
@@ -29,26 +32,41 @@ class ExportPayrollController extends Controller
             'Gaji Pokok',
             'TUNJAB',
             'TUNKOMP',
-            'Tunj. Transport',
             'Sakit',
             'Tengah Hari',
             'Ijin',
             'Lembur',
-            'T. Solo',
-            'T. Luar Solo',
-            'Bonus Lembur',
-            'Bonus Lain',
-            'Pot. BPJS Kes',
-            'Pot. BPJS TK',
-            'Pot. Sakit',
-            'Pot. Tengah Hari',
-            'Pot. Ijin',
-            'Pot. Lain',
-            'Pot. Hutang',
-            'Total Bonus',
-            'Total Pot.',
-            'Total Gaji',
         ];
+
+        if ($hasVisitSolo) {
+            $headers[] = 'T. Solo';
+        }
+        if ($hasVisitLuar) {
+            $headers[] = 'T. Luar Solo';
+        }
+
+        $headers[] = 'T. Transport';
+        $headers[] = 'Bonus Lembur';
+
+        if ($hasVisitSolo) {
+            $headers[] = 'Bonus Visit Solo';
+        }
+        if ($hasVisitLuar) {
+            $headers[] = 'Bonus Visit Luar';
+        }
+
+        $headers[] = 'Bonus Lain';
+        $headers[] = 'Pot. BPJS Kes';
+        $headers[] = 'Pot. BPJS TK';
+        $headers[] = 'Pot. Sakit';
+        $headers[] = 'Pot. Tengah Hari';
+        $headers[] = 'Pot. Ijin';
+        $headers[] = 'Pot. Lain';
+        $headers[] = 'Pot. Hutang';
+        $headers[] = 'Total Bonus';
+        $headers[] = 'Total Pot.';
+        $headers[] = 'Total Gaji';
+
         $col = 1;
         foreach ($headers as $header) {
             $sheet->setCellValue(Coordinate::stringFromColumnIndex($col).'1', $header);
@@ -59,13 +77,14 @@ class ExportPayrollController extends Controller
         $row = 2;
         foreach ($details as $idx => $d) {
             $bonusLembur = $d->overtime_count * $d->overtime_multiplier;
-
+            $bonusVisitSolo = $d->visit_solo_count * 10000;
+            $bonusVisitLuar = $d->visit_luar_solo_count * 15000;
             $cutSakit = $d->sick_leave_count * 0.5 * $d->salary / 25;
             $cutHalfday = $d->halfday_count * 0.5 * $d->salary / 25;
             $cutIjin = $d->leave_count * $d->salary / 25;
-            $totalBonus = $bonusLembur + $d->bonus_lain;
+            $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain;
             $totalPot = $d->cut_bpjs_kesehatan + $d->cut_bpjs_ketenagakerjaan + $d->cut_lain + $d->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-            $totalGaji = $d->salary + $d->bonus_position + $d->bonus_transport + $d->bonus_competency + $totalBonus - $totalPot;
+            $totalGaji = $d->salary + $d->bonus_position + $d->bonus_competency + $d->bonus_transport + $totalBonus - $totalPot;
 
             $values = [
                 $idx + 1,
@@ -77,19 +96,36 @@ class ExportPayrollController extends Controller
                 $d->halfday_count,
                 $d->leave_count,
                 $d->overtime_count,
-                $d->bonus_lain,
-                $d->bonus_transport,
-                $d->cut_bpjs_kesehatan,
-                $d->cut_bpjs_ketenagakerjaan,
-                $cutSakit,
-                $cutHalfday,
-                $cutIjin,
-                $d->cut_lain,
-                $d->cut_hutang,
-                $totalBonus,
-                $totalPot,
-                $totalGaji,
             ];
+
+            if ($hasVisitSolo) {
+                $values[] = $d->visit_solo_count;
+            }
+            if ($hasVisitLuar) {
+                $values[] = $d->visit_luar_solo_count;
+            }
+
+            $values[] = $d->bonus_transport;
+            $values[] = $bonusLembur;
+
+            if ($hasVisitSolo) {
+                $values[] = $bonusVisitSolo;
+            }
+            if ($hasVisitLuar) {
+                $values[] = $bonusVisitLuar;
+            }
+
+            $values[] = $d->bonus_lain;
+            $values[] = $d->cut_bpjs_kesehatan;
+            $values[] = $d->cut_bpjs_ketenagakerjaan;
+            $values[] = $cutSakit;
+            $values[] = $cutHalfday;
+            $values[] = $cutIjin;
+            $values[] = $d->cut_lain;
+            $values[] = $d->cut_hutang;
+            $values[] = $totalBonus;
+            $values[] = $totalPot;
+            $values[] = $totalGaji;
 
             $col = 1;
             foreach ($values as $val) {
@@ -123,16 +159,20 @@ class ExportPayrollController extends Controller
         $detail->load(['staff', 'payroll']);
 
         $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
+        $bonusVisitSolo = $detail->visit_solo_count * 10000;
+        $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
         $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;
         $cutHalfday = $detail->halfday_count * 0.5 * $detail->salary / 25;
         $cutIjin = $detail->leave_count * $detail->salary / 25;
-        $totalBonus = $bonusLembur + $detail->bonus_lain;
+        $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain;
         $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-        $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_transport + $detail->bonus_competency + $totalBonus - $totalPot;
+        $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $detail->bonus_transport + $totalBonus - $totalPot;
 
         $pdf = PDF::loadView('pdf.payslip', [
             'detail' => $detail,
             'bonusLembur' => $bonusLembur,
+            'bonusVisitSolo' => $bonusVisitSolo,
+            'bonusVisitLuar' => $bonusVisitLuar,
             'cutSakit' => $cutSakit,
             'cutHalfday' => $cutHalfday,
             'cutIjin' => $cutIjin,

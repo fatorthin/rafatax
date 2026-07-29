@@ -197,6 +197,18 @@
                                 <td class="right">{{ number_format($detail->bonus_transport, 0, ',', '.') }}</td>
                             </tr>
                         @endif
+                        @if ($bonusVisitSolo > 0)
+                            <tr>
+                                <td>Visit Solo ({{ $detail->visit_solo_count }}x)</td>
+                                <td class="right">{{ number_format($bonusVisitSolo, 0, ',', '.') }}</td>
+                            </tr>
+                        @endif
+                        @if ($bonusVisitLuar > 0)
+                            <tr>
+                                <td>Visit Luar Solo ({{ $detail->visit_luar_solo_count }}x)</td>
+                                <td class="right">{{ number_format($bonusVisitLuar, 0, ',', '.') }}</td>
+                            </tr>
+                        @endif
                         @if ($detail->bonus_lain > 0)
                             <tr>
                                 <td>Bonus Lain</td>
@@ -206,7 +218,7 @@
                         <tr>
                             <td><strong>Total Komp. Gaji</strong></td>
                             <td class="right">
-                                <strong>{{ number_format($detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus, 0, ',', '.') }}</strong>
+                                <strong>{{ number_format($detail->salary + $detail->bonus_position + $detail->bonus_competency + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain + $detail->bonus_transport, 0, ',', '.') }}</strong>
                             </td>
                         </tr>
                     </tbody>

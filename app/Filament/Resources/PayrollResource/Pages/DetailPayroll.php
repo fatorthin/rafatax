@@ -368,6 +368,34 @@ class DetailPayroll extends Page implements HasTable
                     ->alignEnd()
                     ->sortable(),
 
+                TextColumn::make('visit_solo_count')
+                    ->label('T. Solo')
+                    ->alignCenter()
+                    ->sortable()
+                    ->visible(fn () => PayrollDetail::where('payroll_id', $this->record->id)->sum('visit_solo_count') > 0),
+
+                TextColumn::make('visit_luar_solo_count')
+                    ->label('T. Luar Solo')
+                    ->alignCenter()
+                    ->sortable()
+                    ->visible(fn () => PayrollDetail::where('payroll_id', $this->record->id)->sum('visit_luar_solo_count') > 0),
+
+                TextColumn::make('bonus_visit_solo')
+                    ->label('Bonus Visit Solo')
+                    ->getStateUsing(fn ($record) => $record->visit_solo_count * 10000)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->alignEnd()
+                    ->sortable()
+                    ->visible(fn () => PayrollDetail::where('payroll_id', $this->record->id)->sum('visit_solo_count') > 0),
+
+                TextColumn::make('bonus_visit_luar')
+                    ->label('Bonus Visit Luar')
+                    ->getStateUsing(fn ($record) => $record->visit_luar_solo_count * 15000)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->alignEnd()
+                    ->sortable()
+                    ->visible(fn () => PayrollDetail::where('payroll_id', $this->record->id)->sum('visit_luar_solo_count') > 0),
+
                 TextInputColumn::make('bonus_transport')
                     ->label('Tunjangan Transport')
                     ->alignEnd()
@@ -517,16 +545,6 @@ class DetailPayroll extends Page implements HasTable
                                     })
                                     ->default(0)
                                     ->required(),
-                                TextInput::make('bonus_transport')
-                                    ->label('Tunjangan Transportasi')
-                                    ->prefix('Rp')
-                                    ->numeric()
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Set $set, Get $get) {
-                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
-                                    })
-                                    ->default(0)
-                                    ->required(),
                                 TextInput::make('bonus_lain')
                                     ->label('Bonus Lain')
                                     ->numeric()
@@ -582,6 +600,26 @@ class DetailPayroll extends Page implements HasTable
                                     ->required(),
                                 TextInput::make('cuti_count')
                                     ->label('Cuti Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('visit_solo_count')
+                                    ->label('Visit Solo Count')
+                                    ->numeric()
+                                    ->suffix('Kali')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('visit_luar_solo_count')
+                                    ->label('Visit Luar Solo Count')
                                     ->numeric()
                                     ->suffix('Kali')
                                     ->live(onBlur: true)
