@@ -191,16 +191,10 @@
                                 <td class="right">{{ number_format($bonusLembur, 0, ',', '.') }}</td>
                             </tr>
                         @endif
-                        @if ($bonusVisitSolo > 0)
+                        @if ($detail->bonus_transport > 0)
                             <tr>
-                                <td>Visit Solo ({{ $detail->visit_solo_count }}x)</td>
-                                <td class="right">{{ number_format($bonusVisitSolo, 0, ',', '.') }}</td>
-                            </tr>
-                        @endif
-                        @if ($bonusVisitLuar > 0)
-                            <tr>
-                                <td>Visit Luar Solo ({{ $detail->visit_luar_solo_count }}x)</td>
-                                <td class="right">{{ number_format($bonusVisitLuar, 0, ',', '.') }}</td>
+                                <td>Tunjangan Transport</td>
+                                <td class="right">{{ number_format($detail->bonus_transport, 0, ',', '.') }}</td>
                             </tr>
                         @endif
                         @if ($detail->bonus_lain > 0)
@@ -289,7 +283,8 @@
             <td class="center" style="width: 40%;">
                 <strong>Mengetahui</strong><br>
                 <strong>Direktur</strong><br>
-                <img src="{{ public_path('images/ttd_antin.png') }}" style="width: 120px; height: auto; margin: 5px 0;" alt="Tanda Tangan"><br>
+                <img src="{{ public_path('images/ttd_antin.png') }}" style="width: 120px; height: auto; margin: 5px 0;"
+                    alt="Tanda Tangan"><br>
                 <strong>Antin Okfitasari</strong>
             </td>
         </tr>
