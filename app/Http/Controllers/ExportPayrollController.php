@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Payroll;
 use App\Models\PayrollDetail;
-use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportPayrollController extends Controller
@@ -19,9 +18,9 @@ class ExportPayrollController extends Controller
             ->where('payroll_id', $payroll->id)
             ->get();
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Payroll ' . $payroll->name);
+        $sheet->setTitle('Payroll '.$payroll->name);
 
         // Header columns
         $headers = [
@@ -30,6 +29,7 @@ class ExportPayrollController extends Controller
             'Gaji Pokok',
             'TUNJAB',
             'TUNKOMP',
+            'Tunj. Transport',
             'Sakit',
             'Tengah Hari',
             'Ijin',
@@ -37,8 +37,6 @@ class ExportPayrollController extends Controller
             'T. Solo',
             'T. Luar Solo',
             'Bonus Lembur',
-            'Bonus Visit Solo',
-            'Bonus Visit Luar',
             'Bonus Lain',
             'Pot. BPJS Kes',
             'Pot. BPJS TK',
@@ -49,11 +47,11 @@ class ExportPayrollController extends Controller
             'Pot. Hutang',
             'Total Bonus',
             'Total Pot.',
-            'Total Gaji'
+            'Total Gaji',
         ];
         $col = 1;
         foreach ($headers as $header) {
-            $sheet->setCellValue(Coordinate::stringFromColumnIndex($col) . '1', $header);
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($col).'1', $header);
             $col++;
         }
 
@@ -61,14 +59,13 @@ class ExportPayrollController extends Controller
         $row = 2;
         foreach ($details as $idx => $d) {
             $bonusLembur = $d->overtime_count * $d->overtime_multiplier;
-            $bonusVisitSolo = $d->visit_solo_count * 10000;
-            $bonusVisitLuar = $d->visit_luar_solo_count * 15000;
+
             $cutSakit = $d->sick_leave_count * 0.5 * $d->salary / 25;
             $cutHalfday = $d->halfday_count * 0.5 * $d->salary / 25;
             $cutIjin = $d->leave_count * $d->salary / 25;
-            $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain;
+            $totalBonus = $bonusLembur + $d->bonus_lain;
             $totalPot = $d->cut_bpjs_kesehatan + $d->cut_bpjs_ketenagakerjaan + $d->cut_lain + $d->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-            $totalGaji = $d->salary + $d->bonus_position + $d->bonus_competency + $totalBonus - $totalPot;
+            $totalGaji = $d->salary + $d->bonus_position + $d->bonus_transport + $d->bonus_competency + $totalBonus - $totalPot;
 
             $values = [
                 $idx + 1,
@@ -80,12 +77,8 @@ class ExportPayrollController extends Controller
                 $d->halfday_count,
                 $d->leave_count,
                 $d->overtime_count,
-                $d->visit_solo_count,
-                $d->visit_luar_solo_count,
-                $bonusLembur,
-                $bonusVisitSolo,
-                $bonusVisitLuar,
                 $d->bonus_lain,
+                $d->bonus_transport,
                 $d->cut_bpjs_kesehatan,
                 $d->cut_bpjs_ketenagakerjaan,
                 $cutSakit,
@@ -100,7 +93,7 @@ class ExportPayrollController extends Controller
 
             $col = 1;
             foreach ($values as $val) {
-                $sheet->setCellValue(Coordinate::stringFromColumnIndex($col) . $row, $val);
+                $sheet->setCellValue(Coordinate::stringFromColumnIndex($col).$row, $val);
                 $col++;
             }
 
@@ -113,14 +106,14 @@ class ExportPayrollController extends Controller
             $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
 
-        $fileName = 'payroll_' . str_replace([' ', '/'], '_', $payroll->name) . '.xlsx';
+        $fileName = 'payroll_'.str_replace([' ', '/'], '_', $payroll->name).'.xlsx';
 
         return new StreamedResponse(function () use ($spreadsheet) {
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
             'Cache-Control' => 'max-age=0',
         ]);
     }
@@ -130,21 +123,16 @@ class ExportPayrollController extends Controller
         $detail->load(['staff', 'payroll']);
 
         $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
-        $bonusVisitSolo = $detail->visit_solo_count * 10000;
-        $bonusVisitLuar = $detail->visit_luar_solo_count * 15000;
         $cutSakit = $detail->sick_leave_count * 0.5 * $detail->salary / 25;
         $cutHalfday = $detail->halfday_count * 0.5 * $detail->salary / 25;
         $cutIjin = $detail->leave_count * $detail->salary / 25;
-        $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain;
+        $totalBonus = $bonusLembur + $detail->bonus_lain;
         $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-        $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus - $totalPot;
-
+        $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_transport + $detail->bonus_competency + $totalBonus - $totalPot;
 
         $pdf = PDF::loadView('pdf.payslip', [
             'detail' => $detail,
             'bonusLembur' => $bonusLembur,
-            'bonusVisitSolo' => $bonusVisitSolo,
-            'bonusVisitLuar' => $bonusVisitLuar,
             'cutSakit' => $cutSakit,
             'cutHalfday' => $cutHalfday,
             'cutIjin' => $cutIjin,
@@ -153,6 +141,6 @@ class ExportPayrollController extends Controller
             'totalGaji' => $totalGaji,
         ])->setPaper('a5', 'portrait');
 
-        return $pdf->download('slip_gaji_' . str_replace(' ', '_', $detail->staff_id ? optional($detail->staff)->name : $detail->nama_non_staff) . '_' . str_replace([' ', '/'], '_', optional($detail->payroll)->name) . '.pdf');
+        return $pdf->download('slip_gaji_'.str_replace(' ', '_', $detail->staff_id ? optional($detail->staff)->name : $detail->nama_non_staff).'_'.str_replace([' ', '/'], '_', optional($detail->payroll)->name).'.pdf');
     }
 }

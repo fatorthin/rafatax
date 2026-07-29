@@ -1651,8 +1651,13 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $data = $this->getTableData();
         $row  = 5;
+        $ao103Row = null;
 
         foreach ($data as $item) {
+            if ($item->code === 'AO-103') {
+                $ao103Row = $row;
+            }
+
             $totalDebit  = $item->neraca_awal_debit + $item->kas_besar_debit + $item->kas_kecil_debit +
                 $item->bank_debit + $item->jurnal_pendapatan_debit + $item->jurnal_umum_debit;
             $totalKredit = $item->neraca_awal_kredit + $item->kas_besar_kredit + $item->kas_kecil_kredit +
@@ -1704,8 +1709,13 @@ class NeracaLajurPiutang extends Page implements HasTable
         $sheet->setCellValue('A' . $totalRow, 'Total');
         $sheet->getStyle('A' . $totalRow . ':W' . $totalRow)->applyFromArray($headerStyle);
         $columns = range('B', 'W');
+        $movementCols = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'P', 'Q'];
         foreach ($columns as $col) {
-            $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
+            if ($ao103Row && in_array($col, $movementCols, true)) {
+                $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ') - ' . $col . $ao103Row);
+            } else {
+                $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
+            }
         }
         $sheet->getStyle('A5:W' . ($totalRow - 1))->applyFromArray([
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],

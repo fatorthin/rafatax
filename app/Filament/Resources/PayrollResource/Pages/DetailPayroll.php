@@ -2,32 +2,34 @@
 
 namespace App\Filament\Resources\PayrollResource\Pages;
 
-use Carbon\Carbon;
-use App\Models\Staff;
-use Filament\Actions;
-use App\Models\Payroll;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
-use Filament\Tables\Table;
+use App\Filament\Resources\PayrollResource;
 use App\Jobs\SendPayslipPdf;
+use App\Models\Payroll;
 use App\Models\PayrollDetail;
+use App\Models\Staff;
 use App\Models\StaffAttendance;
 use App\Models\StaffCompetency;
-use Filament\Infolists\Infolist;
-use Filament\Resources\Pages\Page;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Filament\Actions;
 use Filament\Forms\Components\Fieldset;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Infolists\Components\Section;
-use Filament\Tables\Enums\ActionsPosition;
-use App\Filament\Resources\PayrollResource;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\Page;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Columns\Summarizers\Summarizer;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Columns\Summarizers\Summarizer;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\ActionsPosition;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class DetailPayroll extends Page implements HasTable
 {
@@ -41,7 +43,7 @@ class DetailPayroll extends Page implements HasTable
 
     public function getTitle(): string
     {
-        return 'Detail Payroll - ' . $this->record->name;
+        return 'Detail Payroll - '.$this->record->name;
     }
 
     /**
@@ -54,6 +56,7 @@ class DetailPayroll extends Page implements HasTable
             if (is_array($data)) {
                 return $data[$key] ?? 0;
             }
+
             // Untuk Get object, gunakan callable
             return $data($key) ?? 0;
         };
@@ -78,6 +81,7 @@ class DetailPayroll extends Page implements HasTable
         $bonusLembur = $overtimeCount * $overtimeMultiplier;
         $bonusVisitSolo = $visitSoloCount * 10000;
         $bonusVisitLuar = $visitLuarSoloCount * 15000;
+        $bonusTransport = (int) $getValue('bonus_transport');
 
         // Hitung potongan
         $cutSakit = $sickLeaveCount * 0.5 * $salary / 25;
@@ -85,7 +89,7 @@ class DetailPayroll extends Page implements HasTable
         $cutIjin = $leaveCount * $salary / 25;
 
         // Total
-        $total = $salary + $bonusPosition + $bonusCompetency + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $bonusLain - $cutBpjsKesehatan - $cutBpjsKetenagakerjaan - $cutLain - $cutHutang - $cutSakit - $cutHalfday - $cutIjin;
+        $total = $salary + $bonusPosition + $bonusCompetency + $bonusTransport + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $bonusLain - $cutBpjsKesehatan - $cutBpjsKetenagakerjaan - $cutLain - $cutHutang - $cutSakit - $cutHalfday - $cutIjin;
 
         return $total;
     }
@@ -95,7 +99,7 @@ class DetailPayroll extends Page implements HasTable
      */
     public static function formatCurrency($value)
     {
-        return 'Rp ' . number_format((int) $value, 0, ',', '.');
+        return 'Rp '.number_format((int) $value, 0, ',', '.');
     }
 
     public function infolist(Infolist $infolist): Infolist
@@ -110,16 +114,16 @@ class DetailPayroll extends Page implements HasTable
                         TextEntry::make('created_at')->label('Dibuat')->dateTime('d-m-Y H:i'),
                         TextEntry::make('total_sick')
                             ->label('Total Sakit')
-                            ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('sick_leave_count')),
+                            ->state(fn () => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('sick_leave_count')),
                         TextEntry::make('total_halfday')
                             ->label('Total Halfday')
-                            ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('halfday_count')),
+                            ->state(fn () => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('halfday_count')),
                         TextEntry::make('total_leave')
                             ->label('Total Ijin/Alfa')
-                            ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('leave_count')),
+                            ->state(fn () => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('leave_count')),
                         TextEntry::make('total_cuti')
                             ->label('Total Cuti')
-                            ->state(fn() => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('cuti_count')),
+                            ->state(fn () => (int) PayrollDetail::where('payroll_id', $this->record->id)->sum('cuti_count')),
                         TextEntry::make('grand_total_salary')
                             ->label('Total Gaji Dibayar')
                             ->state(function () {
@@ -131,11 +135,13 @@ class DetailPayroll extends Page implements HasTable
                                     $cutSakit = $d->sick_leave_count * 0.5 * $d->salary / 25;
                                     $cutHalfday = $d->halfday_count * 0.5 * $d->salary / 25;
                                     $cutIjin = $d->leave_count * $d->salary / 25;
+
                                     return $d->salary + $d->bonus_position + $d->bonus_competency + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain - $d->cut_bpjs_kesehatan - $d->cut_bpjs_ketenagakerjaan - $d->cut_lain - $d->cut_hutang - $cutSakit - $cutHalfday - $cutIjin;
                                 });
-                                return 'Rp ' . number_format($sum, 0, ',', '.');
+
+                                return 'Rp '.number_format($sum, 0, ',', '.');
                             }),
-                    ])->columns(3)
+                    ])->columns(3),
             ]);
     }
 
@@ -187,7 +193,7 @@ class DetailPayroll extends Page implements HasTable
                 ->label('Export Excel')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->url(fn() => route('exports.payroll.excel', ['payroll' => $this->record->id]))
+                ->url(fn () => route('exports.payroll.excel', ['payroll' => $this->record->id]))
                 ->openUrlInNewTab(false),
             Actions\Action::make('cut_off')
                 ->label('Cut Off Payroll')
@@ -277,6 +283,7 @@ class DetailPayroll extends Page implements HasTable
                             ->title('Tidak ada data untuk dikirim')
                             ->warning()
                             ->send();
+
                         return;
                     }
 
@@ -301,31 +308,31 @@ class DetailPayroll extends Page implements HasTable
             ->columns([
                 TextColumn::make('index')
                     ->label('No')
-                    ->state(fn($record, $rowLoop) => $rowLoop->iteration)
+                    ->state(fn ($record, $rowLoop) => $rowLoop->iteration)
                     ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('staff.name')
                     ->label('Nama Staff')
-                    ->getStateUsing(fn($record) => $record->staff_id ? $record->staff->name : $record->nama_non_staff)
+                    ->getStateUsing(fn ($record) => $record->staff_id ? $record->staff->name : $record->nama_non_staff)
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('salary')
                     ->label('Gaji Pokok')
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('bonus_position')
                     ->label('TUNJAB')
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('bonus_competency')
                     ->label('TUNKOMP')
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
@@ -354,35 +361,17 @@ class DetailPayroll extends Page implements HasTable
                     ->alignCenter()
                     ->sortable(),
 
-                TextColumn::make('visit_solo_count')
-                    ->label('T. Solo')
-                    ->alignCenter()
-                    ->sortable(),
-
-                TextColumn::make('visit_luar_solo_count')
-                    ->label('T. Luar Solo')
-                    ->alignCenter()
-                    ->sortable(),
-
                 TextColumn::make('bonus_lembur')
                     ->label('Bonus Lembur')
-                    ->getStateUsing(fn($record) => $record->overtime_count * $record->overtime_multiplier)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => $record->overtime_count * $record->overtime_multiplier)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
-                TextColumn::make('bonus_visit_solo')
-                    ->label('Bonus Visit Solo')
-                    ->getStateUsing(fn($record) => $record->visit_solo_count * 10000)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                TextInputColumn::make('bonus_transport')
+                    ->label('Tunjangan Transport')
                     ->alignEnd()
-                    ->sortable(),
-
-                TextColumn::make('bonus_visit_luar_solo')
-                    ->label('Bonus Visit Luar Solo')
-                    ->getStateUsing(fn($record) => $record->visit_luar_solo_count * 15000)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
-                    ->alignEnd()
+                    ->rules(['numeric'])
                     ->sortable(),
 
                 TextInputColumn::make('bonus_lain')
@@ -405,22 +394,22 @@ class DetailPayroll extends Page implements HasTable
 
                 TextColumn::make('cut_sakit')
                     ->label('Pot. Sakit')
-                    ->getStateUsing(fn($record) => $record->sick_leave_count * 0.5 * $record->salary / 25)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => $record->sick_leave_count * 0.5 * $record->salary / 25)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('cut_tengah_hari')
                     ->label('Pot. Tengah Hari')
-                    ->getStateUsing(fn($record) => $record->halfday_count * 0.5 * $record->salary / 25)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => $record->halfday_count * 0.5 * $record->salary / 25)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('cut_ijin')
                     ->label('Pot. Ijin')
-                    ->getStateUsing(fn($record) => $record->leave_count * $record->salary / 25)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => $record->leave_count * $record->salary / 25)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
@@ -438,22 +427,22 @@ class DetailPayroll extends Page implements HasTable
 
                 TextColumn::make('total_bonus')
                     ->label('Total Bonus')
-                    ->getStateUsing(fn($record) => ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain)
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain + $record->bonus_transport)
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('total_cut')
                     ->label('Total Pot.')
-                    ->getStateUsing(fn($record) => $record->cut_bpjs_kesehatan + $record->cut_bpjs_ketenagakerjaan + $record->cut_lain + $record->cut_hutang + ($record->sick_leave_count * 0.5 * $record->salary / 25) + ($record->halfday_count * 0.5 * $record->salary / 25) + ($record->leave_count * $record->salary / 25))
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => $record->cut_bpjs_kesehatan + $record->cut_bpjs_ketenagakerjaan + $record->cut_lain + $record->cut_hutang + ($record->sick_leave_count * 0.5 * $record->salary / 25) + ($record->halfday_count * 0.5 * $record->salary / 25) + ($record->leave_count * $record->salary / 25))
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
 
                 TextColumn::make('total_salary')
                     ->label('Total Salary')
-                    ->getStateUsing(fn($record) => $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25))
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->getStateUsing(fn ($record) => $record->salary + $record->bonus_position + $record->bonus_competency + $record->bonus_transport + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25))
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable()
                     ->summarize(
@@ -462,24 +451,26 @@ class DetailPayroll extends Page implements HasTable
                             ->using(function ($query) {
                                 $records = $query->get();
                                 $total = $records->sum(function ($record) {
-                                    return $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
+                                    return $record->salary + $record->bonus_position + $record->bonus_competency + $record->bonus_transport + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
                                 });
-                                return 'Rp ' . number_format($total, 0, ',', '.');
+
+                                return 'Rp '.number_format($total, 0, ',', '.');
                             })
                     ),
             ])
             ->paginated(false)
             ->striped()
             ->actions([
-                \Filament\Tables\Actions\DeleteAction::make(),
-                \Filament\Tables\Actions\Action::make('edit')
+                DeleteAction::make(),
+                Action::make('edit')
                     ->label('Edit')
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->fillForm(fn($record) => [
+                    ->fillForm(fn ($record) => [
                         'salary' => $record->salary,
                         'bonus_position' => $record->bonus_position,
                         'bonus_competency' => $record->bonus_competency,
+                        'bonus_transport' => $record->bonus_transport,
                         'overtime_count' => $record->overtime_count,
                         'visit_solo_count' => $record->visit_solo_count,
                         'visit_luar_solo_count' => $record->visit_luar_solo_count,
@@ -518,6 +509,16 @@ class DetailPayroll extends Page implements HasTable
                                     ->required(),
                                 TextInput::make('bonus_competency')
                                     ->label('Bonus Competency')
+                                    ->prefix('Rp')
+                                    ->numeric()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Set $set, Get $get) {
+                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                                    })
+                                    ->default(0)
+                                    ->required(),
+                                TextInput::make('bonus_transport')
+                                    ->label('Tunjangan Transportasi')
                                     ->prefix('Rp')
                                     ->numeric()
                                     ->live(onBlur: true)
@@ -589,26 +590,6 @@ class DetailPayroll extends Page implements HasTable
                                     })
                                     ->default(0)
                                     ->required(),
-                                TextInput::make('visit_solo_count')
-                                    ->label('Visit Solo Count')
-                                    ->numeric()
-                                    ->suffix('Kali')
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Set $set, Get $get) {
-                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
-                                    })
-                                    ->default(0)
-                                    ->required(),
-                                TextInput::make('visit_luar_solo_count')
-                                    ->label('Visit Luar Solo Count')
-                                    ->numeric()
-                                    ->suffix('Kali')
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Set $set, Get $get) {
-                                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
-                                    })
-                                    ->default(0)
-                                    ->required(),
                             ]),
                         Fieldset::make('Potongan Lain')
                             ->schema([
@@ -663,7 +644,7 @@ class DetailPayroll extends Page implements HasTable
                             }),
                     ])
 
-                    ->modalHeading(fn($record) => "Edit Payroll Gaji - " . ($record->staff_id ? $record->staff->name : $record->nama_non_staff))
+                    ->modalHeading(fn ($record) => 'Edit Payroll Gaji - '.($record->staff_id ? $record->staff->name : $record->nama_non_staff))
                     ->modalSubmitActionLabel('Simpan')
                     ->action(function ($record, array $data) {
                         $record->update($data);
@@ -675,30 +656,30 @@ class DetailPayroll extends Page implements HasTable
                             ->send();
                     }),
 
-                \Filament\Tables\Actions\Action::make('slip_pdf')
+                Action::make('slip_pdf')
                     ->label('Slip PDF')
                     ->icon('heroicon-o-document-text')
-                    ->url(fn($record) => route('exports.payroll.payslip', ['detail' => $record->id]))
+                    ->url(fn ($record) => route('exports.payroll.payslip', ['detail' => $record->id]))
                     ->openUrlInNewTab(false),
 
-                \Filament\Tables\Actions\Action::make('send_whatsapp_pdf')
+                Action::make('send_whatsapp_pdf')
                     ->label('Kirim PDF ke WA')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('info')
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Slip Gaji PDF via WhatsApp')
-                    ->modalDescription(fn($record) => "Apakah Anda yakin ingin mengirim slip gaji PDF untuk " . ($record->staff_id ? $record->staff->name : $record->nama_non_staff) . " ke nomor " . ($record->staff_id ? $record->staff->phone : $record->no_wa_non_staff) . "?")
+                    ->modalDescription(fn ($record) => 'Apakah Anda yakin ingin mengirim slip gaji PDF untuk '.($record->staff_id ? $record->staff->name : $record->nama_non_staff).' ke nomor '.($record->staff_id ? $record->staff->phone : $record->no_wa_non_staff).'?')
                     ->modalSubmitActionLabel('Kirim PDF')
                     ->action(function ($record) {
                         SendPayslipPdf::dispatch($record->id);
 
                         Notification::make()
                             ->title('Pengiriman Dijadwalkan')
-                            ->body("Slip gaji PDF untuk " . ($record->staff_id ? $record->staff->name : $record->nama_non_staff) . " akan dikirim via WhatsApp di background.")
+                            ->body('Slip gaji PDF untuk '.($record->staff_id ? $record->staff->name : $record->nama_non_staff).' akan dikirim via WhatsApp di background.')
                             ->success()
                             ->send();
                     })
-                    ->visible(fn($record) => !empty($record->staff_id ? $record->staff->phone : $record->no_wa_non_staff)),
+                    ->visible(fn ($record) => ! empty($record->staff_id ? $record->staff->phone : $record->no_wa_non_staff)),
             ], position: ActionsPosition::BeforeCells);
     }
 }

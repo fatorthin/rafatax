@@ -54,20 +54,25 @@
                 foreach ($data as $row) {
                     $totalNeracaAwalDebit += $row->neraca_awal_debit;
                     $totalNeracaAwalKredit += $row->neraca_awal_kredit;
-                    $totalKasBesarDebit += $row->kas_besar_debit;
-                    $totalKasBesarKredit += $row->kas_besar_kredit;
-                    $totalKasKecilDebit += $row->kas_kecil_debit;
-                    $totalKasKecilKredit += $row->kas_kecil_kredit;
-                    $totalBankDebit += $row->bank_debit;
-                    $totalBankKredit += $row->bank_kredit;
-                    $totalJurnalPendapatanDebit += $row->jurnal_pendapatan_debit;
-                    $totalJurnalPendapatanKredit += $row->jurnal_pendapatan_kredit;
-                    $totalJurnalUmumDebit += $row->jurnal_umum_debit;
-                    $totalJurnalUmumKredit += $row->jurnal_umum_kredit;
-                    $totalAJEDebit += $row->aje_debit;
-                    $totalAJEKredit += $row->aje_kredit;
-                    $totalNeracaAwalBulanDepanDebit += $row->neraca_awal_bulan_depan_debit;
-                    $totalNeracaAwalBulanDepanKredit += $row->neraca_awal_bulan_depan_kredit;
+
+                    $isMainRow = ($row->code === 'AO-103');
+
+                    if (! $isMainRow) {
+                        $totalKasBesarDebit += $row->kas_besar_debit;
+                        $totalKasBesarKredit += $row->kas_besar_kredit;
+                        $totalKasKecilDebit += $row->kas_kecil_debit;
+                        $totalKasKecilKredit += $row->kas_kecil_kredit;
+                        $totalBankDebit += $row->bank_debit;
+                        $totalBankKredit += $row->bank_kredit;
+                        $totalJurnalPendapatanDebit += $row->jurnal_pendapatan_debit;
+                        $totalJurnalPendapatanKredit += $row->jurnal_pendapatan_kredit;
+                        $totalJurnalUmumDebit += $row->jurnal_umum_debit;
+                        $totalJurnalUmumKredit += $row->jurnal_umum_kredit;
+                        $totalAJEDebit += $row->aje_debit;
+                        $totalAJEKredit += $row->aje_kredit;
+                        $totalNeracaAwalBulanDepanDebit += $row->neraca_awal_bulan_depan_debit;
+                        $totalNeracaAwalBulanDepanKredit += $row->neraca_awal_bulan_depan_kredit;
+                    }
 
                     $totalDebit =
                         $row->neraca_awal_debit +
@@ -87,28 +92,61 @@
                     $selisihSebelumAJE = $totalDebit - $totalKredit;
                     $neracaSebelumAJEDebit = $selisihSebelumAJE > 0 ? $selisihSebelumAJE : 0;
                     $neracaSebelumAJEKredit = $selisihSebelumAJE < 0 ? abs($selisihSebelumAJE) : 0;
-                    $totalNeracaSebelumAJEDebit += $neracaSebelumAJEDebit;
-                    $totalNeracaSebelumAJEKredit += $neracaSebelumAJEKredit;
 
-                    $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
-                    $neracaSetelahAJEDebit = $selisihSetelahAJE > 0 ? $selisihSetelahAJE : 0;
-                    $neracaSetelahAJEKredit = $selisihSetelahAJE < 0 ? abs($selisihSetelahAJE) : 0;
-                    $totalNeracaSetelahAJEDebit += $neracaSetelahAJEDebit;
-                    $totalNeracaSetelahAJEKredit += $neracaSetelahAJEKredit;
+                    // Grand total accumulator for Neraca Sebelum/Setelah AJE:
+                    // For main row (AO-103), use only its own neraca_awal to avoid double counting movements from subRows
+                    if ($isMainRow) {
+                        $selisihGT = $row->neraca_awal_debit - $row->neraca_awal_kredit;
+                        $nsaDebitGT = $selisihGT > 0 ? $selisihGT : 0;
+                        $nsaKreditGT = $selisihGT < 0 ? abs($selisihGT) : 0;
 
-                    $showInNeraca = preg_match(
-                        '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
-                        $row->code,
-                    );
-                    $totalNeracaDebit += $showInNeraca ? $neracaSetelahAJEDebit : 0;
-                    $totalNeracaKredit += $showInNeraca ? $neracaSetelahAJEKredit : 0;
+                        $totalNeracaSebelumAJEDebit += $nsaDebitGT;
+                        $totalNeracaSebelumAJEKredit += $nsaKreditGT;
 
-                    $showInLabaRugi = preg_match(
-                        '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
-                        $row->code,
-                    );
-                    $totalLabaRugiDebit += $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
-                    $totalLabaRugiKredit += $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
+                        $selisihSetelahAJEGT = $selisihGT + ($row->aje_debit - $row->aje_kredit);
+                        $nstDebitGT = $selisihSetelahAJEGT > 0 ? $selisihSetelahAJEGT : 0;
+                        $nstKreditGT = $selisihSetelahAJEGT < 0 ? abs($selisihSetelahAJEGT) : 0;
+
+                        $totalNeracaSetelahAJEDebit += $nstDebitGT;
+                        $totalNeracaSetelahAJEKredit += $nstKreditGT;
+
+                        $showInNeraca = preg_match(
+                            '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
+                            $row->code,
+                        );
+                        $totalNeracaDebit += $showInNeraca ? $nstDebitGT : 0;
+                        $totalNeracaKredit += $showInNeraca ? $nstKreditGT : 0;
+
+                        $showInLabaRugi = preg_match(
+                            '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
+                            $row->code,
+                        );
+                        $totalLabaRugiDebit += $showInLabaRugi ? $nstDebitGT : 0;
+                        $totalLabaRugiKredit += $showInLabaRugi ? $nstKreditGT : 0;
+                    } else {
+                        $totalNeracaSebelumAJEDebit += $neracaSebelumAJEDebit;
+                        $totalNeracaSebelumAJEKredit += $neracaSebelumAJEKredit;
+
+                        $selisihSetelahAJE = $selisihSebelumAJE + ($row->aje_debit - $row->aje_kredit);
+                        $neracaSetelahAJEDebit = $selisihSetelahAJE > 0 ? $selisihSetelahAJE : 0;
+                        $neracaSetelahAJEKredit = $selisihSetelahAJE < 0 ? abs($selisihSetelahAJE) : 0;
+                        $totalNeracaSetelahAJEDebit += $neracaSetelahAJEDebit;
+                        $totalNeracaSetelahAJEKredit += $neracaSetelahAJEKredit;
+
+                        $showInNeraca = preg_match(
+                            '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
+                            $row->code,
+                        );
+                        $totalNeracaDebit += $showInNeraca ? $neracaSetelahAJEDebit : 0;
+                        $totalNeracaKredit += $showInNeraca ? $neracaSetelahAJEKredit : 0;
+
+                        $showInLabaRugi = preg_match(
+                            '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
+                            $row->code,
+                        );
+                        $totalLabaRugiDebit += $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
+                        $totalLabaRugiKredit += $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
+                    }
                 }
             @endphp
 
