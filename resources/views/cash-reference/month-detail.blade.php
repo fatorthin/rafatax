@@ -541,6 +541,25 @@
                     </div>
                 </div>
 
+                <!-- Transfer Cash Reference Fields (muncul otomatis saat AO-101.2 dipilih) -->
+                <div id="transferTargetFields" class="hidden mb-4 border border-blue-300 bg-blue-50 rounded-lg p-4 space-y-3">
+                    <p class="text-sm font-semibold text-blue-800">
+                        <i class="fas fa-exchange-alt mr-1"></i>
+                        Transaksi balasan (lawan debit/kredit) akan otomatis dibuat pada Cash Reference yang dipilih
+                    </p>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Target Cash Reference</label>
+                        <select name="target_cash_reference_id" id="target_cash_reference_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Pilih Target Cash Reference --</option>
+                            @foreach ($cashReferences as $cr)
+                                @if($cr->id != $cashReference->id)
+                                    <option value="{{ $cr->id }}">{{ $cr->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
                     <input type="text" name="description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -682,10 +701,19 @@
                 const coaId = $(this).val();
                 const code = coaCodeMap[coaId] || '';
                 const aktivaFields = document.getElementById('aktivaTetapFields');
+                const transferFields = document.getElementById('transferTargetFields');
+                
                 if (code === 'AO-126') {
                     aktivaFields.classList.remove('hidden');
                 } else {
                     aktivaFields.classList.add('hidden');
+                }
+
+                if (code === 'AO-101.2') {
+                    transferFields.classList.remove('hidden');
+                } else {
+                    transferFields.classList.add('hidden');
+                    document.getElementById('target_cash_reference_id').value = '';
                 }
             });
 
@@ -745,6 +773,10 @@
             document.getElementById('tarif_penyusutan').value = '0';
             document.getElementById('tahun_perolehan').value = '';
             document.getElementById('kepemilikan').selectedIndex = 0;
+
+            // Reset transfer fields
+            document.getElementById('transferTargetFields').classList.add('hidden');
+            document.getElementById('target_cash_reference_id').value = '';
         }
 
         function openEditModal(transaction) {

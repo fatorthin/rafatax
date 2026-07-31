@@ -368,6 +368,7 @@ class PayrollWhatsAppController extends Controller
         return $detail->salary +
             $detail->bonus_position +
             $detail->bonus_competency +
+            $detail->bonus_transport +
             $bonusLembur +
             $bonusVisitSolo +
             $bonusVisitLuar +
@@ -395,7 +396,7 @@ class PayrollWhatsAppController extends Controller
             $cutIjin = $detail->leave_count * $detail->salary / 25;
             $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain;
             $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-            $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus - $totalPot;
+            $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_transport + $detail->bonus_competency + $totalBonus - $totalPot;
 
             // Generate PDF
             $pdf = PDF::loadView('pdf.payslip', [

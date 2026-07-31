@@ -30,7 +30,14 @@ class CashReferenceMonthDetailController extends Controller
 
         $coaCodeMap = Coa::pluck('code', 'id');
 
-        return view('cash-reference.month-detail', array_merge($data, ['coaList' => $coaList, 'coaCodeMap' => $coaCodeMap]));
+        // Get CashReference list for transfer target option
+        $cashReferences = CashReference::orderBy('sort_order')->get();
+
+        return view('cash-reference.month-detail', array_merge($data, [
+            'coaList' => $coaList,
+            'coaCodeMap' => $coaCodeMap,
+            'cashReferences' => $cashReferences,
+        ]));
     }
 
     public function export($id, Request $request)
@@ -195,6 +202,7 @@ class CashReferenceMonthDetailController extends Controller
             'credit_amount' => 'required|numeric|min:0',
             'tarif_penyusutan' => 'nullable|numeric|min:0|max:100',
             'kepemilikan' => 'nullable|in:PT,KKP',
+            'target_cash_reference_id' => 'nullable|exists:cash_references,id',
         ]);
 
         $parsedDate = Carbon::parse($validated['transaction_date']);
@@ -211,6 +219,27 @@ class CashReferenceMonthDetailController extends Controller
             'cost_list_invoice_id' => 0,
             'sort_order' => 99999, // Temp order, will be rebuilt immediately
         ]);
+
+        $coa = Coa::find($validated['coa_id']);
+
+        // Auto-create reverse transaction di Target Cash Reference jika CoA = AO-101.2
+        if ($coa && $coa->code === 'AO-101.2' && !empty($validated['target_cash_reference_id'])) {
+            $targetCashRefId = $validated['target_cash_reference_id'];
+            CashReport::create([
+                'cash_reference_id' => $targetCashRefId,
+                'description' => $validated['description'],
+                'coa_id' => $validated['coa_id'],
+                'transaction_date' => $validated['transaction_date'],
+                'debit_amount' => $validated['credit_amount'],
+                'credit_amount' => $validated['debit_amount'],
+                'invoice_id' => 0,
+                'mou_id' => 0,
+                'cost_list_invoice_id' => 0,
+                'sort_order' => 99999,
+            ]);
+
+            $this->reorderTransactionsByDate($targetCashRefId, $parsedDate->year, $parsedDate->month);
+        }
 
         // Auto-create Aktiva Tetap jika CoA = AO-126
         $coa = Coa::find($validated['coa_id']);
