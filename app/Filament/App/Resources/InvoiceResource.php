@@ -13,6 +13,7 @@ use App\Traits\HasPermissions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\App\Resources\InvoiceResource\Pages;
 use Filament\Tables\Enums\ActionsPosition;
@@ -540,7 +541,7 @@ class InvoiceResource extends Resource
                                 ->default(now())
                                 ->visible(fn(Forms\Get $get) => (string)$get('is_send_invoice') === '1'),
                         ])
-                        ->action(function (Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                        ->action(function (Collection $records, array $data): void {
                             $isSend = (bool)$data['is_send_invoice'];
                             $sendDate = $isSend ? ($data['send_invoice_date'] ?? now()->toDateString()) : null;
 
