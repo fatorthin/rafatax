@@ -267,7 +267,7 @@ class InvoiceResource extends Resource
                                     });
                             });
                     }),
-                Tables\Columns\TextColumn::make('description')
+                Tables\Columns\TextInputColumn::make('description')
                     ->label('Deskripsi')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('invoice_date')
