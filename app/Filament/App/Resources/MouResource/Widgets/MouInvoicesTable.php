@@ -107,21 +107,202 @@ class MouInvoicesTable extends BaseWidget
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->url(fn(Invoice $record): string => InvoiceResource::getUrl('edit', ['record' => $record]))
-                    ->label('Edit Invoice')
+                    ->label('Edit')
                     ->icon('heroicon-o-eye')
                     ->color('primary'),
                 Tables\Actions\ViewAction::make()
                     // ->url(fn(Invoice $record): string => InvoiceResource::getUrl('cost-list', ['record' => $record]))
                     ->url(fn(Invoice $record): string => route('filament.app.resources.invoices.viewCostList', ['record' => $record->id]))
-                    ->label('View Details')
+                    ->label('View')
                     ->icon('heroicon-o-eye')
                     ->color('info'),
                 Tables\Actions\Action::make('previewPdf')
-                    ->label('Preview PDF')
+                    ->label('Preview')
                     ->icon('heroicon-o-printer')
                     ->url(fn(Invoice $record): string => route('invoices.preview', ['id' => $record->id]))
                     ->color('success')
                     ->openUrlInNewTab(),
+                Tables\Actions\Action::make('send_whatsapp')
+                    ->label('Kirim WA')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\TextInput::make('phone_number')
+                            ->label('WhatsApp Number')
+                            ->required()
+                            ->default(function (Invoice $record) {
+                                if ($record->client && $record->client->phone) {
+                                    return $record->client->phone;
+                                }
+                                $mou = $record->mou;
+                                if ($mou && $mou->client) {
+                                    return $mou->client->phone;
+                                }
+                                return null;
+                            })
+                            ->helperText('Format: 08123456789 or 628123456789'),
+                    ])
+                    ->modalHeading('Kirim Invoice via WhatsApp')
+                    ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->action(function (Invoice $record, array $data) {
+                        try {
+                            $phoneInput = $data['phone_number'];
+
+                            if (empty($phoneInput)) {
+                                Notification::make()
+                                    ->title('Error')
+                                    ->body('Phone number is required!')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // Clean phone number
+                            $phone = preg_replace('/[^0-9]/', '', $phoneInput);
+                            if (substr($phone, 0, 1) === '0') {
+                                $phone = '62' . substr($phone, 1);
+                            } elseif (substr($phone, 0, 2) !== '62') {
+                                $phone = '62' . $phone;
+                            }
+
+                            // Determine Client Name
+                            $clientName = '-';
+                            if ($record->memo_id && !$record->client_id) {
+                                $clientName = $record->memo?->nama_klien ?? '-';
+                            } elseif ($record->memo_id && $record->client_id) {
+                                $clientName = $record->client?->company_name ?? '-';
+                            } elseif ($record->mou_id && !$record->memo_id && !$record->client_id) {
+                                $clientName = $record->mou?->client?->company_name ?? '-';
+                            } elseif ($record->client_id) {
+                                $clientName = $record->client?->company_name ?? '-';
+                            }
+
+                            // Calculate total amount
+                            $totalAmount = CostListInvoice::where('invoice_id', $record->id)->sum('amount');
+                            $formattedAmount = number_format($totalAmount, 0, ',', '.');
+
+                            // Determine Type for Signature and Bank Details
+                            $type = $record->invoice_type
+                                ?? optional($record->mou)->type
+                                ?? optional($record->memo)->tipe_klien;
+
+                            $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
+                            $isKkp = $typeNormalized === 'kkp';
+
+                            $bankDetails = $isKkp
+                                ? "Bank: BCA\nNo. Rekening: 785-1135-425\nAtas nama: Antin Okfitasari"
+                                : "Bank: BCA\nNo. Rekening: 785-1260-513\nAtas nama: Aghnia Oasis Konsultindo PT";
+
+                            $dueDate = $record->due_date
+                                ? \Carbon\Carbon::parse($record->due_date)->translatedFormat('d F Y')
+                                : '-';
+
+                            // Create WhatsApp message
+                            $message = "Yth. Bapak/Ibu {$clientName}\n";
+                            $message .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan Invoice Tagihan.\n\n";
+                            $message .= "No Invoice    : {$record->invoice_number}\n";
+                            $message .= "Jumlah          : Rp {$formattedAmount}\n";
+                            $message .= "Jatuh Tempo: {$dueDate}\n\n";
+                            $message .= "Transfer ke: {$bankDetails}\n\n";
+                            $message .= "Note:\n";
+                            $message .= "1. Cantumkan nomor invoice di kolom \"catatan\" saat proses transfer.\n";
+                            $message .= "2. Konfirmasi pembayaran dengan mengirim bukti transfer ke Nomor Admin (+62 813 5997 6015)\n";
+                            $message .= "3. Bayar tepat waktu untuk menghindari penghentian layanan kami.\n\n";
+                            $message .= "Mohon dapat menjadi periksa & dijadwalkan pembayarannya\n";
+                            $message .= "Terima kasih\n";
+                            $message .= "Admin Rafatax Consulting";
+
+                            /** @var \App\Services\WablasService $wablasService */
+                            $wablasService = app(\App\Services\WablasService::class);
+
+                            // 1. Send Text Message
+                            $wablasService->sendMessage($phone, $message);
+
+                            // 2. Generate PDF using DOMPDF
+                            $costLists = CostListInvoice::where('invoice_id', $record->id)->get();
+
+                            if ($typeNormalized === 'kkp') {
+                                $view = 'invoices.pdf-kkp';
+                                $headerImageFile = 'kop-inovice-kkp.png';
+                            } elseif ($typeNormalized === 'pt') {
+                                $view = 'invoices.pdf-pt';
+                                $headerImageFile = 'kop-invoice-pt.png';
+                            } else {
+                                $view = 'invoices.pdf';
+                                $headerImageFile = null;
+                            }
+
+                            $headerImageBase64 = '';
+                            if ($headerImageFile) {
+                                $headerImagePath = public_path('images/' . $headerImageFile);
+                                if (file_exists($headerImagePath)) {
+                                    $headerImageBase64 = $this->optimizeImageHelper($headerImagePath, 600);
+                                }
+                            }
+
+                            $signatureImageBase64 = '';
+                            $signatureImagePath = public_path('images/spesimen-kasir.png');
+                            if (file_exists($signatureImagePath)) {
+                                $signatureImageBase64 = $this->optimizeImageHelper($signatureImagePath, 250);
+                            }
+
+                            $viewData = [
+                                'invoice' => $record,
+                                'costLists' => $costLists,
+                                'headerImage' => $headerImageBase64,
+                                'signatureImage' => $signatureImageBase64,
+                            ];
+
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $viewData)
+                                ->setPaper('a4', 'portrait')
+                                ->setOption(['compress' => 1]);
+
+                            $tempDir = storage_path('app/temp');
+                            if (!file_exists($tempDir)) {
+                                mkdir($tempDir, 0755, true);
+                            }
+
+                            $companyNameClean = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $clientName);
+                            $invoiceNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $record->invoice_number ?? $record->id);
+                            $filename = 'invoice-(' . $companyNameClean . ')' . $invoiceNumberClean . '.pdf';
+                            $tempPath = $tempDir . '/' . $filename;
+
+                            $pdf->save($tempPath);
+
+                            // 3. Send Document
+                            $sendResult = $wablasService->sendDocument($phone, $tempPath);
+
+                            if (file_exists($tempPath)) {
+                                unlink($tempPath);
+                            }
+
+                            if (isset($sendResult['status']) && $sendResult['status']) {
+                                $record->update([
+                                    'is_send_invoice' => true,
+                                    'send_invoice_date' => now()->toDateString(),
+                                ]);
+
+                                Notification::make()
+                                    ->title('Berhasil')
+                                    ->body('Invoice berhasil dikirim via WhatsApp (PDF).')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Warning')
+                                    ->body('Pesan teks terkirim, namun pengiriman dokumen PDF mungkin gagal.')
+                                    ->warning()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\Action::make('updateStatusBayar')
                     ->label('Update Status Bayar')
                     ->icon('heroicon-o-check-circle')
@@ -213,7 +394,7 @@ class MouInvoicesTable extends BaseWidget
                     })
                     ->visible(fn(Invoice $record): bool => $record->invoice_status !== 'paid'),
                 Tables\Actions\DeleteAction::make()
-                    ->label('Delete Invoice')
+                    ->label('Delete')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->requiresConfirmation()
@@ -232,6 +413,60 @@ class MouInvoicesTable extends BaseWidget
         return view('filament.tables.invoice-total-footer', [
             'total' => $this->totalValue,
         ])->render();
+    }
+
+    protected function optimizeImageHelper($path, $maxWidth)
+    {
+        if (!file_exists($path)) {
+            return '';
+        }
+
+        list($width, $height, $type) = getimagesize($path);
+
+        switch ($type) {
+            case IMAGETYPE_JPEG:
+                $source = imagecreatefromjpeg($path);
+                break;
+            case IMAGETYPE_PNG:
+                $source = imagecreatefrompng($path);
+                break;
+            default:
+                return 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+        }
+
+        if ($width > $maxWidth) {
+            $newWidth = $maxWidth;
+            $newHeight = ($height / $width) * $newWidth;
+        } else {
+            $newWidth = $width;
+            $newHeight = $height;
+        }
+
+        $destination = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($type == IMAGETYPE_PNG) {
+            imagealphablending($destination, false);
+            imagesavealpha($destination, true);
+            $transparent = imagecolorallocatealpha($destination, 255, 255, 255, 127);
+            imagefilledrectangle($destination, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled($destination, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        ob_start();
+        if ($type == IMAGETYPE_PNG) {
+            imagepng($destination, null, 8);
+            $mime = 'image/png';
+        } else {
+            imagejpeg($destination, null, 75);
+            $mime = 'image/jpeg';
+        }
+        $contents = ob_get_clean();
+
+        imagedestroy($source);
+        imagedestroy($destination);
+
+        return 'data:' . $mime . ';base64,' . base64_encode($contents);
     }
 
     public static function canView(): bool

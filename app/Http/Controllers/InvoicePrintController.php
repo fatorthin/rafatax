@@ -99,7 +99,7 @@ class InvoicePrintController extends Controller
             '-',
             $clientName ?? ''
         );
-        $filename = 'invoice-' . $invoiceNumberClean . '-' . $companyNameClean . '.pdf';
+        $filename = 'invoice-(' . $companyNameClean . ')' . $invoiceNumberClean . '.pdf';
 
         return [$pdf, $filename];
     }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Memo;
-use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MemoPrintController extends Controller
@@ -20,6 +19,6 @@ class MemoPrintController extends Controller
             ->setPaper('a4', 'portrait')
             ->setOption(['compress' => 1]);
 
-        return $pdf->stream('memo-' . str_replace('/', '-', $memo->no_memo) . '.pdf');
+        return $pdf->stream('memo-(' . $memo->nama_klien . ')-' . str_replace('/', '-', $memo->no_memo) . '.pdf');
     }
 }
