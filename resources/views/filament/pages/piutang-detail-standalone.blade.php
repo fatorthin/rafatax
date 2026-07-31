@@ -90,9 +90,10 @@
     <div class="mx-auto space-y-8">
         
         @php
-            $backRoute = (auth()->check() && auth()->user()->hasRole('super_admin')) || request()->is('admin/*')
-                ? '/admin/piutang-per-client'
-                : '/app/piutang-per-client';
+            $user = auth()->user();
+            $referer = request()->header('referer', '');
+            $isAdminRoute = str_contains($referer, '/admin/') || request()->is('admin/*') || ($user && $user->hasAnyRole(['admin', 'super_admin']));
+            $backRoute = $isAdminRoute ? '/admin/piutang-per-client' : '/app/piutang-per-client';
         @endphp
         <!-- Header / Navigation -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-800 no-print">
