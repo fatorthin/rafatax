@@ -441,10 +441,15 @@
                             </td>
                             <td class="px-6 py-4 text-sm">
                                 {{ $transaction->description }}
-                                @if($transaction->invoice)
+                                @if($transaction->invoice_id && $transaction->invoice)
                                     <div class="text-xs text-blue-600 mt-1 flex items-center gap-1 dark:text-blue-400">
                                         <i class="fas fa-file-invoice"></i>
                                         <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client_name ?: 'No Client' }})</span>
+                                    </div>
+                                @elseif(!$transaction->invoice_id && $transaction->client_id && $transaction->client)
+                                    <div class="text-xs text-purple-600 mt-1 flex items-center gap-1 dark:text-purple-400">
+                                        <i class="fas fa-building"></i>
+                                        <span>Client: <strong>{{ $transaction->client->company_name }}</strong></span>
                                     </div>
                                 @endif
                             </td>
