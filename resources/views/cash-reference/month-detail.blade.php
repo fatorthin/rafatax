@@ -318,7 +318,10 @@
                         <i id="themeToggleIcon" class="fas fa-moon"></i>
                         <span id="themeToggleText">Dark</span>
                     </button>
-                    <a href="{{ url('/app/cash-references/' . $cashReference->id . '/monthly') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    @php
+                        $monthlyPrefix = (auth()->check() && auth()->user()->hasRole('super_admin')) || request()->is('admin/*') ? '/admin' : '/app';
+                    @endphp
+                    <a href="{{ url($monthlyPrefix . '/cash-references/' . $cashReference->id . '/monthly') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Back to Monthly
                     </a>
                     <button onclick="openAddModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">

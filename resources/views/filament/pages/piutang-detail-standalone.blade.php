@@ -89,17 +89,22 @@
 <body class="bg-slate-50 text-slate-900 min-h-screen py-8 px-4 sm:px-6 lg:px-8 dark:bg-slate-950 dark:text-slate-100">
     <div class="mx-auto space-y-8">
         
+        @php
+            $backRoute = (auth()->check() && auth()->user()->hasRole('super_admin')) || request()->is('admin/*')
+                ? '/admin/piutang-per-client'
+                : '/app/piutang-per-client';
+        @endphp
         <!-- Header / Navigation -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-800 no-print">
             <div class="flex items-center gap-4">
-                <a href="/app/piutang-per-client" class="inline-flex items-center justify-center p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white">
+                <a href="{{ $backRoute }}" class="inline-flex items-center justify-center p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </a>
                 <div>
                     <nav class="flex text-xs text-slate-500 mb-1 gap-1.5 items-center dark:text-slate-400">
                         <span>Keuangan</span>
                         <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                        <a href="/app/piutang-per-client" class="hover:underline">Piutang per Client</a>
+                        <a href="{{ $backRoute }}" class="hover:underline">Piutang per Client</a>
                         <i class="fa-solid fa-chevron-right text-[10px]"></i>
                         <span class="text-slate-800 font-medium dark:text-slate-200">Kartu Piutang</span>
                     </nav>
