@@ -19,6 +19,7 @@ class PiutangDetailController extends Controller
         $saldoAwal = 0;
         $totalInvoice = 0;
         $totalPembayaran = 0;
+        $totalPotongan = 0;
 
         foreach ($transactions as $tx) {
             if ($tx['type'] === 'Saldo Awal') {
@@ -27,10 +28,12 @@ class PiutangDetailController extends Controller
                 $totalInvoice += $tx['debit'];
             } elseif ($tx['type'] === 'Sales Receipt') {
                 $totalPembayaran += $tx['kredit'];
+            } elseif ($tx['type'] === 'Discount MoU' || $tx['type'] === 'Cancel MoU') {
+                $totalPotongan += $tx['kredit'];
             }
         }
 
-        $sisaPiutang = $saldoAwal + $totalInvoice - $totalPembayaran;
+        $sisaPiutang = $saldoAwal + $totalInvoice - $totalPembayaran - $totalPotongan;
 
         $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
 
@@ -43,6 +46,7 @@ class PiutangDetailController extends Controller
             'saldoAwalRecord',
             'totalInvoice',
             'totalPembayaran',
+            'totalPotongan',
             'sisaPiutang',
             'mous'
         ));

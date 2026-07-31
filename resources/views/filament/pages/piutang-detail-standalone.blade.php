@@ -158,7 +158,7 @@
         </div>
 
         <!-- Summary Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <!-- Saldo Awal -->
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card relative">
                 <div class="flex items-center justify-between">
@@ -209,6 +209,22 @@
                         Rp {{ number_format($totalPembayaran, 0, ',', '.') }}
                     </span>
                     <span class="text-xs text-emerald-600 dark:text-emerald-400 mt-1 block">Total dana diterima (2026+)</span>
+                </div>
+            </div>
+
+            <!-- Diskon & Cancel MoU -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Diskon & Cancel MoU</span>
+                    <span class="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400">
+                        <i class="fa-solid fa-tags"></i>
+                    </span>
+                </div>
+                <div class="mt-4">
+                    <span class="text-2xl font-bold text-slate-900 dark:text-white block">
+                        Rp {{ number_format($totalPotongan, 0, ',', '.') }}
+                    </span>
+                    <span class="text-xs text-purple-600 dark:text-purple-400 mt-1 block">Total potongan piutang</span>
                 </div>
             </div>
 
