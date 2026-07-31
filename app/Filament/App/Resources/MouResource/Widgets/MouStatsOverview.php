@@ -33,7 +33,7 @@ class MouStatsOverview extends BaseWidget
         $discountAmount = $mou->discount_amount ?? 0;
         $cancelMouAmount = $mou->cancel_mou_amount ?? 0;
 
-        $difference = $totalCostListMou - ($totalCostListInvoiceUnpaid + $totalCostListInvoicePaid + $discountAmount + $cancelMouAmount);
+        $difference = $totalCostListMou - ($totalCostListInvoicePaid + $discountAmount + $cancelMouAmount);
 
         return [
             Stat::make('Total Cost List MoU', 'Rp ' . number_format($totalCostListMou, 0, ',', '.'))
