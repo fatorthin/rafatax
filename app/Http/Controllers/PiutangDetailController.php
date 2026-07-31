@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\SaldoAwalPiutang;
 use App\Filament\Pages\PiutangPerClient;
 use Illuminate\Http\Request;
 
@@ -33,14 +34,33 @@ class PiutangDetailController extends Controller
 
         $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
 
+        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->first();
+
         return view('filament.pages.piutang-detail-standalone', compact(
             'client',
             'transactions',
             'saldoAwal',
+            'saldoAwalRecord',
             'totalInvoice',
             'totalPembayaran',
             'sisaPiutang',
             'mous'
         ));
+    }
+
+    public function updateSaldoAwal($id, Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+        ]);
+
+        $client = Client::findOrFail($id);
+
+        SaldoAwalPiutang::updateOrCreate(
+            ['client_id' => $client->id],
+            ['amount' => $request->input('amount')]
+        );
+
+        return redirect()->back()->with('success', 'Saldo awal piutang berhasil diperbarui');
     }
 }

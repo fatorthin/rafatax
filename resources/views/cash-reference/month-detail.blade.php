@@ -466,9 +466,17 @@
                                             $amountFormatted = number_format($transaction->invoice->amount, 2, ',', '.');
                                             $invoiceText = "{$transaction->invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
                                         }
+                                        $clientText = '';
+                                        if ($transaction->client) {
+                                            $codeStr = $transaction->client->code ? " ({$transaction->client->code})" : '';
+                                            $clientText = "{$transaction->client->company_name}{$codeStr}";
+                                        }
                                     @endphp
                                     <button onclick="openLinkInvoiceModal({{ $transaction->id }}, {{ $transaction->invoice_id ?? 'null' }}, '{{ addslashes($invoiceText) }}')" class="text-green-600 hover:text-green-900 mr-3" title="Hubungkan ke Invoice">
                                         <i class="fas fa-link"></i>
+                                    </button>
+                                    <button onclick="openLinkClientModal({{ $transaction->id }}, {{ $transaction->client_id ?? 'null' }}, '{{ addslashes($clientText) }}')" class="text-purple-600 hover:text-purple-900 mr-3" title="Hubungkan ke Client">
+                                        <i class="fas fa-user-tie"></i>
                                     </button>
                                 @endif
                                 <button onclick="openEditModal({{ json_encode($transaction) }})" class="text-blue-600 hover:text-blue-900 mr-3">
@@ -664,6 +672,39 @@
         </div>
     </div>
 
+    <!-- Link Client Modal -->
+    <div id="linkClientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Hubungkan Transaksi dengan Client</h3>
+                <button onclick="closeLinkClientModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="linkClientForm" method="POST">
+                @csrf
+                <div class="mb-6">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Cari & Pilih Client</label>
+                    <select name="client_id" id="link_client_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">-- Pilih Client --</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                        Ketik nama perusahaan client atau kode client untuk mencari.
+                    </p>
+                </div>
+                <div class="flex justify-between items-center gap-2">
+                    <button type="button" onclick="unlinkClient()" id="btnHapusHubunganClient" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors duration-200">
+                        <i class="fas fa-unlink mr-1"></i> Hapus Hubungan
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeLinkClientModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm transition-colors duration-200">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors duration-200">Simpan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const coaCodeMap = @json($coaCodeMap);
 
@@ -759,6 +800,30 @@
                     cache: true
                 }
             });
+
+            // Initialize Select2 for Link Client Modal
+            $('#link_client_id').select2({
+                dropdownParent: $('#linkClientModal'),
+                placeholder: 'Cari dan pilih client...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '{{ route('clients.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term // search term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data
+                        };
+                    },
+                    cache: true
+                }
+            });
         });
 
         function openAddModal() {
@@ -835,11 +900,45 @@
             }
         }
 
+        function openLinkClientModal(transactionId, clientId, clientText) {
+            currentLinkTransactionId = transactionId;
+            const form = document.getElementById('linkClientForm');
+            form.action = `/cash-reference/transaction/${transactionId}/link-client`;
+
+            const selectEl = $('#link_client_id');
+            selectEl.empty().val(null).trigger('change');
+
+            const btnHapusHubungan = document.getElementById('btnHapusHubunganClient');
+
+            if (clientId) {
+                const option = new Option(clientText, clientId, true, true);
+                selectEl.append(option).trigger('change');
+                btnHapusHubungan.classList.remove('hidden');
+            } else {
+                btnHapusHubungan.classList.add('hidden');
+            }
+
+            document.getElementById('linkClientModal').classList.remove('hidden');
+        }
+
+        function closeLinkClientModal() {
+            document.getElementById('linkClientModal').classList.add('hidden');
+        }
+
+        function unlinkClient() {
+            if (confirm('Apakah Anda yakin ingin menghapus hubungan dengan client?')) {
+                const selectEl = $('#link_client_id');
+                selectEl.empty().val(null).trigger('change');
+                document.getElementById('linkClientForm').submit();
+            }
+        }
+
         // Close modals when clicking outside
         window.onclick = function(event) {
             const addModal = document.getElementById('addModal');
             const editModal = document.getElementById('editModal');
             const linkInvoiceModal = document.getElementById('linkInvoiceModal');
+            const linkClientModal = document.getElementById('linkClientModal');
             if (event.target === addModal) {
                 closeAddModal();
             }
@@ -848,6 +947,9 @@
             }
             if (event.target === linkInvoiceModal) {
                 closeLinkInvoiceModal();
+            }
+            if (event.target === linkClientModal) {
+                closeLinkClientModal();
             }
         }
 

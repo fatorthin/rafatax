@@ -160,12 +160,17 @@
         <!-- Summary Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Saldo Awal -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card">
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card relative">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Saldo Awal Piutang</span>
-                    <span class="p-2 rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                        <i class="fa-solid fa-wallet"></i>
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openSaldoAwalModal()" class="no-print p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors" title="{{ $saldoAwalRecord ? 'Edit Saldo Awal' : 'Tambah Saldo Awal' }}">
+                            <i class="fa-solid {{ $saldoAwalRecord ? 'fa-pen-to-square' : 'fa-plus' }} text-xs"></i>
+                        </button>
+                        <span class="p-2 rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            <i class="fa-solid fa-wallet"></i>
+                        </span>
+                    </div>
                 </div>
                 <div class="mt-4">
                     <span class="text-2xl font-bold text-slate-900 dark:text-white block">
@@ -371,6 +376,32 @@
         </div>
     </div>
 
+    <!-- Modal Saldo Awal Piutang -->
+    <div id="saldoAwalModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4 no-print">
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 overflow-hidden transform transition-all">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                    {{ $saldoAwalRecord ? 'Edit Saldo Awal Piutang' : 'Tambah Saldo Awal Piutang' }}
+                </h3>
+                <button onclick="closeSaldoAwalModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form action="{{ route('piutang-per-client.saldo-awal.update', $client->id) }}" method="POST" class="mt-4 space-y-4">
+                @csrf
+                <div>
+                    <label for="amount" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Jumlah Saldo Awal (Rp)</label>
+                    <input type="number" step="any" name="amount" id="amount" value="{{ old('amount', $saldoAwalRecord->amount ?? 0) }}" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan jumlah saldo awal piutang client sebelum periode tahun 2026.</p>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" onclick="closeSaldoAwalModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-sm font-semibold transition-colors">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-all">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Toggle Theme Function
         function toggleTheme() {
@@ -387,6 +418,21 @@
                 localStorage.setItem('theme', 'dark');
                 localStorage.setItem('cashReferenceTheme', 'dark');
                 icon.className = 'fa-solid fa-sun text-sm';
+            }
+        }
+
+        function openSaldoAwalModal() {
+            document.getElementById('saldoAwalModal').classList.remove('hidden');
+        }
+
+        function closeSaldoAwalModal() {
+            document.getElementById('saldoAwalModal').classList.add('hidden');
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('saldoAwalModal');
+            if (event.target === modal) {
+                closeSaldoAwalModal();
             }
         }
 

@@ -126,6 +126,10 @@ Route::get('/piutang-per-client/{id}/detail', [\App\Http\Controllers\PiutangDeta
     ->name('piutang-per-client.detail')
     ->middleware('auth');
 
+Route::post('/piutang-per-client/{id}/saldo-awal', [\App\Http\Controllers\PiutangDetailController::class, 'updateSaldoAwal'])
+    ->name('piutang-per-client.saldo-awal.update')
+    ->middleware('auth');
+
 Route::get('/cash-reference/{id}/month-detail/export', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'export'])
     ->name('cash-reference.month-detail.export')
     ->middleware('auth');
@@ -152,6 +156,14 @@ Route::get('/invoices/search', [\App\Http\Controllers\CashReferenceMonthDetailCo
 
 Route::post('/cash-reference/transaction/{transactionId}/link-invoice', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'linkInvoice'])
     ->name('cash-reference.transaction.link-invoice')
+    ->middleware('auth');
+
+Route::get('/clients/search', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'searchClients'])
+    ->name('clients.search')
+    ->middleware('auth');
+
+Route::post('/cash-reference/transaction/{transactionId}/link-client', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'linkClient'])
+    ->name('cash-reference.transaction.link-client')
     ->middleware('auth');
 
 Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');

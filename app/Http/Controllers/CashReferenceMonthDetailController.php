@@ -139,7 +139,7 @@ class CashReferenceMonthDetailController extends Controller
         $prevBalance = $this->getPreviousMonthBalance($id, $year, $month);
 
         // Get transactions for the month
-        $transactions = CashReport::with(['coa', 'invoice.client', 'invoice.mou.client', 'invoice.memo'])
+        $transactions = CashReport::with(['coa', 'client', 'invoice.client', 'invoice.mou.client', 'invoice.memo'])
             ->where('cash_reference_id', $id)
             ->whereYear('transaction_date', $year)
             ->whereMonth('transaction_date', $month)
@@ -403,6 +403,49 @@ class CashReferenceMonthDetailController extends Controller
                 'month' => $month,
             ])
             ->with('success', 'Invoice linked successfully');
+    }
+
+    public function searchClients(Request $request)
+    {
+        $search = $request->get('q');
+        $clients = \App\Models\Client::where(function ($query) use ($search) {
+                $query->where('company_name', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%")
+                      ->orWhere('owner_name', 'like', "%{$search}%");
+            })
+            ->limit(20)
+            ->get()
+            ->map(function ($client) {
+                $codeStr = $client->code ? " ({$client->code})" : '';
+                return [
+                    'id' => $client->id,
+                    'text' => "{$client->company_name}{$codeStr}"
+                ];
+            });
+
+        return response()->json($clients);
+    }
+
+    public function linkClient($transactionId, Request $request)
+    {
+        $validated = $request->validate([
+            'client_id' => 'nullable|exists:clients,id',
+        ]);
+
+        $transaction = CashReport::findOrFail($transactionId);
+        $transaction->client_id = $request->input('client_id') ?: null;
+        $transaction->save();
+
+        $year = Carbon::parse($transaction->transaction_date)->year;
+        $month = Carbon::parse($transaction->transaction_date)->month;
+
+        return redirect()
+            ->route('cash-reference.month-detail', [
+                'id' => $transaction->cash_reference_id,
+                'year' => $year,
+                'month' => $month,
+            ])
+            ->with('success', 'Client linked successfully');
     }
 
     private function reorderTransactionsByDate($cashReferenceId, $year, $month)
