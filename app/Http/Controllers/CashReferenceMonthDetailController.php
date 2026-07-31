@@ -203,6 +203,8 @@ class CashReferenceMonthDetailController extends Controller
             'tarif_penyusutan' => 'nullable|numeric|min:0|max:100',
             'kepemilikan' => 'nullable|in:PT,KKP',
             'target_cash_reference_id' => 'nullable|exists:cash_references,id',
+            'invoice_id' => 'nullable|exists:invoices,id',
+            'client_id' => 'nullable|exists:clients,id',
         ]);
 
         $parsedDate = Carbon::parse($validated['transaction_date']);
@@ -214,7 +216,8 @@ class CashReferenceMonthDetailController extends Controller
             'transaction_date' => $validated['transaction_date'],
             'debit_amount' => $validated['debit_amount'],
             'credit_amount' => $validated['credit_amount'],
-            'invoice_id' => 0,
+            'invoice_id' => $validated['invoice_id'] ?? null,
+            'client_id' => $validated['client_id'] ?? null,
             'mou_id' => 0,
             'cost_list_invoice_id' => 0,
             'sort_order' => 99999, // Temp order, will be rebuilt immediately
@@ -290,12 +293,22 @@ class CashReferenceMonthDetailController extends Controller
             'transaction_date' => 'required|date',
             'debit_amount' => 'required|numeric|min:0',
             'credit_amount' => 'required|numeric|min:0',
+            'invoice_id' => 'nullable|exists:invoices,id',
+            'client_id' => 'nullable|exists:clients,id',
         ]);
 
         $transaction = CashReport::findOrFail($transactionId);
         $oldDate = Carbon::parse($transaction->transaction_date);
 
-        $transaction->update($validated);
+        $transaction->update([
+            'description' => $validated['description'],
+            'coa_id' => $validated['coa_id'],
+            'transaction_date' => $validated['transaction_date'],
+            'debit_amount' => $validated['debit_amount'],
+            'credit_amount' => $validated['credit_amount'],
+            'invoice_id' => $validated['invoice_id'] ?? null,
+            'client_id' => $validated['client_id'] ?? null,
+        ]);
 
         $newDate = Carbon::parse($validated['transaction_date']);
 

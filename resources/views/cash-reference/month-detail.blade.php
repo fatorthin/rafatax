@@ -571,6 +571,26 @@
                     </div>
                 </div>
 
+                <!-- Link Invoice & Client Fields (muncul saat CoA tertentu dipilih) -->
+                <div id="addLinkInvoiceClientFields" class="hidden mb-4 border border-green-300 bg-green-50 rounded-lg p-4 space-y-3">
+                    <p class="text-sm font-semibold text-green-800">
+                        <i class="fas fa-link mr-1"></i>
+                        Hubungkan Transaksi dengan Invoice / Client
+                    </p>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Invoice (Opsional)</label>
+                        <select name="invoice_id" id="add_link_invoice_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Pilih Invoice --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Client (Opsional)</label>
+                        <select name="client_id" id="add_link_client_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">-- Pilih Client --</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
                     <input type="text" name="description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -616,6 +636,26 @@
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
                     </select>
+                </div>
+
+                <!-- Link Invoice & Client Fields Edit Modal -->
+                <div id="editLinkInvoiceClientFields" class="hidden mb-4 border border-green-300 bg-green-50 rounded-lg p-4 space-y-3">
+                    <p class="text-sm font-semibold text-green-800">
+                        <i class="fas fa-link mr-1"></i>
+                        Hubungkan Transaksi dengan Invoice / Client
+                    </p>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Invoice (Opsional)</label>
+                        <select name="invoice_id" id="edit_link_invoice_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Pilih Invoice --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Client (Opsional)</label>
+                        <select name="client_id" id="edit_link_client_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">-- Pilih Client --</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
@@ -730,6 +770,8 @@
             localStorage.setItem('cashReferenceTheme', nextTheme);
         }
 
+        const linkableCoaIds = [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126];
+
         $(document).ready(function() {
             applyTheme(getCurrentTheme());
 
@@ -741,11 +783,42 @@
                 width: '100%'
             });
 
+            $('#add_link_invoice_id').select2({
+                dropdownParent: $('#addModal'),
+                placeholder: 'Cari dan pilih invoice (opsional)...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '{{ route('invoices.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { q: params.term }; },
+                    processResults: function (data) { return { results: data }; },
+                    cache: true
+                }
+            });
+
+            $('#add_link_client_id').select2({
+                dropdownParent: $('#addModal'),
+                placeholder: 'Cari dan pilih client (opsional)...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '{{ route('clients.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { q: params.term }; },
+                    processResults: function (data) { return { results: data }; },
+                    cache: true
+                }
+            });
+
             $('#add_coa_id').on('change', function() {
-                const coaId = $(this).val();
+                const coaId = parseInt($(this).val());
                 const code = coaCodeMap[coaId] || '';
                 const aktivaFields = document.getElementById('aktivaTetapFields');
                 const transferFields = document.getElementById('transferTargetFields');
+                const linkFields = document.getElementById('addLinkInvoiceClientFields');
                 
                 if (code === 'AO-126') {
                     aktivaFields.classList.remove('hidden');
@@ -759,6 +832,14 @@
                     transferFields.classList.add('hidden');
                     document.getElementById('target_cash_reference_id').value = '';
                 }
+
+                if (linkableCoaIds.includes(coaId)) {
+                    linkFields.classList.remove('hidden');
+                } else {
+                    linkFields.classList.add('hidden');
+                    $('#add_link_invoice_id').val(null).trigger('change');
+                    $('#add_link_client_id').val(null).trigger('change');
+                }
             });
 
             // Initialize Select2 for Edit Modal
@@ -767,6 +848,48 @@
                 placeholder: 'Search and select CoA',
                 allowClear: true,
                 width: '100%'
+            });
+
+            $('#edit_link_invoice_id').select2({
+                dropdownParent: $('#editModal'),
+                placeholder: 'Cari dan pilih invoice (opsional)...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '{{ route('invoices.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { q: params.term }; },
+                    processResults: function (data) { return { results: data }; },
+                    cache: true
+                }
+            });
+
+            $('#edit_link_client_id').select2({
+                dropdownParent: $('#editModal'),
+                placeholder: 'Cari dan pilih client (opsional)...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '{{ route('clients.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { q: params.term }; },
+                    processResults: function (data) { return { results: data }; },
+                    cache: true
+                }
+            });
+
+            $('#edit_coa_id').on('change', function() {
+                const coaId = parseInt($(this).val());
+                const linkFields = document.getElementById('editLinkInvoiceClientFields');
+                if (linkableCoaIds.includes(coaId)) {
+                    linkFields.classList.remove('hidden');
+                } else {
+                    linkFields.classList.add('hidden');
+                    $('#edit_link_invoice_id').val(null).trigger('change');
+                    $('#edit_link_client_id').val(null).trigger('change');
+                }
             });
 
             // Initialize Select2 for Filter COA
@@ -831,6 +954,8 @@
             // Reset and reinitialize select2
             setTimeout(() => {
                 $('#add_coa_id').val('').trigger('change');
+                $('#add_link_invoice_id').val(null).trigger('change');
+                $('#add_link_client_id').val(null).trigger('change');
             }, 100);
         }
 
@@ -845,6 +970,11 @@
             // Reset transfer fields
             document.getElementById('transferTargetFields').classList.add('hidden');
             document.getElementById('target_cash_reference_id').value = '';
+
+            // Reset link fields
+            document.getElementById('addLinkInvoiceClientFields').classList.add('hidden');
+            $('#add_link_invoice_id').val(null).trigger('change');
+            $('#add_link_client_id').val(null).trigger('change');
         }
 
         function openEditModal(transaction) {
@@ -857,11 +987,35 @@
             // Set and trigger select2 for edit modal
             $('#edit_coa_id').val(transaction.coa_id).trigger('change');
 
+            // Set existing invoice link if present
+            const editInvSelect = $('#edit_link_invoice_id');
+            editInvSelect.empty().val(null).trigger('change');
+            if (transaction.invoice_id && transaction.invoice) {
+                const clientName = transaction.invoice.client_name ? transaction.invoice.client_name : 'No Client';
+                const amountFormatted = formatNumber(parseFloat(transaction.invoice.amount) || 0);
+                const invText = `${transaction.invoice.invoice_number} - ${clientName} - Rp ${amountFormatted}`;
+                const option = new Option(invText, transaction.invoice_id, true, true);
+                editInvSelect.append(option).trigger('change');
+            }
+
+            // Set existing client link if present
+            const editClientSelect = $('#edit_link_client_id');
+            editClientSelect.empty().val(null).trigger('change');
+            if (transaction.client_id && transaction.client) {
+                const codeStr = transaction.client.code ? ` (${transaction.client.code})` : '';
+                const clientText = `${transaction.client.company_name}${codeStr}`;
+                const option = new Option(clientText, transaction.client_id, true, true);
+                editClientSelect.append(option).trigger('change');
+            }
+
             document.getElementById('editModal').classList.remove('hidden');
         }
 
         function closeEditModal() {
             document.getElementById('editModal').classList.add('hidden');
+            document.getElementById('editLinkInvoiceClientFields').classList.add('hidden');
+            $('#edit_link_invoice_id').empty().val(null).trigger('change');
+            $('#edit_link_client_id').empty().val(null).trigger('change');
         }
 
         let currentLinkTransactionId = null;
