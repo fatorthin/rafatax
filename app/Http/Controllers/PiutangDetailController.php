@@ -31,13 +31,16 @@ class PiutangDetailController extends Controller
 
         $sisaPiutang = $saldoAwal + $totalInvoice - $totalPembayaran;
 
+        $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
+
         return view('filament.pages.piutang-detail-standalone', compact(
             'client',
             'transactions',
             'saldoAwal',
             'totalInvoice',
             'totalPembayaran',
-            'sisaPiutang'
+            'sisaPiutang',
+            'mous'
         ));
     }
 }

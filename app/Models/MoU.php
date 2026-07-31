@@ -77,4 +77,9 @@ class MoU extends Model
     {
         return $this->belongsTo(CaseProject::class);
     }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'mou_id');
+    }
 }
