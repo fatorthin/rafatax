@@ -60,6 +60,12 @@ class PiutangPerClient extends Page implements HasTable
                         AND cr.transaction_date >= \'2026-01-01\'
                         AND cr.deleted_at IS NULL
                     ), 0) as total_pembayaran')
+                    ->selectRaw('COALESCE((
+                        SELECT SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0))
+                        FROM mous
+                        WHERE client_id = clients.id
+                        AND deleted_at IS NULL
+                    ), 0) as total_potongan')
                     ->selectRaw('(
                         COALESCE((SELECT SUM(amount) FROM saldo_awal_piutangs WHERE client_id = clients.id), 0)
                         +
@@ -89,6 +95,13 @@ class PiutangPerClient extends Page implements HasTable
                             )
                             AND cr.transaction_date >= \'2026-01-01\'
                             AND cr.deleted_at IS NULL
+                        ), 0)
+                        -
+                        COALESCE((
+                            SELECT SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0))
+                            FROM mous
+                            WHERE client_id = clients.id
+                            AND deleted_at IS NULL
                         ), 0)
                     ) as total_piutang')
             )
@@ -220,6 +233,42 @@ class PiutangPerClient extends Page implements HasTable
                 'kredit' => $amount,
                 'amount' => -$amount,
             ];
+        }
+
+        // 4. Discounts and Cancel MoUs from MoU model
+        $mous = \App\Models\MoU::query()
+            ->where('client_id', $client->id)
+            ->whereNull('deleted_at')
+            ->get();
+
+        foreach ($mous as $mou) {
+            if ($mou->discount_amount > 0) {
+                $tglDiscount = $mou->tgl_discount;
+                $transactions[] = [
+                    'date' => $tglDiscount,
+                    'date_sort' => $tglDiscount ?: '9999-12-31',
+                    'type' => 'Discount MoU',
+                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
+                    'description' => 'Discount MoU' . ($mou->description ? " - {$mou->description}" : ''),
+                    'debit' => 0,
+                    'kredit' => $mou->discount_amount,
+                    'amount' => -$mou->discount_amount,
+                ];
+            }
+
+            if ($mou->cancel_mou_amount > 0) {
+                $tglCancel = $mou->tgl_cancel_mou;
+                $transactions[] = [
+                    'date' => $tglCancel,
+                    'date_sort' => $tglCancel ?: '9999-12-31',
+                    'type' => 'Cancel MoU',
+                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
+                    'description' => 'Cancel MoU' . ($mou->description ? " - {$mou->description}" : ''),
+                    'debit' => 0,
+                    'kredit' => $mou->cancel_mou_amount,
+                    'amount' => -$mou->cancel_mou_amount,
+                ];
+            }
         }
 
         // Sort transactions chronologically

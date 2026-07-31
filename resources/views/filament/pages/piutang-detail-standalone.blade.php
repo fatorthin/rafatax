@@ -330,7 +330,7 @@
                                     {{ $tx['date'] ? \Carbon\Carbon::parse($tx['date'])->translatedFormat('d-M-Y') : '-' }}
                                 </td>
                                 <td class="px-6 py-4 text-sm whitespace-nowrap">
-                                    @if($tx['type'] === 'Saldo Awal')
+                                     @if($tx['type'] === 'Saldo Awal')
                                         <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30">
                                             {{ $tx['type'] }}
                                         </span>
@@ -341,6 +341,14 @@
                                     @elseif($tx['type'] === 'Sales Receipt')
                                         <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30">
                                             Pembayaran
+                                        </span>
+                                    @elseif($tx['type'] === 'Discount MoU')
+                                        <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-purple-50 text-purple-700 border border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-900/30">
+                                            Diskon MoU
+                                        </span>
+                                    @elseif($tx['type'] === 'Cancel MoU')
+                                        <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/30">
+                                            Cancel MoU
                                         </span>
                                     @else
                                         <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-50 text-slate-700 border border-slate-100 dark:bg-slate-900/20 dark:text-slate-400 dark:border-slate-800">
