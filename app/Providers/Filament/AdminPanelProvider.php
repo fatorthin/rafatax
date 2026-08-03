@@ -120,8 +120,10 @@ class AdminPanelProvider extends PanelProvider
                     .dark .fi-ta-table thead th { background-color: #18181b; }
                     /* Ensure dropdown panels (filter, actions) appear above sticky table headers */
                     .fi-dropdown-panel { z-index: 10 !important; }
-                    /* Ensure sidebar and its navigation appear above sticky table headers */
-                    .fi-sidebar { z-index: 10 !important; }
+                    /* Ensure sidebar and its navigation appear above sticky table headers on desktop */
+                    @media (min-width: 1024px) {
+                        .fi-sidebar { z-index: 30 !important; }
+                    }
                 </style>'
             )
             ->maxContentWidth('full');

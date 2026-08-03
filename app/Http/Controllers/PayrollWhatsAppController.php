@@ -5,10 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\PayrollDetail;
 use App\Services\WablasService;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Filament\Notifications\Notification;
 
 class PayrollWhatsAppController extends Controller
 {
@@ -19,31 +18,31 @@ class PayrollWhatsAppController extends Controller
         $this->wablasService = $wablasService;
     }
 
-    public function sendBulkPayslips(\Illuminate\Support\Collection $details)
+    public function sendBulkPayslips(Collection $details)
     {
         try {
-            Log::info('Starting sendBulkPayslips for ' . $details->count() . ' items');
+            Log::info('Starting sendBulkPayslips for '.$details->count().' items');
 
             $textPayload = ['data' => []];
             $documentPayload = ['data' => []];
             $publicPath = public_path('storage/payslips/');
 
-            if (!file_exists($publicPath)) {
+            if (! file_exists($publicPath)) {
                 mkdir($publicPath, 0755, true);
             }
 
             foreach ($details as $detail) {
                 // Skip non-staff
-                if (!$detail->staff_id) {
+                if (! $detail->staff_id) {
                     continue;
                 }
                 // Skip if staff has no phone number
-                if (!$detail->staff || !$detail->staff->phone) {
+                if (! $detail->staff || ! $detail->staff->phone) {
                     continue;
                 }
 
                 $phone = $this->formatPhoneNumber($detail->staff->phone);
-                $period = \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F Y');
+                $period = Carbon::parse($detail->payroll->payroll_date)->format('F Y');
                 $totalSalary = $this->calculateTotalSalary($detail);
                 $name = $detail->staff->name;
 
@@ -51,9 +50,9 @@ class PayrollWhatsAppController extends Controller
                 $message = "*SLIP GAJI*\n\n";
                 $message .= "Nama: {$name}\n";
                 $message .= "Periode: {$period}\n";
-                $message .= "Total Gaji: Rp " . number_format($totalSalary, 0, ',', '.') . "\n\n";
+                $message .= 'Total Gaji: Rp '.number_format($totalSalary, 0, ',', '.')."\n\n";
                 $message .= "📄 Detail Slip Gaji dalam bentuk PDF terlampir setelah pesan ini.\n";
-                $message .= "Terima kasih atas Kerja Cerdas dan Konstribusi anda untuk RAFATax!🙏";
+                $message .= 'Terima kasih atas Kerja Cerdas dan Konstribusi anda untuk RAFATax!🙏';
 
                 $textPayload['data'][] = [
                     'phone' => $phone,
@@ -65,10 +64,10 @@ class PayrollWhatsAppController extends Controller
 
                 if ($pdfPath && file_exists($pdfPath)) {
                     $filename = basename($pdfPath);
-                    $publicFile = $publicPath . $filename;
+                    $publicFile = $publicPath.$filename;
 
                     if (copy($pdfPath, $publicFile)) {
-                        $documentUrl = url('storage/payslips/' . $filename);
+                        $documentUrl = url('storage/payslips/'.$filename);
 
                         $documentPayload['data'][] = [
                             'phone' => $phone,
@@ -85,12 +84,12 @@ class PayrollWhatsAppController extends Controller
             $textResult = ['success' => false, 'message' => 'No data'];
             $docResult = ['success' => false, 'message' => 'No data'];
 
-            if (!empty($textPayload['data'])) {
+            if (! empty($textPayload['data'])) {
                 Log::info('Sending bulk text messages...');
                 $textResult = $this->wablasService->sendBulkMessage($textPayload);
             }
 
-            if (!empty($documentPayload['data'])) {
+            if (! empty($documentPayload['data'])) {
                 Log::info('Sending bulk documents...');
                 $docResult = $this->wablasService->sendBulkDocument($documentPayload);
             }
@@ -99,13 +98,14 @@ class PayrollWhatsAppController extends Controller
                 'success' => ($textResult['success'] ?? false) || ($docResult['success'] ?? false),
                 'text_result' => $textResult,
                 'doc_result' => $docResult,
-                'count' => count($textPayload['data'])
+                'count' => count($textPayload['data']),
             ];
         } catch (\Exception $e) {
-            Log::error('Error in sendBulkPayslips: ' . $e->getMessage());
+            Log::error('Error in sendBulkPayslips: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -113,22 +113,23 @@ class PayrollWhatsAppController extends Controller
     public function sendPayslip(PayrollDetail $detail)
     {
         try {
-            Log::info('Starting sendPayslip for detail ID: ' . $detail->id);
+            Log::info('Starting sendPayslip for detail ID: '.$detail->id);
 
             // Tolak pengiriman jika bukan staff
-            if (!$detail->staff_id) {
+            if (! $detail->staff_id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Pengiriman WhatsApp tidak didukung untuk Non-Staff'
+                    'message' => 'Pengiriman WhatsApp tidak didukung untuk Non-Staff',
                 ], 400);
             }
 
             // Validasi nomor telepon
-            if (!$detail->staff || !$detail->staff->phone) {
-                Log::warning('No phone number for staff: ' . $detail->staff->name);
+            if (! $detail->staff || ! $detail->staff->phone) {
+                Log::warning('No phone number for staff: '.$detail->staff->name);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Nomor telepon staff tidak tersedia'
+                    'message' => 'Nomor telepon staff tidak tersedia',
                 ], 400);
             }
 
@@ -140,7 +141,7 @@ class PayrollWhatsAppController extends Controller
             $totalSalary = $this->calculateTotalSalary($detail);
 
             // Format periode
-            $period = \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F Y');
+            $period = Carbon::parse($detail->payroll->payroll_date)->format('F Y');
 
             // Kirim pesan WhatsApp
             $result = $this->wablasService->sendPayslipMessage(
@@ -153,21 +154,21 @@ class PayrollWhatsAppController extends Controller
             if ($result['success']) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Slip gaji berhasil dikirim ke WhatsApp'
+                    'message' => 'Slip gaji berhasil dikirim ke WhatsApp',
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal mengirim slip gaji: ' . $result['message']
+                    'message' => 'Gagal mengirim slip gaji: '.$result['message'],
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Error sending payslip via WhatsApp: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error sending payslip via WhatsApp: '.$e->getMessage());
+            Log::error('Stack trace: '.$e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengirim slip gaji: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat mengirim slip gaji: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -177,23 +178,24 @@ class PayrollWhatsAppController extends Controller
         try {
             Log::info('Starting sendPayslipWithPdf', [
                 'detail_id' => $detail->id,
-                'staff' => $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff
+                'staff' => $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff,
             ]);
 
             // Tolak pengiriman jika bukan staff
-            if (!$detail->staff_id) {
+            if (! $detail->staff_id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Pengiriman WhatsApp tidak didukung untuk Non-Staff'
+                    'message' => 'Pengiriman WhatsApp tidak didukung untuk Non-Staff',
                 ], 400);
             }
 
             // Validasi nomor telepon
-            if (!$detail->staff || !$detail->staff->phone) {
+            if (! $detail->staff || ! $detail->staff->phone) {
                 Log::warning('No phone number', ['staff' => $detail->staff->name]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Nomor telepon staff tidak tersedia'
+                    'message' => 'Nomor telepon staff tidak tersedia',
                 ], 400);
             }
 
@@ -206,23 +208,24 @@ class PayrollWhatsAppController extends Controller
             $totalSalary = $this->calculateTotalSalary($detail);
 
             // Format periode
-            $period = \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F Y');
+            $period = Carbon::parse($detail->payroll->payroll_date)->format('F Y');
 
             // Generate PDF
             Log::info('Generating PDF...');
             $pdfPath = $this->generatePayslipPdf($detail);
 
-            if (!$pdfPath) {
+            if (! $pdfPath) {
                 Log::error('Failed to generate PDF');
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal membuat PDF slip gaji'
+                    'message' => 'Gagal membuat PDF slip gaji',
                 ], 500);
             }
 
             Log::info('PDF generated successfully', [
                 'path' => $pdfPath,
-                'size' => filesize($pdfPath) . ' bytes'
+                'size' => filesize($pdfPath).' bytes',
             ]);
 
             // Kirim PDF via WhatsApp
@@ -252,13 +255,13 @@ class PayrollWhatsAppController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => $message,
-                    'fallback' => $result['fallback'] ?? false
+                    'fallback' => $result['fallback'] ?? false,
                 ]);
             } else {
                 Log::error('Failed to send via Wablas', [
                     'http_code' => $result['http_code'] ?? null,
                     'message' => $result['message'] ?? 'Unknown error',
-                    'data' => $result['data'] ?? null
+                    'data' => $result['data'] ?? null,
                 ]);
 
                 // Pesan error yang lebih spesifik
@@ -266,23 +269,23 @@ class PayrollWhatsAppController extends Controller
                 if (isset($result['http_code']) && $result['http_code'] == 500) {
                     $errorMessage .= ': Server Wablas bermasalah. Mungkin device offline atau quota habis.';
                 } elseif (isset($result['message'])) {
-                    $errorMessage .= ': ' . $result['message'];
+                    $errorMessage .= ': '.$result['message'];
                 }
 
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage
+                    'message' => $errorMessage,
                 ], 500);
             }
         } catch (\Exception $e) {
             Log::error('Exception in sendPayslipWithPdf', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -299,7 +302,7 @@ class PayrollWhatsAppController extends Controller
             $cutIjin = $detail->leave_count * $detail->salary / 25;
             $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain;
             $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-            $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $totalBonus - $totalPot;
+            $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $detail->bonus_transport + $totalBonus - $totalPot;
 
             // Generate PDF
             $pdf = PDF::loadView('pdf.payslip', [
@@ -321,11 +324,11 @@ class PayrollWhatsAppController extends Controller
                 ->setOption(['compress' => 1]);
 
             // Simpan ke temporary file
-            $filename = 'slip_gaji_' . $detail->id . '_' . time() . '.pdf';
-            $tempPath = storage_path('app/temp/' . $filename);
+            $filename = 'slip_gaji_'.$detail->id.'_'.time().'.pdf';
+            $tempPath = storage_path('app/temp/'.$filename);
 
             // Pastikan direktori temp ada
-            if (!file_exists(storage_path('app/temp'))) {
+            if (! file_exists(storage_path('app/temp'))) {
                 mkdir(storage_path('app/temp'), 0755, true);
             }
 
@@ -333,7 +336,8 @@ class PayrollWhatsAppController extends Controller
 
             return $tempPath;
         } catch (\Exception $e) {
-            Log::error('Error generating payslip PDF: ' . $e->getMessage());
+            Log::error('Error generating payslip PDF: '.$e->getMessage());
+
             return null;
         }
     }
@@ -345,12 +349,12 @@ class PayrollWhatsAppController extends Controller
 
         // Jika dimulai dengan 0, ganti dengan 62
         if (substr($phone, 0, 1) === '0') {
-            $phone = '62' . substr($phone, 1);
+            $phone = '62'.substr($phone, 1);
         }
 
         // Jika tidak dimulai dengan 62, tambahkan 62
         if (substr($phone, 0, 2) !== '62') {
-            $phone = '62' . $phone;
+            $phone = '62'.$phone;
         }
 
         return $phone;
@@ -385,7 +389,7 @@ class PayrollWhatsAppController extends Controller
     public function downloadSlip(PayrollDetail $detail)
     {
         try {
-            Log::info('Starting downloadSlip for detail ID: ' . $detail->id);
+            Log::info('Starting downloadSlip for detail ID: '.$detail->id);
 
             // Hitung komponen gaji
             $bonusLembur = $detail->overtime_count * $detail->overtime_multiplier;
@@ -413,14 +417,14 @@ class PayrollWhatsAppController extends Controller
             ])->setPaper('a4', 'portrait');
 
             $name = $detail->staff_id ? $detail->staff->name : $detail->nama_non_staff;
-            $filename = 'Slip_Gaji_' . str_replace(' ', '_', $name) . '_' . \Carbon\Carbon::parse($detail->payroll->payroll_date)->format('F_Y') . '.pdf';
+            $filename = 'Slip_Gaji_'.str_replace(' ', '_', $name).'_'.Carbon::parse($detail->payroll->payroll_date)->format('F_Y').'.pdf';
 
             return $pdf->download($filename);
         } catch (\Exception $e) {
-            Log::error('Error downloading payslip: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error downloading payslip: '.$e->getMessage());
+            Log::error('Stack trace: '.$e->getTraceAsString());
 
-            return redirect()->back()->with('error', 'Gagal mengunduh slip gaji: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengunduh slip gaji: '.$e->getMessage());
         }
     }
 }
