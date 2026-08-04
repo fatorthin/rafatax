@@ -512,6 +512,26 @@ class MouResource extends Resource
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('updateIsSendMou')
+                        ->label('Ubah Status Kirim MoU')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->form([
+                            Forms\Components\Select::make('is_send_mou')
+                                ->label('Status Kirim MoU')
+                                ->options([
+                                    1 => 'Sudah',
+                                    0 => 'Belum',
+                                ])
+                                ->required(),
+                        ])
+                        ->action(function (Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                            foreach ($records as $record) {
+                                $record->update([
+                                    'is_send_mou' => $data['is_send_mou'],
+                                ]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make()
                         ->label('Hapus Terpilih'),
                     Tables\Actions\ExportBulkAction::make()
