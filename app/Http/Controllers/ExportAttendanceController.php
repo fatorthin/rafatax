@@ -90,8 +90,9 @@ class ExportAttendanceController extends Controller
         }
 
         // Autosize columns
-        $highestColumn = $sheet->getHighestColumn();
-        foreach (range('A', $highestColumn) as $colLetter) {
+        $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+        for ($col = 1; $col <= $highestColumnIndex; $col++) {
+            $colLetter = Coordinate::stringFromColumnIndex($col);
             $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
 
