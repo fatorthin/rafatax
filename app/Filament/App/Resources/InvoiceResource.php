@@ -452,6 +452,8 @@ class InvoiceResource extends Resource
                         'overdue' => 'Overdue',
                     ]),
             ])
+            ->filtersLayout(Tables\Enums\FiltersLayout::Modal)
+            ->filtersFormWidth(\Filament\Support\Enums\MaxWidth::FourExtraLarge)
             ->actions([
                 Tables\Actions\EditAction::make()->color('warning'),
                 Tables\Actions\Action::make('viewCostList')
