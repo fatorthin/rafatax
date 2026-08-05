@@ -408,6 +408,42 @@ class InvoiceResource extends Resource
                                 fn(Builder $query, $type): Builder => $query->where('invoice_type', $type),
                             );
                     }),
+                Tables\Filters\SelectFilter::make('category_mou')
+                    ->label('Kategori Kasus / MoU')
+                    ->multiple()
+                    ->options(function () {
+                        $categories = \App\Models\CategoryMou::pluck('name', 'id')->toArray();
+                        $categories['memo'] = 'Memo';
+                        return $categories;
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        $values = $data['values'] ?? [];
+
+                        if (empty($values)) {
+                            return $query;
+                        }
+
+                        $includeMemo = in_array('memo', $values);
+                        $categoryIds = array_filter($values, fn($val) => $val !== 'memo');
+
+                        return $query->where(function (Builder $q) use ($categoryIds, $includeMemo) {
+                            if (!empty($categoryIds)) {
+                                $q->whereHas('mou', fn(Builder $mouQuery) => $mouQuery->whereIn('category_mou_id', $categoryIds));
+                            }
+
+                            if ($includeMemo) {
+                                if (!empty($categoryIds)) {
+                                    $q->orWhere(function (Builder $subQ) {
+                                        $subQ->whereNull('mou_id')->whereNotNull('memo_id');
+                                    });
+                                } else {
+                                    $q->whereNull('mou_id')->whereNotNull('memo_id');
+                                }
+                            }
+                        });
+                    })
+                    ->searchable()
+                    ->preload(),
                 Tables\Filters\SelectFilter::make('invoice_status')
                     ->label('Status')
                     ->options([
