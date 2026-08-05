@@ -77,7 +77,7 @@ class RekapInvoiceTahunan extends Page implements HasTable
                     ->label('Total Jumlah Invoice'),
                 TextColumn::make('total_amount')
                     ->label('Total Nilai')
-                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float) ($state ?? 0), 0, ',', '.'))
                     ->sortable()
                     ->alignEnd(),
             ])

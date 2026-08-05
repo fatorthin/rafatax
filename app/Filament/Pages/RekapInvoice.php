@@ -2,15 +2,17 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\InvoiceResource;
 use App\Models\Invoice;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Tables;
-use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use App\Filament\Resources\InvoiceResource;
 
 class RekapInvoice extends Page implements HasTable
 {
@@ -28,44 +30,87 @@ class RekapInvoice extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        $years = Invoice::query()
+            ->whereNotNull('invoice_type')
+            ->where('invoice_type', '!=', '')
+            ->selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        if (empty($years)) {
+            $years = [(int) date('Y')];
+        }
+
+        $selects = [
+            'invoices.invoice_type',
+            DB::raw('COUNT(DISTINCT invoices.id) as invoice_count'),
+            DB::raw('(
+                SELECT COALESCE(SUM(cli.amount), 0)
+                FROM cost_list_invoices cli
+                JOIN invoices i2 ON cli.invoice_id = i2.id
+                WHERE i2.invoice_type = invoices.invoice_type
+                AND i2.deleted_at IS NULL
+                AND cli.deleted_at IS NULL
+            ) as total_amount'),
+        ];
+
+        foreach ($years as $year) {
+            $selects[] = DB::raw("(
+                SELECT COALESCE(SUM(cli.amount), 0)
+                FROM cost_list_invoices cli
+                JOIN invoices i2 ON cli.invoice_id = i2.id
+                WHERE i2.invoice_type = invoices.invoice_type
+                AND YEAR(i2.created_at) = {$year}
+                AND i2.deleted_at IS NULL
+                AND cli.deleted_at IS NULL
+            ) as total_{$year}");
+        }
+
+        $columns = [
+            TextColumn::make('invoice_type')
+                ->label('Tipe Invoice')
+                ->formatStateUsing(fn ($state) => strtoupper($state))
+                ->sortable()
+                ->searchable(),
+            TextColumn::make('invoice_count')
+                ->label('Jumlah Invoice')
+                ->sortable(),
+        ];
+
+        foreach ($years as $year) {
+            $columns[] = TextColumn::make("total_{$year}")
+                ->label("Nominal {$year}")
+                ->formatStateUsing(fn ($state): string => 'Rp '.number_format((float) ($state ?? 0), 0, ',', '.'))
+                ->sortable();
+        }
+
+        $columns[] = TextColumn::make('total_overall')
+            ->label('Total Nilai (Keseluruhan)')
+            ->state(function ($record) use ($years): string {
+                $sum = 0;
+                foreach ($years as $year) {
+                    $prop = "total_{$year}";
+                    $sum += (float) ($record->$prop ?? 0);
+                }
+                return 'Rp '.number_format($sum, 0, ',', '.');
+            });
+
         return $table
             ->query(
                 Invoice::query()
-                    ->select('invoice_type')
-                    ->whereNotNull('invoice_type')
-                    ->where('invoice_type', '!=', '')
-                    ->distinct()
-                    ->addSelect(DB::raw('(SELECT COUNT(*) FROM invoices as i WHERE i.invoice_type = invoices.invoice_type AND i.deleted_at IS NULL) as invoice_count'))
-                    ->addSelect(DB::raw('(
-                        SELECT SUM(cli.amount) 
-                        FROM cost_list_invoices as cli
-                        JOIN invoices as i2 ON cli.invoice_id = i2.id
-                        WHERE i2.invoice_type = invoices.invoice_type 
-                        AND i2.deleted_at IS NULL
-                        AND cli.deleted_at IS NULL
-                    ) as total_amount'))
+                    ->select($selects)
+                    ->whereNotNull('invoices.invoice_type')
+                    ->where('invoices.invoice_type', '!=', '')
+                    ->groupBy('invoices.invoice_type')
             )
-            ->columns([
-                TextColumn::make('invoice_type')
-                    ->label('Tipe Invoice')
-                    ->formatStateUsing(function ($state) {
-                        return strtoupper($state);
-                    })
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('invoice_count')
-                    ->label('Jumlah Invoice')
-                    ->sortable(),
-                TextColumn::make('total_amount')
-                    ->label('Total Nilai')
-                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
-                    ->sortable(),
-            ])
+            ->columns($columns)
             ->actions([
                 Tables\Actions\Action::make('view_list')
                     ->label('Lihat List')
                     ->icon('heroicon-o-list-bullet')
-                    ->url(fn($record): string => InvoiceResource::getUrl('index', [
+                    ->url(fn ($record): string => InvoiceResource::getUrl('index', [
                         'tableFilters' => [
                             'invoice_type' => [ // Assuming filter exists or needs to be generic
                                 'value' => $record->invoice_type,
@@ -88,19 +133,15 @@ class RekapInvoice extends Page implements HasTable
         return $record->invoice_type;
     }
 
-    public function getTableRecord(?string $key): ?\Illuminate\Database\Eloquent\Model
-    {
-        if (!$key) return null;
-
-        return Invoice::query()
-            ->where('invoice_type', $key)
-            ->first();
-    }
-
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('rekap_tahunan')
+            Action::make('rekap_kasus')
+                ->label('Rekap Berdasarkan Kasus')
+                ->url(RekapInvoiceKasus::getUrl())
+                ->color('success')
+                ->icon('heroicon-o-folder-open'),
+            Action::make('rekap_tahunan')
                 ->label('Rekap Tahunan')
                 ->url(RekapInvoiceTahunan::getUrl())
                 ->color('primary')
