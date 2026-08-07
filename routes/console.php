@@ -25,3 +25,10 @@ Schedule::command('invoices:update-overdue')
     ->dailyAt('00:05')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/invoice-overdue.log'));
+
+// Hitung depresiasi aktiva tetap otomatis tiap akhir bulan jam 23:55 WIB
+Schedule::command('aktiva:generate-depreciation')
+    ->lastDayOfMonth('23:55')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/depreciation-cron.log'));
+

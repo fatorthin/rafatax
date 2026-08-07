@@ -15,6 +15,7 @@ use Filament\Tables\Columns\Summarizers\Sum;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DaftarAktivaTetapResource\Pages;
 use Filament\Tables\Enums\ActionsPosition;
+use App\Services\DepreciationService;
 
 class DaftarAktivaTetapResource extends Resource
 {
@@ -45,125 +46,13 @@ class DaftarAktivaTetapResource extends Resource
                         ->displayFormat('F Y')
                         ->native(false),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data, DepreciationService $service) {
                     $date = \Carbon\Carbon::parse($data['periode']);
-                    $assets = DaftarAktivaTetap::query()->where('status', 'aktif')->get();
-                    $count = 0;
-
-                    foreach ($assets as $asset) {
-                        // Skip aset yang belum diperoleh pada periode yang dipilih
-                        $acquisitionDate = \Carbon\Carbon::parse($asset->tahun_perolehan)->startOfMonth();
-                        if ($date->startOfMonth()->lt($acquisitionDate)) {
-                            continue;
-                        }
-
-                        // Hitung total penyusutan yang sudah ada
-                        $existingDepreciation = DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $asset->id)->sum('jumlah_penyusutan');
-
-                        // Hitung sisa nilai buku saat ini
-                        $remainingValue = $asset->harga_perolehan - $existingDepreciation;
-
-                        // Jika sisa nilai buku sudah 0 atau kurang, skip
-                        if ($remainingValue <= 0) {
-                            continue;
-                        }
-
-                        // Hitung penyusutan bulanan: (Harga Perolehan * Tarif) / 100 / 12
-                        $monthlyDepreciation = ($asset->harga_perolehan * $asset->tarif_penyusutan / 100) / 12;
-                        $monthlyDepreciation = round($monthlyDepreciation);
-
-                        // Pastikan penyusutan tidak melebihi sisa nilai buku
-                        if ($monthlyDepreciation > $remainingValue) {
-                            $monthlyDepreciation = $remainingValue;
-                        }
-
-                        // Cek apakah sudah ada depresiasi di bulan dan tahun yang sama (self-healing)
-                        $existingRecords = DepresiasiAktivaTetap::query()->where('daftar_aktiva_tetap_id', $asset->id)
-                            ->whereYear('tanggal_penyusutan', $date->year)
-                            ->whereMonth('tanggal_penyusutan', $date->month)
-                            ->orderBy('id')
-                            ->get();
-
-                        if ($existingRecords->count() > 0) {
-                            // Hapus duplikasi data jika ada lebih dari 1
-                            if ($existingRecords->count() > 1) {
-                                $duplicates = $existingRecords->slice(1);
-                                foreach ($duplicates as $duplicate) {
-                                    $duplicate->delete();
-                                }
-                            }
-                            continue;
-                        }
-
-                        DepresiasiAktivaTetap::create([
-                            'daftar_aktiva_tetap_id' => $asset->id,
-                            'tanggal_penyusutan' => $date->format('Y-m-d'),
-                            'jumlah_penyusutan' => $monthlyDepreciation,
-                        ]);
-
-                        $count++;
-                    }
-
-                    $totalDepreciationAll = DepresiasiAktivaTetap::query()
-                        ->whereYear('tanggal_penyusutan', $date->year)
-                        ->whereMonth('tanggal_penyusutan', $date->month)
-                        ->sum('jumlah_penyusutan');
-
-                    if ($totalDepreciationAll > 0) {
-                        $month = $date->month;
-                        $year = $date->year;
-                        $transactionDate = $date->endOfMonth()->format('Y-m-d');
-                        $descriptionDebit = "Beban Depresiasi Aktiva Tetap " . $date->format('M Y');
-                        $descriptionKredit = "Akumulasi Depresiasi Aktiva Tetap " . $date->format('M Y');
-
-                        // CoA 139 (Debit)
-                        $journalDebit = \App\Models\JournalBookReport::where('coa_id', 139)
-                            ->whereYear('transaction_date', $year)
-                            ->whereMonth('transaction_date', $month)
-                            ->first();
-
-                        if (!$journalDebit) {
-                            \App\Models\JournalBookReport::create([
-                                'description' => $descriptionDebit,
-                                'journal_book_id' => 2, // AJE
-                                'debit_amount' => $totalDepreciationAll,
-                                'credit_amount' => 0,
-                                'coa_id' => 139,
-                                'transaction_date' => $transactionDate,
-                            ]);
-                        } elseif ($journalDebit->debit_amount != $totalDepreciationAll) {
-                            $journalDebit->update([
-                                'debit_amount' => $totalDepreciationAll,
-                                'credit_amount' => 0,
-                            ]);
-                        }
-
-                        // CoA 103 (Kredit)
-                        $journalKredit = \App\Models\JournalBookReport::where('coa_id', 103)
-                            ->whereYear('transaction_date', $year)
-                            ->whereMonth('transaction_date', $month)
-                            ->first();
-
-                        if (!$journalKredit) {
-                            \App\Models\JournalBookReport::create([
-                                'description' => $descriptionKredit,
-                                'journal_book_id' => 2, // AJE
-                                'debit_amount' => 0,
-                                'credit_amount' => $totalDepreciationAll,
-                                'coa_id' => 103,
-                                'transaction_date' => $transactionDate,
-                            ]);
-                        } elseif ($journalKredit->credit_amount != $totalDepreciationAll) {
-                            $journalKredit->update([
-                                'debit_amount' => 0,
-                                'credit_amount' => $totalDepreciationAll,
-                            ]);
-                        }
-                    }
+                    $result = $service->generateForDate($date);
 
                     \Filament\Notifications\Notification::make()
                         ->title('Berhasil')
-                        ->body("Berhasil menghitung depresiasi untuk {$count} aktiva tetap.")
+                        ->body("Berhasil menghitung depresiasi untuk {$result['count']} aktiva tetap (Total: Rp " . number_format($result['total'], 0, ',', '.') . ").")
                         ->success()
                         ->send();
                 }),

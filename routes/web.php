@@ -221,3 +221,27 @@ Route::get('/run-invoice-overdue', function () {
         ], 500);
     }
 });
+
+// Route khusus untuk menjalankan hitung depresiasi aktiva tetap via HTTP (cron job Hostinger)
+// Akses: https://keu.rafatax.id/run-generate-depreciation?key=rafatax-secret-worker
+Route::get('/run-generate-depreciation', function () {
+    if (request('key') !== 'rafatax-secret-worker') {
+        abort(403, 'Unauthorized');
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('aktiva:generate-depreciation');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hitung depresiasi aktiva tetap executed successfully',
+            'output'  => \Illuminate\Support\Facades\Artisan::output()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
