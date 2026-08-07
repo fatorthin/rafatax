@@ -48,6 +48,9 @@ class PermissionSeeder extends Seeder
             ['name' => 'staff-attendance.create', 'display_name' => 'Create Staff Attendance', 'description' => 'Membuat data presensi karyawan', 'resource' => 'staff-attendance', 'action' => 'create'],
             ['name' => 'staff-attendance.edit', 'display_name' => 'Edit Staff Attendance', 'description' => 'Mengedit data presensi karyawan', 'resource' => 'staff-attendance', 'action' => 'edit'],
             ['name' => 'staff-attendance.delete', 'display_name' => 'Delete Staff Attendance', 'description' => 'Menghapus data presensi karyawan', 'resource' => 'staff-attendance', 'action' => 'delete'],
+            // WhatsApp Gateway Settings Management
+            ['name' => 'whatsapp-gateway.view', 'display_name' => 'View WhatsApp Gateway Settings', 'description' => 'Melihat halaman pengaturan WhatsApp Gateway', 'resource' => 'whatsapp-gateway', 'action' => 'view'],
+            ['name' => 'whatsapp-gateway.manage', 'display_name' => 'Manage WhatsApp Gateway Settings', 'description' => 'Mengelola pengaturan WhatsApp Gateway', 'resource' => 'whatsapp-gateway', 'action' => 'manage'],
         ];
 
         foreach ($permissions as $permission) {

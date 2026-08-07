@@ -42,6 +42,15 @@ return [
         'auth_header' => env('WABLAS_AUTH_HEADER', 'concat'),
     ],
 
+    'whatsapp_gateway' => [
+        'enabled' => env('WHATSAPP_GATEWAY_ENABLED', true),
+        'url' => env('WHATSAPP_GATEWAY_URL', 'https://wagateway.surakana.my.id'),
+        'auth' => env('WHATSAPP_GATEWAY_AUTH', 'admin:admin'),
+        'device_id' => env('WHATSAPP_DEVICE_ID', ''),
+        'verify_ssl' => env('WHATSAPP_GATEWAY_VERIFY_SSL', true),
+        'timeout' => env('WHATSAPP_GATEWAY_TIMEOUT', 30),
+    ],
+
     // KPI external API (used for syncing CaseProject data)
     'kpi' => [
         'base_url' => env('KPI_BASE_URL', 'https://kpi.rafatax.id/api'),
