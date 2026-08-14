@@ -69,10 +69,11 @@ class CaseProjectResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('staff_id')
                                     ->label('Staff')
-                                    ->options(function (?Illuminate\Database\Eloquent\Model $record) {
+                                    ->options(function (?\Illuminate\Database\Eloquent\Model $record) {
+                                        $staffIds = is_array($record?->staff_id) ? $record->staff_id : array_filter([$record?->staff_id]);
                                         return Staff::query()
                                             ->where('is_active', true)
-                                            ->when($record && isset($record->staff_id), fn($query) => $query->orWhereIn('id', $record->staff_id))
+                                            ->when(!empty($staffIds), fn($query) => $query->orWhereIn('id', $staffIds))
                                             ->pluck('name', 'id');
                                     })
                                     ->searchable()
