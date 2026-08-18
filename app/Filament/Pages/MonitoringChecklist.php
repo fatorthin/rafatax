@@ -42,7 +42,10 @@ class MonitoringChecklist extends Page implements HasTable
                 MoU::query()
                     ->with(['checklistMous', 'client', 'categoryMou'])
             )
-            ->heading('Monitoring Checklist MoU Tahun ' . $this->year)
+            ->heading(function () {
+                $year = $this->tableFilters['year']['value'] ?? date('Y');
+                return 'Monitoring Checklist MoU Tahun ' . $year;
+            })
             ->columns([
                 TextColumn::make('index')
                     ->label('No')
@@ -86,7 +89,7 @@ class MonitoringChecklist extends Page implements HasTable
                 ViewColumn::make('checklist_months')
                     ->label('Checklist')
                     ->view('filament.tables.columns.checklist-months')
-                    ->viewData(['year' => $this->year]),
+                    ->viewData(fn () => ['year' => $this->tableFilters['year']['value'] ?? date('Y')]),
             ])
             ->filters([
                 SelectFilter::make('client_id')
