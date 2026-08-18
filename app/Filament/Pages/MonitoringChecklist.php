@@ -40,6 +40,7 @@ class MonitoringChecklist extends Page implements HasTable
         return $table
             ->query(
                 MoU::query()
+                    ->where('status', 'approved')
                     ->with(['checklistMous', 'client', 'categoryMou'])
             )
             ->heading(function () {
