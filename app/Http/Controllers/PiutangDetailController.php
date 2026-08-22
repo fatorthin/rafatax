@@ -9,11 +9,12 @@ use Illuminate\Http\Request;
 
 class PiutangDetailController extends Controller
 {
-    public function show($id)
+    public function show($id, Request $request)
     {
         $client = Client::findOrFail($id);
+        $periode = $request->query('periode', 'all');
         $page = new PiutangPerClient();
-        $transactions = $page->getClientTransactions($client);
+        $transactions = $page->getClientTransactions($client, $periode);
 
         // Calculate totals for summary cards
         $saldoAwal = 0;
@@ -26,7 +27,7 @@ class PiutangDetailController extends Controller
                 $saldoAwal += $tx['debit'];
             } elseif ($tx['type'] === 'Sales Invoice') {
                 $totalInvoice += $tx['debit'];
-            } elseif ($tx['type'] === 'Sales Receipt') {
+            } elseif (str_starts_with($tx['type'], 'Sales Receipt') || str_starts_with($tx['type'], 'Pembayaran')) {
                 $totalPembayaran += $tx['kredit'];
             } elseif ($tx['type'] === 'Discount MoU' || $tx['type'] === 'Cancel MoU') {
                 $totalPotongan += $tx['kredit'];
@@ -42,6 +43,7 @@ class PiutangDetailController extends Controller
 
         return view('filament.pages.piutang-detail-standalone', compact(
             'client',
+            'periode',
             'transactions',
             'saldoAwal',
             'saldoAwalRecord',

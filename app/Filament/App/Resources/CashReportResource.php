@@ -267,7 +267,7 @@ class CashReportResource extends Resource
                     ->label('Hubungkan Invoice')
                     ->icon('heroicon-o-link')
                     ->color('success')
-                    ->visible(fn(CashReport $record) => in_array($record->coa_id, [181, 182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))
+                    ->visible(fn(CashReport $record) => in_array($record->coa_id, [180, 181, 182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))
                     ->form([
                         Forms\Components\Select::make('invoice_id')
                             ->label('Pilih Invoice')
@@ -293,7 +293,7 @@ class CashReportResource extends Resource
                                     ->mapWithKeys(function ($invoice) {
                                         $clientName = $invoice->client_name ?: 'No Client';
                                         $amountFormatted = number_format($invoice->total_amount, 0, ',', '.');
-                                        return [$invoice->id => "{$invoice->invoice_number} - {$invoice->description}- {$clientName} - Rp {$amountFormatted}"];
+                                        return [$invoice->id => "{$invoice->invoice_number} - {$invoice->description} - {$clientName} - Rp {$amountFormatted}"];
                                     })
                                     ->toArray();
                             })
@@ -308,8 +308,11 @@ class CashReportResource extends Resource
                             ->default(fn(CashReport $record) => $record->invoice_id ?: null)
                     ])
                     ->action(function (CashReport $record, array $data): void {
+                        $invoice = $data['invoice_id'] ? \App\Models\Invoice::find($data['invoice_id']) : null;
                         $record->update([
-                            'invoice_id' => $data['invoice_id'] ?: null
+                            'invoice_id' => $data['invoice_id'] ?: null,
+                            'client_id' => $invoice?->client_id ?: ($invoice?->mou?->client_id ?: $record->client_id),
+                            'mou_id' => $invoice?->mou_id ?: $record->mou_id,
                         ]);
                         \Filament\Notifications\Notification::make()
                             ->title('Invoice berhasil dihubungkan')

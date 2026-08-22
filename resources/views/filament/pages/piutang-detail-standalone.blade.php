@@ -158,6 +158,36 @@
             </div>
         </div>
 
+        <!-- Period Tabs / Filter (No Print) -->
+        <div class="flex flex-wrap items-center justify-between gap-4 no-print">
+            <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                <a href="{{ route('piutang-per-client.detail', ['id' => $client->id, 'periode' => 'all']) }}"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all {{ ($periode ?? 'all') === 'all' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-solid fa-layer-group mr-1.5 text-[11px]"></i> Semua Periode
+                </a>
+                <a href="{{ route('piutang-per-client.detail', ['id' => $client->id, 'periode' => 'pre_2025']) }}"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all {{ ($periode ?? 'all') === 'pre_2025' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-solid fa-clock-rotate-left mr-1.5 text-[11px]"></i> Sebelum 2025 (&lt; 2025)
+                </a>
+                <a href="{{ route('piutang-per-client.detail', ['id' => $client->id, 'periode' => 'post_2025']) }}"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all {{ ($periode ?? 'all') === 'post_2025' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                    <i class="fa-regular fa-calendar mr-1.5 text-[11px]"></i> Tahun 2025 ke Atas (&ge; 2025)
+                </a>
+            </div>
+            
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                @if(($periode ?? 'all') === 'pre_2025')
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 font-medium">
+                        <i class="fa-solid fa-circle-info"></i> Menampilkan piutang sebelum 2025 & pelunasan CoA AO-103.5
+                    </span>
+                @elseif(($periode ?? 'all') === 'post_2025')
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-medium">
+                        <i class="fa-solid fa-circle-info"></i> Menampilkan transaksi invoice & pembayaran periode 2025 ke atas
+                    </span>
+                @endif
+            </div>
+        </div>
+
         <!-- Summary Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <!-- Saldo Awal -->
