@@ -11,6 +11,8 @@ class ManageMous extends ManageRecords
 {
     protected static string $resource = MouResource::class;
 
+    protected static string $view = 'filament.resources.mou-resource.pages.manage-mous';
+
     protected static ?string $title = 'Kelola Daftar MoU';
 
     protected function getHeaderActions(): array

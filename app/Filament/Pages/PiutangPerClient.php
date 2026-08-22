@@ -29,14 +29,30 @@ class PiutangPerClient extends Page implements HasTable
 
     public string $periode = 'all';
 
+    protected $queryString = [
+        'periode' => ['except' => 'all'],
+    ];
+
+    public function mount(): void
+    {
+        $this->periode = request()->query('periode', $this->periode ?: 'all');
+        if (isset($this->tableFilters['periode'])) {
+            $this->tableFilters['periode']['value'] = $this->periode;
+        }
+    }
+
     public function setPeriode(string $periode): void
     {
         $this->periode = $periode;
+        if (isset($this->tableFilters['periode'])) {
+            $this->tableFilters['periode']['value'] = $periode;
+        }
+        $this->resetPage();
     }
 
     public function table(Table $table): Table
     {
-        $periode = $this->tableFilters['periode']['value'] ?? $this->periode ?? 'all';
+        $periode = $this->periode ?? 'all';
 
         // 1. Saldo Awal Aggregated Subquery
         if ($periode === 'pre_2025') {
@@ -189,7 +205,12 @@ class PiutangPerClient extends Page implements HasTable
                         'post_2025' => 'Tahun 2025 ke Atas (>= 2025)',
                     ])
                     ->default(fn() => $this->periode)
-                    ->query(fn(Builder $query) => $query),
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['value'])) {
+                            $this->periode = $data['value'];
+                        }
+                        return $query;
+                    }),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif')
                     ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))
@@ -202,7 +223,7 @@ class PiutangPerClient extends Page implements HasTable
                     ->color('info')
                     ->url(fn($record) => route('piutang-per-client.detail', [
                         'id' => $record->id,
-                        'periode' => $this->tableFilters['periode']['value'] ?? $this->periode ?? 'all',
+                        'periode' => $this->periode ?? 'all',
                     ]))
                     ->openUrlInNewTab(),
             ]);
@@ -210,7 +231,7 @@ class PiutangPerClient extends Page implements HasTable
 
     public function getClientTransactions(Client $client, ?string $periode = null): array
     {
-        $periode = $periode ?? $this->tableFilters['periode']['value'] ?? $this->periode ?? 'all';
+        $periode = $periode ?? $this->periode ?? 'all';
         $transactions = [];
 
         // 1. Saldo Awal
