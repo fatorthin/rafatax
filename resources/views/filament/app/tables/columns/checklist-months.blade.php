@@ -62,7 +62,7 @@
             @if ($status !== 'none')
                 <div class="text-[10px] font-semibold mt-0.5" style="text-transform: uppercase;">{{ $status }}</div>
             @else
-                <div class="text-[10px] font-semibold mt-0.5" style="text-transform: uppercase;">-</div>
+                <div class="text-[10px] font-semibold mt-0.5" style="text-transform: uppercase;">Pending</div>
             @endif
         </button>
     @endforeach
