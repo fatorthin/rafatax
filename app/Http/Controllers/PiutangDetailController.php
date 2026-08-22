@@ -24,7 +24,7 @@ class PiutangDetailController extends Controller
 
         foreach ($transactions as $tx) {
             if ($tx['type'] === 'Saldo Awal') {
-                $saldoAwal += $tx['debit'];
+                $saldoAwal += $tx['amount'];
             } elseif ($tx['type'] === 'Sales Invoice') {
                 $totalInvoice += $tx['debit'];
             } elseif (str_starts_with($tx['type'], 'Sales Receipt') || str_starts_with($tx['type'], 'Pembayaran')) {
@@ -39,7 +39,8 @@ class PiutangDetailController extends Controller
         $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
 
         $saldoAwalRecords = SaldoAwalPiutang::where('client_id', $client->id)->orderBy('year', 'asc')->get();
-        $saldoAwalRecord = $saldoAwalRecords->first();
+        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->where('year', 2025)->first()
+            ?? $saldoAwalRecords->first();
 
         return view('filament.pages.piutang-detail-standalone', compact(
             'client',
@@ -59,8 +60,8 @@ class PiutangDetailController extends Controller
     public function updateSaldoAwal($id, Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:0',
-            'year' => 'required|integer',
+            'amount' => 'required|numeric',
+            'year' => 'nullable|integer',
             'notes' => 'nullable|string|max:255',
         ]);
 
@@ -69,10 +70,10 @@ class PiutangDetailController extends Controller
         SaldoAwalPiutang::updateOrCreate(
             [
                 'client_id' => $client->id,
-                'year' => $request->input('year', 2024),
+                'year' => (int) $request->input('year', 2025),
             ],
             [
-                'amount' => $request->input('amount'),
+                'amount' => (float) $request->input('amount'),
                 'notes' => $request->input('notes'),
             ]
         );

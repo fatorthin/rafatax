@@ -165,17 +165,18 @@ class PiutangPerClient extends Page implements HasTable
             ->get();
 
         foreach ($saldoAwals as $sa) {
-            if ($sa->amount > 0) {
+            if ((float) $sa->amount != 0.0) {
                 $periodeLabel = 'Tahun ' . $sa->year;
+                $isDebit = (float) $sa->amount > 0;
                 $transactions[] = [
                     'date' => null,
                     'date_sort' => "{$sa->year}-01-01",
                     'type' => 'Saldo Awal',
                     'ref' => (string) $sa->year,
                     'description' => $sa->notes ?: "Saldo Awal Piutang ({$periodeLabel})",
-                    'debit' => $sa->amount,
-                    'kredit' => 0,
-                    'amount' => $sa->amount,
+                    'debit' => $isDebit ? (float) $sa->amount : 0,
+                    'kredit' => !$isDebit ? abs((float) $sa->amount) : 0,
+                    'amount' => (float) $sa->amount,
                 ];
             }
         }
