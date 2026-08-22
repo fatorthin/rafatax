@@ -38,161 +38,115 @@ class PiutangPerClient extends Page implements HasTable
     {
         $periode = $this->tableFilters['periode']['value'] ?? $this->periode ?? 'all';
 
-        // 1. Saldo Awal SQL
+        // 1. Saldo Awal Aggregated Subquery
         if ($periode === 'pre_2025') {
-            $saldoAwalSql = "COALESCE((SELECT SUM(amount) FROM saldo_awal_piutangs WHERE client_id = clients.id AND year < 2025), 0)";
+            $saFilter = "WHERE year < 2025";
         } elseif ($periode === 'post_2025') {
-            $saldoAwalSql = "COALESCE((SELECT SUM(amount) FROM saldo_awal_piutangs WHERE client_id = clients.id AND year >= 2025), 0)";
+            $saFilter = "WHERE year >= 2025";
         } else {
-            $saldoAwalSql = "COALESCE((SELECT SUM(amount) FROM saldo_awal_piutangs WHERE client_id = clients.id), 0)";
+            $saFilter = "";
         }
+        $saSql = "
+            SELECT client_id, SUM(amount) as saldo_awal
+            FROM saldo_awal_piutangs
+            {$saFilter}
+            GROUP BY client_id
+        ";
 
-        // 2. Invoice Condition SQL
+        // 2. Invoices Aggregated Subquery
         if ($periode === 'pre_2025') {
-            $invoiceDateCond = "AND i.invoice_date < '2025-01-01'";
+            $invDateCond = "AND i.invoice_date < '2025-01-01'";
         } elseif ($periode === 'post_2025') {
-            $invoiceDateCond = "AND i.invoice_date >= '2025-01-01'";
+            $invDateCond = "AND i.invoice_date >= '2025-01-01'";
         } else {
-            $invoiceDateCond = "";
+            $invDateCond = "";
         }
+        $invSql = "
+            SELECT client_id, SUM(amount) as total_invoice
+            FROM (
+                SELECT 
+                    COALESCE(NULLIF(i.client_id, 0), m.client_id) as client_id,
+                    cli.amount
+                FROM cost_list_invoices cli
+                JOIN invoices i ON cli.invoice_id = i.id
+                LEFT JOIN mous m ON (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id = m.id)
+                WHERE cli.deleted_at IS NULL 
+                  AND i.deleted_at IS NULL
+                  {$invDateCond}
+            ) as t_inv
+            WHERE client_id IS NOT NULL
+            GROUP BY client_id
+        ";
 
-        // 3. Cash Report (Pembayaran) Condition SQL
+        // 3. Payments Aggregated Subquery
         if ($periode === 'pre_2025') {
-            // Sebelum 2025: Pembayaran sebelum 2025 ATAU transaksi kas bank CoA 180 (AO-103.5 Piutang Lama)
-            $cashReportCond = "
+            $payDateCond = "
                 AND (
-                    (
-                        (
-                            (cr.client_id IS NOT NULL AND cr.client_id <> 0 AND cr.client_id = clients.id)
-                            OR
-                            (cr.mou_id IS NOT NULL AND cr.mou_id <> '0' AND cr.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id))
-                            OR
-                            (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id IN (
-                                SELECT id FROM invoices 
-                                WHERE (client_id = clients.id OR (mou_id IS NOT NULL AND mou_id <> 0 AND mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
-                                AND deleted_at IS NULL
-                            ))
-                        )
-                        AND cr.transaction_date < '2025-01-01'
-                        AND (cr.coa_id IS NULL OR cr.coa_id <> 180)
-                    )
-                    OR
-                    (
-                        cr.coa_id = 180
-                        AND (
-                            (cr.client_id IS NOT NULL AND cr.client_id <> 0 AND cr.client_id = clients.id)
-                            OR
-                            (cr.mou_id IS NOT NULL AND cr.mou_id <> '0' AND cr.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id))
-                            OR
-                            (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id IN (
-                                SELECT id FROM invoices 
-                                WHERE (client_id = clients.id OR (mou_id IS NOT NULL AND mou_id <> 0 AND mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
-                                AND deleted_at IS NULL
-                            ))
-                        )
-                    )
+                    (cr.transaction_date < '2025-01-01' AND (cr.coa_id IS NULL OR cr.coa_id <> 180))
+                    OR cr.coa_id = 180
                 )
             ";
         } elseif ($periode === 'post_2025') {
-            // Tahun 2025 ke Atas: Pembayaran tahun 2025 ke atas dan bukan CoA 180
-            $cashReportCond = "
-                AND (
-                    (cr.client_id IS NOT NULL AND cr.client_id <> 0 AND cr.client_id = clients.id)
-                    OR
-                    (cr.mou_id IS NOT NULL AND cr.mou_id <> '0' AND cr.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id))
-                    OR
-                    (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id IN (
-                        SELECT id FROM invoices 
-                        WHERE (client_id = clients.id OR (mou_id IS NOT NULL AND mou_id <> 0 AND mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
-                        AND deleted_at IS NULL
-                    ))
-                )
+            $payDateCond = "
                 AND cr.transaction_date >= '2025-01-01'
                 AND (cr.coa_id IS NULL OR cr.coa_id <> 180)
             ";
         } else {
-            // Semua Periode
-            $cashReportCond = "
-                AND (
-                    (cr.client_id IS NOT NULL AND cr.client_id <> 0 AND cr.client_id = clients.id)
-                    OR
-                    (cr.mou_id IS NOT NULL AND cr.mou_id <> '0' AND cr.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id))
-                    OR
-                    (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id IN (
-                        SELECT id FROM invoices 
-                        WHERE (client_id = clients.id OR (mou_id IS NOT NULL AND mou_id <> 0 AND mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
-                        AND deleted_at IS NULL
-                    ))
-                )
-            ";
+            $payDateCond = "";
         }
+        $paySql = "
+            SELECT client_id, SUM(amount) as total_pembayaran
+            FROM (
+                SELECT 
+                    COALESCE(
+                        NULLIF(cr.client_id, 0),
+                        m.client_id,
+                        inv.client_id,
+                        inv_m.client_id
+                    ) as client_id,
+                    (cr.debit_amount - cr.credit_amount) as amount
+                FROM cash_reports cr
+                LEFT JOIN mous m ON (cr.mou_id IS NOT NULL AND cr.mou_id <> '0' AND cr.mou_id = m.id)
+                LEFT JOIN invoices inv ON (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id = inv.id)
+                LEFT JOIN mous inv_m ON (inv.mou_id IS NOT NULL AND inv.mou_id <> 0 AND inv.mou_id = inv_m.id)
+                WHERE cr.deleted_at IS NULL
+                  {$payDateCond}
+            ) as t_pay
+            WHERE client_id IS NOT NULL
+            GROUP BY client_id
+        ";
 
-        // 4. Potongan MoU Condition SQL
+        // 4. Potongan MoU Aggregated Subquery
         if ($periode === 'pre_2025') {
-            $potonganCond = "AND (start_date < '2025-01-01' OR (start_date IS NULL AND created_at < '2025-01-01'))";
+            $potFilter = "AND (start_date < '2025-01-01' OR (start_date IS NULL AND created_at < '2025-01-01'))";
         } elseif ($periode === 'post_2025') {
-            $potonganCond = "AND (start_date >= '2025-01-01' OR (start_date IS NULL AND created_at >= '2025-01-01'))";
+            $potFilter = "AND (start_date >= '2025-01-01' OR (start_date IS NULL AND created_at >= '2025-01-01'))";
         } else {
-            $potonganCond = "";
+            $potFilter = "";
         }
+        $potSql = "
+            SELECT 
+                client_id,
+                SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0)) as total_potongan
+            FROM mous
+            WHERE deleted_at IS NULL
+              {$potFilter}
+            GROUP BY client_id
+        ";
 
         return $table
             ->query(
                 Client::query()
                     ->select('clients.*')
-                    ->selectRaw("{$saldoAwalSql} as saldo_awal")
-                    ->selectRaw("COALESCE((
-                        SELECT SUM(cli.amount)
-                        FROM cost_list_invoices cli
-                        JOIN invoices i ON cli.invoice_id = i.id
-                        WHERE (i.client_id = clients.id OR (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
-                        {$invoiceDateCond}
-                        AND i.deleted_at IS NULL
-                        AND cli.deleted_at IS NULL
-                    ), 0) as total_invoice")
-                    ->selectRaw("COALESCE((
-                        SELECT SUM(cr.debit_amount - cr.credit_amount)
-                        FROM cash_reports cr
-                        WHERE 1=1
-                        {$cashReportCond}
-                        AND cr.deleted_at IS NULL
-                    ), 0) as total_pembayaran")
-                    ->selectRaw("COALESCE((
-                        SELECT SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0))
-                        FROM mous
-                        WHERE client_id = clients.id
-                        {$potonganCond}
-                        AND deleted_at IS NULL
-                    ), 0) as total_potongan")
-                    ->selectRaw("(
-                        {$saldoAwalSql}
-                        +
-                        COALESCE((
-                            SELECT SUM(cli.amount)
-                            FROM cost_list_invoices cli
-                            JOIN invoices i ON cli.invoice_id = i.id
-                            WHERE (i.client_id = clients.id OR (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id IN (SELECT id FROM mous WHERE client_id = clients.id)))
-                            {$invoiceDateCond}
-                            AND i.deleted_at IS NULL
-                            AND cli.deleted_at IS NULL
-                        ), 0)
-                        -
-                        COALESCE((
-                            SELECT SUM(cr.debit_amount - cr.credit_amount)
-                            FROM cash_reports cr
-                            WHERE 1=1
-                            {$cashReportCond}
-                            AND cr.deleted_at IS NULL
-                        ), 0)
-                        -
-                        COALESCE((
-                            SELECT SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0))
-                            FROM mous
-                            WHERE client_id = clients.id
-                            {$potonganCond}
-                            AND deleted_at IS NULL
-                        ), 0)
-                    ) as total_piutang")
+                    ->selectRaw('COALESCE(sa.saldo_awal, 0) as saldo_awal')
+                    ->selectRaw('COALESCE(inv.total_invoice, 0) as total_invoice')
+                    ->selectRaw('COALESCE(pay.total_pembayaran, 0) as total_pembayaran')
+                    ->selectRaw('COALESCE(pot.total_potongan, 0) as total_potongan')
+                    ->selectRaw('(COALESCE(sa.saldo_awal, 0) + COALESCE(inv.total_invoice, 0) - COALESCE(pay.total_pembayaran, 0) - COALESCE(pot.total_potongan, 0)) as total_piutang')
+                    ->leftJoin(DB::raw("({$saSql}) as sa"), 'clients.id', '=', 'sa.client_id')
+                    ->leftJoin(DB::raw("({$invSql}) as inv"), 'clients.id', '=', 'inv.client_id')
+                    ->leftJoin(DB::raw("({$paySql}) as pay"), 'clients.id', '=', 'pay.client_id')
+                    ->leftJoin(DB::raw("({$potSql}) as pot"), 'clients.id', '=', 'pot.client_id')
             )
             ->columns([
                 TextColumn::make('code')
@@ -234,7 +188,8 @@ class PiutangPerClient extends Page implements HasTable
                         'pre_2025' => 'Sebelum Tahun 2025 (< 2025)',
                         'post_2025' => 'Tahun 2025 ke Atas (>= 2025)',
                     ])
-                    ->default(fn() => $this->periode),
+                    ->default(fn() => $this->periode)
+                    ->query(fn(Builder $query) => $query),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif')
                     ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))
