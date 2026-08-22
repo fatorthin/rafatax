@@ -157,22 +157,26 @@ class PiutangPerClient extends Page implements HasTable
     {
         $transactions = [];
 
-        // 1. Saldo Awal
-        $saldoAwal = DB::table('saldo_awal_piutangs')
+        // 1. Saldo Awal (Sebelum 2025 dan Setelah 2025)
+        $saldoAwals = DB::table('saldo_awal_piutangs')
             ->where('client_id', $client->id)
-            ->sum('amount');
+            ->orderBy('year', 'asc')
+            ->get();
 
-        if ($saldoAwal > 0) {
-            $transactions[] = [
-                'date' => null,
-                'date_sort' => '0000-00-00',
-                'type' => 'Saldo Awal',
-                'ref' => '-',
-                'description' => 'Saldo Awal Piutang',
-                'debit' => $saldoAwal,
-                'kredit' => 0,
-                'amount' => $saldoAwal,
-            ];
+        foreach ($saldoAwals as $sa) {
+            if ($sa->amount > 0) {
+                $periodeLabel = $sa->year < 2025 ? 'Sebelum 2025' : 'Tahun ' . $sa->year;
+                $transactions[] = [
+                    'date' => null,
+                    'date_sort' => $sa->year < 2025 ? '0000-00-00' : "{$sa->year}-01-01",
+                    'type' => 'Saldo Awal',
+                    'ref' => $sa->year < 2025 ? '< 2025' : (string) $sa->year,
+                    'description' => $sa->notes ?: "Saldo Awal Piutang ({$periodeLabel})",
+                    'debit' => $sa->amount,
+                    'kredit' => 0,
+                    'amount' => $sa->amount,
+                ];
+            }
         }
 
         // 2. Invoices (Only from 2026-01-01 onwards)

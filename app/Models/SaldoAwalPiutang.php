@@ -15,7 +15,14 @@ class SaldoAwalPiutang extends Model
 
     protected $fillable = [
         'client_id',
+        'year',
         'amount',
+        'notes',
+    ];
+
+    protected $casts = [
+        'year' => 'integer',
+        'amount' => 'decimal:2',
     ];
 
     public function client()

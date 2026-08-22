@@ -23,7 +23,7 @@ class PiutangDetailController extends Controller
 
         foreach ($transactions as $tx) {
             if ($tx['type'] === 'Saldo Awal') {
-                $saldoAwal = $tx['debit'];
+                $saldoAwal += $tx['debit'];
             } elseif ($tx['type'] === 'Sales Invoice') {
                 $totalInvoice += $tx['debit'];
             } elseif ($tx['type'] === 'Sales Receipt') {
@@ -37,13 +37,15 @@ class PiutangDetailController extends Controller
 
         $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
 
-        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->first();
+        $saldoAwalRecords = SaldoAwalPiutang::where('client_id', $client->id)->orderBy('year', 'asc')->get();
+        $saldoAwalRecord = $saldoAwalRecords->first();
 
         return view('filament.pages.piutang-detail-standalone', compact(
             'client',
             'transactions',
             'saldoAwal',
             'saldoAwalRecord',
+            'saldoAwalRecords',
             'totalInvoice',
             'totalPembayaran',
             'totalPotongan',
@@ -56,13 +58,21 @@ class PiutangDetailController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:0',
+            'year' => 'required|integer',
+            'notes' => 'nullable|string|max:255',
         ]);
 
         $client = Client::findOrFail($id);
 
         SaldoAwalPiutang::updateOrCreate(
-            ['client_id' => $client->id],
-            ['amount' => $request->input('amount')]
+            [
+                'client_id' => $client->id,
+                'year' => $request->input('year', 2024),
+            ],
+            [
+                'amount' => $request->input('amount'),
+                'notes' => $request->input('notes'),
+            ]
         );
 
         return redirect()->back()->with('success', 'Saldo awal piutang berhasil diperbarui');

@@ -415,9 +415,21 @@
             <form action="{{ route('piutang-per-client.saldo-awal.update', $client->id) }}" method="POST" class="mt-4 space-y-4">
                 @csrf
                 <div>
+                    <label for="year" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Periode / Tahun</label>
+                    <select name="year" id="year" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
+                        <option value="2024">Sebelum 2025 (<= 2024)</option>
+                        <option value="2025">Tahun 2025</option>
+                        <option value="2026">Tahun 2026</option>
+                        <option value="2027">Tahun 2027</option>
+                    </select>
+                </div>
+                <div>
                     <label for="amount" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Jumlah Saldo Awal (Rp)</label>
                     <input type="number" step="any" name="amount" id="amount" value="{{ old('amount', $saldoAwalRecord->amount ?? 0) }}" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan jumlah saldo awal piutang client sebelum periode tahun 2026.</p>
+                </div>
+                <div>
+                    <label for="notes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Keterangan (Opsional)</label>
+                    <input type="text" name="notes" id="notes" value="{{ old('notes', $saldoAwalRecord->notes ?? '') }}" placeholder="Contoh: Saldo cut-off sebelum 2025" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
                 </div>
                 <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <button type="button" onclick="closeSaldoAwalModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-sm font-semibold transition-colors">Batal</button>
