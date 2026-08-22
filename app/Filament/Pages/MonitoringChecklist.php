@@ -59,7 +59,7 @@ class MonitoringChecklist extends Page implements HasTable
                         'style' => 'position: sticky; left: 0; z-index: 10;',
                         'class' => 'bg-white dark:bg-zinc-900 w-[50px] min-w-[50px]'
                     ]),
-                    
+
                 TextColumn::make('mou_number')
                     ->label('No MoU')
                     ->searchable()
@@ -73,7 +73,7 @@ class MonitoringChecklist extends Page implements HasTable
                         'style' => 'position: sticky; left: 50px; z-index: 10;',
                         'class' => 'bg-white dark:bg-zinc-900 w-[250px] min-w-[250px]'
                     ]),
-                    
+
                 TextColumn::make('categoryMou.name')
                     ->label('Kategori')
                     ->sortable()
@@ -90,7 +90,7 @@ class MonitoringChecklist extends Page implements HasTable
                 ViewColumn::make('checklist_months')
                     ->label('Checklist')
                     ->view('filament.tables.columns.checklist-months')
-                    ->viewData(fn () => ['year' => $this->tableFilters['year']['value'] ?? date('Y')]),
+                    ->viewData(fn() => ['year' => $this->tableFilters['year']['value'] ?? date('Y')]),
             ])
             ->filters([
                 SelectFilter::make('client_id')
@@ -135,6 +135,7 @@ class MonitoringChecklist extends Page implements HasTable
                         'pending' => 'Pending',
                         'completed' => 'Completed',
                         'overdue' => 'Overdue',
+                        'canceled' => 'Canceled',
                     ])
                     ->required(),
                 Forms\Components\Select::make('invoice_id')

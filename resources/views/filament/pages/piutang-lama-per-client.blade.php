@@ -4,15 +4,16 @@
     @endphp
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <!-- Card 1: Saldo Awal -->
+        <!-- Card 1: Saldo Awal Piutang Lama -->
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Saldo Awal
+                    Total Saldo Awal Piutang Lama
                 </div>
                 <div class="text-2xl font-semibold tracking-tight text-gray-950 dark:text-white">
                     Rp {{ number_format($stats['total_saldo_awal'], 0, ',', '.') }}
                 </div>
+                <div class="text-xs text-gray-400">Tahun &lt; 2025</div>
             </div>
         </div>
 
@@ -20,35 +21,38 @@
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Nominal Invoice
+                    Total Invoice Sebelum 2025
                 </div>
                 <div class="text-2xl font-semibold tracking-tight text-gray-950 dark:text-white">
                     Rp {{ number_format($stats['total_invoice'], 0, ',', '.') }}
                 </div>
+                <div class="text-xs text-gray-400">Invoice sebelum 2025</div>
             </div>
         </div>
 
-        <!-- Card 3: Total Pembayaran -->
+        <!-- Card 3: Total Pembayaran / CoA 180 -->
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Pembayaran
+                    Total Pelunasan / CoA AO-103.5
                 </div>
                 <div class="text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
                     Rp {{ number_format($stats['total_pembayaran'], 0, ',', '.') }}
                 </div>
+                <div class="text-xs text-gray-400">Termasuk penerimaan CoA 180</div>
             </div>
         </div>
 
-        <!-- Card 4: Total Sisa Piutang -->
+        <!-- Card 4: Total Sisa Piutang Lama -->
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Sisa Piutang
+                    Total Sisa Piutang Lama
                 </div>
                 <div class="text-2xl font-semibold tracking-tight {{ $stats['total_piutang'] > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-950 dark:text-white' }}">
                     Rp {{ number_format($stats['total_piutang'], 0, ',', '.') }}
                 </div>
+                <div class="text-xs text-gray-400">Sisa saldo piutang sebelum 2025</div>
             </div>
         </div>
     </div>

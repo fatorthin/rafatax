@@ -78,7 +78,7 @@ class MonitoringChecklist extends Page implements HasTable
                 ViewColumn::make('checklist_months')
                     ->label('Checklist')
                     ->view('filament.app.tables.columns.checklist-months')
-                    ->viewData(fn () => ['year' => $this->tableFilters['year']['value'] ?? date('Y')]),
+                    ->viewData(fn() => ['year' => $this->tableFilters['year']['value'] ?? date('Y')]),
             ])
             ->filters([
                 SelectFilter::make('client_id')
@@ -123,6 +123,7 @@ class MonitoringChecklist extends Page implements HasTable
                         'pending' => 'Pending',
                         'completed' => 'Completed',
                         'overdue' => 'Overdue',
+                        'canceled' => 'Canceled'
                     ])
                     ->required(),
                 Forms\Components\Select::make('invoice_id')

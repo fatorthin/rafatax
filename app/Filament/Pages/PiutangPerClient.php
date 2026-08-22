@@ -27,56 +27,17 @@ class PiutangPerClient extends Page implements HasTable
 
     protected static ?string $title = 'Piutang per Client';
 
-    public string $periode = 'all';
-
-    protected $queryString = [
-        'periode' => ['except' => 'all'],
-    ];
-
-    public function mount(): void
-    {
-        $this->periode = request()->query('periode', $this->periode ?: 'all');
-        if (isset($this->tableFilters['periode'])) {
-            $this->tableFilters['periode']['value'] = $this->periode;
-        }
-    }
-
-    public function setPeriode(string $periode): void
-    {
-        $this->periode = $periode;
-        if (isset($this->tableFilters['periode'])) {
-            $this->tableFilters['periode']['value'] = $periode;
-        }
-        $this->resetPage();
-    }
-
     public function table(Table $table): Table
     {
-        $periode = $this->periode ?? 'all';
-
-        // 1. Saldo Awal Aggregated Subquery
-        if ($periode === 'pre_2025') {
-            $saFilter = "WHERE year < 2025";
-        } elseif ($periode === 'post_2025') {
-            $saFilter = "WHERE year >= 2025";
-        } else {
-            $saFilter = "";
-        }
+        // 1. Saldo Awal Aggregated Subquery (>= 2025)
         $saSql = "
             SELECT client_id, SUM(amount) as saldo_awal
             FROM saldo_awal_piutangs
-            {$saFilter}
+            WHERE year >= 2025
             GROUP BY client_id
         ";
 
-        // 2. Invoices Aggregated Subquery
-        if ($periode === 'pre_2025') {
-            $invDateCond = "AND i.invoice_date < '2025-01-01'";
-        } elseif ($periode === 'post_2025') {
-            $invDateCond = "AND i.invoice_date >= '2025-01-01'";
-        } else {
-            $invDateCond = "";
-        }
+        // 2. Invoices Aggregated Subquery (>= 2025)
         $invSql = "
             SELECT client_id, SUM(amount) as total_invoice
             FROM (
@@ -88,28 +49,13 @@ class PiutangPerClient extends Page implements HasTable
                 LEFT JOIN mous m ON (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id = m.id)
                 WHERE cli.deleted_at IS NULL 
                   AND i.deleted_at IS NULL
-                  {$invDateCond}
+                  AND i.invoice_date >= '2025-01-01'
             ) as t_inv
             WHERE client_id IS NOT NULL
             GROUP BY client_id
         ";
 
-        // 3. Payments Aggregated Subquery
-        if ($periode === 'pre_2025') {
-            $payDateCond = "
-                AND (
-                    (cr.transaction_date < '2025-01-01' AND (cr.coa_id IS NULL OR cr.coa_id <> 180))
-                    OR cr.coa_id = 180
-                )
-            ";
-        } elseif ($periode === 'post_2025') {
-            $payDateCond = "
-                AND cr.transaction_date >= '2025-01-01'
-                AND (cr.coa_id IS NULL OR cr.coa_id <> 180)
-            ";
-        } else {
-            $payDateCond = "";
-        }
+        // 3. Payments Aggregated Subquery (>= 2025 dan bukan CoA 180)
         $paySql = "
             SELECT client_id, SUM(amount) as total_pembayaran
             FROM (
@@ -126,27 +72,21 @@ class PiutangPerClient extends Page implements HasTable
                 LEFT JOIN invoices inv ON (cr.invoice_id IS NOT NULL AND cr.invoice_id <> 0 AND cr.invoice_id = inv.id)
                 LEFT JOIN mous inv_m ON (inv.mou_id IS NOT NULL AND inv.mou_id <> 0 AND inv.mou_id = inv_m.id)
                 WHERE cr.deleted_at IS NULL
-                  {$payDateCond}
+                  AND cr.transaction_date >= '2025-01-01'
+                  AND (cr.coa_id IS NULL OR cr.coa_id <> 180)
             ) as t_pay
             WHERE client_id IS NOT NULL
             GROUP BY client_id
         ";
 
-        // 4. Potongan MoU Aggregated Subquery
-        if ($periode === 'pre_2025') {
-            $potFilter = "AND (start_date < '2025-01-01' OR (start_date IS NULL AND created_at < '2025-01-01'))";
-        } elseif ($periode === 'post_2025') {
-            $potFilter = "AND (start_date >= '2025-01-01' OR (start_date IS NULL AND created_at >= '2025-01-01'))";
-        } else {
-            $potFilter = "";
-        }
+        // 4. Potongan MoU Aggregated Subquery (>= 2025)
         $potSql = "
             SELECT 
                 client_id,
                 SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0)) as total_potongan
             FROM mous
             WHERE deleted_at IS NULL
-              {$potFilter}
+              AND (start_date >= '2025-01-01' OR (start_date IS NULL AND created_at >= '2025-01-01'))
             GROUP BY client_id
         ";
 
@@ -197,20 +137,6 @@ class PiutangPerClient extends Page implements HasTable
                     ->color(fn($state) => $state > 0 ? 'amber' : 'success'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('periode')
-                    ->label('Periode Piutang')
-                    ->options([
-                        'all' => 'Semua Periode',
-                        'pre_2025' => 'Sebelum Tahun 2025 (< 2025)',
-                        'post_2025' => 'Tahun 2025 ke Atas (>= 2025)',
-                    ])
-                    ->default(fn() => $this->periode)
-                    ->query(function (Builder $query, array $data) {
-                        if (!empty($data['value'])) {
-                            $this->periode = $data['value'];
-                        }
-                        return $query;
-                    }),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif')
                     ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))
@@ -223,7 +149,7 @@ class PiutangPerClient extends Page implements HasTable
                     ->color('info')
                     ->url(fn($record) => route('piutang-per-client.detail', [
                         'id' => $record->id,
-                        'periode' => $this->periode ?? 'all',
+                        'periode' => 'post_2025',
                     ]))
                     ->openUrlInNewTab(),
             ]);
@@ -231,7 +157,7 @@ class PiutangPerClient extends Page implements HasTable
 
     public function getClientTransactions(Client $client, ?string $periode = null): array
     {
-        $periode = $periode ?? $this->periode ?? 'all';
+        $periode = $periode ?? 'post_2025';
         $transactions = [];
 
         // 1. Saldo Awal

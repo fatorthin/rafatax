@@ -49,6 +49,9 @@
                 'overdue' => [
                     'style' => 'background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca;',
                 ],
+                'canceled' => [
+                    'style' => 'background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0;',
+                ]
             ];
 
             $style = $colors[$status]['style'] ?? $colors['none']['style'];
