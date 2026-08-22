@@ -39,7 +39,7 @@ class PiutangDetailController extends Controller
         $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
 
         $saldoAwalRecords = SaldoAwalPiutang::where('client_id', $client->id)->orderBy('year', 'asc')->get();
-        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->where('year', 2025)->first()
+        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->where('year', 2026)->first()
             ?? $saldoAwalRecords->first();
 
         return view('filament.pages.piutang-detail-standalone', compact(
@@ -70,7 +70,7 @@ class PiutangDetailController extends Controller
         SaldoAwalPiutang::updateOrCreate(
             [
                 'client_id' => $client->id,
-                'year' => (int) $request->input('year', 2025),
+                'year' => (int) $request->input('year', 2026),
             ],
             [
                 'amount' => (float) $request->input('amount'),

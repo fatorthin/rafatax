@@ -29,10 +29,11 @@ class PiutangPerClient extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        // 1. Saldo Awal Aggregated Subquery
+        // 1. Saldo Awal Aggregated Subquery (Tahun 2026)
         $saSql = "
             SELECT client_id, SUM(amount) as saldo_awal
             FROM saldo_awal_piutangs
+            WHERE year = 2026
             GROUP BY client_id
         ";
 
@@ -113,7 +114,7 @@ class PiutangPerClient extends Page implements HasTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('saldo_awal')
-                    ->label('Saldo Awal Piutang')
+                    ->label('Saldo Awal (2026)')
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
@@ -158,9 +159,10 @@ class PiutangPerClient extends Page implements HasTable
     {
         $transactions = [];
 
-        // 1. Saldo Awal
+        // 1. Saldo Awal (Tahun 2026)
         $saldoAwals = DB::table('saldo_awal_piutangs')
             ->where('client_id', $client->id)
+            ->where('year', 2026)
             ->orderBy('year', 'asc')
             ->get();
 
