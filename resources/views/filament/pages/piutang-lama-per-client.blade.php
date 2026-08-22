@@ -13,7 +13,7 @@
                 <div class="text-2xl font-semibold tracking-tight text-gray-950 dark:text-white">
                     Rp {{ number_format($stats['total_saldo_awal'], 0, ',', '.') }}
                 </div>
-                <div class="text-xs text-gray-400">Tahun &lt; 2025</div>
+                <div class="text-xs text-gray-400">Tahun &lt; 2026</div>
             </div>
         </div>
 
@@ -21,12 +21,12 @@
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Invoice Sebelum 2025
+                    Total Invoice Sebelum 2026
                 </div>
                 <div class="text-2xl font-semibold tracking-tight text-gray-950 dark:text-white">
                     Rp {{ number_format($stats['total_invoice'], 0, ',', '.') }}
                 </div>
-                <div class="text-xs text-gray-400">Invoice sebelum 2025</div>
+                <div class="text-xs text-gray-400">Invoice sebelum 2026</div>
             </div>
         </div>
 
@@ -52,7 +52,7 @@
                 <div class="text-2xl font-semibold tracking-tight {{ $stats['total_piutang'] > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-950 dark:text-white' }}">
                     Rp {{ number_format($stats['total_piutang'], 0, ',', '.') }}
                 </div>
-                <div class="text-xs text-gray-400">Sisa saldo piutang sebelum 2025</div>
+                <div class="text-xs text-gray-400">Sisa saldo piutang sebelum 2026</div>
             </div>
         </div>
     </div>

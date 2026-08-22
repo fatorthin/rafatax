@@ -28,15 +28,15 @@ class PiutangLamaPerClient extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        // 1. Saldo Awal Piutang Lama (< 2025)
+        // 1. Saldo Awal Piutang Lama (< 2026)
         $saSql = "
             SELECT client_id, SUM(amount) as saldo_awal
             FROM saldo_awal_piutangs
-            WHERE year < 2025
+            WHERE year < 2026
             GROUP BY client_id
         ";
 
-        // 2. Invoices Sebelum 2025
+        // 2. Invoices Sebelum 2026
         $invSql = "
             SELECT client_id, SUM(amount) as total_invoice
             FROM (
@@ -48,13 +48,13 @@ class PiutangLamaPerClient extends Page implements HasTable
                 LEFT JOIN mous m ON (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id = m.id)
                 WHERE cli.deleted_at IS NULL 
                   AND i.deleted_at IS NULL
-                  AND i.invoice_date < '2025-01-01'
+                  AND i.invoice_date < '2026-01-01'
             ) as t_inv
             WHERE client_id IS NOT NULL
             GROUP BY client_id
         ";
 
-        // 3. Pembayaran Piutang Lama (Transaksi sebelum 2025 ATAU CoA 180 AO-103.5)
+        // 3. Pembayaran Piutang Lama (Transaksi sebelum 2026 ATAU CoA 180 AO-103.5)
         $paySql = "
             SELECT client_id, SUM(amount) as total_pembayaran
             FROM (
@@ -72,7 +72,7 @@ class PiutangLamaPerClient extends Page implements HasTable
                 LEFT JOIN mous inv_m ON (inv.mou_id IS NOT NULL AND inv.mou_id <> 0 AND inv.mou_id = inv_m.id)
                 WHERE cr.deleted_at IS NULL
                   AND (
-                      (cr.transaction_date < '2025-01-01' AND (cr.coa_id IS NULL OR cr.coa_id <> 180))
+                      (cr.transaction_date < '2026-01-01' AND (cr.coa_id IS NULL OR cr.coa_id <> 180))
                       OR cr.coa_id = 180
                   )
             ) as t_pay
@@ -80,14 +80,14 @@ class PiutangLamaPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
-        // 4. Potongan MoU Sebelum 2025
+        // 4. Potongan MoU Sebelum 2026
         $potSql = "
             SELECT 
                 client_id,
                 SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0)) as total_potongan
             FROM mous
             WHERE deleted_at IS NULL
-              AND (start_date < '2025-01-01' OR (start_date IS NULL AND created_at < '2025-01-01'))
+              AND (start_date < '2026-01-01' OR (start_date IS NULL AND created_at < '2026-01-01'))
             GROUP BY client_id
         ";
 
@@ -120,7 +120,7 @@ class PiutangLamaPerClient extends Page implements HasTable
                     ->alignEnd()
                     ->sortable(),
                 TextColumn::make('total_invoice')
-                    ->label('Total Invoice (< 2025)')
+                    ->label('Total Invoice (&lt; 2026)')
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
