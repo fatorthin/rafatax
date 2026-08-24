@@ -28,11 +28,11 @@ class PiutangLamaPerClient extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        // 1. Saldo Awal Piutang Lama (Periode 2025)
+        // 1. Saldo Awal Piutang Lama (Periode 2024)
         $saSql = "
             SELECT client_id, SUM(amount) as saldo_awal
             FROM saldo_awal_piutangs
-            WHERE year = 2025
+            WHERE year = 2024
             GROUP BY client_id
         ";
 
@@ -115,7 +115,7 @@ class PiutangLamaPerClient extends Page implements HasTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('saldo_awal')
-                    ->label('Saldo Awal (2025)')
+                    ->label('Saldo Awal (2024)')
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
