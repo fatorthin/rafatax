@@ -190,12 +190,12 @@
 
         <!-- Summary Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            <!-- Saldo Awal (2026) -->
+            <!-- Saldo Awal (2025) -->
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card relative">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Saldo Awal (2026)</span>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Saldo Awal (2025)</span>
                     <div class="flex items-center gap-2">
-                        <button onclick="openSaldoAwalModal()" class="no-print p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors" title="{{ $saldoAwalRecord ? 'Edit Saldo Awal (2026)' : 'Tambah Saldo Awal (2026)' }}">
+                        <button onclick="openSaldoAwalModal()" class="no-print p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors" title="{{ $saldoAwalRecord ? 'Edit Saldo Awal (2025)' : 'Tambah Saldo Awal (2025)' }}">
                             <i class="fa-solid {{ $saldoAwalRecord ? 'fa-pen-to-square' : 'fa-plus' }} text-xs"></i>
                         </button>
                         <span class="p-2 rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
@@ -207,7 +207,7 @@
                     <span class="text-2xl font-bold text-slate-900 dark:text-white block">
                         Rp {{ number_format($saldoAwal, 0, ',', '.') }}
                     </span>
-                    <span class="text-xs text-slate-400 mt-1 block">Periode Tahun 2026</span>
+                    <span class="text-xs text-slate-400 mt-1 block">Periode Tahun 2025</span>
                 </div>
             </div>
 
@@ -436,7 +436,7 @@
         <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 overflow-hidden transform transition-all">
             <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                    {{ $saldoAwalRecord ? 'Edit Saldo Awal Piutang (2026)' : 'Tambah Saldo Awal Piutang (2026)' }}
+                    {{ $saldoAwalRecord ? 'Edit Saldo Awal Piutang (2025)' : 'Tambah Saldo Awal Piutang (2025)' }}
                 </h3>
                 <button onclick="closeSaldoAwalModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -444,14 +444,14 @@
             </div>
             <form action="{{ route('piutang-per-client.saldo-awal.update', $client->id) }}" method="POST" class="mt-4 space-y-4">
                 @csrf
-                <input type="hidden" name="year" value="2026">
+                <input type="hidden" name="year" value="2025">
                 <div>
                     <label for="amount" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Jumlah Saldo Awal (Rp)</label>
                     <input type="number" step="any" name="amount" id="amount" value="{{ old('amount', $saldoAwalRecord->amount ?? 0) }}" placeholder="Contoh: 10000000 atau -5000000" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
                 </div>
                 <div>
                     <label for="notes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Keterangan (Opsional)</label>
-                    <input type="text" name="notes" id="notes" value="{{ old('notes', $saldoAwalRecord->notes ?? '') }}" placeholder="Contoh: Saldo cut-off per awal 2026" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
+                    <input type="text" name="notes" id="notes" value="{{ old('notes', $saldoAwalRecord->notes ?? '') }}" placeholder="Contoh: Saldo cut-off per awal 2025" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
                 </div>
                 <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <button type="button" onclick="closeSaldoAwalModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-sm font-semibold transition-colors">Batal</button>
