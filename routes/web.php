@@ -130,6 +130,14 @@ Route::post('/piutang-per-client/{id}/saldo-awal', [\App\Http\Controllers\Piutan
     ->name('piutang-per-client.saldo-awal.update')
     ->middleware('auth');
 
+Route::get('/piutang-lama-per-client/{id}/detail', [\App\Http\Controllers\PiutangLamaDetailController::class, 'show'])
+    ->name('piutang-lama-per-client.detail')
+    ->middleware('auth');
+
+Route::post('/piutang-lama-per-client/{id}/saldo-awal', [\App\Http\Controllers\PiutangLamaDetailController::class, 'updateSaldoAwal'])
+    ->name('piutang-lama-per-client.saldo-awal.update')
+    ->middleware('auth');
+
 Route::get('/cash-reference/{id}/month-detail/export', [\App\Http\Controllers\CashReferenceMonthDetailController::class, 'export'])
     ->name('cash-reference.month-detail.export')
     ->middleware('auth');

@@ -2,24 +2,25 @@
 
 namespace App\Filament\App\Resources\CashReferenceResource\Pages;
 
-use Carbon\Carbon;
-use App\Models\Coa;
-use Filament\Actions;
-use App\Models\CashReport;
-use Filament\Tables\Table;
-use App\Models\CashReference;
-use Filament\Resources\Pages\Page;
-use Filament\Tables\Filters\Filter;
-use Filament\Forms\Components\Select;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Contracts\HasTable;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Tables\Columns\Summarizers\Sum;
-use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\App\Resources\CashReferenceResource;
-use Illuminate\Support\Facades\DB;
-use Filament\Tables\Actions\Action;
+use App\Models\CashReference;
+use App\Models\CashReport;
+use App\Models\Coa;
+use Carbon\Carbon;
+use Filament\Actions;
 use Filament\Forms;
+use Filament\Forms\Components\Select;
+use Filament\Resources\Pages\Page;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\ActionsPosition;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class ViewCashReferenceMonthly extends Page implements HasTable
 {
@@ -151,7 +152,7 @@ class ViewCashReferenceMonthly extends Page implements HasTable
                     })
                     ->icon('heroicon-o-eye')
                     ->color('primary')
-            ])
+            ], position: ActionsPosition::BeforeCells)
             ->defaultSort('year', 'desc')
             ->defaultSort('month', 'desc')
             ->striped();

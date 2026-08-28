@@ -148,12 +148,169 @@ class PiutangLamaPerClient extends Page implements HasTable
                     ->label('Lihat Detail')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->url(fn($record) => route('piutang-per-client.detail', [
+                    ->url(fn($record) => route('piutang-lama-per-client.detail', [
                         'id' => $record->id,
-                        'periode' => 'pre_2025',
                     ]))
                     ->openUrlInNewTab(),
             ]);
+    }
+
+    public function getClientTransactions(Client $client): array
+    {
+        $transactions = [];
+
+        // 1. Saldo Awal Piutang Lama (Periode 2025)
+        $saldoAwals = DB::table('saldo_awal_piutangs')
+            ->where('client_id', $client->id)
+            ->where('year', 2025)
+            ->orderBy('year', 'asc')
+            ->get();
+
+        foreach ($saldoAwals as $sa) {
+            if ((float) $sa->amount != 0.0) {
+                $isDebit = (float) $sa->amount > 0;
+                $transactions[] = [
+                    'date' => null,
+                    'date_sort' => "2025-01-01",
+                    'type' => 'Saldo Awal',
+                    'ref' => (string) $sa->year,
+                    'description' => $sa->notes ?: "Saldo Awal Piutang (Tahun {$sa->year})",
+                    'debit' => $isDebit ? (float) $sa->amount : 0,
+                    'kredit' => !$isDebit ? abs((float) $sa->amount) : 0,
+                    'amount' => (float) $sa->amount,
+                ];
+            }
+        }
+
+        // 2. Invoices (< 2026)
+        $invoices = \App\Models\Invoice::query()
+            ->where(function ($q) use ($client) {
+                $q->where('client_id', $client->id)
+                    ->orWhereIn('mou_id', function ($sub) use ($client) {
+                        $sub->select('id')->from('mous')->where('client_id', $client->id);
+                    });
+            })
+            ->whereNull('deleted_at')
+            ->where('invoice_date', '<', '2026-01-01')
+            ->with('costListInvoices')
+            ->get();
+
+        foreach ($invoices as $inv) {
+            $amount = $inv->costListInvoices->sum('amount');
+            $transactions[] = [
+                'date' => $inv->invoice_date,
+                'date_sort' => $inv->invoice_date,
+                'type' => 'Sales Invoice',
+                'ref' => $inv->invoice_number,
+                'description' => $inv->description ?: 'Tagihan Invoice (< 2026)',
+                'debit' => $amount,
+                'kredit' => 0,
+                'amount' => $amount,
+            ];
+        }
+
+        // 3. Payments (< 2026 ATAU CoA 180 AO-103.5)
+        $cashReports = \App\Models\CashReport::query()
+            ->where(function ($q) use ($client) {
+                $q->where('cash_reports.client_id', $client->id)
+                    ->orWhereIn('cash_reports.mou_id', function ($sub) use ($client) {
+                        $sub->select('id')->from('mous')->where('client_id', $client->id);
+                    })
+                    ->orWhereIn('cash_reports.invoice_id', function ($sub) use ($client) {
+                        $sub->select('id')->from('invoices')
+                            ->where('client_id', $client->id)
+                            ->orWhereIn('mou_id', function ($sub2) use ($client) {
+                                $sub2->select('id')->from('mous')->where('client_id', $client->id);
+                            });
+                    });
+            })
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('transaction_date', '<', '2026-01-01')
+                        ->where(function ($sub2) {
+                            $sub2->whereNull('coa_id')->orWhere('coa_id', '<>', 180);
+                        });
+                })->orWhere('coa_id', 180);
+            })
+            ->with(['cashReference', 'invoice', 'coa'])
+            ->get();
+
+        foreach ($cashReports as $cr) {
+            $amount = $cr->debit_amount - $cr->credit_amount;
+            $typeLabel = $cr->coa_id == 180 ? 'Sales Receipt (AO-103.5 - Piutang Lama)' : 'Sales Receipt';
+            $transactions[] = [
+                'date' => $cr->transaction_date,
+                'date_sort' => $cr->transaction_date,
+                'type' => $typeLabel,
+                'ref' => $cr->invoice?->invoice_number ?: ($cr->cashReference?->name ?: '-'),
+                'description' => $cr->description,
+                'debit' => 0,
+                'kredit' => $amount,
+                'amount' => -$amount,
+            ];
+        }
+
+        // 4. Discounts and Cancel MoUs (< 2026)
+        $mous = \App\Models\MoU::query()
+            ->where('client_id', $client->id)
+            ->whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->where('start_date', '<', '2026-01-01')
+                    ->orWhere(function ($sub) {
+                        $sub->whereNull('start_date')->where('created_at', '<', '2026-01-01');
+                    });
+            })
+            ->get();
+
+        foreach ($mous as $mou) {
+            if ($mou->discount_amount > 0) {
+                $tglDiscount = $mou->tgl_discount;
+                $transactions[] = [
+                    'date' => $tglDiscount,
+                    'date_sort' => $tglDiscount ?: '9999-12-31',
+                    'type' => 'Discount MoU',
+                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
+                    'description' => 'Discount MoU' . ($mou->description ? " - {$mou->description}" : ''),
+                    'debit' => 0,
+                    'kredit' => $mou->discount_amount,
+                    'amount' => -$mou->discount_amount,
+                ];
+            }
+
+            if ($mou->cancel_mou_amount > 0) {
+                $tglCancel = $mou->tgl_cancel_mou;
+                $transactions[] = [
+                    'date' => $tglCancel,
+                    'date_sort' => $tglCancel ?: '9999-12-31',
+                    'type' => 'Cancel MoU',
+                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
+                    'description' => 'Cancel MoU' . ($mou->description ? " - {$mou->description}" : ''),
+                    'debit' => 0,
+                    'kredit' => $mou->cancel_mou_amount,
+                    'amount' => -$mou->cancel_mou_amount,
+                ];
+            }
+        }
+
+        // Sort transactions chronologically
+        usort($transactions, function ($a, $b) {
+            if ($a['date_sort'] === $b['date_sort']) {
+                if ($a['type'] === 'Saldo Awal') return -1;
+                if ($b['type'] === 'Saldo Awal') return 1;
+                return $a['type'] <=> $b['type'];
+            }
+            return $a['date_sort'] <=> $b['date_sort'];
+        });
+
+        // Calculate running balance
+        $runningBalance = 0;
+        foreach ($transactions as &$tx) {
+            $runningBalance += $tx['amount'];
+            $tx['running_balance'] = $runningBalance;
+        }
+
+        return $transactions;
     }
 
     public function getStats(): array
