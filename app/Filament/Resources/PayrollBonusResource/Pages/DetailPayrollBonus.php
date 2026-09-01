@@ -2,25 +2,33 @@
 
 namespace App\Filament\Resources\PayrollBonusResource\Pages;
 
-use Filament\Tables\Table;
-use App\Models\CaseProject;
-use App\Models\PayrollBonus;
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
-use Filament\Infolists\Infolist;
-use App\Models\CaseProjectDetail;
-use App\Models\PayrollBonusDetail;
-use Filament\Resources\Pages\Page;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Components\TextEntry;
 use App\Filament\Resources\PayrollBonusResource;
+use App\Models\CaseProject;
+use App\Models\CaseProjectDetail;
+use App\Models\PayrollBonus;
+use App\Models\PayrollBonusDetail;
 use App\Models\Staff;
 use App\Services\WablasService;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\Page;
 use Filament\Tables\Columns\Summarizers\Summarizer;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DetailPayrollBonus extends Page implements HasTable
 {
@@ -34,7 +42,7 @@ class DetailPayrollBonus extends Page implements HasTable
 
     public function getTitle(): string
     {
-        return 'Detail Payroll Bonus - ' . $this->record->description;
+        return 'Detail Payroll Bonus - '.$this->record->description;
     }
 
     protected function getHeaderActions(): array
@@ -46,17 +54,17 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->color('danger')
                 ->record($this->record)
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('description')
+                    TextInput::make('description')
                         ->required()
                         ->maxLength(255),
-                    \Filament\Forms\Components\Select::make('case_project_ids')
+                    Select::make('case_project_ids')
                         ->label('Case Project')
                         ->options(CaseProject::where('status', 'done')->pluck('description', 'id'))
                         ->multiple()
                         ->searchable()
                         ->preload()
                         ->required(),
-                    \Filament\Forms\Components\DatePicker::make('payroll_date')
+                    DatePicker::make('payroll_date')
                         ->required(),
                 ]),
             Action::make('mark_as_paid')
@@ -68,17 +76,17 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->modalDescription('Apakah Anda yakin ingin mengubah status semua Case Project pada Payroll ini menjadi Paid?')
                 ->action(function () {
                     $caseProjectIds = $this->record->case_project_ids ?? [];
-                    if (!empty($caseProjectIds)) {
+                    if (! empty($caseProjectIds)) {
                         CaseProject::whereIn('id', $caseProjectIds)
                             ->update(['status' => 'paid']);
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title('Berhasil')
                             ->body('Status Case Project berhasil diubah menjadi Paid.')
                             ->success()
                             ->send();
                     } else {
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title('Gagal')
                             ->body('Tidak ada Case Project pada Payroll ini.')
                             ->warning()
@@ -93,7 +101,7 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->modalHeading('Kirim Semua Slip Bonus via WhatsApp')
                 ->modalDescription('Apakah Anda yakin ingin mengirim semua slip bonus ke staff terkait?')
                 ->action(function (WablasService $wablasService) {
-                    /** @var \Illuminate\Database\Eloquent\Collection<int, PayrollBonusDetail> $details */
+                    /** @var Collection<int, PayrollBonusDetail> $details */
                     $details = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)->get();
                     $successCount = 0;
                     $failCount = 0;
@@ -109,12 +117,12 @@ class DetailPayrollBonus extends Page implements HasTable
 
                     // Update status CaseProject menjadi 'paid'
                     $caseProjectIds = $this->record->case_project_ids ?? [];
-                    if (!empty($caseProjectIds)) {
+                    if (! empty($caseProjectIds)) {
                         CaseProject::whereIn('id', $caseProjectIds)
                             ->update(['status' => 'paid']);
                     }
 
-                    \Filament\Notifications\Notification::make()
+                    Notification::make()
                         ->title('Proses Selesai')
                         ->body("Berhasil: {$successCount}, Gagal: {$failCount}")
                         ->success()
@@ -126,7 +134,7 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->color('warning')
                 ->action(function () {
                     $caseProjectIds = $this->record->case_project_ids ?? [];
-                    if (!is_array($caseProjectIds)) {
+                    if (! is_array($caseProjectIds)) {
                         $caseProjectIds = json_decode((string) $caseProjectIds, true) ?? [];
                     }
 
@@ -144,44 +152,44 @@ class DetailPayrollBonus extends Page implements HasTable
                     $payrollDesc = $this->record->description;
 
                     return response()->streamDownload(function () use ($caseProjects, $bonusPerCase) {
-                        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+                        $spreadsheet = new Spreadsheet;
                         $sheet = $spreadsheet->getActiveSheet();
                         $sheet->setTitle('Data Case Payroll');
 
-                        $headers    = ['No', 'PT/KKP', 'Case Type', 'Nama Perusahaan Klien', 'No. MoU', 'Total Bonus'];
+                        $headers = ['No', 'PT/KKP', 'Case Type', 'Nama Perusahaan Klien', 'No. MoU', 'Total Bonus'];
                         $colLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
 
                         foreach ($headers as $i => $header) {
-                            $cell = $colLetters[$i] . '1';
+                            $cell = $colLetters[$i].'1';
                             $sheet->setCellValue($cell, $header);
                             $sheet->getStyle($cell)->getFont()->setBold(true);
                             $sheet->getStyle($cell)->getFill()
-                                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                ->setFillType(Fill::FILL_SOLID)
                                 ->getStartColor()->setRGB('4472C4');
                             $sheet->getStyle($cell)->getFont()->getColor()->setRGB('FFFFFF');
                         }
 
-                        $row        = 2;
+                        $row = 2;
                         $grandTotal = 0;
 
                         foreach ($caseProjects as $index => $case) {
-                            $clientType  = strtoupper($case->client->type ?? '-');
+                            $clientType = strtoupper($case->client->type ?? '-');
                             $companyName = $case->client->company_name ?? '-';
-                            $mouNumber   = $case->mou ? ($case->mou->mou_number ?? '-') : '-';
-                            $totalBonus  = $bonusPerCase[$case->id] ?? 0;
+                            $mouNumber = $case->mou ? ($case->mou->mou_number ?? '-') : '-';
+                            $totalBonus = $bonusPerCase[$case->id] ?? 0;
                             $grandTotal += $totalBonus;
 
-                            $sheet->setCellValue('A' . $row, $index + 1);
-                            $sheet->setCellValue('B' . $row, $clientType);
-                            $sheet->setCellValue('C' . $row, $case->case_type ?? '-');
-                            $sheet->setCellValue('D' . $row, $companyName);
-                            $sheet->setCellValue('E' . $row, $mouNumber);
-                            $sheet->setCellValue('F' . $row, $totalBonus);
-                            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                            $sheet->setCellValue('A'.$row, $index + 1);
+                            $sheet->setCellValue('B'.$row, $clientType);
+                            $sheet->setCellValue('C'.$row, $case->case_type ?? '-');
+                            $sheet->setCellValue('D'.$row, $companyName);
+                            $sheet->setCellValue('E'.$row, $mouNumber);
+                            $sheet->setCellValue('F'.$row, $totalBonus);
+                            $sheet->getStyle('F'.$row)->getNumberFormat()->setFormatCode('#,##0');
 
                             if ($row % 2 === 0) {
-                                $sheet->getStyle('A' . $row . ':F' . $row)->getFill()
-                                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                $sheet->getStyle('A'.$row.':F'.$row)->getFill()
+                                    ->setFillType(Fill::FILL_SOLID)
                                     ->getStartColor()->setRGB('EBF3FB');
                             }
 
@@ -189,18 +197,18 @@ class DetailPayrollBonus extends Page implements HasTable
                         }
 
                         // Grand total row
-                        $sheet->setCellValue('E' . $row, 'TOTAL');
-                        $sheet->setCellValue('F' . $row, $grandTotal);
-                        $sheet->getStyle('E' . $row . ':F' . $row)->getFont()->setBold(true);
-                        $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                        $sheet->setCellValue('E'.$row, 'TOTAL');
+                        $sheet->setCellValue('F'.$row, $grandTotal);
+                        $sheet->getStyle('E'.$row.':F'.$row)->getFont()->setBold(true);
+                        $sheet->getStyle('F'.$row)->getNumberFormat()->setFormatCode('#,##0');
 
                         foreach ($colLetters as $col) {
                             $sheet->getColumnDimension($col)->setAutoSize(true);
                         }
 
-                        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                        $writer = new Xlsx($spreadsheet);
                         $writer->save('php://output');
-                    }, 'Export_Case_' . str_replace(' ', '_', $payrollDesc) . '_' . date('Y-m-d') . '.xlsx');
+                    }, 'Export_Case_'.str_replace(' ', '_', $payrollDesc).'_'.date('Y-m-d').'.xlsx');
                 }),
         ];
     }
@@ -218,13 +226,14 @@ class DetailPayrollBonus extends Page implements HasTable
                             ->state(function () {
                                 $total = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)
                                     ->sum('amount');
-                                return 'Rp ' . number_format($total, 0, ',', '.');
+
+                                return 'Rp '.number_format($total, 0, ',', '.');
                             }),
                         TextEntry::make('case_projects')->label('Case Projects')
                             ->state(function () {
                                 // Ambil daftar case_project_ids dengan aman (tangani kemungkinan string JSON)
                                 $ids = $this->record->case_project_ids ?? [];
-                                if (!is_array($ids)) {
+                                if (! is_array($ids)) {
                                     $decoded = json_decode((string) $ids, true);
                                     $ids = is_array($decoded) ? $decoded : [];
                                 }
@@ -240,14 +249,15 @@ class DetailPayrollBonus extends Page implements HasTable
                                     ->get()
                                     ->map(function ($project) {
                                         $companyName = $project->client->company_name ?? 'N/A';
-                                        return $project->description . ' (' . $companyName . ')';
+
+                                        return $project->description.' ('.$companyName.')';
                                     })
                                     ->toArray();
                             })
                             ->badge()
                             ->color('info')
                             ->columnSpanFull(),
-                    ])->columns(3)
+                    ])->columns(3),
             ]);
     }
 
@@ -258,7 +268,7 @@ class DetailPayrollBonus extends Page implements HasTable
             ->columns([
                 TextColumn::make('index')
                     ->label('No')
-                    ->state(fn($record, $rowLoop) => $rowLoop->iteration)
+                    ->state(fn ($record, $rowLoop) => $rowLoop->iteration)
                     ->sortable(),
 
                 TextColumn::make('staff.name')
@@ -268,7 +278,7 @@ class DetailPayrollBonus extends Page implements HasTable
 
                 TextColumn::make('amount')
                     ->label('Total Bonus (Rp)')
-                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable()
                     ->summarize(
@@ -276,7 +286,8 @@ class DetailPayrollBonus extends Page implements HasTable
                             ->label('Total Bonus:')
                             ->using(function ($query) {
                                 $total = $query->sum('amount');
-                                return 'Rp ' . number_format($total, 0, ',', '.');
+
+                                return 'Rp '.number_format($total, 0, ',', '.');
                             })
                     ),
             ])
@@ -287,11 +298,11 @@ class DetailPayrollBonus extends Page implements HasTable
                     ->label('Lihat Detail Bonus')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->modalHeading(fn($record) => 'Detail Bonus - ' . $record->staff->name)
+                    ->modalHeading(fn ($record) => 'Detail Bonus - '.$record->staff->name)
                     ->modalContent(function ($record) {
                         // Pastikan nilai berupa array meskipun data lama tersimpan sebagai string JSON
                         $caseProjectDetailIds = $record->case_project_detail_ids ?? [];
-                        if (!is_array($caseProjectDetailIds)) {
+                        if (! is_array($caseProjectDetailIds)) {
                             $decoded = json_decode((string) $caseProjectDetailIds, true);
                             $caseProjectDetailIds = is_array($decoded) ? $decoded : [];
                         }
@@ -317,13 +328,13 @@ class DetailPayrollBonus extends Page implements HasTable
                         $result = $this->sendBonusWablas($record, $wablasService);
 
                         if ($result['success']) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Berhasil')
                                 ->body($result['message'])
                                 ->success()
                                 ->send();
                         } else {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Gagal')
                                 ->body($result['message'])
                                 ->danger()
@@ -335,15 +346,16 @@ class DetailPayrollBonus extends Page implements HasTable
                     ->label('Download Slip')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
-                    ->url(fn($record) => route('exports.payroll-bonus.slip', ['detail' => $record->id]))
+                    ->url(fn ($record) => route('exports.payroll-bonus.slip', ['detail' => $record->id]))
                     ->openUrlInNewTab(false),
             ]);
     }
+
     private function sendBonusWablas(PayrollBonusDetail $record, WablasService $wablasService): array
     {
         try {
             $staff = Staff::find($record->staff_id);
-            if (!$staff || !$staff->phone) {
+            if (! $staff || ! $staff->phone) {
                 return ['success' => false, 'message' => 'Nomor telepon staff tidak ditemukan.'];
             }
 
@@ -356,14 +368,14 @@ class DetailPayrollBonus extends Page implements HasTable
             $message .= "💰 *Total Bonus*: Rp {$amount}\n";
 
             $caseProjectDetailIds = $record->case_project_detail_ids ?? [];
-            if (!is_array($caseProjectDetailIds)) {
+            if (! is_array($caseProjectDetailIds)) {
                 $caseProjectDetailIds = json_decode((string) $caseProjectDetailIds, true) ?? [];
             }
 
             $projectDetails = CaseProjectDetail::with(['caseProject', 'caseProject.client', 'caseProject.mou'])->whereIn('id', $caseProjectDetailIds)->get();
 
             $message .= "\n📄 Slip bonus detail dalam bentuk PDF akan dikirim setelah pesan ini.\n";
-            $message .= "Terima kasih atas dedikasi dan kerja kerasnya! 🙏";
+            $message .= 'Terima kasih atas dedikasi dan kerja cerdasnya! 🙏';
 
             // Generate PDF
             $data = [
@@ -378,9 +390,9 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->setOption(['compress' => 1]);
 
             // Save to temp
-            $filename = 'Slip_Bonus_' . str_replace(' ', '_', $staff->name) . '_' . time() . '.pdf';
-            $tempPath = storage_path('app/temp/' . $filename);
-            if (!file_exists(storage_path('app/temp'))) {
+            $filename = 'Slip_Bonus_'.str_replace(' ', '_', $staff->name).'_'.time().'.pdf';
+            $tempPath = storage_path('app/temp/'.$filename);
+            if (! file_exists(storage_path('app/temp'))) {
                 mkdir(storage_path('app/temp'), 0755, true);
             }
             $pdf->save($tempPath);
@@ -398,10 +410,10 @@ class DetailPayrollBonus extends Page implements HasTable
 
             return [
                 'success' => $result['status'] ?? false,
-                'message' => ($result['status'] ?? false) ? "Slip bonus berhasil dikirim ke {$staff->name}" : "Gagal mengirim dokumen: " . ($result['message'] ?? 'Unknown error')
+                'message' => ($result['status'] ?? false) ? "Slip bonus berhasil dikirim ke {$staff->name}" : 'Gagal mengirim dokumen: '.($result['message'] ?? 'Unknown error'),
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Error: '.$e->getMessage()];
         }
     }
 }
