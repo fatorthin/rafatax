@@ -284,7 +284,7 @@
         .dark .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
             color: #ef4444 !important;
         }
-        
+
         .dark .select2-container--default .select2-search--inline .select2-search__field {
             color: #f9fafb !important;
             background: transparent !important;
@@ -314,20 +314,27 @@
                     {{ $cashReference->name }} - {{ $monthName }} {{ $year }}
                 </h1>
                 <div class="flex gap-2">
-                    <button id="themeToggleBtn" type="button" onclick="toggleTheme()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button id="themeToggleBtn" type="button" onclick="toggleTheme()"
+                        class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i id="themeToggleIcon" class="fas fa-moon"></i>
                         <span id="themeToggleText">Dark</span>
                     </button>
                     @php
-                        $monthlyPrefix = (auth()->check() && auth()->user()->hasRole('super_admin')) || request()->is('admin/*') ? '/admin' : '/app';
+                        $monthlyPrefix =
+                            (auth()->check() && auth()->user()->hasRole('super_admin')) || request()->is('admin/*')
+                                ? '/admin'
+                                : '/app';
                     @endphp
-                    <a href="{{ url($monthlyPrefix . '/cash-references/' . $cashReference->id . '/monthly') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <a href="{{ url($monthlyPrefix . '/cash-references/' . $cashReference->id . '/monthly') }}"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Back to Monthly
                     </a>
-                    <button onclick="openAddModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onclick="openAddModal()"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-plus"></i> Add Transaction
                     </button>
-                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <a href="{{ route('cash-reference.month-detail.export', ['id' => $cashReference->id, 'year' => $year, 'month' => $month]) }}"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-file-excel"></i> Export Excel
                     </a>
                 </div>
@@ -372,33 +379,25 @@
         <div class="bg-white rounded-lg shadow-md p-4 mb-4">
             <div class="flex flex-wrap gap-3 items-end">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1"><i class="fas fa-search mr-1"></i>Cari Deskripsi</label>
-                    <input
-                        type="text"
-                        id="searchInput"
-                        placeholder="Ketik deskripsi transaksi..."
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1"><i
+                            class="fas fa-search mr-1"></i>Cari Deskripsi</label>
+                    <input type="text" id="searchInput" placeholder="Ketik deskripsi transaksi..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
                 <div class="flex-1 min-w-[220px]">
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1"><i class="fas fa-sitemap mr-1"></i>Filter COA</label>
-                    <select
-                        id="filterCoaId"
-                        multiple="multiple"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1"><i
+                            class="fas fa-sitemap mr-1"></i>Filter COA</label>
+                    <select id="filterCoaId" multiple="multiple"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
-                    <button
-                        type="button"
-                        onclick="resetFilter()"
+                    <button type="button" onclick="resetFilter()"
                         class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm flex items-center gap-2"
-                        style="color: #ffffff !important;"
-                    >
+                        style="color: #ffffff !important;">
                         <i class="fas fa-times"></i> Reset Filter
                     </button>
                 </div>
@@ -427,7 +426,10 @@
                 </thead>
                 <tbody id="sortable-tbody" class="bg-white divide-y divide-gray-200">
                     @forelse($transactions as $transaction)
-                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}" data-debit="{{ $transaction->debit_amount }}" data-credit="{{ $transaction->credit_amount }}" data-coa-id="{{ $transaction->coa_id }}" data-description="{{ strtolower($transaction->description) }}">
+                        <tr class="hover:bg-gray-50 sortable-row" data-id="{{ $transaction->id }}"
+                            data-debit="{{ $transaction->debit_amount }}"
+                            data-credit="{{ $transaction->credit_amount }}" data-coa-id="{{ $transaction->coa_id }}"
+                            data-description="{{ strtolower($transaction->description) }}">
                             <td class="px-3 py-4 text-center">
                                 <span class="drag-handle" title="Drag untuk mengurutkan">
                                     <i class="fas fa-grip-vertical"></i>
@@ -441,13 +443,15 @@
                             </td>
                             <td class="px-6 py-4 text-sm">
                                 {{ $transaction->description }}
-                                @if($transaction->invoice_id && $transaction->invoice)
+                                @if ($transaction->invoice_id && $transaction->invoice)
                                     <div class="text-xs text-blue-600 mt-1 flex items-center gap-1 dark:text-blue-400">
                                         <i class="fas fa-file-invoice"></i>
-                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong> ({{ $transaction->invoice->client_name ?: 'No Client' }})</span>
+                                        <span>Invoice: <strong>{{ $transaction->invoice->invoice_number }}</strong>
+                                            ({{ $transaction->invoice->client_name ?: 'No Client' }})</span>
                                     </div>
                                 @elseif(!$transaction->invoice_id && $transaction->client_id && $transaction->client)
-                                    <div class="text-xs text-purple-600 mt-1 flex items-center gap-1 dark:text-purple-400">
+                                    <div
+                                        class="text-xs text-purple-600 mt-1 flex items-center gap-1 dark:text-purple-400">
                                         <i class="fas fa-building"></i>
                                         <span>Client: <strong>{{ $transaction->client->company_name }}</strong></span>
                                     </div>
@@ -463,31 +467,47 @@
                                 {{ number_format($transaction->running_balance, 2, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                @if(in_array($transaction->coa_id, [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126]))    
+                                @if (in_array($transaction->coa_id, [182, 183, 184, 185, 186, 187, 188, 119, 120, 121, 122, 123, 124, 125, 126, 180]))
                                     @php
                                         $invoiceText = '';
                                         if ($transaction->invoice) {
                                             $clientName = $transaction->invoice->client_name ?: 'No Client';
-                                            $amountFormatted = number_format($transaction->invoice->amount, 2, ',', '.');
+                                            $amountFormatted = number_format(
+                                                $transaction->invoice->amount,
+                                                2,
+                                                ',',
+                                                '.',
+                                            );
                                             $invoiceText = "{$transaction->invoice->invoice_number} - {$clientName} - Rp {$amountFormatted}";
                                         }
                                         $clientText = '';
                                         if ($transaction->client) {
-                                            $codeStr = $transaction->client->code ? " ({$transaction->client->code})" : '';
+                                            $codeStr = $transaction->client->code
+                                                ? " ({$transaction->client->code})"
+                                                : '';
                                             $clientText = "{$transaction->client->company_name}{$codeStr}";
                                         }
                                     @endphp
-                                    <button onclick="openLinkInvoiceModal({{ $transaction->id }}, {{ $transaction->invoice_id ?? 'null' }}, '{{ addslashes($invoiceText) }}')" class="text-green-600 hover:text-green-900 mr-3" title="Hubungkan ke Invoice">
+                                    <button
+                                        onclick="openLinkInvoiceModal({{ $transaction->id }}, {{ $transaction->invoice_id ?? 'null' }}, '{{ addslashes($invoiceText) }}')"
+                                        class="text-green-600 hover:text-green-900 mr-3" title="Hubungkan ke Invoice">
                                         <i class="fas fa-link"></i>
                                     </button>
-                                    <button onclick="openLinkClientModal({{ $transaction->id }}, {{ $transaction->client_id ?? 'null' }}, '{{ addslashes($clientText) }}')" class="text-purple-600 hover:text-purple-900 mr-3" title="Hubungkan ke Client">
+                                    <button
+                                        onclick="openLinkClientModal({{ $transaction->id }}, {{ $transaction->client_id ?? 'null' }}, '{{ addslashes($clientText) }}')"
+                                        class="text-purple-600 hover:text-purple-900 mr-3"
+                                        title="Hubungkan ke Client">
                                         <i class="fas fa-user-tie"></i>
                                     </button>
                                 @endif
-                                <button onclick="openEditModal({{ json_encode($transaction) }})" class="text-blue-600 hover:text-blue-900 mr-3">
+                                <button onclick="openEditModal({{ json_encode($transaction) }})"
+                                    class="text-blue-600 hover:text-blue-900 mr-3">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form action="{{ route('cash-reference.transaction.delete', ['id' => $cashReference->id, 'transactionId' => $transaction->id]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this transaction?')">
+                                <form
+                                    action="{{ route('cash-reference.transaction.delete', ['id' => $cashReference->id, 'transactionId' => $transaction->id]) }}"
+                                    method="POST" class="inline"
+                                    onsubmit="return confirm('Are you sure you want to delete this transaction?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-900">
@@ -521,11 +541,14 @@
                 @csrf
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" required value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="transaction_date" required
+                        value="{{ \Carbon\Carbon::create($year, $month, 1)->format('Y-m-d') }}"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Chart of Account</label>
-                    <select name="coa_id" id="add_coa_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="coa_id" id="add_coa_id" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select CoA</option>
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
@@ -534,22 +557,27 @@
                 </div>
 
                 <!-- Aktiva Tetap Fields (muncul otomatis saat AO-126 dipilih) -->
-                <div id="aktivaTetapFields" class="hidden mb-4 border border-amber-300 bg-amber-50 rounded-lg p-4 space-y-3">
+                <div id="aktivaTetapFields"
+                    class="hidden mb-4 border border-amber-300 bg-amber-50 rounded-lg p-4 space-y-3">
                     <p class="text-sm font-semibold text-amber-800">
                         <i class="fas fa-boxes mr-1"></i>
                         Transaksi ini akan otomatis ditambahkan ke Daftar Aktiva Tetap
                     </p>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Tarif Penyusutan (%)</label>
-                        <input type="number" name="tarif_penyusutan" id="tarif_penyusutan" step="0.01" min="0" max="100" value="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="tarif_penyusutan" id="tarif_penyusutan" step="0.01"
+                            min="0" max="100" value="0"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Bulan/Tahun Perolehan</label>
-                        <input type="month" name="tahun_perolehan" id="tahun_perolehan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="month" name="tahun_perolehan" id="tahun_perolehan"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Kepemilikan</label>
-                        <select name="kepemilikan" id="kepemilikan" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select name="kepemilikan" id="kepemilikan"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Pilih kepemilikan</option>
                             <option value="PT">PT</option>
                             <option value="KKP">KKP</option>
@@ -558,17 +586,19 @@
                 </div>
 
                 <!-- Transfer Cash Reference Fields (muncul otomatis saat AO-101.2 dipilih) -->
-                <div id="transferTargetFields" class="hidden mb-4 border border-blue-300 bg-blue-50 rounded-lg p-4 space-y-3">
+                <div id="transferTargetFields"
+                    class="hidden mb-4 border border-blue-300 bg-blue-50 rounded-lg p-4 space-y-3">
                     <p class="text-sm font-semibold text-blue-800">
                         <i class="fas fa-exchange-alt mr-1"></i>
                         Transaksi balasan (lawan debit/kredit) akan otomatis dibuat pada Cash Reference yang dipilih
                     </p>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Target Cash Reference</label>
-                        <select name="target_cash_reference_id" id="target_cash_reference_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select name="target_cash_reference_id" id="target_cash_reference_id"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Pilih Target Cash Reference --</option>
                             @foreach ($cashReferences as $cr)
-                                @if($cr->id != $cashReference->id)
+                                @if ($cr->id != $cashReference->id)
                                     <option value="{{ $cr->id }}">{{ $cr->name }}</option>
                                 @endif
                             @endforeach
@@ -577,20 +607,25 @@
                 </div>
 
                 <!-- Link Invoice & Client Fields (muncul saat CoA tertentu dipilih) -->
-                <div id="addLinkInvoiceClientFields" class="hidden mb-4 border border-green-300 bg-green-50 rounded-lg p-4 space-y-3">
+                <div id="addLinkInvoiceClientFields"
+                    class="hidden mb-4 border border-green-300 bg-green-50 rounded-lg p-4 space-y-3">
                     <p class="text-sm font-semibold text-green-800">
                         <i class="fas fa-link mr-1"></i>
                         Hubungkan Transaksi dengan Invoice / Client
                     </p>
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Invoice (Opsional)</label>
-                        <select name="invoice_id" id="add_link_invoice_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Invoice
+                            (Opsional)</label>
+                        <select name="invoice_id" id="add_link_invoice_id"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Pilih Invoice --</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Client (Opsional)</label>
-                        <select name="client_id" id="add_link_client_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Client
+                            (Opsional)</label>
+                        <select name="client_id" id="add_link_client_id"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                             <option value="">-- Pilih Client --</option>
                         </select>
                     </div>
@@ -598,21 +633,28 @@
 
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="description" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Debit Amount</label>
-                        <input type="number" name="debit_amount" step="0.01" min="0" value="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="debit_amount" step="0.01" min="0" value="0"
+                            required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Credit Amount</label>
-                        <input type="number" name="credit_amount" step="0.01" min="0" value="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="credit_amount" step="0.01" min="0" value="0"
+                            required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Save</button>
+                    <button type="button" onclick="closeAddModal()"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Save</button>
                 </div>
             </form>
         </div>
@@ -632,11 +674,13 @@
                 @method('PUT')
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
-                    <input type="text" name="description" id="edit_description" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="description" id="edit_description" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Chart of Account</label>
-                    <select name="coa_id" id="edit_coa_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select name="coa_id" id="edit_coa_id" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         @foreach ($coaList as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
                         @endforeach
@@ -644,60 +688,76 @@
                 </div>
 
                 <!-- Link Invoice & Client Fields Edit Modal -->
-                <div id="editLinkInvoiceClientFields" class="hidden mb-4 border border-green-300 bg-green-50 rounded-lg p-4 space-y-3">
+                <div id="editLinkInvoiceClientFields"
+                    class="hidden mb-4 border border-green-300 bg-green-50 rounded-lg p-4 space-y-3">
                     <p class="text-sm font-semibold text-green-800">
                         <i class="fas fa-link mr-1"></i>
                         Hubungkan Transaksi dengan Invoice / Client
                     </p>
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Invoice (Opsional)</label>
-                        <select name="invoice_id" id="edit_link_invoice_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Invoice
+                            (Opsional)</label>
+                        <select name="invoice_id" id="edit_link_invoice_id"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Pilih Invoice --</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Client (Opsional)</label>
-                        <select name="client_id" id="edit_link_client_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cari & Pilih Client
+                            (Opsional)</label>
+                        <select name="client_id" id="edit_link_client_id"
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                             <option value="">-- Pilih Client --</option>
                         </select>
                     </div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Transaction Date</label>
-                    <input type="date" name="transaction_date" id="edit_transaction_date" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="transaction_date" id="edit_transaction_date" required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Debit Amount</label>
-                        <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="debit_amount" id="edit_debit_amount" step="0.01"
+                            min="0" required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Credit Amount</label>
-                        <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01" min="0" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" name="credit_amount" id="edit_credit_amount" step="0.01"
+                            min="0" required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Update</button>
+                    <button type="button" onclick="closeEditModal()"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Update</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Link Invoice Modal -->
-    <div id="linkInvoiceModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div id="linkInvoiceModal"
+        class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Hubungkan Transaksi dengan Invoice</h3>
-                <button onclick="closeLinkInvoiceModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <button onclick="closeLinkInvoiceModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="linkInvoiceForm" method="POST">
                 @csrf
                 <div class="mb-6">
-                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Cari & Pilih Invoice</label>
-                    <select name="invoice_id" id="link_invoice_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Cari & Pilih
+                        Invoice</label>
+                    <select name="invoice_id" id="link_invoice_id"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">-- Pilih Invoice --</option>
                     </select>
                     <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">
@@ -705,12 +765,15 @@
                     </p>
                 </div>
                 <div class="flex justify-between items-center gap-2">
-                    <button type="button" onclick="unlinkInvoice()" id="btnHapusHubungan" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors duration-200">
+                    <button type="button" onclick="unlinkInvoice()" id="btnHapusHubungan"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors duration-200">
                         <i class="fas fa-unlink mr-1"></i> Hapus Hubungan
                     </button>
                     <div class="flex gap-2">
-                        <button type="button" onclick="closeLinkInvoiceModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm transition-colors duration-200">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors duration-200">Simpan</button>
+                        <button type="button" onclick="closeLinkInvoiceModal()"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm transition-colors duration-200">Batal</button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors duration-200">Simpan</button>
                     </div>
                 </div>
             </form>
@@ -718,19 +781,23 @@
     </div>
 
     <!-- Link Client Modal -->
-    <div id="linkClientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div id="linkClientModal"
+        class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Hubungkan Transaksi dengan Client</h3>
-                <button onclick="closeLinkClientModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <button onclick="closeLinkClientModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="linkClientForm" method="POST">
                 @csrf
                 <div class="mb-6">
-                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Cari & Pilih Client</label>
-                    <select name="client_id" id="link_client_id" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Cari & Pilih
+                        Client</label>
+                    <select name="client_id" id="link_client_id"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                         <option value="">-- Pilih Client --</option>
                     </select>
                     <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">
@@ -738,12 +805,15 @@
                     </p>
                 </div>
                 <div class="flex justify-between items-center gap-2">
-                    <button type="button" onclick="unlinkClient()" id="btnHapusHubunganClient" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors duration-200">
+                    <button type="button" onclick="unlinkClient()" id="btnHapusHubunganClient"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors duration-200">
                         <i class="fas fa-unlink mr-1"></i> Hapus Hubungan
                     </button>
                     <div class="flex gap-2">
-                        <button type="button" onclick="closeLinkClientModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm transition-colors duration-200">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors duration-200">Simpan</button>
+                        <button type="button" onclick="closeLinkClientModal()"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm transition-colors duration-200">Batal</button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors duration-200">Simpan</button>
                     </div>
                 </div>
             </form>
@@ -797,8 +867,16 @@
                     url: '{{ route('invoices.search') }}',
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) { return { q: params.term }; },
-                    processResults: function (data) { return { results: data }; },
+                    data: function(params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data
+                        };
+                    },
                     cache: true
                 }
             });
@@ -812,8 +890,16 @@
                     url: '{{ route('clients.search') }}',
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) { return { q: params.term }; },
-                    processResults: function (data) { return { results: data }; },
+                    data: function(params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data
+                        };
+                    },
                     cache: true
                 }
             });
@@ -824,7 +910,7 @@
                 const aktivaFields = document.getElementById('aktivaTetapFields');
                 const transferFields = document.getElementById('transferTargetFields');
                 const linkFields = document.getElementById('addLinkInvoiceClientFields');
-                
+
                 if (code === 'AO-126') {
                     aktivaFields.classList.remove('hidden');
                 } else {
@@ -864,8 +950,16 @@
                     url: '{{ route('invoices.search') }}',
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) { return { q: params.term }; },
-                    processResults: function (data) { return { results: data }; },
+                    data: function(params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data
+                        };
+                    },
                     cache: true
                 }
             });
@@ -879,8 +973,16 @@
                     url: '{{ route('clients.search') }}',
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) { return { q: params.term }; },
-                    processResults: function (data) { return { results: data }; },
+                    data: function(params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data
+                        };
+                    },
                     cache: true
                 }
             });
@@ -915,12 +1017,12 @@
                     url: '{{ route('invoices.search') }}',
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) {
+                    data: function(params) {
                         return {
                             q: params.term // search term
                         };
                     },
-                    processResults: function (data) {
+                    processResults: function(data) {
                         return {
                             results: data
                         };
@@ -939,12 +1041,12 @@
                     url: '{{ route('clients.search') }}',
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) {
+                    data: function(params) {
                         return {
                             q: params.term // search term
                         };
                     },
-                    processResults: function (data) {
+                    processResults: function(data) {
                         return {
                             results: data
                         };
@@ -1169,7 +1271,7 @@
         }
 
         // Attach event listeners for live filter
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchInput');
             if (searchInput) searchInput.addEventListener('input', filterTransactions);
         });
