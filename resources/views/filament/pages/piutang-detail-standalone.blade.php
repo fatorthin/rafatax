@@ -411,7 +411,23 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-sm text-slate-900 dark:text-white whitespace-nowrap font-semibold">{{ $tx['ref'] }}</td>
+                                <td class="px-6 py-4 text-sm text-slate-900 dark:text-white whitespace-nowrap font-semibold">
+                                    @php
+                                        $invoiceId = $tx['invoice_id'] ?? null;
+                                        if (!$invoiceId && !empty($tx['ref']) && str_starts_with($tx['ref'], 'INV/')) {
+                                            $invoiceId = \App\Models\Invoice::where('invoice_number', $tx['ref'])->value('id');
+                                        }
+                                        $isAdmin = auth()->check() && auth()->user()->hasRole('admin');
+                                        $invoiceUrl = $invoiceId ? ($isAdmin ? "/admin/invoices/{$invoiceId}/cost-list" : "/app/invoices/{$invoiceId}/cost-list") : null;
+                                    @endphp
+                                    @if($invoiceUrl)
+                                        <a href="{{ $invoiceUrl }}" class="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 font-semibold">
+                                            {{ $tx['ref'] }}
+                                        </a>
+                                    @else
+                                        {{ $tx['ref'] }}
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-sm truncate" title="{{ $tx['description'] }}">{{ $tx['description'] }}</td>
                                 <td class="px-6 py-4 text-sm text-right text-slate-900 dark:text-white whitespace-nowrap font-semibold">
                                     {{ $tx['debit'] > 0 ? 'Rp ' . number_format($tx['debit'], 0, ',', '.') : '-' }}
