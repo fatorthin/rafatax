@@ -37,7 +37,7 @@ class PiutangPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
-        // 2. Invoices Aggregated Subquery (Tahun 2026 ke Atas)
+        // 2. Invoices Aggregated Subquery (Tahun 2026 ke Atas, bukan dari memo)
         $invSql = "
             SELECT client_id, SUM(amount) as total_invoice
             FROM (
@@ -49,13 +49,14 @@ class PiutangPerClient extends Page implements HasTable
                 LEFT JOIN mous m ON (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id = m.id)
                 WHERE cli.deleted_at IS NULL 
                   AND i.deleted_at IS NULL
+                  AND i.memo_id IS NULL
                   AND i.invoice_date >= '2026-01-01'
             ) as t_inv
             WHERE client_id IS NOT NULL
             GROUP BY client_id
         ";
 
-        // 3. Payments Aggregated Subquery (Tahun 2026 ke Atas dan bukan CoA 180)
+        // 3. Payments Aggregated Subquery (Tahun 2026 ke Atas dan bukan CoA 180, bukan dari invoice memo)
         $paySql = "
             SELECT client_id, SUM(amount) as total_pembayaran
             FROM (
@@ -74,6 +75,7 @@ class PiutangPerClient extends Page implements HasTable
                 WHERE cr.deleted_at IS NULL
                   AND cr.transaction_date >= '2026-01-01'
                   AND (cr.coa_id IS NULL OR cr.coa_id <> 180)
+                  AND (inv.id IS NULL OR inv.memo_id IS NULL)
             ) as t_pay
             WHERE client_id IS NOT NULL
             GROUP BY client_id
@@ -183,7 +185,7 @@ class PiutangPerClient extends Page implements HasTable
             }
         }
 
-        // 2. Invoices (>= 2026)
+        // 2. Invoices (>= 2026, bukan dari memo)
         $invoices = \App\Models\Invoice::query()
             ->where(function ($q) use ($client) {
                 $q->where('client_id', $client->id)
@@ -192,6 +194,7 @@ class PiutangPerClient extends Page implements HasTable
                     });
             })
             ->whereNull('deleted_at')
+            ->whereNull('memo_id')
             ->where('invoice_date', '>=', '2026-01-01')
             ->with('costListInvoices')
             ->get();
@@ -210,7 +213,7 @@ class PiutangPerClient extends Page implements HasTable
             ];
         }
 
-        // 3. Payments (>= 2026 and not CoA 180)
+        // 3. Payments (>= 2026, bukan CoA 180, bukan dari invoice memo)
         $cashReports = \App\Models\CashReport::query()
             ->where(function ($q) use ($client) {
                 $q->where('cash_reports.client_id', $client->id)
@@ -221,7 +224,7 @@ class PiutangPerClient extends Page implements HasTable
                         $sub->select('id')->from('invoices')
                             ->where('client_id', $client->id)
                             ->orWhereIn('mou_id', function ($sub2) use ($client) {
-                                $sub2->select('id')->from('mous')->where('client_id', $client->id);
+                                 $sub2->select('id')->from('mous')->where('client_id', $client->id);
                             });
                     });
             })
@@ -229,6 +232,12 @@ class PiutangPerClient extends Page implements HasTable
             ->where('transaction_date', '>=', '2026-01-01')
             ->where(function ($q) {
                 $q->whereNull('coa_id')->orWhere('coa_id', '<>', 180);
+            })
+            ->where(function ($q) {
+                $q->whereNull('invoice_id')
+                    ->orWhereDoesntHave('invoice', function ($sub) {
+                        $sub->whereNotNull('memo_id');
+                    });
             })
             ->with(['cashReference', 'invoice', 'coa'])
             ->get();

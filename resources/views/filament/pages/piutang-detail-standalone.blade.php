@@ -315,7 +315,15 @@
                             @endphp
                             <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                 <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ $mouNo++ }}</td>
-                                <td class="px-6 py-4 text-sm text-slate-900 dark:text-white whitespace-nowrap font-semibold">{{ $mou->mou_number ?: '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-slate-900 dark:text-white whitespace-nowrap font-semibold">
+                                    @php
+                                        $isAdmin = auth()->check() && auth()->user()->hasRole('admin');
+                                        $costListUrl = $isAdmin ? "/admin/mous/{$mou->id}/cost-list" : "/app/mous/{$mou->id}/cost-list";
+                                    @endphp
+                                    <a href="{{ $costListUrl }}" class="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-1 font-semibold">
+                                        {{ $mou->mou_number ?: '-' }}
+                                    </a>
+                                </td>
                                 <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ $mou->description }}">{{ $mou->description ?: '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ $mou->categoryMou->name ?? '-' }}</td>
                                 <td class="px-6 py-4 text-sm text-right text-slate-900 dark:text-white whitespace-nowrap font-semibold">
