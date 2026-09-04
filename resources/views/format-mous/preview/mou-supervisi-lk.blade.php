@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Perjanjian Kompilasi SPT Pembetulan -
+        {{ $mou->type === 'pt' ? 'PT Aghnia Oasis Konsultindo' : 'KKP Antin Okfitasari' }}</title>
+    <style>
+        /* Define Page Size and Margins */
+        @page {
+            size: A4;
+            margin: 200px 0px 100px 0px;
+            /* Top, Right, Bottom, Left */
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0 40px;
+            /* Content padding */
+        }
+
+        /* Fixed Header */
+        header {
+            position: fixed;
+            top: -200px;  
+            /* Adjusted based on new margin */
+            left: 0;
+            right: 0;
+            height: 150px;
+            text-align: center;
+        }
+
+        header img {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Content Styling */
+        .container {
+            width: 100%;
+        }
+
+        .document-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .document-subtitle {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .document-number {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: #005e8a;
+            border-bottom: 2px solid #005e8a;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        /* Parties Table */
+        .parties-table td {
+            vertical-align: top;
+            padding: 2px 5px;
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border: 1px solid #000;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+
+        .data-table th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        /* Signatures */
+        .signatures {
+            margin-top: 30px;
+            width: 100%;
+        }
+
+        .signature-box {
+            display: inline-block;
+            width: 45%;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        .signature-spacer {
+            display: inline-block;
+            width: 8%;
+        }
+
+        .signature-line {
+            margin-top: 60px;
+            border-bottom: 1px solid #000;
+            margin-bottom: 5px;
+        }
+
+        /* List styling to match original */
+        ol,
+        ul {
+            margin-top: 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1000;
+            width: 40%;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fixed Header -->
+    <header>
+        @if ($mou->type === 'pt')
+            <img src="{{ public_path('images/header.png') }}" alt="Header">
+        @else
+            <img src="{{ public_path('images/header-kkp.jpg') }}" alt="Header">
+        @endif
+    </header>
+
+    <!-- Watermark -->
+    <img src="{{ public_path('images/background.png') }}" class="watermark">
+
+    <!-- Content -->
+    <div class="container">
+        <!-- Header Content -->
+        <div class="section">
+            <div class="document-title">SURAT PERIKATAN JASA</div>
+            <div class="document-subtitle">LAPORAN KEUANGAN SINKRONISASI AUDIT TAHUN {{ $mou->tahun_pajak }}</div>
+            <div class="document-number">NO: {{ $mou->mou_number }}</div>
+        </div>
+
+        <div class="section">
+            <p>Yang bertanda tangan di bawah ini masing-masing:</p>
+            <table class="parties-table">
+                <tr>
+                    <td width="20">1.</td>
+                    <td width="100"><strong>Nama</strong></td>
+                    <td width="10">:</td>
+                    <td>{{ $mou->client->owner_name ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><strong>Jabatan</strong></td>
+                    <td>:</td>
+                    <td>{{ $mou->client->owner_role ?: 'OWNER' }}</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><strong>Perusahaan</strong></td>
+                    <td>:</td>
+                    <td>{{ $mou->client->company_name ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><strong>Alamat</strong></td>
+                    <td>:</td>
+                    <td>{{ $mou->client->address ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td colspan="3">dan selanjutnya disebut <strong>PIHAK PERTAMA</strong></td>
+                </tr>
+                <tr>
+                    <td colspan="4" height="10"></td>
+                </tr>
+                <tr>
+                    <td>2.</td>
+                    <td><strong>Nama</strong></td>
+                    <td>:</td>
+                    <td>ANTIN OKFITASARI</td>
+                </tr>
+                @if ($mou->type === 'pt')
+                    <tr>
+                        <td></td>
+                        <td><strong>Jabatan</strong></td>
+                        <td>:</td>
+                        <td>DIREKTUR</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td><strong>Perusahaan</strong></td>
+                        <td>:</td>
+                        <td>PT AGHNIA OASIS KONSULTINDO</td>
+                    </tr>
+                @else
+                    <tr>
+                        <td></td>
+                        <td><strong>Jabatan</strong></td>
+                        <td>:</td>
+                        <td>OWNER</td>
+                    </tr>
+                @endif
+                <tr>
+                    <td></td>
+                    <td><strong>Alamat</strong></td>
+                    <td>:</td>
+                    <td>DK NAMPAN RT 02 RW 01 MADEGONDO GROGOL SUKOHARJO</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td colspan="3">dan selanjutnya disebut <strong>PIHAK KEDUA</strong></td>
+                </tr>
+            </table>
+
+            <p>Pada hari ini {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('l') }}, tanggal {{ \Carbon\Carbon::parse($mou->start_date)->locale('id')->translatedFormat('d F Y') }} pihak Pertama dan pihak Kedua sepakat untuk mengadakan perjanjian kerja sama Penyusunan Laporan Keuangan untuk Audit Tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }} {{ $mou->client->company_name ?? '-' }} seperti diatur dalam pasal-pasal Surat Perikatan Jasa Supervisi Laporan Keuangan di bawah ini :</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Tujuan dan Ruang Lingkup</div>
+             <p>Tujuan perikatan jasa supervisi laporan keuangan ini adalah, Pihak Kedua dapat membantu Pihak Pertama dalam penyusunan dan penyajian informasi keuangan sesuai dengan kerangka pelaporan keuangan yang digunakan, yang berdasarkan pada Standar Akuntasi Keuangan yang berlaku di Indonesia.</p>
+
+            <p>Ruang lingkup surat perikatan jasa ini meliputi kegiatan untuk melakukan pekerjaan supervisi penyusunan laporan keuangan komersial dan laporan keuangan fiskal. Pihak Pertama, berdasarkan data – data yang diterimakan  dari Pihak Pertama yang dapat dipertanggung jawabkan sesuai dengan peraturan perundang - undangan dan Standar Akuntansi yang berlaku.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Prosedur Pelaksanaan</div>
+            <p>Untuk kelancaran dan dapat dilaksanakannya pekerjaan jasa tersebut di atas,  maka pihak Pertama wajib memberikan informasi, data/dokumen-dokumen secara tertulis yang diperlukan oleh Pihak Kedua baik berupa rekap maupun bukti transaksi. Data diberikan oleh pihak Pertama sendiri atau pegawai Pihak Pertama yang telah mendapatkan wewenang  dari Pihak Pertama, untuk mewakili Pihak Pertama dalam hal pemberian data/dokumen yang diperlukan oleh Pihak kedua.</p>
+
+            <p>Apabila data/dokumen-dokumen yang dimaksud tidak tersedia sebagaimana mestinya atau sengaja tidak diberikan oleh pihak Pertama kepada pihak Kedua, maka pihak Kedua tidak bertanggung jawab atas tidak terlaksanannya tugas atas data yang tidak disediakan tersebut.Penyerahan data dari Pihak Pertama dilaksanakan melalui email yang sudah ditentukan.</p>
+
+            <h3>Rincian Pekerjaan:</h3>
+            <ol>
+                <li>Penyusunan Laporan Keuangan Audit Tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                </li>
+                <li>Memberikan Advice atas temuan – temuan dalam penyusunan pelaporan keuangan maupun perhitungan periode Januari s.d Desember {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}</li>
+                <li>Review perpajakan atas Laporan Keuangan untuk Audit Tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                </li>
+                <li>Untuk kondisi tertentu, Pihak Kedua akan melakukan kunjungan guna evaluasi dan analisa sesuai jadwal yang ditentukan berdasarkan kesepakatan kedua belah pihak.</li>
+            </ol>
+
+            <div style="page-break-inside: avoid;">
+                <h3>Prosedur Pelaksanaan:</h3>
+                <p>Pihak Kedua akan melaksanakan pekerjaan tersebut dengan menerapkan beberapa prosedur
+                    antara lain:</p>
+                <ol>
+                   <li>Penerapan Prinsip Mengenal Pengguna Jasa dan Pemahaman Bisnis Pihak Pertama.</li>
+                    <li>Penerapan Pemahaman SOP Perusahaan Pihak Pertama terkait penanggung jawab dokumen informasi keuangan.</li>
+                    <li>Permintaan data informasi keuangan.</li>
+                    <li>Penyempurnaan Pembukuan tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.</li>
+                    <li>Penyusunan Laporan Keuangan Audit Tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.</li>
+                    <li>Perhitungan aspek perpajakan tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }} yang muncul.
+                    </li>
+                </ol>
+            </div>
+
+            <div style="page-break-inside: avoid;">
+                <h3>Hasil:</h3>
+                <ol>
+                    <li>Laporan Keuangan Audit Tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.</li>
+                    <li>Estimasi perhitungan potensi pajak yang muncul untuk tahun
+                        {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}.
+                    </li>
+                </ol>
+            </div>
+
+              <p>Pihak Kedua tidak bertanggung jawab atas ketidaksesuaian data/dokumen yang diberikan oleh pihak Pertama dengan kondisi riil maupun kondisi yang bertentangan dengan ketentuan hukum, serta ketentuan dan peraturan perpajakan. Pihak Kedua juga dibebaskan dari segala tuntutan hukum atas penyalahgunaan data/dokumen/laporan oleh pihak ketiga maupun informasi yang tidak lengkap yang diperoleh dari pihak Pertama.</p>
+        </div>
+
+        <div class="section" style="page-break-inside: avoid;">
+            <div class="section-title">Fee Jasa Pekerjaan</div>
+            <p>Jasa Profesional yang kami bebankan untuk pekerjaan supervisi laporan keuangan
+                seperti tersebut di atas adalah sebagai berikut:</p>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>NO</th>
+                        <th>JENIS PEKERJAAN</th>
+                        <th>QTY</th>
+                        <th>SATUAN</th>
+                        <th>HARGA</th>
+                        <th>TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($costLists as $i => $cost)
+                        <tr>
+                            <td style="text-align: center;">{{ $i + 1 }}</td>
+                            <td>
+                                <strong>{{ $cost->description }}</strong><br>
+                                <small>{{ $cost->coa->name ?? '-' }}</small>
+                            </td>
+                            <td style="text-align: center;">{{ $cost->quantity }}</td>
+                            <td style="text-align: center;">{{ $cost->satuan_quantity }}</td>
+                            <td style="text-align: right;">Rp
+                                {{ number_format($cost->amount, 0, ',', '.') }}</td>
+                            <td style="text-align: right;">Rp
+                                {{ number_format($cost->total_amount, 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <p><em>Fee belum termasuk PPh yang harus dipotong,dengan rincian pembayaran 10% dari
+                    nominal yang di sepakati setelah perjanjian ini di tandatangani dan sisa nya
+                    akan di bayarkan setelah pembetulan terlapor.</em></p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Jangka Waktu</div>
+            <p>Jangka waktu pelaksanaan pekerjaan supervisi laporan keuangan adalah sejak perikatan kerjasama ini ditandatangani oleh kedua belah pihak, sampai dengan laporan keuangan audit tahun {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }} telah selesai/final dengan munculnya draft laporan Audit dari KAP yang ditunjuk atau selambat-lambatnya tanggal 30 Desember {{\Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y')}} .</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Penarikan Diri</div>
+              <p>Pihak Kedua akan menarik diri dari penugasan ini bilamana terdapat perbedaan yang sangat prinsipil dan tidak terselesaikan dengan Pihak Pertama yang berkaitan dengan hal-hal yang menyebabkan sikap independen. Jika hal tersebut terjadi, Pihak Pertama membebaskan Pihak kedua dari segala tuntutan apapun, termasuk tuntutan untuk mengembalikan bagian fee pekerjaan yang telah diterima oleh Pihak Kedua.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Lain-Lain</div>
+              <p>Lingkup pekerjaan hanya terkait dengan segala jasa supervisi laporan keuangan tahun pajak {{ $mou->tahun_pajak ?? \Carbon\Carbon::parse($mou->end_date)->locale('id')->translatedFormat('Y') }}, sebagaimana tersebut dalam Prosedur pelaksanaan. Adapun jika terdapat pekerjaan di Luar selain tersebut, akan di kenakan Fee tersendiri dan dibuatkan kontrak  secara tertulis dan terpisah dari surat perjanjian kerja sama ini.</p>
+        </div>
+
+        <div class="section" style="page-break-inside: avoid;">
+            <div class="section-title">Penutup</div>
+            <p>Bukti Persetujuan Pihak Pertama mengenai hal-hal tersebut di atas dengan
+                menandatangani duplikat surat ini dan mengembalikannya kepada Pihak Kedua.</p>
+            <p>Ditandatangani di: {{ $mou->client->city ?? 'Sukoharjo' }}</p>
+            <p>Pada tanggal {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('d F Y') }}
+            </p>
+
+            <div class="signatures">
+                <div class="signature-box">
+                    <p>Pihak Pertama</p>
+                    <div class="signature-line" style="border:none; height: 50px;"></div>
+                    <div
+                        style="border-bottom: 1px solid black; display: inline-block; min-width: 150px; padding-bottom: 2px;">
+                        {{ $mou->client->owner_name ?? '-' }}</div>
+                    <p>{{ $mou->client->owner_role ?: 'OWNER' }}</p>
+                </div>
+
+                <div class="signature-spacer"></div>
+
+                <div class="signature-box">
+                    <p>Pihak Kedua</p>
+                    @if(isset($withSignature) && $withSignature == 1)
+                        <img src="{{ public_path('images/ttd_antin.png') }}" alt="Tanda Tangan" style="height: 100px;">
+                        <div class="signature-line" style="border:none; height: 0px;"></div>
+                    @else
+                        <div class="signature-line" style="border:none; height: 100px;"></div>
+                    @endif
+                    <div
+                        style="border-bottom: 1px solid black; display: inline-block; min-width: 150px; padding-bottom: 2px;">
+                        ANTIN OKFITASARI, S.E.,S.H.,M.Si., Ak., CA.AB., BKP.,CATr.,ACPA</div>
+                    <p>OWNER KKP ANTIN OKFITASARI (RAFATAX)</p>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/php">
+            if (isset($pdf)) {
+                $pdf->page_script('
+                    $w = $pdf->get_width();
+                    $h = $pdf->get_height();
+                    
+                    // Footer settings
+                    $img_h = 90; // Height of footer image
+                    $y_pos = $h - $img_h + 10; // Position near bottom
+                    
+                    $mouType = "{{ $mou->type }}";
+
+                    if ($mouType === "pt") {
+                        if ($PAGE_NUM < $PAGE_COUNT) {
+                            $img_path = public_path("images/footer-v1.png");
+                        } else {
+                            $img_path = public_path("images/footer-v3.png");
+                        }
+                    } else {
+                        // KKP
+                        $img_path = public_path("images/footer-kkp.svg");
+                    }
+                    
+                    if (file_exists($img_path)) {
+                        $pdf->image($img_path, 0, $y_pos, $w, $img_h);
+                    }
+                ');
+            }
+        </script>
+    </div>
+</body>
+
+</html>
