@@ -160,6 +160,25 @@
 
         <!-- Period Tabs / Filter (No Print) -->
         <div class="flex flex-wrap items-center justify-between gap-4 no-print">
+            @if(session('success'))
+                <div class="w-full p-4 mb-2 text-sm text-emerald-800 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                    <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="w-full p-4 mb-2 text-sm text-rose-800 rounded-xl bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+                        <span>{{ $errors->first() }}</span>
+                    </div>
+                </div>
+            @endif
             <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <a href="{{ route('piutang-per-client.detail', ['id' => $client->id, 'periode' => 'all']) }}"
                     class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all {{ ($periode ?? 'all') === 'all' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
@@ -382,7 +401,17 @@
                             <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                 <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ $no++ }}</td>
                                 <td class="px-6 py-4 text-sm text-slate-900 dark:text-white whitespace-nowrap font-medium">
-                                    {{ $tx['date'] ? \Carbon\Carbon::parse($tx['date'])->translatedFormat('d-M-Y') : '-' }}
+                                    <div class="inline-flex items-center gap-2">
+                                        <span>{{ $tx['date'] ? \Carbon\Carbon::parse($tx['date'])->translatedFormat('d-M-Y') : '-' }}</span>
+                                        @if($tx['type'] === 'Sales Invoice' && !empty($tx['invoice_id']))
+                                            <button type="button" 
+                                                onclick="openEditInvoiceDateModal({{ $tx['invoice_id'] }}, '{{ addslashes($tx['ref']) }}', '{{ $tx['date'] }}')" 
+                                                class="no-print p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 dark:hover:text-blue-400 transition-colors"
+                                                title="Edit Tanggal Invoice">
+                                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm whitespace-nowrap">
                                      @if($tx['type'] === 'Saldo Awal')
@@ -485,6 +514,34 @@
         </div>
     </div>
 
+    <!-- Modal Edit Tanggal Invoice -->
+    <div id="editInvoiceDateModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4 no-print">
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 overflow-hidden transform transition-all">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                        Edit Tanggal Invoice
+                    </h3>
+                    <p id="editInvoiceNumberText" class="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5"></p>
+                </div>
+                <button onclick="closeEditInvoiceDateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="editInvoiceDateForm" method="POST" class="mt-4 space-y-4">
+                @csrf
+                <div>
+                    <label for="edit_invoice_date" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Tanggal Invoice</label>
+                    <input type="date" name="invoice_date" id="edit_invoice_date" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm">
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" onclick="closeEditInvoiceDateModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-sm font-semibold transition-colors">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-all">Simpan Tanggal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Toggle Theme Function
         function toggleTheme() {
@@ -512,10 +569,37 @@
             document.getElementById('saldoAwalModal').classList.add('hidden');
         }
 
+        function openEditInvoiceDateModal(invoiceId, invoiceNumber, invoiceDate) {
+            const modal = document.getElementById('editInvoiceDateModal');
+            const form = document.getElementById('editInvoiceDateForm');
+            const numberText = document.getElementById('editInvoiceNumberText');
+            const dateInput = document.getElementById('edit_invoice_date');
+
+            form.action = `/piutang-per-client/invoice/${invoiceId}/update-date`;
+            numberText.textContent = invoiceNumber;
+            if (invoiceDate) {
+                // Ensure date format is YYYY-MM-DD
+                dateInput.value = invoiceDate.substring(0, 10);
+            } else {
+                dateInput.value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeEditInvoiceDateModal() {
+            document.getElementById('editInvoiceDateModal').classList.add('hidden');
+        }
+
         window.onclick = function(event) {
-            const modal = document.getElementById('saldoAwalModal');
-            if (event.target === modal) {
+            const modalSaldoAwal = document.getElementById('saldoAwalModal');
+            if (event.target === modalSaldoAwal) {
                 closeSaldoAwalModal();
+            }
+
+            const modalInvoiceDate = document.getElementById('editInvoiceDateModal');
+            if (event.target === modalInvoiceDate) {
+                closeEditInvoiceDateModal();
             }
         }
 

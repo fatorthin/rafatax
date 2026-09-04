@@ -80,4 +80,18 @@ class PiutangDetailController extends Controller
 
         return redirect()->back()->with('success', 'Saldo awal piutang berhasil diperbarui');
     }
+
+    public function updateInvoiceDate($invoiceId, Request $request)
+    {
+        $request->validate([
+            'invoice_date' => 'required|date',
+        ]);
+
+        $invoice = \App\Models\Invoice::findOrFail($invoiceId);
+        $invoice->update([
+            'invoice_date' => $request->input('invoice_date'),
+        ]);
+
+        return redirect()->back()->with('success', 'Tanggal invoice ' . $invoice->invoice_number . ' berhasil diperbarui');
+    }
 }

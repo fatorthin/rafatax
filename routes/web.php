@@ -130,6 +130,10 @@ Route::post('/piutang-per-client/{id}/saldo-awal', [\App\Http\Controllers\Piutan
     ->name('piutang-per-client.saldo-awal.update')
     ->middleware('auth');
 
+Route::post('/piutang-per-client/invoice/{invoiceId}/update-date', [\App\Http\Controllers\PiutangDetailController::class, 'updateInvoiceDate'])
+    ->name('piutang-per-client.invoice.update-date')
+    ->middleware('auth');
+
 Route::get('/piutang-lama-per-client/{id}/detail', [\App\Http\Controllers\PiutangLamaDetailController::class, 'show'])
     ->name('piutang-lama-per-client.detail')
     ->middleware('auth');
