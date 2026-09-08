@@ -107,7 +107,7 @@ class MemoResource extends Resource
                     ])
                     ->extraAttributes([
                         'style' => 'position: sticky; left: 0; z-index: 10; font-weight: 500; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
-                        'class' => 'bg-white dark:bg-zinc-900 w-[200px] min-w-[200px]'
+                        'class' => 'bg-white dark:bg-gray-900 w-[200px] min-w-[200px]'
                     ]),
                 Tables\Columns\TextColumn::make('description')
                     ->label('Deskripsi')

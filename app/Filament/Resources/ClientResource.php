@@ -208,7 +208,7 @@ class ClientResource extends Resource
                     ])
                     ->extraAttributes([
                         'style' => 'position: sticky; left: 0; z-index: 10;',
-                        'class' => 'bg-white dark:bg-zinc-900 w-[100px] min-w-[100px]'
+                        'class' => 'bg-white dark:bg-gray-900 w-[100px] min-w-[100px]'
                     ]),
                 Tables\Columns\TextColumn::make('company_name')
                     ->searchable()
@@ -218,7 +218,7 @@ class ClientResource extends Resource
                     ])
                     ->extraAttributes([
                         'style' => 'position: sticky; left: 100px; z-index: 10; font-weight: 500; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
-                        'class' => 'bg-white dark:bg-zinc-900 w-[250px] min-w-[250px]'
+                        'class' => 'bg-white dark:bg-gray-900 w-[250px] min-w-[250px]'
                     ]),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
