@@ -1,5 +1,9 @@
-@import "tailwindcss/preflight";
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+    --color-primary-600: #d97706;
+    --color-primary-700: #b45309;
+}
 
 /* Custom styles untuk Filament modal */
 .filter-period-action {
