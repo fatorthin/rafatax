@@ -12,6 +12,14 @@ class MouPrintViewController extends Controller
         $mou = MoU::with(['client', 'categoryMou'])->findOrFail($id);
         $costLists = CostListMou::where('mou_id', $id)->get();
 
+        if ($mou->has_custom_builder && !empty($mou->custom_sections)) {
+            return view('format-mous.custom-builder', [
+                'mou' => $mou,
+                'costLists' => $costLists,
+                'printMode' => true,
+            ]);
+        }
+
         $format = $mou->type === 'pt'
             ? $mou->categoryMou->format_mou_pt
             : $mou->categoryMou->format_mou_kkp;
@@ -54,24 +62,29 @@ class MouPrintViewController extends Controller
         $mou = MoU::with(['client', 'categoryMou'])->findOrFail($id);
         $costLists = CostListMou::where('mou_id', $id)->get();
 
-        $format = $mou->type === 'pt'
-            ? $mou->categoryMou->format_mou_pt
-            : $mou->categoryMou->format_mou_kkp;
+        if ($mou->has_custom_builder && !empty($mou->custom_sections)) {
+            $view = 'format-mous.preview.custom-builder';
+        } else {
+            $format = $mou->type === 'pt'
+                ? $mou->categoryMou->format_mou_pt
+                : $mou->categoryMou->format_mou_kkp;
 
-        if ($mou->category_mou_id == 8 && request()->has('restitusi_type')) {
-            $type = request('restitusi_type');
-            if ($type === 'ppn') {
-                $format = 'spk-restitusi-ppn';
-            } elseif ($type === 'pph') {
-                $format = 'spk-restitusi-pph-35';
+            if ($mou->category_mou_id == 8 && request()->has('restitusi_type')) {
+                $type = request('restitusi_type');
+                if ($type === 'ppn') {
+                    $format = 'spk-restitusi-ppn';
+                } elseif ($type === 'pph') {
+                    $format = 'spk-restitusi-pph-35';
+                }
             }
+
+            if (!$format) {
+                abort(404, 'Format print PDF belum diatur untuk kategori MoU ini.');
+            }
+
+            $view = 'format-mous.preview.' . $format;
         }
 
-        if (!$format) {
-            abort(404, 'Format print PDF belum diatur untuk kategori MoU ini.');
-        }
-
-        $view = 'format-mous.preview.' . $format;
         $withSignature = request('with_signature', 1);
 
         // Use DomPDF

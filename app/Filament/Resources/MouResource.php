@@ -465,6 +465,7 @@ class MouResource extends Resource
         return [
             'index' => Pages\ManageMous::route('/'),
             'viewCostList' => Pages\ListCostMou::route('/{record}/cost-list'),
+            'builder' => Pages\MouBuilder::route('/{record}/builder'),
         ];
     }
 

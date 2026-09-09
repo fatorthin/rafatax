@@ -268,6 +268,12 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
     {
         return [
             $this->makeEditMouAction()->label('Edit'),
+            Actions\Action::make('mou_builder')
+                ->label(fn() => $this->mou->has_custom_builder ? 'MoU Builder (Custom)' : 'MoU Builder')
+                ->icon('heroicon-o-document-duplicate')
+                ->color(fn() => $this->mou->has_custom_builder ? 'success' : 'warning')
+                ->url(fn() => MouResource::getUrl('builder', ['record' => $this->mou]))
+                ->button(),
             $this->makeAddCostListAction()->label('Add Cost'),
             $this->makeCreateCaseProjectAction(),
             $this->makeCancelMouAction(),
@@ -562,20 +568,25 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
             $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
             $costLists = CostListMou::query()->where('mou_id', '=', $mou->id, 'and')->get();
 
-            $format = $mou->type === 'pt'
-                ? $mou->categoryMou->format_mou_pt
-                : $mou->categoryMou->format_mou_kkp;
+            if ($mou->has_custom_builder && !empty($mou->custom_sections)) {
+                $view = 'format-mous.preview.custom-builder';
+            } else {
+                $format = $mou->type === 'pt'
+                    ? $mou->categoryMou->format_mou_pt
+                    : $mou->categoryMou->format_mou_kkp;
 
-            if (!$format) {
-                \Filament\Notifications\Notification::make()
-                    ->title('Error')
-                    ->body('Format print PDF belum diatur untuk kategori MoU ini.')
-                    ->danger()
-                    ->send();
-                return;
+                if (!$format) {
+                    \Filament\Notifications\Notification::make()
+                        ->title('Error')
+                        ->body('Format print PDF belum diatur untuk kategori MoU ini.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                $view = 'format-mous.preview.' . $format;
             }
 
-            $view = 'format-mous.preview.' . $format;
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
                 'mou' => $mou,
                 'costLists' => $costLists,

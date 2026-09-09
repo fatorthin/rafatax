@@ -36,8 +36,21 @@ class MoU extends Model
         'mou_piutang_lama',
         'tgl_discount',
         'cancel_mou_amount',
-        'tgl_cancel_mou'
+        'tgl_cancel_mou',
+        'mou_template_id',
+        'has_custom_builder',
+        'custom_sections',
     ];
+
+    protected $casts = [
+        'has_custom_builder' => 'boolean',
+        'custom_sections' => 'array',
+    ];
+
+    public function mouTemplate()
+    {
+        return $this->belongsTo(MouTemplate::class, 'mou_template_id');
+    }
 
     public function client()
     {
