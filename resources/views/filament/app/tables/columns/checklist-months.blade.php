@@ -50,8 +50,8 @@
                     'style' => 'background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca;',
                 ],
                 'canceled' => [
-                    'style' => 'background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0;',
-                ]
+                    'style' => 'background-color: #ef4444; color: #ffffff; border: 1px solid #dc2626;',
+                ],
             ];
 
             $style = $colors[$status]['style'] ?? $colors['none']['style'];
