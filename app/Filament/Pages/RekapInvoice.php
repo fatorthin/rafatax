@@ -31,9 +31,12 @@ class RekapInvoice extends Page implements HasTable
     public function table(Table $table): Table
     {
         $years = Invoice::query()
-            ->whereNotNull('invoice_type')
-            ->where('invoice_type', '!=', '')
-            ->selectRaw('YEAR(created_at) as year')
+            ->leftJoin('mous as m', 'invoices.mou_id', '=', 'm.id')
+            ->leftJoin('clients as c', function ($join) {
+                $join->on(DB::raw('COALESCE(NULLIF(invoices.client_id, 0), m.client_id)'), '=', 'c.id');
+            })
+            ->whereNotNull('invoices.invoice_date')
+            ->selectRaw('YEAR(invoices.invoice_date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
@@ -43,35 +46,22 @@ class RekapInvoice extends Page implements HasTable
             $years = [(int) date('Y')];
         }
 
+        $clientTypeExpression = 'LOWER(COALESCE(c.type, m.type, invoices.invoice_type))';
+
         $selects = [
-            'invoices.invoice_type',
+            DB::raw("{$clientTypeExpression} as client_type"),
             DB::raw('COUNT(DISTINCT invoices.id) as invoice_count'),
-            DB::raw('(
-                SELECT COALESCE(SUM(cli.amount), 0)
-                FROM cost_list_invoices cli
-                JOIN invoices i2 ON cli.invoice_id = i2.id
-                WHERE i2.invoice_type = invoices.invoice_type
-                AND i2.deleted_at IS NULL
-                AND cli.deleted_at IS NULL
-            ) as total_amount'),
+            DB::raw('COALESCE(SUM(cli.amount), 0) as total_amount'),
         ];
 
         foreach ($years as $year) {
-            $selects[] = DB::raw("(
-                SELECT COALESCE(SUM(cli.amount), 0)
-                FROM cost_list_invoices cli
-                JOIN invoices i2 ON cli.invoice_id = i2.id
-                WHERE i2.invoice_type = invoices.invoice_type
-                AND YEAR(i2.created_at) = {$year}
-                AND i2.deleted_at IS NULL
-                AND cli.deleted_at IS NULL
-            ) as total_{$year}");
+            $selects[] = DB::raw("COALESCE(SUM(CASE WHEN YEAR(invoices.invoice_date) = {$year} THEN cli.amount ELSE 0 END), 0) as total_{$year}");
         }
 
         $columns = [
-            TextColumn::make('invoice_type')
-                ->label('Tipe Invoice')
-                ->formatStateUsing(fn ($state) => strtoupper($state))
+            TextColumn::make('client_type')
+                ->label('Tipe Client')
+                ->formatStateUsing(fn($state) => strtoupper((string) $state))
                 ->sortable()
                 ->searchable(),
             TextColumn::make('invoice_count')
@@ -82,7 +72,7 @@ class RekapInvoice extends Page implements HasTable
         foreach ($years as $year) {
             $columns[] = TextColumn::make("total_{$year}")
                 ->label("Nominal {$year}")
-                ->formatStateUsing(fn ($state): string => 'Rp '.number_format((float) ($state ?? 0), 0, ',', '.'))
+                ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float) ($state ?? 0), 0, ',', '.'))
                 ->sortable();
         }
 
@@ -94,26 +84,35 @@ class RekapInvoice extends Page implements HasTable
                     $prop = "total_{$year}";
                     $sum += (float) ($record->$prop ?? 0);
                 }
-                return 'Rp '.number_format($sum, 0, ',', '.');
+                return 'Rp ' . number_format($sum, 0, ',', '.');
             });
 
         return $table
             ->query(
                 Invoice::query()
+                    ->leftJoin('mous as m', 'invoices.mou_id', '=', 'm.id')
+                    ->leftJoin('clients as c', function ($join) {
+                        $join->on(DB::raw('COALESCE(NULLIF(invoices.client_id, 0), m.client_id)'), '=', 'c.id');
+                    })
+                    ->leftJoin('cost_list_invoices as cli', 'cli.invoice_id', '=', 'invoices.id')
                     ->select($selects)
-                    ->whereNotNull('invoices.invoice_type')
-                    ->where('invoices.invoice_type', '!=', '')
-                    ->groupBy('invoices.invoice_type')
+                    ->whereNotNull('invoices.invoice_date')
+                    ->whereNull('invoices.memo_id')
+                    ->whereNull('invoices.deleted_at')
+                    ->whereNull('cli.deleted_at')
+                    ->whereIn(DB::raw($clientTypeExpression), ['pt', 'kkp'])
+                    ->groupByRaw($clientTypeExpression)
+                    ->orderByRaw("{$clientTypeExpression} ASC")
             )
             ->columns($columns)
             ->actions([
                 Tables\Actions\Action::make('view_list')
                     ->label('Lihat List')
                     ->icon('heroicon-o-list-bullet')
-                    ->url(fn ($record): string => InvoiceResource::getUrl('index', [
+                    ->url(fn($record): string => InvoiceResource::getUrl('index', [
                         'tableFilters' => [
-                            'invoice_type' => [ // Assuming filter exists or needs to be generic
-                                'value' => $record->invoice_type,
+                            'invoice_type' => [
+                                'value' => $record->client_type,
                             ],
                         ],
                     ])),
@@ -121,7 +120,7 @@ class RekapInvoice extends Page implements HasTable
                     ->label('Lihat Bulanan')
                     ->icon('heroicon-o-calendar')
                     ->action(function ($record) {
-                        return redirect()->to(RekapInvoiceMonthly::getUrl(['type' => $record->invoice_type]));
+                        return redirect()->to(RekapInvoiceMonthly::getUrl(['type' => $record->client_type]));
                     }),
             ])
             ->paginated(false);
@@ -130,7 +129,7 @@ class RekapInvoice extends Page implements HasTable
     // Must be overridden to support the distinct string key
     public function getTableRecordKey($record): string
     {
-        return $record->invoice_type;
+        return $record->client_type;
     }
 
     protected function getHeaderActions(): array

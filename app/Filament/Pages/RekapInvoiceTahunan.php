@@ -34,34 +34,40 @@ class RekapInvoiceTahunan extends Page implements HasTable
         return $table
             ->query(
                 Invoice::query()
-                    ->selectRaw('YEAR(created_at) as year')
+                    ->whereNotNull('invoice_date')
+                    ->whereNull('memo_id')
+                    ->selectRaw('YEAR(invoice_date) as year')
                     ->distinct()
                     ->orderBy('year', 'desc')
                     ->addSelect(DB::raw('(
                         SELECT COUNT(*) 
                         FROM invoices as i 
-                        WHERE YEAR(i.created_at) = YEAR(invoices.created_at) 
+                        WHERE YEAR(i.invoice_date) = YEAR(invoices.invoice_date) 
+                        AND i.memo_id IS NULL
                         AND i.deleted_at IS NULL
                     ) as invoice_count'))
                     ->addSelect(DB::raw('(
                         SELECT COUNT(*) 
                         FROM invoices as i 
-                        WHERE YEAR(i.created_at) = YEAR(invoices.created_at) 
+                        WHERE YEAR(i.invoice_date) = YEAR(invoices.invoice_date) 
                         AND i.invoice_type = \'pt\'
+                        AND i.memo_id IS NULL
                         AND i.deleted_at IS NULL
                     ) as invoice_pt_count'))
                     ->addSelect(DB::raw('(
                         SELECT COUNT(*) 
                         FROM invoices as i 
-                        WHERE YEAR(i.created_at) = YEAR(invoices.created_at) 
+                        WHERE YEAR(i.invoice_date) = YEAR(invoices.invoice_date) 
                         AND i.invoice_type = \'kkp\'
+                        AND i.memo_id IS NULL
                         AND i.deleted_at IS NULL
                     ) as invoice_kkp_count'))
                     ->addSelect(DB::raw('(
                         SELECT SUM(cli.amount) 
                         FROM cost_list_invoices as cli
                         JOIN invoices as i2 ON cli.invoice_id = i2.id
-                        WHERE YEAR(i2.created_at) = YEAR(invoices.created_at) 
+                        WHERE YEAR(i2.invoice_date) = YEAR(invoices.invoice_date) 
+                        AND i2.memo_id IS NULL
                         AND i2.deleted_at IS NULL
                         AND cli.deleted_at IS NULL
                     ) as total_amount'))

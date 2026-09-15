@@ -46,26 +46,30 @@ class RekapInvoiceMonthly extends Page implements HasTable
         return $table
             ->query(
                 Invoice::query()
-                    ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month')
+                    ->whereNotNull('invoice_date')
+                    ->whereNull('memo_id')
                     ->where('invoice_type', $this->type)
+                    ->selectRaw('YEAR(invoice_date) as year, MONTH(invoice_date) as month')
                     ->distinct()
                     ->orderBy('year', 'desc')
                     ->orderBy('month', 'desc')
                     ->addSelect(DB::raw('(
                         SELECT COUNT(*) 
                         FROM invoices as i 
-                        WHERE YEAR(i.created_at) = YEAR(invoices.created_at) 
-                        AND MONTH(i.created_at) = MONTH(invoices.created_at) 
+                        WHERE YEAR(i.invoice_date) = YEAR(invoices.invoice_date) 
+                        AND MONTH(i.invoice_date) = MONTH(invoices.invoice_date) 
                         AND i.invoice_type = invoices.invoice_type
+                        AND i.memo_id IS NULL
                         AND i.deleted_at IS NULL
                     ) as invoice_count'))
                     ->addSelect(DB::raw('(
                         SELECT SUM(cli.amount) 
                         FROM cost_list_invoices as cli
                         JOIN invoices as i2 ON cli.invoice_id = i2.id
-                        WHERE YEAR(i2.created_at) = YEAR(invoices.created_at) 
-                        AND MONTH(i2.created_at) = MONTH(invoices.created_at)
+                        WHERE YEAR(i2.invoice_date) = YEAR(invoices.invoice_date) 
+                        AND MONTH(i2.invoice_date) = MONTH(invoices.invoice_date)
                         AND i2.invoice_type = invoices.invoice_type 
+                        AND i2.memo_id IS NULL
                         AND i2.deleted_at IS NULL
                         AND cli.deleted_at IS NULL
                     ) as total_amount'))

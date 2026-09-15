@@ -46,7 +46,9 @@ class RekapInvoiceKasus extends Page implements HasTable
     {
         // Get all unique years from invoices
         $years = Invoice::query()
-            ->selectRaw('YEAR(created_at) as year')
+            ->whereNotNull('invoice_date')
+            ->whereNull('memo_id')
+            ->selectRaw('YEAR(invoice_date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
@@ -68,7 +70,9 @@ class RekapInvoiceKasus extends Page implements HasTable
                 JOIN invoices as i ON cli.invoice_id = i.id
                 LEFT JOIN mous as m ON COALESCE(i.mou_id, cli.mou_id) = m.id
                 WHERE m.category_mou_id = category_mous.id
-                AND YEAR(i.created_at) = {$year}
+                AND YEAR(i.invoice_date) = {$year}
+                AND i.invoice_date IS NOT NULL
+                AND i.memo_id IS NULL
                 AND i.deleted_at IS NULL
                 AND cli.deleted_at IS NULL
                 AND m.deleted_at IS NULL

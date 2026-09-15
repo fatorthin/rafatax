@@ -225,7 +225,7 @@ class PiutangPerClient extends Page implements HasTable
                         $sub->select('id')->from('invoices')
                             ->where('client_id', $client->id)
                             ->orWhereIn('mou_id', function ($sub2) use ($client) {
-                                 $sub2->select('id')->from('mous')->where('client_id', $client->id);
+                                $sub2->select('id')->from('mous')->where('client_id', $client->id);
                             });
                     });
             })
@@ -331,17 +331,33 @@ class PiutangPerClient extends Page implements HasTable
         $stats = DB::selectOne("
             SELECT 
                 SUM(temp.saldo_awal) as total_saldo_awal,
+                SUM(CASE WHEN temp.type = 'pt' THEN temp.saldo_awal ELSE 0 END) as total_saldo_awal_pt,
+                SUM(CASE WHEN temp.type = 'kkp' THEN temp.saldo_awal ELSE 0 END) as total_saldo_awal_kkp,
                 SUM(temp.total_invoice) as total_invoice,
+                SUM(CASE WHEN temp.type = 'pt' THEN temp.total_invoice ELSE 0 END) as total_invoice_pt,
+                SUM(CASE WHEN temp.type = 'kkp' THEN temp.total_invoice ELSE 0 END) as total_invoice_kkp,
                 SUM(temp.total_pembayaran) as total_pembayaran,
-                SUM(temp.total_piutang) as total_piutang
+                SUM(CASE WHEN temp.type = 'pt' THEN temp.total_pembayaran ELSE 0 END) as total_pembayaran_pt,
+                SUM(CASE WHEN temp.type = 'kkp' THEN temp.total_pembayaran ELSE 0 END) as total_pembayaran_kkp,
+                SUM(temp.total_piutang) as total_piutang,
+                SUM(CASE WHEN temp.type = 'pt' THEN temp.total_piutang ELSE 0 END) as total_piutang_pt,
+                SUM(CASE WHEN temp.type = 'kkp' THEN temp.total_piutang ELSE 0 END) as total_piutang_kkp
             FROM ({$sql}) as temp
         ", $bindings);
 
         return [
             'total_saldo_awal' => $stats->total_saldo_awal ?? 0,
+            'total_saldo_awal_pt' => $stats->total_saldo_awal_pt ?? 0,
+            'total_saldo_awal_kkp' => $stats->total_saldo_awal_kkp ?? 0,
             'total_invoice' => $stats->total_invoice ?? 0,
+            'total_invoice_pt' => $stats->total_invoice_pt ?? 0,
+            'total_invoice_kkp' => $stats->total_invoice_kkp ?? 0,
             'total_pembayaran' => $stats->total_pembayaran ?? 0,
+            'total_pembayaran_pt' => $stats->total_pembayaran_pt ?? 0,
+            'total_pembayaran_kkp' => $stats->total_pembayaran_kkp ?? 0,
             'total_piutang' => $stats->total_piutang ?? 0,
+            'total_piutang_pt' => $stats->total_piutang_pt ?? 0,
+            'total_piutang_kkp' => $stats->total_piutang_kkp ?? 0,
         ];
     }
 }
