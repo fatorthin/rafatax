@@ -38,7 +38,12 @@ class MonitoringChecklist extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Checklist Tagihan MoU';
 
-    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?string $navigationGroup = 'Bagian Keuangan';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     protected static string $view = 'filament.app.pages.monitoring-checklist';
 

@@ -11,9 +11,9 @@
         </div>
 
         <div>
-            <div class="rounded-xl">
+            {{-- <div class="rounded-xl">
                 @livewire(App\Filament\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])
-            </div>
+            </div> --}}
 
             <div
                 class="mt-2 p-4 bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">

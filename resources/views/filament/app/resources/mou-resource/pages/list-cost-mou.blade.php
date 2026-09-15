@@ -6,9 +6,9 @@
         <!-- Cost List Table -->
         {{ $this->table }}
 
-        <div class="rounded-xl">
+        {{-- <div class="rounded-xl">
             @livewire(App\Filament\App\Resources\MouResource\Widgets\ChecklistMouWidget::class, ['mouId' => $this->mou->id])
-        </div>
+        </div> --}}
 
         <div class="rounded-xl">
             @livewire(App\Filament\App\Resources\MouResource\Widgets\MouInvoicesTable::class, ['mouId' => $this->mou->id])

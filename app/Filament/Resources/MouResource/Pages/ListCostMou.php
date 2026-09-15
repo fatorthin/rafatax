@@ -147,9 +147,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                             ->weight('bold'),
                         TextEntry::make('link_mou')
                             ->label('Link MoU')
+                            ->formatStateUsing(fn($state) => $state ? 'Buka Link MoU' : '-')
                             ->url(fn($record) => $record->link_mou, shouldOpenInNewTab: true)
-                            ->color('primary')
-                            ->weight('bold')
+                            ->badge()
+                            ->color(fn($state) => $state ? 'primary' : 'gray')
+                            ->icon(fn($state) => $state ? 'heroicon-m-arrow-top-right-on-square' : null)
                             ->default('-'),
                         TextEntry::make('discount_amount')
                             ->label('Discount Amount')
