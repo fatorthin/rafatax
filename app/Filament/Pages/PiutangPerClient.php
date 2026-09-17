@@ -251,6 +251,8 @@ class PiutangPerClient extends Page implements HasTable
                 'type' => 'Sales Receipt',
                 'ref' => $cr->invoice?->invoice_number ?: ($cr->cashReference?->name ?: '-'),
                 'invoice_id' => $cr->invoice_id,
+                'cash_reference_name' => $cr->cashReference?->name,
+                'cash_reference_id' => $cr->cash_reference_id,
                 'description' => $cr->description,
                 'debit' => 0,
                 'kredit' => $amount,

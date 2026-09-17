@@ -244,6 +244,8 @@ class PiutangLamaPerClient extends Page implements HasTable
                 'date_sort' => $cr->transaction_date,
                 'type' => $typeLabel,
                 'ref' => $cr->invoice?->invoice_number ?: ($cr->cashReference?->name ?: '-'),
+                'cash_reference_name' => $cr->cashReference?->name,
+                'cash_reference_id' => $cr->cash_reference_id,
                 'description' => $cr->description,
                 'debit' => 0,
                 'kredit' => $amount,

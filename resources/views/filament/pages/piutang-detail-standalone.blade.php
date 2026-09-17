@@ -456,6 +456,28 @@
                                     @else
                                         {{ $tx['ref'] }}
                                     @endif
+
+                                    @if((str_starts_with($tx['type'], 'Sales Receipt') || str_starts_with($tx['type'], 'Pembayaran')) && !empty($tx['cash_reference_name']))
+                                        @php
+                                            $cashRefUrl = null;
+                                            if (!empty($tx['cash_reference_id']) && !empty($tx['date'])) {
+                                                $txDate = \Carbon\Carbon::parse($tx['date']);
+                                                $cashRefUrl = url("/cash-reference/{$tx['cash_reference_id']}/month-detail?year={$txDate->year}&month={$txDate->month}");
+                                            }
+                                        @endphp
+                                        @if($cashRefUrl)
+                                            <a href="{{ $cashRefUrl }}" target="_blank" class="text-xs font-normal text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline flex items-center gap-1.5 mt-0.5" title="Buka Detail Kas Bank {{ $tx['cash_reference_name'] }}">
+                                                <i class="fa-solid fa-building-columns text-[11px] text-emerald-600 dark:text-emerald-400"></i>
+                                                <span>{{ $tx['cash_reference_name'] }}</span>
+                                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
+                                            </a>
+                                        @else
+                                            <div class="text-xs font-normal text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                                <i class="fa-solid fa-building-columns text-[11px] text-emerald-600 dark:text-emerald-400"></i>
+                                                <span>{{ $tx['cash_reference_name'] }}</span>
+                                            </div>
+                                        @endif
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-sm truncate" title="{{ $tx['description'] }}">{{ $tx['description'] }}</td>
                                 <td class="px-6 py-4 text-sm text-right text-slate-900 dark:text-white whitespace-nowrap font-semibold">
