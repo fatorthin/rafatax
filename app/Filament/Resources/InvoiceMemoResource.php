@@ -2,15 +2,12 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\InvoiceResource\Pages;
+use App\Filament\Resources\InvoiceMemoResource\Pages;
 use App\Models\CashReport;
-use App\Models\CategoryMou;
-use App\Models\ChecklistMou;
 use App\Models\Coa;
 use App\Models\CostListInvoice;
 use App\Models\Invoice;
 use App\Models\Memo;
-use App\Models\MoU;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -22,80 +19,43 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 
-class InvoiceResource extends Resource
+class InvoiceMemoResource extends Resource
 {
     protected static ?string $model = Invoice::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $slug = 'invoices-memo';
+
+    protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $navigationGroup = 'Bagian Keuangan';
 
-    protected static ?string $navigationLabel = 'Daftar Invoice MoU';
+    protected static ?string $navigationLabel = 'Daftar Invoice Memo';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Radio::make('reference_type')
-                    ->label('Reference Type')
-                    ->options([
-                        'mou' => 'MoU',
-                        'memo' => 'Memo',
-                    ])
-                    ->default('mou')
-                    ->inline()
-                    ->live()
-                    ->afterStateHydrated(function (Forms\Set $set, $record) {
-                        if ($record?->memo_id) {
-                            $set('reference_type', 'memo');
-                        } else {
-                            $set('reference_type', 'mou');
-                        }
-                    })
-                    ->afterStateUpdated(function (Forms\Set $set) {
-                        $set('mou_id', null);
-                        $set('memo_id', null);
-                        $set('invoice_number', null);
-                    }),
-                Forms\Components\Select::make('mou_id')
-                    ->label('MoU')
-                    ->options(function () {
-                        return MoU::query()
-                            ->select(['id', 'mou_number', 'description', 'client_id'])
-                            ->with('client')
-                            ->get()
-                            ->mapWithKeys(function ($mou) {
-                                return [$mou->id => ($mou->client->company_name ?? '-').' - '.$mou->mou_number.' - '.$mou->description];
-                            });
-                    })
-                    ->searchable()
-                    ->required(fn (Forms\Get $get) => $get('reference_type') === 'mou')
-                    ->visible(fn (Forms\Get $get) => $get('reference_type') === 'mou')
-                    ->live()
-                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
-                        if ($state) {
-                            $mou = MoU::query()->find($state);
-                            if ($mou) {
-                                $set('invoice_type', $mou->type);
-                            }
-                        }
-                        self::generateInvoiceNumber($set, $get);
-                    }),
                 Forms\Components\Select::make('memo_id')
                     ->label('Memo')
                     ->options(function () {
                         return Memo::query()
-                            ->select(['id', 'no_memo', 'description'])
+                            ->select(['id', 'no_memo', 'description', 'nama_klien', 'instansi_klien'])
                             ->get()
                             ->mapWithKeys(function ($memo) {
-                                return [$memo->id => $memo->no_memo.' - '.$memo->description];
+                                $client = $memo->nama_klien ?? $memo->instansi_klien ?? '-';
+                                return [$memo->id => $memo->no_memo.' - '.$client.' - '.$memo->description];
                             });
                     })
                     ->searchable()
-                    ->required(fn (Forms\Get $get) => $get('reference_type') === 'memo')
-                    ->visible(fn (Forms\Get $get) => $get('reference_type') === 'memo')
+                    ->required()
                     ->live()
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        if ($state) {
+                            $memo = Memo::find($state);
+                            if ($memo && $memo->tipe_klien) {
+                                $set('invoice_type', strtolower($memo->tipe_klien));
+                            }
+                        }
                         self::generateInvoiceNumber($set, $get);
                     }),
                 Forms\Components\TextInput::make('invoice_number')
@@ -126,7 +86,6 @@ class InvoiceResource extends Resource
                     ->default(now())
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         if ($state) {
-                            // Add 3 weeks to the invoice date
                             $dueDate = date('Y-m-d', strtotime($state.' + 2 weeks'));
                             $set('due_date', $dueDate);
                         }
@@ -195,7 +154,7 @@ class InvoiceResource extends Resource
                             ->relationship()
                             ->schema([
                                 Forms\Components\Hidden::make('mou_id')
-                                    ->default(fn (Forms\Get $get) => $get('../../mou_id')),
+                                    ->default(null),
                                 Forms\Components\Select::make('coa_id')
                                     ->label('CoA')
                                     ->options(Coa::query()->where('group_coa_id', '40')->orWhereIn('id', [162, 181])->pluck('name', 'id'))
@@ -260,10 +219,10 @@ class InvoiceResource extends Resource
                     'class' => 'invoice-sticky-column invoice-sticky-shadow w-[200px] min-w-[200px]',
                 ]),
             Tables\Columns\TextColumn::make('reference_number')
-                ->label('MoU Number')
-                ->getStateUsing(fn ($record) => $record->mou?->mou_number ?? '-')
+                ->label('Memo Number')
+                ->getStateUsing(fn ($record) => $record->memo?->no_memo ?? '-')
                 ->searchable(query: function (Builder $query, string $search): Builder {
-                    return $query->whereHas('mou', fn ($q) => $q->where('mou_number', 'like', "%{$search}%"));
+                    return $query->whereHas('memo', fn ($q) => $q->where('no_memo', 'like', "%{$search}%"));
                 })
                 ->extraHeaderAttributes([
                     'style' => 'position: sticky; left: 200px; z-index: 30; background-color: inherit; box-shadow: inset -2px 0 4px -2px rgba(0,0,0,0.1);',
@@ -277,11 +236,14 @@ class InvoiceResource extends Resource
                 ->label('Client')
                 ->getStateUsing(fn ($record) => $record->client_name)
                 ->searchable(query: function (Builder $query, string $search): Builder {
-                    return $query->whereHas('mou.client', fn ($q) => $q->where('company_name', 'like', "%{$search}%"));
+                    return $query->where(function (Builder $q) use ($search) {
+                        $q->whereHas('memo', fn ($subQ) => $subQ->where('nama_klien', 'like', "%{$search}%")->orWhere('instansi_klien', 'like', "%{$search}%"))
+                          ->orWhereHas('client', fn ($subQ) => $subQ->where('company_name', 'like', "%{$search}%"));
+                    });
                 }),
             Tables\Columns\TextColumn::make('type')
                 ->label('Type')
-                ->getStateUsing(fn ($record) => $record->mou?->type ?? $record->memo?->tipe_klien)
+                ->getStateUsing(fn ($record) => $record->memo?->tipe_klien ?? $record->invoice_type)
                 ->formatStateUsing(fn ($state) => match (strtolower($state ?? '')) {
                     'pt' => 'PT',
                     'kkp' => 'KKP',
@@ -335,14 +297,8 @@ class InvoiceResource extends Resource
                     Tables\Columns\Summarizers\Summarizer::make()
                         ->label('Total')
                         ->using(function ($query) {
-                            // Get all invoice IDs from the current query
                             $invoiceIds = $query->pluck('id')->toArray();
-
-                            // Calculate total from the cost_list_invoices table
-                            $grossTotal = CostListInvoice::query()->whereIn('invoice_id', $invoiceIds, 'and', false)
-                                ->sum('amount');
-
-                            return $grossTotal;
+                            return CostListInvoice::query()->whereIn('invoice_id', $invoiceIds)->sum('amount');
                         })
                         ->formatStateUsing(function ($state) {
                             return 'IDR '.number_format((float) $state, 0, ',', '.');
@@ -374,7 +330,8 @@ class InvoiceResource extends Resource
                                 ->label('Year')
                                 ->options(
                                     Invoice::query()
-                                        ->selectRaw('YEAR(invoice_date) as year', [])
+                                        ->whereNotNull('memo_id')
+                                        ->selectRaw('YEAR(invoice_date) as year')
                                         ->distinct()
                                         ->orderBy('year', 'desc')
                                         ->pluck('year', 'year')
@@ -402,23 +359,15 @@ class InvoiceResource extends Resource
                 })
                 ->indicator(function (array $data): ?string {
                     $indicators = [];
-
                     if ($data['month'] ?? null) {
                         $monthName = Carbon::create()->month($data['month'])->format('F');
                         $indicators[] = "Month: {$monthName}";
                     }
-
                     if ($data['year'] ?? null) {
                         $indicators[] = "Year: {$data['year']}";
                     }
-
                     return count($indicators) ? implode(' + ', $indicators) : null;
                 }),
-            Tables\Filters\SelectFilter::make('client')
-                ->label('Client')
-                ->relationship('mou.client', 'company_name')
-                ->searchable()
-                ->preload(),
             Tables\Filters\SelectFilter::make('invoice_type')
                 ->label('Type')
                 ->options([
@@ -432,21 +381,6 @@ class InvoiceResource extends Resource
                             fn (Builder $query, $type): Builder => $query->where('invoice_type', $type),
                         );
                 }),
-            Tables\Filters\SelectFilter::make('category_mou')
-                ->label('Kategori Kasus / MoU')
-                ->multiple()
-                ->options(fn () => CategoryMou::pluck('name', 'id')->toArray())
-                ->query(function (Builder $query, array $data): Builder {
-                    $values = $data['values'] ?? [];
-
-                    if (empty($values)) {
-                        return $query;
-                    }
-
-                    return $query->whereHas('mou', fn (Builder $mouQuery) => $mouQuery->whereIn('category_mou_id', $values));
-                })
-                ->searchable()
-                ->preload(),
             Tables\Filters\SelectFilter::make('invoice_status')
                 ->label('Status')
                 ->options([
@@ -472,12 +406,6 @@ class InvoiceResource extends Resource
                 ->icon('heroicon-o-document-text')
                 ->color('success')
                 ->openUrlInNewTab(),
-            // Tables\Actions\Action::make('downloadJpg')
-            //     ->label('Download JPG')
-            //     ->url(fn($record) => route('invoices.jpg', $record->id))
-            //     ->icon('heroicon-o-photo')
-            //     ->color('primary')
-            //     ->openUrlInNewTab(),
             Tables\Actions\Action::make('updateStatusBayar')
                 ->label('Update Status Bayar')
                 ->icon('heroicon-o-check-circle')
@@ -521,21 +449,19 @@ class InvoiceResource extends Resource
                         ->whereMonth('transaction_date', $transferDate->month)
                         ->max('sort_order') ?? 0) + 1;
 
-                    // Update invoice status and rekening transfer
                     $record->update([
                         'invoice_status' => 'paid',
                         'rek_transfer' => $data['rek_transfer'],
                         'tgl_transfer' => $data['tgl_transfer'],
                     ]);
 
-                    // Create cash report entry per cost list invoice item (each has its own coa_id)
                     $firstCashReportId = null;
                     $costListInvoices = $record->costListInvoices()->get();
                     foreach ($costListInvoices as $costItem) {
                         $cashReport = CashReport::create([
                             'description' => ($record->client_name ?: '').' - '.$costItem->description.' - '.$record->invoice_number,
                             'cash_reference_id' => $cashReferenceId,
-                            'mou_id' => $record->mou_id,
+                            'mou_id' => null,
                             'coa_id' => $costItem->coa_id,
                             'invoice_id' => $record->id,
                             'cost_list_invoice_id' => $costItem->id,
@@ -553,14 +479,9 @@ class InvoiceResource extends Resource
                         }
                     }
 
-                    // Update cash_report_id on invoice
                     if ($firstCashReportId) {
                         $record->update(['cash_report_id' => $firstCashReportId]);
                     }
-
-                    // Update ChecklistMou status to complete for this invoice
-                    ChecklistMou::query()->where('invoice_id', $record->id)
-                        ->update(['status' => 'completed']);
 
                     Notification::make()
                         ->title('Status invoice berhasil diubah menjadi Paid')
@@ -585,85 +506,47 @@ class InvoiceResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListInvoices::route('/'),
-            'create' => Pages\CreateInvoice::route('/create'),
-            'edit' => Pages\EditInvoice::route('/{record}/edit'),
-            'viewCostList' => Pages\ListCostInvoice::route('/{record}/cost-list'),
-            'cost-create' => Pages\CreateCostInvoice::route('/{record}/cost-create'),
-            'cost-edit' => Pages\EditCostInvoice::route('/{record}/cost-edit'),
+            'index' => Pages\ListInvoiceMemos::route('/'),
+            'create' => Pages\CreateInvoiceMemo::route('/create'),
+            'edit' => Pages\EditInvoiceMemo::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereNotNull('mou_id')
+            ->whereNotNull('memo_id')
             ->whereYear('created_at', date('Y'))
             ->latest('created_at');
     }
 
     public static function generateInvoiceNumber(Forms\Set $set, Forms\Get $get): void
     {
-        $mouId = $get('mou_id');
         $memoId = $get('memo_id');
         $invoiceDate = $get('invoice_date');
         $isSaldoAwal = $get('is_saldo_awal') ?? false;
 
-        if ((! $mouId && ! $memoId) || ! $invoiceDate) {
+        if (! $memoId || ! $invoiceDate) {
             return;
         }
 
-        if ($mouId) {
-            $mou = MoU::with('categoryMou')->find($mouId);
-            if (! $mou) {
-                return;
-            }
-
-            // 1. Type
-            $invoiceType = $get('invoice_type');
-            $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
-
-            // 2. Category
-            $categoryName = $mou->categoryMou?->name;
-            $categoryCode = match ($categoryName) {
-                'Bulanan Perorangan' => 'BTH',
-                'Bulanan Perusahaan' => 'BTH',
-                'SPT Perorangan' => 'TH',
-                'SPT Perusahaan' => 'TH',
-                'Pembetulan' => 'PBT',
-                'Pembukuan' => 'PBK',
-                'Pemeriksaan' => 'PMK',
-                'Restitusi' => 'RS',
-                'SP2DK' => 'SP',
-                'Konsultasi' => 'KS',
-                'Keberatan' => 'KB',
-                'Pelatihan' => 'PL',
-                'Lainnya' => 'LN',
-                default => 'LN',
-            };
-        } elseif ($memoId) {
-            $memo = Memo::query()->find($memoId);
-            if (! $memo) {
-                return;
-            }
-
-            // 1. Type
-            $invoiceType = $get('invoice_type');
-            $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
-
-            // 2. Category (Default to LN for Memos)
-            $categoryCode = 'LN';
-        } else {
+        $memo = Memo::query()->find($memoId);
+        if (! $memo) {
             return;
         }
+
+        // 1. Type
+        $invoiceType = $get('invoice_type') ?? ($memo->tipe_klien ? strtolower($memo->tipe_klien) : 'pt');
+        $typeCode = ($invoiceType === 'pt') ? 'PT' : 'KKP';
+
+        // 2. Category (Default to LN for Memos)
+        $categoryCode = 'LN';
 
         // 3. Date
         $date = Carbon::parse($invoiceDate);
@@ -687,26 +570,18 @@ class InvoiceResource extends Resource
         $monthRoman = $romanMonths[$month];
 
         // 4. Sequence
-        // Reset to 1 if month changes
         $lastNumber = 0;
 
-        $invoiceType = $get('invoice_type');
-
-        // Find existing invoices for the same month and year AND same type
-        // We look for patterns like INV/001... or INV/SA/001...
-        $invoices = Invoice::query()->whereYear('invoice_date', '=', $year, 'and')
-            ->whereMonth('invoice_date', '=', $month, 'and')
-            ->where('invoice_type', '=', $invoiceType, 'and')
+        $invoices = Invoice::query()->whereYear('invoice_date', '=', $year)
+            ->whereMonth('invoice_date', '=', $month)
+            ->where('invoice_type', '=', $invoiceType)
             ->pluck('invoice_number');
 
         foreach ($invoices as $inv) {
             $val = 0;
-            // Pattern 1: Normal INV/001/...
             if (preg_match('/^INV\/(\d+)\//', $inv, $matches)) {
                 $val = (int) $matches[1];
-            }
-            // Pattern 2: SA INV/SA/001/...
-            elseif (preg_match('/^INV\/SA\/(\d+)\//', $inv, $matches)) {
+            } elseif (preg_match('/^INV\/SA\/(\d+)\//', $inv, $matches)) {
                 $val = (int) $matches[1];
             }
 
@@ -717,7 +592,6 @@ class InvoiceResource extends Resource
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-        // Loop to find next available number in case of race condition (check existence)
         do {
             if ($isSaldoAwal) {
                 $result = sprintf('INV/SA/%s/%s/%s/%s/%s', $newNumber, $typeCode, $categoryCode, $monthRoman, $year);

@@ -16,11 +16,13 @@ class MouStats extends BaseWidget
     // Filter properties
     public $tableFilters = [];
 
+    protected static string $view = 'filament.widgets.mou-stats';
+
     protected static ?string $pollingInterval = null;
 
     protected function getColumns(): int
     {
-        return 3;
+        return 5;
     }
 
     public function mount(): void
@@ -116,6 +118,11 @@ class MouStats extends BaseWidget
             // Get total MoUs count
             $totalMous = $totalQuery->count('*');
 
+            // Get total MoUs count for 2026 and 2025 (respecting other filters except year)
+            $queryYearBase = clone $query;
+            $mou2026 = (clone $queryYearBase)->whereYear('start_date', 2026)->count();
+            $mou2025 = (clone $queryYearBase)->whereYear('start_date', 2025)->count();
+
             // Get approved MoUs count
             $approvedMous = $approvedQuery->where('status', 'approved')->count();
 
@@ -130,6 +137,14 @@ class MouStats extends BaseWidget
                 Stat::make('Total MoUs', $totalMous)
                     ->icon($icon)
                     ->description($description),
+                Stat::make('MoU 2026', $mou2026)
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('info')
+                    ->description('Tahun 2026'),
+                Stat::make('MoU 2025', $mou2025)
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('primary')
+                    ->description('Tahun 2025'),
                 Stat::make('Approved MoUs', $approvedMous)
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -143,6 +158,10 @@ class MouStats extends BaseWidget
             Log::error('Error in MouStats widget: ' . $e->getMessage());
             return [
                 Stat::make('Total MoUs', 0)
+                    ->description('Error loading data'),
+                Stat::make('MoU 2026', 0)
+                    ->description('Error loading data'),
+                Stat::make('MoU 2025', 0)
                     ->description('Error loading data'),
                 Stat::make('Approved MoUs', 0)
                     ->description('Error loading data'),
