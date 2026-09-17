@@ -14,6 +14,8 @@ class InvoiceMemoStats extends BaseWidget
 {
     protected static ?string $widgetId = 'invoice-memo-stats';
 
+    protected static bool $isLazy = false;
+
     public array $tableFilters = [];
 
     protected static ?string $pollingInterval = null;

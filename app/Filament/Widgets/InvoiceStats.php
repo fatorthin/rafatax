@@ -16,6 +16,8 @@ class InvoiceStats extends BaseWidget
     // Set widget ID for targeting with events
     protected static ?string $widgetId = 'invoice-stats';
 
+    protected static bool $isLazy = false;
+
     // Filter properties
     public array $tableFilters = [];
 
