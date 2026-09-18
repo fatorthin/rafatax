@@ -13,6 +13,7 @@ use App\Http\Controllers\PayrollWhatsAppController;
 use App\Http\Controllers\ExportAttendanceController;
 use App\Http\Controllers\DaftarAktivaExportController;
 use App\Http\Controllers\CashReferenceMonthController;
+use App\Http\Controllers\CaseProjectDocumentController;
 use App\Filament\Resources\MouResource\Pages\CostListMou;
 
 /*
@@ -105,6 +106,14 @@ Route::post('/payroll-detail/{detail}/send-whatsapp', [PayrollWhatsAppController
 
 Route::post('/payroll-detail/{detail}/send-whatsapp-pdf', [PayrollWhatsAppController::class, 'sendPayslipWithPdf'])
     ->name('payroll.send-whatsapp-pdf')
+    ->middleware('auth');
+
+Route::get('/case-projects/{id}/dokumen-kuasa/preview', [CaseProjectDocumentController::class, 'previewDokumenKuasa'])
+    ->name('case-projects.dokumen-kuasa.preview')
+    ->middleware('auth');
+
+Route::get('/case-projects/{id}/dokumen-kuasa/download', [CaseProjectDocumentController::class, 'downloadDokumenKuasa'])
+    ->name('case-projects.dokumen-kuasa.download')
     ->middleware('auth');
 
 // Route untuk panel App

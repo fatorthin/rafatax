@@ -51,4 +51,9 @@ class CaseProject extends Model
     {
         return $this->hasMany(CaseProjectDetail::class);
     }
+
+    public function powerOfAttorney()
+    {
+        return $this->hasOne(CaseProjectPowerOfAttorney::class, 'case_project_id');
+    }
 }
