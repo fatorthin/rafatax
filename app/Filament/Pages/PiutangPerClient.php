@@ -81,17 +81,6 @@ class PiutangPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
-        // 4. Potongan MoU Aggregated Subquery (Tahun 2026 ke Atas)
-        $potSql = "
-            SELECT 
-                client_id,
-                SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0)) as total_potongan
-            FROM mous
-            WHERE deleted_at IS NULL
-              AND (start_date >= '2026-01-01' OR (start_date IS NULL AND created_at >= '2026-01-01'))
-            GROUP BY client_id
-        ";
-
         return $table
             ->query(
                 Client::query()
@@ -99,12 +88,10 @@ class PiutangPerClient extends Page implements HasTable
                     ->selectRaw('COALESCE(sa.saldo_awal, 0) as saldo_awal')
                     ->selectRaw('COALESCE(inv.total_invoice, 0) as total_invoice')
                     ->selectRaw('COALESCE(pay.total_pembayaran, 0) as total_pembayaran')
-                    ->selectRaw('COALESCE(pot.total_potongan, 0) as total_potongan')
-                    ->selectRaw('(COALESCE(sa.saldo_awal, 0) + COALESCE(inv.total_invoice, 0) - COALESCE(pay.total_pembayaran, 0) - COALESCE(pot.total_potongan, 0)) as total_piutang')
+                    ->selectRaw('(COALESCE(sa.saldo_awal, 0) + COALESCE(inv.total_invoice, 0) - COALESCE(pay.total_pembayaran, 0)) as total_piutang')
                     ->leftJoin(DB::raw("({$saSql}) as sa"), 'clients.id', '=', 'sa.client_id')
                     ->leftJoin(DB::raw("({$invSql}) as inv"), 'clients.id', '=', 'inv.client_id')
                     ->leftJoin(DB::raw("({$paySql}) as pay"), 'clients.id', '=', 'pay.client_id')
-                    ->leftJoin(DB::raw("({$potSql}) as pot"), 'clients.id', '=', 'pot.client_id')
             )
             ->columns([
                 TextColumn::make('code')

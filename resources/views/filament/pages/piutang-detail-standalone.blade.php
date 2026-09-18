@@ -92,7 +92,8 @@
         @php
             $user = auth()->user();
             $referer = request()->header('referer', '');
-            $isAdminRoute = str_contains($referer, '/admin/') || request()->is('admin/*') || ($user && $user->hasAnyRole(['admin', 'super_admin']));
+            $isAppPanel = str_contains($referer, '/app/');
+            $isAdminRoute = !$isAppPanel && (str_contains($referer, '/admin/') || request()->is('admin/*') || ($user && $user->hasAnyRole(['admin', 'super_admin'])));
             $backRoute = $isAdminRoute ? '/admin/piutang-per-client' : '/app/piutang-per-client';
         @endphp
         <!-- Header / Navigation -->
