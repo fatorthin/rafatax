@@ -160,7 +160,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->whereNull('m.deleted_at')
             ->whereNull('clm.deleted_at')
             ->where('m.status', 'approved')
-            ->where('m.type', 'kkp')
+            // ->where('m.type', 'kkp')
             ->whereBetween('m.approved_date', [$startOfMonth, $endOfMonth])
             ->whereIn('clm.coa_id', array_keys($this->getPiutangToPendapatanMap()))
             ->groupBy('clm.coa_id')

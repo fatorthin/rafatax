@@ -43,10 +43,18 @@ class GeneralLedger extends Page
                         \Filament\Forms\Components\Select::make('bulan')
                             ->label('Bulan')
                             ->options([
-                                '1' => 'Januari', '2' => 'Februari', '3' => 'Maret',
-                                '4' => 'April', '5' => 'Mei', '6' => 'Juni',
-                                '7' => 'Juli', '8' => 'Agustus', '9' => 'September',
-                                '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                                '1' => 'Januari',
+                                '2' => 'Februari',
+                                '3' => 'Maret',
+                                '4' => 'April',
+                                '5' => 'Mei',
+                                '6' => 'Juni',
+                                '7' => 'Juli',
+                                '8' => 'Agustus',
+                                '9' => 'September',
+                                '10' => 'Oktober',
+                                '11' => 'November',
+                                '12' => 'Desember',
                             ])
                             ->default((string) now()->month)
                             ->required()
@@ -105,7 +113,7 @@ class GeneralLedger extends Page
                     $tahun = $this->tahun ?? now()->year;
                     $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
                     $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
-                    
+
                     $sheet->setCellValue('A' . $row, "Periode: $startDate - $endDate");
                     $sheet->mergeCells("A{$row}:F{$row}");
                     $row += 2;
@@ -180,10 +188,10 @@ class GeneralLedger extends Page
     {
         $bulan = $this->bulan ?? now()->month;
         $tahun = $this->tahun ?? now()->year;
-        
+
         $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
         $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
-        
+
         $cashReferenceId = $this->cash_reference_id;
 
         // ── 1. Cash Reports (Kas Besar, Kas Kecil, Bank) ────────────────────
@@ -301,7 +309,7 @@ class GeneralLedger extends Page
             ->whereNull('m.deleted_at')
             ->whereNull('clm.deleted_at')
             ->where('m.status', 'approved')
-            ->where('m.type', 'kkp')
+            // ->where('m.type', 'kkp')
             ->whereBetween('m.approved_date', [
                 \Carbon\Carbon::parse($startDate)->startOfDay(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()
@@ -318,7 +326,7 @@ class GeneralLedger extends Page
 
         foreach ($mouRows as $row) {
             $desc = "Piutang MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
-            
+
             $tDebit = new \stdClass();
             $tDebit->coa_id = $row->coa_id;
             $tDebit->transaction_date = $row->approved_date;
@@ -445,25 +453,59 @@ class GeneralLedger extends Page
             $desc = "PPh23 Checklist No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
             $coaId = $row->coa_id;
             if (isset($revenueToPiutangMap[$coaId])) {
-                $pendapatanCoaId = $coaId; $piutangCoaId = $revenueToPiutangMap[$coaId];
+                $pendapatanCoaId = $coaId;
+                $piutangCoaId = $revenueToPiutangMap[$coaId];
             } elseif (isset($map[$coaId])) {
-                $piutangCoaId = $coaId; $pendapatanCoaId = $map[$coaId];
+                $piutangCoaId = $coaId;
+                $pendapatanCoaId = $map[$coaId];
             } else {
-                $piutangCoaId = $coaId; $pendapatanCoaId = $coaId;
+                $piutangCoaId = $coaId;
+                $pendapatanCoaId = $coaId;
             }
-            if ($piutangCoaId == 188 || $piutangCoaId == 182) { $piutangCoaId = 188; $pendapatanCoaId = 119; }
-            
+            if ($piutangCoaId == 188 || $piutangCoaId == 182) {
+                $piutangCoaId = 188;
+                $pendapatanCoaId = 119;
+            }
+
             $invoiceTotal = $checkedInvoiceTotals[$row->invoice_id] ?? 0;
             $pph23Amount = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
 
             $tDebit208 = new \stdClass();
-            $tDebit208->coa_id = $coaBelumDiterimaId; $tDebit208->transaction_date = $row->tanggal_bukti_potong_pph23; $tDebit208->description = $desc; $tDebit208->source = 'Jurnal Pendapatan'; $tDebit208->display_debit = $pph23Amount; $tDebit208->display_credit = 0; $tDebit208->coa = $coas[$coaBelumDiterimaId] ?? null; $transactions->push($tDebit208);
+            $tDebit208->coa_id = $coaBelumDiterimaId;
+            $tDebit208->transaction_date = $row->tanggal_bukti_potong_pph23;
+            $tDebit208->description = $desc;
+            $tDebit208->source = 'Jurnal Pendapatan';
+            $tDebit208->display_debit = $pph23Amount;
+            $tDebit208->display_credit = 0;
+            $tDebit208->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $transactions->push($tDebit208);
             $tDebit518 = new \stdClass();
-            $tDebit518->coa_id = $biayaPph23Id; $tDebit518->transaction_date = $row->tanggal_bukti_potong_pph23; $tDebit518->description = $desc; $tDebit518->source = 'Jurnal Pendapatan'; $tDebit518->display_debit = $pph23Amount; $tDebit518->display_credit = 0; $tDebit518->coa = $coas[$biayaPph23Id] ?? null; $transactions->push($tDebit518);
+            $tDebit518->coa_id = $biayaPph23Id;
+            $tDebit518->transaction_date = $row->tanggal_bukti_potong_pph23;
+            $tDebit518->description = $desc;
+            $tDebit518->source = 'Jurnal Pendapatan';
+            $tDebit518->display_debit = $pph23Amount;
+            $tDebit518->display_credit = 0;
+            $tDebit518->coa = $coas[$biayaPph23Id] ?? null;
+            $transactions->push($tDebit518);
             $tCredit401 = new \stdClass();
-            $tCredit401->coa_id = $pendapatanCoaId; $tCredit401->transaction_date = $row->tanggal_bukti_potong_pph23; $tCredit401->description = $desc; $tCredit401->source = 'Jurnal Pendapatan'; $tCredit401->display_debit = 0; $tCredit401->display_credit = $pph23Amount; $tCredit401->coa = $coas[$pendapatanCoaId] ?? null; $transactions->push($tCredit401);
+            $tCredit401->coa_id = $pendapatanCoaId;
+            $tCredit401->transaction_date = $row->tanggal_bukti_potong_pph23;
+            $tCredit401->description = $desc;
+            $tCredit401->source = 'Jurnal Pendapatan';
+            $tCredit401->display_debit = 0;
+            $tCredit401->display_credit = $pph23Amount;
+            $tCredit401->coa = $coas[$pendapatanCoaId] ?? null;
+            $transactions->push($tCredit401);
             $tCredit103 = new \stdClass();
-            $tCredit103->coa_id = $piutangCoaId; $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23; $tCredit103->description = $desc; $tCredit103->source = 'Jurnal Pendapatan'; $tCredit103->display_debit = 0; $tCredit103->display_credit = $pph23Amount; $tCredit103->coa = $coas[$piutangCoaId] ?? null; $transactions->push($tCredit103);
+            $tCredit103->coa_id = $piutangCoaId;
+            $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23;
+            $tCredit103->description = $desc;
+            $tCredit103->source = 'Jurnal Pendapatan';
+            $tCredit103->display_debit = 0;
+            $tCredit103->display_credit = $pph23Amount;
+            $tCredit103->coa = $coas[$piutangCoaId] ?? null;
+            $transactions->push($tCredit103);
         }
 
         // ── 5. Dari MoU Discount ──
