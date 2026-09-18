@@ -29,12 +29,10 @@ class PiutangDetailController extends Controller
                 $totalInvoice += $tx['debit'];
             } elseif (str_starts_with($tx['type'], 'Sales Receipt') || str_starts_with($tx['type'], 'Pembayaran')) {
                 $totalPembayaran += $tx['kredit'];
-            } elseif ($tx['type'] === 'Discount MoU' || $tx['type'] === 'Cancel MoU') {
-                $totalPotongan += $tx['kredit'];
             }
         }
 
-        $sisaPiutang = $saldoAwal + $totalInvoice - $totalPembayaran - $totalPotongan;
+        $sisaPiutang = $saldoAwal + $totalInvoice - $totalPembayaran;
 
         $mous = $client->mous()->with(['cost_lists', 'categoryMou', 'invoices.costListInvoices'])->get();
 

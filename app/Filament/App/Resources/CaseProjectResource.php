@@ -181,8 +181,6 @@ class CaseProjectResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
-
-
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable()->weight('bold'),
                 Tables\Columns\TextColumn::make('status')->badge()->formatStateUsing(function ($state) {
                     return match ($state) {
@@ -203,7 +201,6 @@ class CaseProjectResource extends Resource
                         default => 'gray',
                     };
                 }),
-
 
                 Tables\Columns\TextColumn::make('client.code')->label('Kode Client')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('client.company_name')->label('Nama Client')->sortable()->searchable(),
@@ -654,9 +651,9 @@ class CaseProjectResource extends Resource
                         ->color('success')
                         ->url(fn(CaseProject $record) => route('case-projects.dokumen-kuasa.download', ['id' => $record->id]), shouldOpenInNewTab: true),
                 ])
-                ->label('Surat Kuasa & Pernyataan')
-                ->icon('heroicon-o-document-duplicate')
-                ->color('primary'),
+                    ->label('Surat Kuasa & Pernyataan')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('primary'),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),

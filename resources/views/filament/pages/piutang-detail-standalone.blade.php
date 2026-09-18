@@ -208,7 +208,7 @@
         </div>
 
         <!-- Summary Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Saldo Awal (2025) -->
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card relative">
                 <div class="flex items-center justify-between">
@@ -259,22 +259,6 @@
                         Rp {{ number_format($totalPembayaran, 0, ',', '.') }}
                     </span>
                     <span class="text-xs text-emerald-600 dark:text-emerald-400 mt-1 block">Total dana diterima (2026+)</span>
-                </div>
-            </div>
-
-            <!-- Diskon & Cancel MoU -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Diskon & Cancel MoU</span>
-                    <span class="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400">
-                        <i class="fa-solid fa-tags"></i>
-                    </span>
-                </div>
-                <div class="mt-4">
-                    <span class="text-2xl font-bold text-slate-900 dark:text-white block">
-                        Rp {{ number_format($totalPotongan, 0, ',', '.') }}
-                    </span>
-                    <span class="text-xs text-purple-600 dark:text-purple-400 mt-1 block">Total potongan piutang</span>
                 </div>
             </div>
 
@@ -425,14 +409,6 @@
                                     @elseif($tx['type'] === 'Sales Receipt')
                                         <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30">
                                             Pembayaran
-                                        </span>
-                                    @elseif($tx['type'] === 'Discount MoU')
-                                        <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-purple-50 text-purple-700 border border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-900/30">
-                                            Diskon MoU
-                                        </span>
-                                    @elseif($tx['type'] === 'Cancel MoU')
-                                        <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/30">
-                                            Cancel MoU
                                         </span>
                                     @else
                                         <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-50 text-slate-700 border border-slate-100 dark:bg-slate-900/20 dark:text-slate-400 dark:border-slate-800">

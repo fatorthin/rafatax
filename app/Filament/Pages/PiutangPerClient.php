@@ -260,47 +260,7 @@ class PiutangPerClient extends Page implements HasTable
             ];
         }
 
-        // 4. Discounts and Cancel MoUs (>= 2026)
-        $mous = \App\Models\MoU::query()
-            ->where('client_id', $client->id)
-            ->whereNull('deleted_at')
-            ->where(function ($q) {
-                $q->where('start_date', '>=', '2026-01-01')
-                    ->orWhere(function ($sub) {
-                        $sub->whereNull('start_date')->where('created_at', '>=', '2026-01-01');
-                    });
-            })
-            ->get();
-
-        foreach ($mous as $mou) {
-            if ($mou->discount_amount > 0) {
-                $tglDiscount = $mou->tgl_discount;
-                $transactions[] = [
-                    'date' => $tglDiscount,
-                    'date_sort' => $tglDiscount ?: '9999-12-31',
-                    'type' => 'Discount MoU',
-                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
-                    'description' => 'Discount MoU' . ($mou->description ? " - {$mou->description}" : ''),
-                    'debit' => 0,
-                    'kredit' => $mou->discount_amount,
-                    'amount' => -$mou->discount_amount,
-                ];
-            }
-
-            if ($mou->cancel_mou_amount > 0) {
-                $tglCancel = $mou->tgl_cancel_mou;
-                $transactions[] = [
-                    'date' => $tglCancel,
-                    'date_sort' => $tglCancel ?: '9999-12-31',
-                    'type' => 'Cancel MoU',
-                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
-                    'description' => 'Cancel MoU' . ($mou->description ? " - {$mou->description}" : ''),
-                    'debit' => 0,
-                    'kredit' => $mou->cancel_mou_amount,
-                    'amount' => -$mou->cancel_mou_amount,
-                ];
-            }
-        }
+        // 4. Discounts and Cancel MoUs (tidak dimasukkan ke transaksi piutang per client)
 
         // Sort transactions chronologically
         usort($transactions, function ($a, $b) {
