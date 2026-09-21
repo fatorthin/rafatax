@@ -612,23 +612,39 @@ class RekapLaporanKeuangan extends Page
             187 => 125, // AO-103.12 -> AO-401.6 (Fee Pemeriksaan)
         ];
 
-        $rowsMou = DB::table('cost_list_mous as clm')
-            ->join('mous as m', 'm.id', '=', 'clm.mou_id')
-            ->whereNull('m.deleted_at')
-            ->whereNull('clm.deleted_at')
-            ->where('m.status', 'approved')
-            ->where('m.type', 'kkp')
-            ->whereBetween('m.approved_date', [$startOfCurrentMonthString, $endOfCurrentMonthString])
-            ->whereIn('clm.coa_id', array_keys($map))
-            ->groupBy('clm.coa_id')
-            ->selectRaw('clm.coa_id, SUM(clm.total_amount) as total')
+        $revenueToPiutangMap = [
+            119 => 188, // Fee Bulanan
+            120 => 182, // Fee SPT
+            121 => 183, // Fee SP2DK
+            122 => 184, // Fee Pembetulan
+            123 => 185, // Fee Internal
+            124 => 186, // Fee Restitusi
+            125 => 187, // Fee Pemeriksaan
+        ];
+
+        $rowsInvoice = DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->whereNull('inv.memo_id')
+            ->whereBetween('inv.invoice_date', [$startOfCurrentMonth->toDateString(), $endOfCurrentMonth->toDateString()])
+            ->selectRaw('cli.coa_id, cli.amount')
             ->get();
 
         $byPiutangCoa = [];
         $mouTotal     = 0;
-        foreach ($rowsMou as $row) {
-            $byPiutangCoa[$row->coa_id] = ($byPiutangCoa[$row->coa_id] ?? 0) + $row->total;
-            $mouTotal                  += $row->total;
+        foreach ($rowsInvoice as $row) {
+            $coaId = $row->coa_id;
+            if (isset($revenueToPiutangMap[$coaId])) {
+                $piutangCoaId = $revenueToPiutangMap[$coaId];
+            } elseif (isset($map[$coaId])) {
+                $piutangCoaId = $coaId;
+            } else {
+                continue;
+            }
+
+            $byPiutangCoa[$piutangCoaId] = ($byPiutangCoa[$piutangCoaId] ?? 0) + $row->amount;
+            $mouTotal                  += $row->amount;
         }
 
         $rowsCash = DB::table('cash_reports')
@@ -929,23 +945,39 @@ class RekapLaporanKeuangan extends Page
             187 => 125, // AO-103.12 -> AO-401.6 (Fee Pemeriksaan)
         ];
 
-        $rowsMou = DB::table('cost_list_mous as clm')
-            ->join('mous as m', 'm.id', '=', 'clm.mou_id')
-            ->whereNull('m.deleted_at')
-            ->whereNull('clm.deleted_at')
-            ->where('m.status', 'approved')
-            ->where('m.type', 'kkp')
-            ->whereBetween('m.approved_date', [$startOfCurrentMonthString, $endOfCurrentMonthString])
-            ->whereIn('clm.coa_id', array_keys($map))
-            ->groupBy('clm.coa_id')
-            ->selectRaw('clm.coa_id, SUM(clm.total_amount) as total')
+        $revenueToPiutangMap = [
+            119 => 188, // Fee Bulanan
+            120 => 182, // Fee SPT
+            121 => 183, // Fee SP2DK
+            122 => 184, // Fee Pembetulan
+            123 => 185, // Fee Internal
+            124 => 186, // Fee Restitusi
+            125 => 187, // Fee Pemeriksaan
+        ];
+
+        $rowsInvoice = DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->whereNull('inv.memo_id')
+            ->whereBetween('inv.invoice_date', [$startOfCurrentMonth->toDateString(), $endOfCurrentMonth->toDateString()])
+            ->selectRaw('cli.coa_id, cli.amount')
             ->get();
 
         $byPiutangCoa = [];
         $mouTotal     = 0;
-        foreach ($rowsMou as $row) {
-            $byPiutangCoa[$row->coa_id] = ($byPiutangCoa[$row->coa_id] ?? 0) + $row->total;
-            $mouTotal                  += $row->total;
+        foreach ($rowsInvoice as $row) {
+            $coaId = $row->coa_id;
+            if (isset($revenueToPiutangMap[$coaId])) {
+                $piutangCoaId = $revenueToPiutangMap[$coaId];
+            } elseif (isset($map[$coaId])) {
+                $piutangCoaId = $coaId;
+            } else {
+                continue;
+            }
+
+            $byPiutangCoa[$piutangCoaId] = ($byPiutangCoa[$piutangCoaId] ?? 0) + $row->amount;
+            $mouTotal                  += $row->amount;
         }
 
         $rowsCash = DB::table('cash_reports')

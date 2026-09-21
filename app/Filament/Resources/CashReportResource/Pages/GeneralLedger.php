@@ -25,12 +25,20 @@ class GeneralLedger extends Page
     #[\Livewire\Attributes\Url]
     public ?string $cash_reference_id = null;
 
+    #[\Livewire\Attributes\Url]
+    public ?string $coa_id = null;
+
+    #[\Livewire\Attributes\Url]
+    public ?string $jurnal = null;
+
     public function mount(): void
     {
         $this->form->fill([
             'bulan' => $this->bulan ?? (string) now()->month,
             'tahun' => $this->tahun ?? (string) now()->year,
             'cash_reference_id' => $this->cash_reference_id,
+            'coa_id' => $this->coa_id,
+            'jurnal' => $this->jurnal,
         ]);
     }
 
@@ -58,7 +66,8 @@ class GeneralLedger extends Page
                             ])
                             ->default((string) now()->month)
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->bulan = $state),
                         \Filament\Forms\Components\Select::make('tahun')
                             ->label('Tahun')
                             ->options(function () {
@@ -75,15 +84,43 @@ class GeneralLedger extends Page
                             })
                             ->default((string) now()->year)
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->tahun = $state),
+                        \Filament\Forms\Components\Select::make('coa_id')
+                            ->label('CoA')
+                            ->options(function () {
+                                return \App\Models\Coa::query()
+                                    ->whereNull('deleted_at')
+                                    ->orderBy('code')
+                                    ->get()
+                                    ->mapWithKeys(fn ($coa) => [$coa->id => $coa->code . ' - ' . $coa->name]);
+                            })
+                            ->searchable()
+                            ->placeholder('Semua CoA')
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->coa_id = $state),
+                        \Filament\Forms\Components\Select::make('jurnal')
+                            ->label('Jurnal')
+                            ->options([
+                                'kas_bank'          => 'Kas & Bank',
+                                'jurnal_umum'       => 'Jurnal Umum',
+                                'aje'               => 'AJE (Jurnal Penyesuaian)',
+                                'jurnal_pendapatan' => 'Jurnal Pendapatan',
+                                'neraca_awal'       => 'Neraca Awal',
+                            ])
+                            ->searchable()
+                            ->placeholder('Semua Jurnal')
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->jurnal = $state),
                         \Filament\Forms\Components\Select::make('cash_reference_id')
                             ->label('Kas / Bank')
                             ->options(\App\Models\CashReference::all()->pluck('name', 'id'))
                             ->searchable()
                             ->placeholder('Semua Kas / Bank')
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->cash_reference_id = $state),
                     ])
-                    ->columns(3)
+                    ->columns(['sm' => 1, 'md' => 2, 'lg' => 5])
             ]);
     }
 
@@ -108,13 +145,37 @@ class GeneralLedger extends Page
                     $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(14);
                     $row++;
 
-                    // Period
+                    // Period & Filters info
                     $bulan = $this->bulan ?? now()->month;
                     $tahun = $this->tahun ?? now()->year;
                     $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
                     $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
 
-                    $sheet->setCellValue('A' . $row, "Periode: $startDate - $endDate");
+                    $filterInfo = ["Periode: $startDate - $endDate"];
+                    if ($this->coa_id) {
+                        $filteredCoa = \App\Models\Coa::find($this->coa_id);
+                        if ($filteredCoa) {
+                            $filterInfo[] = "CoA: {$filteredCoa->code} - {$filteredCoa->name}";
+                        }
+                    }
+                    if ($this->jurnal) {
+                        $jurnalLabels = [
+                            'kas_bank'          => 'Kas & Bank',
+                            'jurnal_umum'       => 'Jurnal Umum',
+                            'aje'               => 'AJE (Jurnal Penyesuaian)',
+                            'jurnal_pendapatan' => 'Jurnal Pendapatan',
+                            'neraca_awal'       => 'Neraca Awal',
+                        ];
+                        $filterInfo[] = "Jurnal: " . ($jurnalLabels[$this->jurnal] ?? $this->jurnal);
+                    }
+                    if ($this->cash_reference_id) {
+                        $filteredCashRef = \App\Models\CashReference::find($this->cash_reference_id);
+                        if ($filteredCashRef) {
+                            $filterInfo[] = "Kas/Bank: {$filteredCashRef->name}";
+                        }
+                    }
+
+                    $sheet->setCellValue('A' . $row, implode(' | ', $filterInfo));
                     $sheet->mergeCells("A{$row}:F{$row}");
                     $row += 2;
 
@@ -193,78 +254,123 @@ class GeneralLedger extends Page
         $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
 
         $cashReferenceId = $this->cash_reference_id;
+        $coaId = $this->coa_id;
+        $jurnal = $this->jurnal;
+
+        $cashTransactions = collect();
+        $journalTransactions = collect();
+        $neracaAwalTransactions = collect();
+        $dynamicJPActions = collect();
 
         // ── 1. Cash Reports (Kas Besar, Kas Kecil, Bank) ────────────────────
-        $cashQuery = \App\Models\CashReport::query()
-            ->select('cash_reports.*')
-            ->join('coa', 'cash_reports.coa_id', '=', 'coa.id')
-            ->with(['coa', 'cashReference'])
-            ->whereBetween('cash_reports.transaction_date', [$startDate, $endDate]);
+        if (!$jurnal || $jurnal === 'kas_bank') {
+            $cashQuery = \App\Models\CashReport::query()
+                ->select('cash_reports.*')
+                ->join('coa', 'cash_reports.coa_id', '=', 'coa.id')
+                ->with(['coa', 'cashReference'])
+                ->whereBetween('cash_reports.transaction_date', [$startDate, $endDate]);
 
-        if ($cashReferenceId) {
-            $cashQuery->where('cash_reports.cash_reference_id', $cashReferenceId);
+            if ($cashReferenceId) {
+                $cashQuery->where('cash_reports.cash_reference_id', $cashReferenceId);
+            }
+
+            if ($coaId) {
+                $cashQuery->where('cash_reports.coa_id', $coaId);
+            }
+
+            $cashTransactions = $cashQuery
+                ->orderBy('coa.sort_order')
+                ->orderBy('cash_reports.transaction_date')
+                ->get()
+                ->map(function ($t) {
+                    $t->source = $t->cashReference->name ?? '-';
+                    // Tukar tampilan: nominal debit di DB → tampil di kolom Kredit, dan sebaliknya
+                    $t->display_debit  = $t->credit_amount ?? 0;
+                    $t->display_credit = $t->debit_amount  ?? 0;
+                    return $t;
+                });
         }
 
-        $cashTransactions = $cashQuery
-            ->orderBy('coa.sort_order')
-            ->orderBy('cash_reports.transaction_date')
-            ->get()
-            ->map(function ($t) {
-                $t->source = $t->cashReference->name ?? '-';
-                // Tukar tampilan: nominal debit di DB → tampil di kolom Kredit, dan sebaliknya
-                $t->display_debit  = $t->credit_amount ?? 0;
-                $t->display_credit = $t->debit_amount  ?? 0;
-                return $t;
-            });
-
         // ── 2. Journal Book Reports (Jurnal Umum, AJE, Jurnal Pendapatan) ──
-        //    Diambil dari rentang tanggal yang sama dengan cash_reports.
-        //    Tidak difilter by cash_reference_id (jurnal tidak terkait kas/bank).
         $journalLabels = [
             1 => 'Jurnal Umum',
             2 => 'AJE',
             4 => 'Jurnal Pendapatan',
         ];
 
-        $journalTransactions = \App\Models\JournalBookReport::query()
-            ->with('coa')
-            ->whereIn('journal_book_id', [1, 2, 4])
-            ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->get()
-            ->map(function ($t) use ($journalLabels) {
-                $t->source = $journalLabels[$t->journal_book_id] ?? 'Jurnal';
-                // Jurnal: tampilan normal (tidak ditukar)
-                $t->display_debit  = $t->debit_amount  ?? 0;
-                $t->display_credit = $t->credit_amount ?? 0;
-                return $t;
-            });
+        $allowedJournalBookIds = [];
+        if (!$jurnal) {
+            if (!$cashReferenceId) {
+                $allowedJournalBookIds = [1, 2, 4];
+            }
+        } elseif ($jurnal === 'jurnal_umum') {
+            $allowedJournalBookIds = [1];
+        } elseif ($jurnal === 'aje') {
+            $allowedJournalBookIds = [2];
+        } elseif ($jurnal === 'jurnal_pendapatan') {
+            $allowedJournalBookIds = [4];
+        }
+
+        if (!empty($allowedJournalBookIds)) {
+            $journalQuery = \App\Models\JournalBookReport::query()
+                ->with('coa')
+                ->whereIn('journal_book_id', $allowedJournalBookIds)
+                ->whereBetween('transaction_date', [$startDate, $endDate]);
+
+            if ($coaId) {
+                $journalQuery->where('coa_id', $coaId);
+            }
+
+            $journalTransactions = $journalQuery->get()
+                ->map(function ($t) use ($journalLabels) {
+                    $t->source = $journalLabels[$t->journal_book_id] ?? 'Jurnal';
+                    $t->display_debit  = $t->debit_amount  ?? 0;
+                    $t->display_credit = $t->credit_amount ?? 0;
+                    return $t;
+                });
+        }
 
         // ── 3. Neraca Awal (journal_book_id = 3) dari bulan sebelumnya ──────
-        //    Di Neraca Lajur, neraca awal diambil dari bulan sebelum start_date.
-        $prevMonthStart = \Carbon\Carbon::parse($startDate)->subMonth()->startOfMonth();
-        $prevMonthEnd   = \Carbon\Carbon::parse($startDate)->subMonth()->endOfMonth();
+        if ((!$jurnal && !$cashReferenceId) || $jurnal === 'neraca_awal') {
+            $prevMonthStart = \Carbon\Carbon::parse($startDate)->subMonth()->startOfMonth();
+            $prevMonthEnd   = \Carbon\Carbon::parse($startDate)->subMonth()->endOfMonth();
 
-        $neracaAwalTransactions = \App\Models\JournalBookReport::query()
-            ->with('coa')
-            ->where('journal_book_id', 3)
-            ->whereBetween('transaction_date', [$prevMonthStart, $prevMonthEnd])
-            ->get()
-            ->map(function ($t) {
-                $t->source = 'Neraca Awal';
-                // Neraca Awal: tampilan normal (tidak ditukar)
-                $t->display_debit  = $t->debit_amount  ?? 0;
-                $t->display_credit = $t->credit_amount ?? 0;
-                return $t;
-            });
+            $neracaAwalQuery = \App\Models\JournalBookReport::query()
+                ->with('coa')
+                ->where('journal_book_id', 3)
+                ->whereBetween('transaction_date', [$prevMonthStart, $prevMonthEnd]);
 
-        $dynamicJPActions = $this->getDynamicJurnalPendapatan($startDate, $endDate);
+            if ($coaId) {
+                $neracaAwalQuery->where('coa_id', $coaId);
+            }
 
-        // ── 4. Gabungkan & group by coa_id, lalu sort by coa.code ───────────
+            $neracaAwalTransactions = $neracaAwalQuery->get()
+                ->map(function ($t) {
+                    $t->source = 'Neraca Awal';
+                    $t->display_debit  = $t->debit_amount  ?? 0;
+                    $t->display_credit = $t->credit_amount ?? 0;
+                    return $t;
+                });
+        }
+
+        // ── 4. Dynamic Jurnal Pendapatan ────────────────────────────────────
+        if ((!$jurnal && !$cashReferenceId) || $jurnal === 'jurnal_pendapatan') {
+            $dynamicJPActions = $this->getDynamicJurnalPendapatan($startDate, $endDate);
+            if ($coaId) {
+                $dynamicJPActions = $dynamicJPActions->where('coa_id', (int) $coaId);
+            }
+        }
+
+        // ── 5. Gabungkan & group by coa_id, lalu sort by coa.code ───────────
         $allTransactions = $cashTransactions->toBase()
             ->merge($journalTransactions)
             ->merge($neracaAwalTransactions)
             ->merge($dynamicJPActions)
             ->sortBy('transaction_date');
+
+        if ($coaId) {
+            $allTransactions = $allTransactions->where('coa_id', (int) $coaId);
+        }
 
         return $allTransactions->groupBy('coa_id')->sortBy(function ($transactions) {
             return $transactions->first()->coa->code ?? '999999';
@@ -302,48 +408,59 @@ class GeneralLedger extends Page
             125 => 187, // Fee Pemeriksaan
         ];
 
-        // ── 1. Dari MoU approved (cost_list_mous) ──
-        $mouRows = \Illuminate\Support\Facades\DB::table('cost_list_mous as clm')
-            ->join('mous as m', 'm.id', '=', 'clm.mou_id')
-            ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
-            ->whereNull('m.deleted_at')
-            ->whereNull('clm.deleted_at')
-            ->where('m.status', 'approved')
-            // ->where('m.type', 'kkp')
-            ->whereBetween('m.approved_date', [
-                \Carbon\Carbon::parse($startDate)->startOfDay(),
-                \Carbon\Carbon::parse($endDate)->endOfDay()
+        // ── 1. Dari Invoice dibuat (cost_list_invoices) ──
+        $invoiceRows = \Illuminate\Support\Facades\DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
+            ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
+            ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->whereNull('inv.memo_id')
+            ->whereBetween('inv.invoice_date', [
+                \Carbon\Carbon::parse($startDate)->startOfDay()->toDateString(),
+                \Carbon\Carbon::parse($endDate)->endOfDay()->toDateString()
             ])
-            ->whereIn('clm.coa_id', array_keys($map))
             ->select([
-                'clm.coa_id',
-                'clm.total_amount',
-                'm.approved_date',
-                'm.mou_number',
-                'c.company_name',
+                'cli.coa_id',
+                'cli.amount',
+                'inv.invoice_date',
+                'inv.invoice_number',
+                'c_inv.company_name as client_name_inv',
+                'c_mou.company_name as client_name_mou',
             ])
             ->get();
 
-        foreach ($mouRows as $row) {
-            $desc = "Piutang MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
+        foreach ($invoiceRows as $row) {
+            $coaId = $row->coa_id;
+            if (isset($revenueToPiutangMap[$coaId])) {
+                $piutangCoaId = $revenueToPiutangMap[$coaId];
+            } elseif (isset($map[$coaId])) {
+                $piutangCoaId = $coaId;
+            } else {
+                continue;
+            }
+
+            $clientName = $row->client_name_inv ?: ($row->client_name_mou ?: '');
+            $desc = "Piutang Invoice No. " . $row->invoice_number . ($clientName ? " - " . $clientName : "");
 
             $tDebit = new \stdClass();
-            $tDebit->coa_id = $row->coa_id;
-            $tDebit->transaction_date = $row->approved_date;
+            $tDebit->coa_id = $piutangCoaId;
+            $tDebit->transaction_date = $row->invoice_date;
             $tDebit->description = $desc;
             $tDebit->source = 'Jurnal Pendapatan';
-            $tDebit->display_debit = $row->total_amount;
+            $tDebit->display_debit = $row->amount;
             $tDebit->display_credit = 0;
-            $tDebit->coa = $coas[$row->coa_id] ?? null;
+            $tDebit->coa = $coas[$piutangCoaId] ?? null;
             $transactions->push($tDebit);
 
             $tCredit = new \stdClass();
             $tCredit->coa_id = $coaBelumDiterimaId;
-            $tCredit->transaction_date = $row->approved_date;
+            $tCredit->transaction_date = $row->invoice_date;
             $tCredit->description = $desc;
             $tCredit->source = 'Jurnal Pendapatan';
             $tCredit->display_debit = 0;
-            $tCredit->display_credit = $row->total_amount;
+            $tCredit->display_credit = $row->amount;
             $tCredit->coa = $coas[$coaBelumDiterimaId] ?? null;
             $transactions->push($tCredit);
         }

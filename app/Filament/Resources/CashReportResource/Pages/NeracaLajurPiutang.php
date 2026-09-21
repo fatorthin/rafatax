@@ -143,42 +143,76 @@ class NeracaLajurPiutang extends Page implements HasTable
     }
 
     /**
-     * Sumber 1 — cost_list_mous (MoU approved bulan berjalan).
+     * Mapping CoA Pendapatan (AO-401.x) ke CoA Piutang (AO-103.x).
+     */
+    private function getRevenueToPiutangMap(): array
+    {
+        return [
+            119 => 188, // AO-401   -> AO-103.6  (Fee Bulanan)
+            120 => 182, // AO-401.1 -> AO-103.7  (Fee SPT)
+            121 => 183, // AO-401.2 -> AO-103.8  (Fee SP2DK)
+            122 => 184, // AO-401.3 -> AO-103.9  (Fee Pembetulan)
+            123 => 185, // AO-401.4 -> AO-103.10 (Fee Internal)
+            124 => 186, // AO-401.5 -> AO-103.11 (Fee Restitusi)
+            125 => 187, // AO-401.6 -> AO-103.12 (Fee Pemeriksaan)
+        ];
+    }
+
+    /**
+     * Sumber 1 — invoices & cost_list_invoices (Invoice dibuat pada bulan berjalan).
      *
      * Entri JP yang dihasilkan:
-     *   JP DEBIT  : AO-103.x (piutang) = nilai per CoA dari MoU
-     *   JP KREDIT : AO-208 (Pendapatan Belum Diterima) = total semua MoU
+     *   JP DEBIT  : AO-103.x (piutang) = nilai per CoA dari Invoice
+     *   JP KREDIT : AO-208 (Pendapatan Belum Diterima) = total semua Invoice
      *
      * Return:
      *   - by_piutang_coa : [ piutang_coa_id => total ]  -> JP DEBIT  AO-103.x
      *   - total          : grand total                   -> JP KREDIT AO-208
      */
-    private function getMouPiutangForJP(string $startOfMonth, string $endOfMonth): array
+    private function getInvoicePiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $rows = DB::table('cost_list_mous as clm')
-            ->join('mous as m', 'm.id', '=', 'clm.mou_id')
-            ->whereNull('m.deleted_at')
-            ->whereNull('clm.deleted_at')
-            ->where('m.status', 'approved')
-            // ->where('m.type', 'kkp')
-            ->whereBetween('m.approved_date', [$startOfMonth, $endOfMonth])
-            ->whereIn('clm.coa_id', array_keys($this->getPiutangToPendapatanMap()))
-            ->groupBy('clm.coa_id')
-            ->selectRaw('clm.coa_id, SUM(clm.total_amount) as total')
+        $rows = DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->whereNull('inv.memo_id')
+            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
+            ->selectRaw('cli.coa_id, cli.amount')
             ->get();
+
+        $revenueToPiutangMap    = $this->getRevenueToPiutangMap();
+        $piutangToPendapatanMap = $this->getPiutangToPendapatanMap();
 
         $byPiutangCoa = [];
         $grandTotal   = 0;
 
         foreach ($rows as $row) {
-            $byPiutangCoa[$row->coa_id] = ($byPiutangCoa[$row->coa_id] ?? 0) + $row->total;
-            $grandTotal                 += $row->total;
+            $coaId = $row->coa_id;
+
+            if (isset($revenueToPiutangMap[$coaId])) {
+                $piutangCoaId = $revenueToPiutangMap[$coaId];
+            } elseif (isset($piutangToPendapatanMap[$coaId])) {
+                $piutangCoaId = $coaId;
+            } else {
+                continue;
+            }
+
+            $byPiutangCoa[$piutangCoaId] = ($byPiutangCoa[$piutangCoaId] ?? 0) + $row->amount;
+            $grandTotal                  += $row->amount;
         }
 
         return [
             'by_piutang_coa' => $byPiutangCoa, // JP DEBIT  AO-103.x
             'total'          => $grandTotal,    // JP KREDIT AO-208
         ];
+    }
+
+    /**
+     * Backward-compatible alias for getInvoicePiutangForJP.
+     */
+    private function getMouPiutangForJP(string $startOfMonth, string $endOfMonth): array
+    {
+        return $this->getInvoicePiutangForJP($startOfMonth, $endOfMonth);
     }
 
     /**
@@ -599,14 +633,14 @@ class NeracaLajurPiutang extends Page implements HasTable
         $coaBelumDiterimaId = self::COA_PENDAPATAN_BELUM_DITERIMA_ID;
         $biayaPph23Id       = 91; // AO-108.1 PPh 23
 
-        // ── Sumber 1: MoU approved (cost_list_mous) ──
-        // JP DEBIT  AO-103.x = piutang per CoA dari MoU
-        // JP KREDIT AO-208   = total MoU (Pendapatan Belum Diterima)
-        $mouJP = $this->getMouPiutangForJP($startOfCurrentMonth, $endOfCurrentMonth);
-        foreach ($mouJP['by_piutang_coa'] as $coaId => $total) {
+        // ── Sumber 1: Invoice dibuat (cost_list_invoices) ──
+        // JP DEBIT  AO-103.x = piutang per CoA dari Invoice
+        // JP KREDIT AO-208   = total Invoice (Pendapatan Belum Diterima)
+        $invoiceJP = $this->getInvoicePiutangForJP($startOfCurrentMonth, $endOfCurrentMonth);
+        foreach ($invoiceJP['by_piutang_coa'] as $coaId => $total) {
             $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
         }
-        $jpKredits[$coaBelumDiterimaId] = ($jpKredits[$coaBelumDiterimaId] ?? 0) + $mouJP['total'];
+        $jpKredits[$coaBelumDiterimaId] = ($jpKredits[$coaBelumDiterimaId] ?? 0) + $invoiceJP['total'];
 
         // ── Sumber 2: cash_reports (CoA AO-103.x di kas/bank) ──
         // JP DEBIT  AO-208   = total kas diterima (pengurang accrual Pendapatan Belum Diterima)
@@ -985,47 +1019,38 @@ class NeracaLajurPiutang extends Page implements HasTable
         $piutangCoaList    = DB::table('coa')->whereIn('id', $piutangCoaIds)->get()->keyBy('id');
         $coaBelumDiterima  = DB::table('coa')->where('id', self::COA_PENDAPATAN_BELUM_DITERIMA_ID)->first();
 
-        // ── Bagian 1: MoU (DR AO-103.x / CR AO-208) ──
-        $mouRows = DB::table('cost_list_mous as clm')
-            ->join('mous as m', 'm.id', '=', 'clm.mou_id')
-            ->whereNull('m.deleted_at')
-            ->whereNull('clm.deleted_at')
-            ->where('m.status', 'approved')
-            // ->where('m.type', 'kkp')
-            ->whereBetween('m.approved_date', [$startOfMonth, $endOfMonth])
-            ->whereIn('clm.coa_id', $piutangCoaIds)
-            ->groupBy('clm.coa_id')
-            ->selectRaw('clm.coa_id as piutang_coa_id, SUM(clm.total_amount) as total')
-            ->get();
+        // ── Bagian 1: Invoice (DR AO-103.x / CR AO-208) ──
+        $invoiceJP    = $this->getInvoicePiutangForJP($startOfMonth, $endOfMonth);
+        $byInvoiceCoa = $invoiceJP['by_piutang_coa'];
+        $invoiceTotal = $invoiceJP['total'];
 
-        $sumRow   = 4;
-        $mouTotal = $mouRows->sum('total');
+        $sumRow = 4;
 
         // Label sub-header bagian 1
-        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 1: MoU Approved (Pengakuan Piutang) ───');
+        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 1: Invoice Dibuat (Pengakuan Piutang) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
         $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
         $sumRow++;
 
-        foreach ($mouRows as $row) {
-            $piutangCoa = $piutangCoaList->get($row->piutang_coa_id);
+        foreach ($byInvoiceCoa as $coaId => $total) {
+            $piutangCoa = $piutangCoaList->get($coaId) ?? DB::table('coa')->where('id', $coaId)->first();
             // DR AO-103.x
-            $sheetSum->setCellValue('A' . $sumRow, $piutangCoa ? $piutangCoa->code : $row->piutang_coa_id);
+            $sheetSum->setCellValue('A' . $sumRow, $piutangCoa ? $piutangCoa->code : $coaId);
             $sheetSum->setCellValue('B' . $sumRow, $piutangCoa ? $piutangCoa->name : '-');
-            $sheetSum->setCellValue('C' . $sumRow, 'MoU Approved');
-            $sheetSum->setCellValue('D' . $sumRow, $row->total ?: '');
-            $sheetSum->setCellValue('E' . $sumRow, $row->total ?: ''); // Debit
+            $sheetSum->setCellValue('C' . $sumRow, 'Invoice Dibuat');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
             $sheetSum->setCellValue('F' . $sumRow, '');
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
         }
-        // CR AO-208 = total MoU
+        // CR AO-208 = total Invoice
         $sheetSum->setCellValue('A' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->code : 'AO-208');
         $sheetSum->setCellValue('B' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->name : 'Pendapatan Yang Belum Diterima');
-        $sheetSum->setCellValue('C' . $sumRow, 'MoU Approved');
-        $sheetSum->setCellValue('D' . $sumRow, $mouTotal ?: '');
+        $sheetSum->setCellValue('C' . $sumRow, 'Invoice Dibuat');
+        $sheetSum->setCellValue('D' . $sumRow, $invoiceTotal ?: '');
         $sheetSum->setCellValue('E' . $sumRow, '');
-        $sheetSum->setCellValue('F' . $sumRow, $mouTotal ?: ''); // Kredit
+        $sheetSum->setCellValue('F' . $sumRow, $invoiceTotal ?: ''); // Kredit
         $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
         $sumRow++;
 
@@ -1236,8 +1261,8 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
 
         // Baris Grand Total
-        $jpDebitTotal  = $mouTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalDebits + $cancelTotalDebits;
-        $jpKreditTotal = $mouTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalKredits + $cancelTotalKredits;
+        $jpDebitTotal  = $invoiceTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalDebits + $cancelTotalDebits;
+        $jpKreditTotal = $invoiceTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalKredits + $cancelTotalKredits;
         $sheetSum->setCellValue('A' . $sumRow, 'TOTAL');
         $sheetSum->mergeCells('A' . $sumRow . ':C' . $sumRow);
         $sheetSum->setCellValue('D' . $sumRow, '');
@@ -1254,7 +1279,94 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
 
         // ──────────────────────────────────────────────────────────────────────
-        // SHEET 2: DETAIL TRANSAKSI PIUTANG DI KAS/BANK
+        // SHEET 2: DETAIL INVOICE PIUTANG
+        // ──────────────────────────────────────────────────────────────────────
+        $sheetInv = $spreadsheet->createSheet();
+        $sheetInv->setTitle('Detail Invoice Piutang');
+
+        $sheetInv->setCellValue('A1', 'DETAIL INVOICE (PENGAKUAN PIUTANG) - ' . strtoupper($periodeLabel));
+        $sheetInv->mergeCells('A1:G1');
+        $sheetInv->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+        $sheetInv->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $inv_headers = [
+            'A3' => 'No Invoice',
+            'B3' => 'Tanggal Invoice',
+            'C3' => 'Nama Klien',
+            'D3' => 'Deskripsi',
+            'E3' => 'Nilai Invoice',
+            'F3' => 'Kode CoA Piutang',
+            'G3' => 'Nama CoA Piutang',
+        ];
+        foreach ($inv_headers as $cell => $label) {
+            $sheetInv->setCellValue($cell, $label);
+        }
+        $sheetInv->getStyle('A3:G3')->applyFromArray($headerStyle);
+
+        $invoiceDetailRows = DB::table('invoices as inv')
+            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+            ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
+            ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
+            ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
+            ->whereNull('inv.deleted_at')
+            ->whereNull('cli.deleted_at')
+            ->whereNull('inv.memo_id')
+            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
+            ->selectRaw('
+                inv.invoice_number,
+                inv.invoice_date,
+                inv.client_id,
+                inv.mou_id,
+                cli.description,
+                cli.amount,
+                cli.coa_id,
+                c_inv.company_name as client_name_inv,
+                c_mou.company_name as client_name_mou
+            ')
+            ->orderBy('inv.invoice_date')
+            ->get();
+
+        $invRow          = 4;
+        $invGrand        = 0;
+        $revToPiutangMap = $this->getRevenueToPiutangMap();
+
+        foreach ($invoiceDetailRows as $item) {
+            $cName = $item->client_name_inv ?: ($item->client_name_mou ?: '-');
+
+            $mappedCoaId = $item->coa_id;
+            if (isset($revToPiutangMap[$mappedCoaId])) {
+                $mappedCoaId = $revToPiutangMap[$mappedCoaId];
+            } elseif (!isset($piutangMap[$mappedCoaId])) {
+                continue;
+            }
+
+            $piutangCoa = $piutangCoaList->get($mappedCoaId) ?? DB::table('coa')->where('id', $mappedCoaId)->first();
+
+            $sheetInv->setCellValue('A' . $invRow, $item->invoice_number);
+            $sheetInv->setCellValue('B' . $invRow, $item->invoice_date);
+            $sheetInv->setCellValue('C' . $invRow, $cName);
+            $sheetInv->setCellValue('D' . $invRow, $item->description);
+            $sheetInv->setCellValue('E' . $invRow, $item->amount ?: '');
+            $sheetInv->setCellValue('F' . $invRow, $piutangCoa ? $piutangCoa->code : $mappedCoaId);
+            $sheetInv->setCellValue('G' . $invRow, $piutangCoa ? $piutangCoa->name : '-');
+
+            $sheetInv->getStyle('E' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $invGrand += $item->amount;
+            $invRow++;
+        }
+
+        $sheetInv->setCellValue('D' . $invRow, 'TOTAL');
+        $sheetInv->setCellValue('E' . $invRow, $invGrand);
+        $sheetInv->getStyle('A' . $invRow . ':G' . $invRow)->applyFromArray($totalStyle);
+        $sheetInv->getStyle('E' . $invRow)->getNumberFormat()->setFormatCode($numberFmt);
+        $sheetInv->getStyle('A3:G' . $invRow)->applyFromArray(['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]]);
+
+        foreach (range('A', 'G') as $col) {
+            $sheetInv->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ──────────────────────────────────────────────────────────────────────
+        // SHEET 3: DETAIL TRANSAKSI PIUTANG DI KAS/BANK
         // ──────────────────────────────────────────────────────────────────────
         $sheetDetail = $spreadsheet->createSheet();
         $sheetDetail->setTitle('Detail Piutang Kas Bank');
