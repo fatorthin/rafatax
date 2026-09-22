@@ -130,8 +130,79 @@ class GeneralLedger extends Page
             \Filament\Actions\Action::make('export')
                 ->label('Export Excel')
                 ->icon('heroicon-o-arrow-down-tray')
-                ->action(function () {
-                    $groupedTransactions = $this->getReports();
+                ->modalHeading('Export General Ledger ke Excel')
+                ->modalDescription('Pilih filter data yang ingin diexport.')
+                ->modalSubmitActionLabel('Download Excel')
+                ->form([
+                    \Filament\Forms\Components\Select::make('bulan')
+                        ->label('Bulan')
+                        ->options([
+                            '1' => 'Januari',
+                            '2' => 'Februari',
+                            '3' => 'Maret',
+                            '4' => 'April',
+                            '5' => 'Mei',
+                            '6' => 'Juni',
+                            '7' => 'Juli',
+                            '8' => 'Agustus',
+                            '9' => 'September',
+                            '10' => 'Oktober',
+                            '11' => 'November',
+                            '12' => 'Desember',
+                        ])
+                        ->required(),
+                    \Filament\Forms\Components\Select::make('tahun')
+                        ->label('Tahun')
+                        ->options(function () {
+                            $years = \App\Models\CashReport::selectRaw('YEAR(transaction_date) as year')
+                                ->distinct()
+                                ->pluck('year', 'year')
+                                ->toArray();
+                            $currentYear = now()->year;
+                            if (!isset($years[$currentYear])) {
+                                $years[$currentYear] = $currentYear;
+                            }
+                            krsort($years);
+                            return $years;
+                        })
+                        ->required(),
+                    \Filament\Forms\Components\Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(function () {
+                            return \App\Models\Coa::query()
+                                ->whereNull('deleted_at')
+                                ->orderBy('code')
+                                ->get()
+                                ->mapWithKeys(fn ($coa) => [$coa->id => $coa->code . ' - ' . $coa->name]);
+                        })
+                        ->searchable()
+                        ->placeholder('Semua CoA'),
+                    \Filament\Forms\Components\Select::make('jurnal')
+                        ->label('Jurnal')
+                        ->options([
+                            'kas_bank'          => 'Kas & Bank',
+                            'jurnal_umum'       => 'Jurnal Umum',
+                            'aje'               => 'AJE (Jurnal Penyesuaian)',
+                            'jurnal_pendapatan' => 'Jurnal Pendapatan',
+                            'neraca_awal'       => 'Neraca Awal',
+                        ])
+                        ->searchable()
+                        ->placeholder('Semua Jurnal'),
+                    \Filament\Forms\Components\Select::make('cash_reference_id')
+                        ->label('Kas / Bank')
+                        ->options(\App\Models\CashReference::all()->pluck('name', 'id'))
+                        ->searchable()
+                        ->placeholder('Semua Kas / Bank'),
+                ])
+                ->fillForm(fn () => [
+                    'bulan'             => $this->bulan ?? (string) now()->month,
+                    'tahun'             => $this->tahun ?? (string) now()->year,
+                    'coa_id'            => $this->coa_id,
+                    'jurnal'            => $this->jurnal,
+                    'cash_reference_id' => $this->cash_reference_id,
+                ])
+                ->action(function (array $data) {
+                    $groupedTransactions = $this->getReports($data);
                     $coas = \App\Models\Coa::whereIn('id', $groupedTransactions->keys())->get()->keyBy('id');
 
                     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -146,19 +217,19 @@ class GeneralLedger extends Page
                     $row++;
 
                     // Period & Filters info
-                    $bulan = $this->bulan ?? now()->month;
-                    $tahun = $this->tahun ?? now()->year;
+                    $bulan = $data['bulan'] ?? $this->bulan ?? now()->month;
+                    $tahun = $data['tahun'] ?? $this->tahun ?? now()->year;
                     $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
                     $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
 
                     $filterInfo = ["Periode: $startDate - $endDate"];
-                    if ($this->coa_id) {
-                        $filteredCoa = \App\Models\Coa::find($this->coa_id);
+                    if (!empty($data['coa_id'])) {
+                        $filteredCoa = \App\Models\Coa::find($data['coa_id']);
                         if ($filteredCoa) {
                             $filterInfo[] = "CoA: {$filteredCoa->code} - {$filteredCoa->name}";
                         }
                     }
-                    if ($this->jurnal) {
+                    if (!empty($data['jurnal'])) {
                         $jurnalLabels = [
                             'kas_bank'          => 'Kas & Bank',
                             'jurnal_umum'       => 'Jurnal Umum',
@@ -166,10 +237,10 @@ class GeneralLedger extends Page
                             'jurnal_pendapatan' => 'Jurnal Pendapatan',
                             'neraca_awal'       => 'Neraca Awal',
                         ];
-                        $filterInfo[] = "Jurnal: " . ($jurnalLabels[$this->jurnal] ?? $this->jurnal);
+                        $filterInfo[] = "Jurnal: " . ($jurnalLabels[$data['jurnal']] ?? $data['jurnal']);
                     }
-                    if ($this->cash_reference_id) {
-                        $filteredCashRef = \App\Models\CashReference::find($this->cash_reference_id);
+                    if (!empty($data['cash_reference_id'])) {
+                        $filteredCashRef = \App\Models\CashReference::find($data['cash_reference_id']);
                         if ($filteredCashRef) {
                             $filterInfo[] = "Kas/Bank: {$filteredCashRef->name}";
                         }
@@ -245,17 +316,17 @@ class GeneralLedger extends Page
         ];
     }
 
-    public function getReports()
+    public function getReports(?array $filters = null)
     {
-        $bulan = $this->bulan ?? now()->month;
-        $tahun = $this->tahun ?? now()->year;
+        $bulan = $filters['bulan'] ?? $this->bulan ?? now()->month;
+        $tahun = $filters['tahun'] ?? $this->tahun ?? now()->year;
 
         $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
         $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
 
-        $cashReferenceId = $this->cash_reference_id;
-        $coaId = $this->coa_id;
-        $jurnal = $this->jurnal;
+        $cashReferenceId = $filters !== null ? ($filters['cash_reference_id'] ?? null) : $this->cash_reference_id;
+        $coaId = $filters !== null ? ($filters['coa_id'] ?? null) : $this->coa_id;
+        $jurnal = $filters !== null ? ($filters['jurnal'] ?? null) : $this->jurnal;
 
         $cashTransactions = collect();
         $journalTransactions = collect();
