@@ -122,7 +122,7 @@ class PiutangPerClient extends Page implements HasTable
                     'kkp' => 'Hanya KKP',
                 ])
                 ->default('all')
-                ->visible(fn (Get $get) => $get('export_scope') === 'custom'),
+                ->visible(fn(Get $get) => $get('export_scope') === 'custom'),
             Select::make('piutang_status')
                 ->label('Status Piutang')
                 ->options([
@@ -131,24 +131,24 @@ class PiutangPerClient extends Page implements HasTable
                     'lunas' => 'Hanya Klien Lunas (Sisa = 0)',
                 ])
                 ->default('all')
-                ->visible(fn (Get $get) => $get('export_scope') === 'custom'),
+                ->visible(fn(Get $get) => $get('export_scope') === 'custom'),
         ];
     }
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('export_excel')
-                ->label('Export Excel')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->color('success')
-                ->modalHeading('Export Data Piutang per Client')
-                ->modalDescription('Unduh data rekap piutang per client ke format file Excel (.xlsx).')
-                ->modalSubmitActionLabel('Unduh Excel')
-                ->form(static::getExportFormSchema())
-                ->action(fn (array $data) => $this->handleExport($data)),
-        ];
-    }
+    // protected function getHeaderActions(): array
+    // {
+    //     return [
+    //         Action::make('export_excel')
+    //             ->label('Export Excel')
+    //             ->icon('heroicon-o-arrow-down-tray')
+    //             ->color('success')
+    //             ->modalHeading('Export Data Piutang per Client')
+    //             ->modalDescription('Unduh data rekap piutang per client ke format file Excel (.xlsx).')
+    //             ->modalSubmitActionLabel('Unduh Excel')
+    //             ->form(static::getExportFormSchema())
+    //             ->action(fn (array $data) => $this->handleExport($data)),
+    //     ];
+    // }
 
     public function handleExport(array $data)
     {
@@ -246,7 +246,7 @@ class PiutangPerClient extends Page implements HasTable
                     ->modalDescription('Unduh data rekap piutang per client ke format file Excel (.xlsx).')
                     ->modalSubmitActionLabel('Unduh Excel')
                     ->form(static::getExportFormSchema())
-                    ->action(fn (array $data) => $this->handleExport($data)),
+                    ->action(fn(array $data) => $this->handleExport($data)),
             ])
             ->actions([
                 Tables\Actions\Action::make('view_detail')
