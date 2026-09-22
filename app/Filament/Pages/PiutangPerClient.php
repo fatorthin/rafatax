@@ -4,14 +4,19 @@ namespace App\Filament\Pages;
 
 use App\Models\Client;
 use Filament\Pages\Page;
+use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Get;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use App\Filament\Resources\InvoiceResource;
+use App\Helpers\PiutangPerClientExporter;
 
 class PiutangPerClient extends Page implements HasTable
 {
@@ -27,7 +32,10 @@ class PiutangPerClient extends Page implements HasTable
 
     protected static ?string $title = 'Piutang per Client';
 
-    public function table(Table $table): Table
+    /**
+     * Base query for Piutang per Client with all aggregated subqueries
+     */
+    public static function getBasePiutangQuery(): Builder
     {
         // 1. Saldo Awal Aggregated Subquery (Tahun 2025)
         $saSql = "
@@ -81,18 +89,116 @@ class PiutangPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
+        return Client::query()
+            ->select('clients.*')
+            ->selectRaw('COALESCE(sa.saldo_awal, 0) as saldo_awal')
+            ->selectRaw('COALESCE(inv.total_invoice, 0) as total_invoice')
+            ->selectRaw('COALESCE(pay.total_pembayaran, 0) as total_pembayaran')
+            ->selectRaw('(COALESCE(sa.saldo_awal, 0) + COALESCE(inv.total_invoice, 0) - COALESCE(pay.total_pembayaran, 0)) as total_piutang')
+            ->leftJoin(DB::raw("({$saSql}) as sa"), 'clients.id', '=', 'sa.client_id')
+            ->leftJoin(DB::raw("({$invSql}) as inv"), 'clients.id', '=', 'inv.client_id')
+            ->leftJoin(DB::raw("({$paySql}) as pay"), 'clients.id', '=', 'pay.client_id');
+    }
+
+    /**
+     * Form schema for Export Excel modal
+     */
+    public static function getExportFormSchema(): array
+    {
+        return [
+            Radio::make('export_scope')
+                ->label('Cakupan Data Export')
+                ->options([
+                    'current' => 'Sesuai Tampilan / Filter Tabel Saat Ini',
+                    'custom' => 'Kustom (Pilih Filter di Bawah)',
+                ])
+                ->default('current')
+                ->reactive(),
+            Select::make('client_type')
+                ->label('Jenis Klien')
+                ->options([
+                    'all' => 'Semua Jenis (PT & KKP)',
+                    'pt' => 'Hanya PT',
+                    'kkp' => 'Hanya KKP',
+                ])
+                ->default('all')
+                ->visible(fn (Get $get) => $get('export_scope') === 'custom'),
+            Select::make('piutang_status')
+                ->label('Status Piutang')
+                ->options([
+                    'all' => 'Semua (Termasuk Lunas)',
+                    'aktif' => 'Hanya Piutang Aktif (Sisa > 0)',
+                    'lunas' => 'Hanya Klien Lunas (Sisa = 0)',
+                ])
+                ->default('all')
+                ->visible(fn (Get $get) => $get('export_scope') === 'custom'),
+        ];
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('export_excel')
+                ->label('Export Excel')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('success')
+                ->modalHeading('Export Data Piutang per Client')
+                ->modalDescription('Unduh data rekap piutang per client ke format file Excel (.xlsx).')
+                ->modalSubmitActionLabel('Unduh Excel')
+                ->form(static::getExportFormSchema())
+                ->action(fn (array $data) => $this->handleExport($data)),
+        ];
+    }
+
+    public function handleExport(array $data)
+    {
+        $scope = $data['export_scope'] ?? 'current';
+        $subtitleParts = [];
+
+        if ($scope === 'custom') {
+            $query = static::getBasePiutangQuery();
+
+            if (!empty($data['client_type']) && $data['client_type'] !== 'all') {
+                $query->where('clients.type', $data['client_type']);
+                $subtitleParts[] = 'Jenis: ' . strtoupper($data['client_type']);
+            }
+
+            if (($data['piutang_status'] ?? 'all') === 'aktif') {
+                $query->having('total_piutang', '>', 0);
+                $subtitleParts[] = 'Status: Piutang Aktif';
+            } elseif (($data['piutang_status'] ?? 'all') === 'lunas') {
+                $query->having('total_piutang', '<=', 0);
+                $subtitleParts[] = 'Status: Lunas';
+            }
+
+            if (empty($subtitleParts)) {
+                $subtitleParts[] = 'Semua Klien';
+            }
+        } else {
+            $query = $this->getFilteredTableQuery();
+            $subtitleParts[] = 'Sesuai Filter Tabel';
+        }
+
+        // Apply table sorting if available and not yet ordered
+        $sortColumn = $this->getTableSortColumn();
+        $sortDirection = $this->getTableSortDirection() ?? 'asc';
+
+        if (!empty($sortColumn)) {
+            $query->orderBy($sortColumn, $sortDirection);
+        } else {
+            $query->orderBy('clients.company_name', 'asc');
+        }
+
+        $records = $query->get();
+        $subtitle = implode(' | ', $subtitleParts);
+
+        return PiutangPerClientExporter::export($records, $subtitle);
+    }
+
+    public function table(Table $table): Table
+    {
         return $table
-            ->query(
-                Client::query()
-                    ->select('clients.*')
-                    ->selectRaw('COALESCE(sa.saldo_awal, 0) as saldo_awal')
-                    ->selectRaw('COALESCE(inv.total_invoice, 0) as total_invoice')
-                    ->selectRaw('COALESCE(pay.total_pembayaran, 0) as total_pembayaran')
-                    ->selectRaw('(COALESCE(sa.saldo_awal, 0) + COALESCE(inv.total_invoice, 0) - COALESCE(pay.total_pembayaran, 0)) as total_piutang')
-                    ->leftJoin(DB::raw("({$saSql}) as sa"), 'clients.id', '=', 'sa.client_id')
-                    ->leftJoin(DB::raw("({$invSql}) as inv"), 'clients.id', '=', 'inv.client_id')
-                    ->leftJoin(DB::raw("({$paySql}) as pay"), 'clients.id', '=', 'pay.client_id')
-            )
+            ->query(static::getBasePiutangQuery())
             ->columns([
                 TextColumn::make('code')
                     ->label('Kode Client')
@@ -131,6 +237,17 @@ class PiutangPerClient extends Page implements HasTable
                     ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))
                     ->default(false),
             ])
+            ->headerActions([
+                Tables\Actions\Action::make('export_excel')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->modalHeading('Export Data Piutang per Client')
+                    ->modalDescription('Unduh data rekap piutang per client ke format file Excel (.xlsx).')
+                    ->modalSubmitActionLabel('Unduh Excel')
+                    ->form(static::getExportFormSchema())
+                    ->action(fn (array $data) => $this->handleExport($data)),
+            ])
             ->actions([
                 Tables\Actions\Action::make('view_detail')
                     ->label('Lihat Detail')
@@ -141,6 +258,15 @@ class PiutangPerClient extends Page implements HasTable
                         'periode' => 'post_2025',
                     ]))
                     ->openUrlInNewTab(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('export_selected')
+                    ->label('Export Excel (Klien Terpilih)')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        return PiutangPerClientExporter::export($records, 'Klien Terpilih');
+                    }),
             ]);
     }
 
