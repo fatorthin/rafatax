@@ -32,7 +32,46 @@ class InvoicePrintController extends Controller
         }
     }
 
-    private function preparePdf($id)
+    public function streamPublicPdf($id, $filename = '')
+    {
+        try {
+            $cacheDir = storage_path('app/public/invoices');
+            $cleanFilename = $filename ? basename($filename) : '';
+            $filePath = $cleanFilename ? $cacheDir . '/' . $cleanFilename : null;
+            $disposition = request()->has('download') ? 'attachment' : 'inline';
+
+            if ($filePath && file_exists($filePath)) {
+                return response()->file($filePath, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
+                ]);
+            }
+
+            list($pdf, $actualFilename) = $this->preparePdf($id);
+            $targetFilename = $cleanFilename ?: $actualFilename;
+
+            // Cache generated PDF
+            if ($filePath) {
+                try {
+                    if (!file_exists($cacheDir)) {
+                        @mkdir($cacheDir, 0755, true);
+                    }
+                    $pdf->save($filePath);
+                } catch (\Throwable $ignored) {
+                    // Ignore cache save error
+                }
+            }
+
+            return request()->has('download')
+                ? $pdf->download($targetFilename)
+                : $pdf->stream($targetFilename);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('InvoicePrintController streamPublicPdf error: ' . $e->getMessage());
+            return response($e->getMessage(), 500);
+        }
+    }
+
+    public function preparePdf($id)
     {
         $invoice = Invoice::with(['mou.client', 'memo', 'client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();

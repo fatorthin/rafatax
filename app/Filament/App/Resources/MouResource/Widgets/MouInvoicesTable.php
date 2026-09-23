@@ -187,114 +187,14 @@ class MouInvoicesTable extends BaseWidget
                                 ?? optional($record->mou)->type
                                 ?? optional($record->memo)->tipe_klien;
 
-                            $typeNormalized = is_string($type) ? strtolower(trim($type)) : '';
-                            $isKkp = $typeNormalized === 'kkp';
+                            // Dispatch background job for fast URL-based delivery
+                            \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone);
 
-                            $bankDetails = $isKkp
-                                ? "Bank: BCA\nNo. Rekening: 785-1135-425\nAtas nama: Antin Okfitasari"
-                                : "Bank: BCA\nNo. Rekening: 785-1260-513\nAtas nama: Aghnia Oasis Konsultindo PT";
-
-                            $dueDate = $record->due_date
-                                ? \Carbon\Carbon::parse($record->due_date)->translatedFormat('d F Y')
-                                : '-';
-
-                            // Create WhatsApp message
-                            $message = "Yth. Bapak/Ibu {$clientName}\n";
-                            $message .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan Invoice Tagihan.\n\n";
-                            $message .= "No Invoice    : {$record->invoice_number}\n";
-                            $message .= "Jumlah          : Rp {$formattedAmount}\n";
-                            $message .= "Jatuh Tempo: {$dueDate}\n\n";
-                            $message .= "Transfer ke: {$bankDetails}\n\n";
-                            $message .= "Note:\n";
-                            $message .= "1. Cantumkan nomor invoice di kolom \"catatan\" saat proses transfer.\n";
-                            $message .= "2. Konfirmasi pembayaran dengan mengirim bukti transfer ke Nomor Admin (+62 813 5997 6015)\n";
-                            $message .= "3. Bayar tepat waktu untuk menghindari penghentian layanan kami.\n\n";
-                            $message .= "Mohon dapat menjadi periksa & dijadwalkan pembayarannya\n";
-                            $message .= "Terima kasih\n";
-                            $message .= "Admin Rafatax Consulting";
-
-                            /** @var \App\Services\WablasService $wablasService */
-                            $wablasService = app(\App\Services\WablasService::class);
-
-                            // 1. Send Text Message
-                            $wablasService->sendMessage($phone, $message);
-
-                            // 2. Generate PDF using DOMPDF
-                            $costLists = CostListInvoice::where('invoice_id', $record->id)->get();
-
-                            if ($typeNormalized === 'kkp') {
-                                $view = 'invoices.pdf-kkp';
-                                $headerImageFile = 'kop-inovice-kkp.png';
-                            } elseif ($typeNormalized === 'pt') {
-                                $view = 'invoices.pdf-pt';
-                                $headerImageFile = 'kop-invoice-pt.png';
-                            } else {
-                                $view = 'invoices.pdf';
-                                $headerImageFile = null;
-                            }
-
-                            $headerImageBase64 = '';
-                            if ($headerImageFile) {
-                                $headerImagePath = public_path('images/' . $headerImageFile);
-                                if (file_exists($headerImagePath)) {
-                                    $headerImageBase64 = $this->optimizeImageHelper($headerImagePath, 600);
-                                }
-                            }
-
-                            $signatureImageBase64 = '';
-                            $signatureImagePath = public_path('images/spesimen-kasir.png');
-                            if (file_exists($signatureImagePath)) {
-                                $signatureImageBase64 = $this->optimizeImageHelper($signatureImagePath, 250);
-                            }
-
-                            $viewData = [
-                                'invoice' => $record,
-                                'costLists' => $costLists,
-                                'headerImage' => $headerImageBase64,
-                                'signatureImage' => $signatureImageBase64,
-                            ];
-
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $viewData)
-                                ->setPaper('a4', 'portrait')
-                                ->setOption(['compress' => 1]);
-
-                            $tempDir = storage_path('app/temp');
-                            if (!file_exists($tempDir)) {
-                                mkdir($tempDir, 0755, true);
-                            }
-
-                            $companyNameClean = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $clientName);
-                            $invoiceNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $record->invoice_number ?? $record->id);
-                            $filename = 'invoice-(' . $companyNameClean . ')' . $invoiceNumberClean . '.pdf';
-                            $tempPath = $tempDir . '/' . $filename;
-
-                            $pdf->save($tempPath);
-
-                            // 3. Send Document
-                            $sendResult = $wablasService->sendDocument($phone, $tempPath);
-
-                            if (file_exists($tempPath)) {
-                                unlink($tempPath);
-                            }
-
-                            if (isset($sendResult['status']) && $sendResult['status']) {
-                                $record->update([
-                                    'is_send_invoice' => true,
-                                    'send_invoice_date' => now()->toDateString(),
-                                ]);
-
-                                Notification::make()
-                                    ->title('Berhasil')
-                                    ->body('Invoice berhasil dikirim via WhatsApp (PDF).')
-                                    ->success()
-                                    ->send();
-                            } else {
-                                Notification::make()
-                                    ->title('Warning')
-                                    ->body('Pesan teks terkirim, namun pengiriman dokumen PDF mungkin gagal.')
-                                    ->warning()
-                                    ->send();
-                            }
+                            Notification::make()
+                                ->title('Pengiriman Dijadwalkan')
+                                ->body('Invoice sedang diproses dan akan dikirim ke WhatsApp client melalui antrean latar belakang.')
+                                ->success()
+                                ->send();
                         } catch (\Exception $e) {
                             Notification::make()
                                 ->title('Error')
