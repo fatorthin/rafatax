@@ -57,6 +57,9 @@ class NeracaLajurPiutang extends Page implements HasTable
     {
         $this->month = (int) request('month', now()->month);
         $this->year  = (int) request('year', now()->year);
+
+        // Pastikan Jurnal Pendapatan di journal_book_reports tersinkronisasi untuk bulan ini
+        \App\Services\JurnalPendapatanService::syncMonth($this->year, $this->month);
     }
 
     protected function getHeaderActions(): array

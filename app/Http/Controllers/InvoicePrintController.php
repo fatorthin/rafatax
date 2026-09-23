@@ -32,7 +32,41 @@ class InvoicePrintController extends Controller
         }
     }
 
-    private function preparePdf($id)
+    public function streamPublicPdf($id, $filename = '')
+    {
+        try {
+            $cacheDir = storage_path('app/public/invoices');
+            if (!file_exists($cacheDir)) {
+                @mkdir($cacheDir, 0755, true);
+            }
+
+            $cleanFilename = $filename ? basename($filename) : '';
+            $filePath = $cleanFilename ? $cacheDir . '/' . $cleanFilename : null;
+
+            // If file does not exist in cache or is empty, generate and save it
+            if (!$filePath || !file_exists($filePath) || filesize($filePath) === 0) {
+                list($pdf, $actualFilename) = $this->preparePdf($id);
+                $targetFilename = $cleanFilename ?: $actualFilename;
+                $filePath = $cacheDir . '/' . $targetFilename;
+                $cleanFilename = $targetFilename;
+                $pdf->save($filePath);
+            }
+
+            $disposition = request()->has('download') ? 'attachment' : 'inline';
+
+            return response()->file($filePath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Length' => (string) filesize($filePath),
+                'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('InvoicePrintController streamPublicPdf error: ' . $e->getMessage());
+            return response($e->getMessage(), 500);
+        }
+    }
+
+    public function preparePdf($id)
     {
         $invoice = Invoice::with(['mou.client', 'memo', 'client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
@@ -86,20 +120,12 @@ class InvoicePrintController extends Controller
             'reference_number' => $invoice->mou ? $invoice->mou->mou_number : ($invoice->memo ? $invoice->memo->no_memo : ''),
         ];
 
-        $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait')->setOption(['compress' => 1]);
 
         // Clean invoice number to remove invalid filename characters
-        $invoiceNumberClean = str_replace(
-            ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
-            '-',
-            $invoice->invoice_number ?? $invoice->id
-        );
-        $companyNameClean = str_replace(
-            ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
-            '-',
-            $clientName ?? ''
-        );
-        $filename = 'invoice-(' . $companyNameClean . ')' . $invoiceNumberClean . '.pdf';
+        $invoiceNumberClean = preg_replace('/[^A-Za-z0-9_\-]/', '-', $invoice->invoice_number ?? (string)$invoice->id);
+        $companyNameClean = preg_replace('/[^A-Za-z0-9_\-]/', '-', $clientName ?: 'Client');
+        $filename = 'Invoice-' . $invoiceNumberClean . '-' . $companyNameClean . '.pdf';
 
         return [$pdf, $filename];
     }

@@ -20,6 +20,7 @@ use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\JournalBookReferenceResource;
 use App\Models\Coa;
+use App\Services\JurnalPendapatanService;
 
 class ViewJournalBookMonthly extends Page implements HasTable
 {
@@ -29,6 +30,20 @@ class ViewJournalBookMonthly extends Page implements HasTable
     protected static string $view = 'filament.resources.journal-book-reference-resource.pages.view-journal-book-monthly';
 
     public JournalBookReference $record;
+
+    public function mount(): void
+    {
+        if ($this->isJurnalPendapatan()) {
+            if (JournalBookReport::where('journal_book_id', $this->record->id)->count() === 0) {
+                JurnalPendapatanService::syncAll();
+            }
+        }
+    }
+
+    public function isJurnalPendapatan(): bool
+    {
+        return JurnalPendapatanService::isJurnalPendapatan($this->record);
+    }
 
     public function getTitle(): string
     {
@@ -143,6 +158,22 @@ class ViewJournalBookMonthly extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('syncAll')
+                ->label('Sinkronkan Data Piutang')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Sinkronisasi Semua Periode Jurnal Pendapatan')
+                ->modalDescription('Perbarui dan sinkronkan seluruh data Jurnal Pendapatan dari kalkulasi transaksi Piutang (Invoice, Kas/Bank, MoU) ke seluruh bulan?')
+                ->action(function (): void {
+                    $count = JurnalPendapatanService::syncAll();
+                    \Filament\Notifications\Notification::make()
+                        ->title('Sinkronisasi Berhasil')
+                        ->body("Seluruh data Jurnal Pendapatan berhasil disinkronkan ({$count} entri).")
+                        ->success()
+                        ->send();
+                })
+                ->visible(fn() => $this->isJurnalPendapatan()),
             Actions\Action::make('back')
                 ->label('Back to List')
                 ->url(JournalBookReferenceResource::getUrl('index'))
@@ -154,6 +185,7 @@ class ViewJournalBookMonthly extends Page implements HasTable
                 ->color('success')
                 ->icon('heroicon-o-list-bullet'),
             Actions\Action::make('create')
+                ->visible(fn() => !$this->isJurnalPendapatan())
                 ->form([
                     Forms\Components\Textarea::make('description')
                         ->nullable()
