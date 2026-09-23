@@ -142,18 +142,61 @@ class SendMouWhatsapp implements ShouldQueue
                     'send_mou_date' => now()->toDateString(),
                 ]);
 
-                Log::info('SendMouWhatsapp: MoU successfully sent via WhatsApp', [
+                Log::info('SendMouWhatsapp: MoU successfully sent via WhatsApp as document', [
                     'mou_id' => $mou->id,
                     'phone' => $phone,
                 ]);
             } else {
-                Log::warning('SendMouWhatsapp: Failed sending MoU PDF via WhatsApp', [
+                Log::warning('SendMouWhatsapp: Failed sending MoU PDF via document, using fallback link method', [
                     'mou_id' => $mou->id,
                     'phone' => $phone,
                     'result' => $sendResult,
                 ]);
 
-                throw new \RuntimeException('Wablas gagal mengirim dokumen PDF: ' . ($sendResult['message'] ?? 'Unknown error'));
+                // Fallback: Simpan PDF ke public storage agar client tetap menerima dokumen
+                $publicPath = public_path('storage/mous/');
+                if (!file_exists($publicPath)) {
+                    mkdir($publicPath, 0755, true);
+                }
+
+                $publicFile = $publicPath . $filename;
+                @copy($tempPath, $publicFile);
+
+                $downloadUrl = url('storage/mous/' . $filename);
+
+                // Coba kirim via endpoint Wablas URL (/v2/send-document)
+                $bulkResult = $wablasService->sendBulkDocument([
+                    'data' => [
+                        [
+                            'phone' => $phone,
+                            'document' => $downloadUrl,
+                        ]
+                    ]
+                ]);
+
+                $bulkSuccess = isset($bulkResult['success']) && $bulkResult['success'] === true;
+
+                if (!$bulkSuccess) {
+                    // Jika kirim dokumen via Wablas tetap gagal, kirimkan link download via chat WhatsApp
+                    $fallbackMessage = "📄 *DRAFT MOU KERJASAMA*\n\n";
+                    $fallbackMessage .= "Dokumen MoU No: {$mouNumber} dapat diunduh melalui tautan berikut:\n\n";
+                    $fallbackMessage .= "🔗 {$downloadUrl}\n\n";
+                    $fallbackMessage .= "Mohon dipelajari dan ditandatangani sebagai bukti persetujuan.\n";
+                    $fallbackMessage .= "Terima kasih.\nAdmin Rafatax Consulting";
+
+                    $wablasService->sendMessage($phone, $fallbackMessage);
+                }
+
+                $mou->update([
+                    'is_send_mou' => true,
+                    'send_mou_date' => now()->toDateString(),
+                ]);
+
+                Log::info('SendMouWhatsapp: MoU successfully handled via fallback mode', [
+                    'mou_id' => $mou->id,
+                    'phone' => $phone,
+                    'download_url' => $downloadUrl,
+                ]);
             }
         } catch (\Throwable $e) {
             Log::error('SendMouWhatsapp: Exception during job processing', [
