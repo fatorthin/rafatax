@@ -36,35 +36,30 @@ class InvoicePrintController extends Controller
     {
         try {
             $cacheDir = storage_path('app/public/invoices');
+            if (!file_exists($cacheDir)) {
+                @mkdir($cacheDir, 0755, true);
+            }
+
             $cleanFilename = $filename ? basename($filename) : '';
             $filePath = $cleanFilename ? $cacheDir . '/' . $cleanFilename : null;
+
+            // If file does not exist in cache or is empty, generate and save it
+            if (!$filePath || !file_exists($filePath) || filesize($filePath) === 0) {
+                list($pdf, $actualFilename) = $this->preparePdf($id);
+                $targetFilename = $cleanFilename ?: $actualFilename;
+                $filePath = $cacheDir . '/' . $targetFilename;
+                $cleanFilename = $targetFilename;
+                $pdf->save($filePath);
+            }
+
             $disposition = request()->has('download') ? 'attachment' : 'inline';
 
-            if ($filePath && file_exists($filePath)) {
-                return response()->file($filePath, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
-                ]);
-            }
-
-            list($pdf, $actualFilename) = $this->preparePdf($id);
-            $targetFilename = $cleanFilename ?: $actualFilename;
-
-            // Cache generated PDF
-            if ($filePath) {
-                try {
-                    if (!file_exists($cacheDir)) {
-                        @mkdir($cacheDir, 0755, true);
-                    }
-                    $pdf->save($filePath);
-                } catch (\Throwable $ignored) {
-                    // Ignore cache save error
-                }
-            }
-
-            return request()->has('download')
-                ? $pdf->download($targetFilename)
-                : $pdf->stream($targetFilename);
+            return response()->file($filePath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Length' => (string) filesize($filePath),
+                'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('InvoicePrintController streamPublicPdf error: ' . $e->getMessage());
             return response($e->getMessage(), 500);
@@ -125,20 +120,12 @@ class InvoicePrintController extends Controller
             'reference_number' => $invoice->mou ? $invoice->mou->mou_number : ($invoice->memo ? $invoice->memo->no_memo : ''),
         ];
 
-        $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView($view, $viewData)->setPaper('a4', 'portrait')->setOption(['compress' => 1]);
 
         // Clean invoice number to remove invalid filename characters
-        $invoiceNumberClean = str_replace(
-            ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
-            '-',
-            $invoice->invoice_number ?? $invoice->id
-        );
-        $companyNameClean = str_replace(
-            ['/', '\\', ':', '*', '?', '"', '<', '>', '|'],
-            '-',
-            $clientName ?? ''
-        );
-        $filename = 'invoice-(' . $companyNameClean . ')' . $invoiceNumberClean . '.pdf';
+        $invoiceNumberClean = preg_replace('/[^A-Za-z0-9_\-]/', '-', $invoice->invoice_number ?? (string)$invoice->id);
+        $companyNameClean = preg_replace('/[^A-Za-z0-9_\-]/', '-', $clientName ?: 'Client');
+        $filename = 'Invoice-' . $invoiceNumberClean . '-' . $companyNameClean . '.pdf';
 
         return [$pdf, $filename];
     }

@@ -107,10 +107,10 @@ class SendInvoiceWhatsapp implements ShouldQueue
             $caption .= "Terima kasih\n";
             $caption .= "Admin Rafatax Consulting";
 
-            // Clean filename for public URL
-            $invoiceNumberClean = str_replace(['/', '\\', ' ', ':', '*', '?', '"', '<', '>', '|'], '-', $invoice->invoice_number ?? (string)$invoice->id);
-            $clientClean = str_replace(['/', '\\', ' ', ':', '*', '?', '"', '<', '>', '|'], '-', $clientName ?: 'Client');
-            $filename = 'invoice-(' . $clientClean . ')' . $invoiceNumberClean . '.pdf';
+            // Clean filename for public URL (no parentheses or special characters)
+            $invoiceNumberClean = preg_replace('/[^A-Za-z0-9_\-]/', '-', $invoice->invoice_number ?? (string)$invoice->id);
+            $clientClean = preg_replace('/[^A-Za-z0-9_\-]/', '-', $clientName ?: 'Client');
+            $filename = 'Invoice-' . $invoiceNumberClean . '-' . $clientClean . '.pdf';
 
             // Determine public base URL
             $baseUrl = rtrim(config('app.url', 'https://keu.rafatax.id'), '/');
@@ -118,8 +118,7 @@ class SendInvoiceWhatsapp implements ShouldQueue
                 $baseUrl = 'https://keu.rafatax.id';
             }
 
-            $encodedFilename = rawurlencode($filename);
-            $documentUrl = "{$baseUrl}/invoices/{$invoice->id}/document/{$encodedFilename}";
+            $documentUrl = "{$baseUrl}/invoices/{$invoice->id}/document/{$filename}";
 
             // 1. Send greeting/intro caption text
             $msgResult = $wablasService->sendMessage($phone, $caption);

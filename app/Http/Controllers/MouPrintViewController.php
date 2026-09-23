@@ -61,35 +61,30 @@ class MouPrintViewController extends Controller
     {
         try {
             $cacheDir = storage_path('app/public/mous');
+            if (!file_exists($cacheDir)) {
+                @mkdir($cacheDir, 0755, true);
+            }
+
             $cleanFilename = $filename ? basename($filename) : '';
             $filePath = $cleanFilename ? $cacheDir . '/' . $cleanFilename : null;
+
+            // If file does not exist in cache or is empty, generate and save it
+            if (!$filePath || !file_exists($filePath) || filesize($filePath) === 0) {
+                list($pdf, $actualFilename) = $this->preparePdf($id);
+                $targetFilename = $cleanFilename ?: $actualFilename;
+                $filePath = $cacheDir . '/' . $targetFilename;
+                $cleanFilename = $targetFilename;
+                $pdf->save($filePath);
+            }
+
             $disposition = request()->has('download') ? 'attachment' : 'inline';
 
-            if ($filePath && file_exists($filePath)) {
-                return response()->file($filePath, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
-                ]);
-            }
-
-            list($pdf, $actualFilename) = $this->preparePdf($id);
-            $targetFilename = $cleanFilename ?: $actualFilename;
-
-            // Cache generated PDF file for fast repeated access
-            if ($filePath) {
-                try {
-                    if (!file_exists($cacheDir)) {
-                        @mkdir($cacheDir, 0755, true);
-                    }
-                    $pdf->save($filePath);
-                } catch (\Throwable $ignored) {
-                    // Ignore cache write errors
-                }
-            }
-
-            return request()->has('download')
-                ? $pdf->download($targetFilename)
-                : $pdf->stream($targetFilename);
+            return response()->file($filePath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Length' => (string) filesize($filePath),
+                'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('MouPrintViewController streamPublicPdf error', [
                 'id' => $id,
