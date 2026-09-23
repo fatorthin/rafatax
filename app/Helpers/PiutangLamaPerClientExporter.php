@@ -30,16 +30,16 @@ class PiutangLamaPerClientExporter
 
         // 1. Title & Subtitle
         $sheet->setCellValue('A1', 'REKAP PIUTANG LAMA PER CLIENT');
-        $sheet->mergeCells('A1:I1');
+        $sheet->mergeCells('A1:G1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('0F172A'));
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $downloadInfo = 'Periode: Saldo Awal (2024) & Transaksi (< 2026 / CoA 180) | Diunduh: ' . now()->format('d/m/Y H:i');
+        $downloadInfo = 'Periode: Saldo Awal (2024) & Pelunasan (< 2026 / CoA 180) | Diunduh: ' . now()->format('d/m/Y H:i');
         if (!empty($subtitle)) {
             $downloadInfo .= ' (' . $subtitle . ')';
         }
         $sheet->setCellValue('A2', $downloadInfo);
-        $sheet->mergeCells('A2:I2');
+        $sheet->mergeCells('A2:G2');
         $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('64748B'));
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -51,17 +51,15 @@ class PiutangLamaPerClientExporter
             'C' => 'Nama Client',
             'D' => 'Jenis',
             'E' => 'Saldo Awal (2024)',
-            'F' => 'Total Invoice (< 2026)',
-            'G' => 'Total Pelunasan / CoA 180',
-            'H' => 'Total Potongan MoU',
-            'I' => 'Sisa Piutang Lama',
+            'F' => 'Total Pelunasan / CoA 180',
+            'G' => 'Sisa Piutang Lama',
         ];
 
         foreach ($headers as $col => $label) {
             $sheet->setCellValue($col . $headerRow, $label);
         }
 
-        $headerRange = "A{$headerRow}:I{$headerRow}";
+        $headerRange = "A{$headerRow}:G{$headerRow}";
         $sheet->getStyle($headerRange)->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -95,48 +93,44 @@ class PiutangLamaPerClientExporter
 
         foreach ($records as $client) {
             $saldoAwal = (float) ($client->saldo_awal ?? 0);
-            $totalInvoice = (float) ($client->total_invoice ?? 0);
             $totalPembayaran = (float) ($client->total_pembayaran ?? 0);
-            $totalPotongan = (float) ($client->total_potongan ?? 0);
-            $totalPiutang = (float) ($client->total_piutang ?? ($saldoAwal + $totalInvoice - $totalPembayaran - $totalPotongan));
+            $totalPiutang = (float) ($client->total_piutang ?? ($saldoAwal - $totalPembayaran));
 
             $sheet->setCellValue('A' . $currentRow, $index);
             $sheet->setCellValue('B' . $currentRow, $client->code ?? '-');
             $sheet->setCellValue('C' . $currentRow, $client->company_name ?? '-');
             $sheet->setCellValue('D' . $currentRow, strtoupper($client->type ?? '-'));
             $sheet->setCellValue('E' . $currentRow, $saldoAwal);
-            $sheet->setCellValue('F' . $currentRow, $totalInvoice);
-            $sheet->setCellValue('G' . $currentRow, $totalPembayaran);
-            $sheet->setCellValue('H' . $currentRow, $totalPotongan);
-            $sheet->setCellValue('I' . $currentRow, $totalPiutang);
+            $sheet->setCellValue('F' . $currentRow, $totalPembayaran);
+            $sheet->setCellValue('G' . $currentRow, $totalPiutang);
 
             // Alignments
             $sheet->getStyle('A' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('B' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('C' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet->getStyle('D' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('E' . $currentRow . ':I' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('E' . $currentRow . ':G' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
             // Numbers format
-            $sheet->getStyle('E' . $currentRow . ':I' . $currentRow)->getNumberFormat()->setFormatCode($currencyFormat);
+            $sheet->getStyle('E' . $currentRow . ':G' . $currentRow)->getNumberFormat()->setFormatCode($currencyFormat);
 
             // Highlight sisa piutang
-            $sheet->getStyle('I' . $currentRow)->getFont()->setBold(true);
+            $sheet->getStyle('G' . $currentRow)->getFont()->setBold(true);
             if ($totalPiutang > 0) {
-                $sheet->getStyle('I' . $currentRow)->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('B45309')); // Amber 700
+                $sheet->getStyle('G' . $currentRow)->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('B45309')); // Amber 700
             } else {
-                $sheet->getStyle('I' . $currentRow)->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('047857')); // Emerald 700
+                $sheet->getStyle('G' . $currentRow)->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('047857')); // Emerald 700
             }
 
             // Alternating zebra striping
             if ($index % 2 === 0) {
-                $sheet->getStyle("A{$currentRow}:I{$currentRow}")->getFill()
+                $sheet->getStyle("A{$currentRow}:G{$currentRow}")->getFill()
                     ->setFillType(Fill::FILL_SOLID)
                     ->getStartColor()->setRGB('F8FAFC');
             }
 
             // Cell border
-            $sheet->getStyle("A{$currentRow}:I{$currentRow}")->getBorders()->getAllBorders()
+            $sheet->getStyle("A{$currentRow}:G{$currentRow}")->getBorders()->getAllBorders()
                 ->setBorderStyle(Border::BORDER_THIN)
                 ->getColor()->setRGB('E2E8F0');
 
@@ -157,13 +151,11 @@ class PiutangLamaPerClientExporter
             $sheet->setCellValue('E' . $currentRow, "=SUM(E{$startRow}:E{$lastDataRow})");
             $sheet->setCellValue('F' . $currentRow, "=SUM(F{$startRow}:F{$lastDataRow})");
             $sheet->setCellValue('G' . $currentRow, "=SUM(G{$startRow}:G{$lastDataRow})");
-            $sheet->setCellValue('H' . $currentRow, "=SUM(H{$startRow}:H{$lastDataRow})");
-            $sheet->setCellValue('I' . $currentRow, "=SUM(I{$startRow}:I{$lastDataRow})");
 
-            $sheet->getStyle("E{$currentRow}:I{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            $sheet->getStyle("E{$currentRow}:I{$currentRow}")->getNumberFormat()->setFormatCode($currencyFormat);
+            $sheet->getStyle("E{$currentRow}:G{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("E{$currentRow}:G{$currentRow}")->getNumberFormat()->setFormatCode($currencyFormat);
 
-            $totalRange = "A{$currentRow}:I{$currentRow}";
+            $totalRange = "A{$currentRow}:G{$currentRow}";
             $sheet->getStyle($totalRange)->applyFromArray([
                 'font' => [
                     'bold' => true,
@@ -206,10 +198,8 @@ class PiutangLamaPerClientExporter
             'C' => 38,
             'D' => 12,
             'E' => 22,
-            'F' => 22,
-            'G' => 26,
-            'H' => 22,
-            'I' => 24,
+            'F' => 26,
+            'G' => 24,
         ];
 
         foreach ($minWidths as $col => $minWidth) {

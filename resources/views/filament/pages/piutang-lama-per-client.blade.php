@@ -3,7 +3,7 @@
         $stats = $this->getStats();
     @endphp
 
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
         <!-- Card 1: Saldo Awal (2024) -->
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
@@ -17,20 +17,7 @@
             </div>
         </div>
 
-        <!-- Card 2: Total Invoice -->
-        <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-            <div class="space-y-1">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Invoice Sebelum 2026
-                </div>
-                <div class="text-2xl font-semibold tracking-tight text-gray-950 dark:text-white">
-                    Rp {{ number_format($stats['total_invoice'], 0, ',', '.') }}
-                </div>
-                <div class="text-xs text-gray-400">Invoice sebelum 2026</div>
-            </div>
-        </div>
-
-        <!-- Card 3: Total Pembayaran / CoA 180 -->
+        <!-- Card 2: Total Pembayaran / CoA 180 -->
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -43,7 +30,7 @@
             </div>
         </div>
 
-        <!-- Card 4: Total Sisa Piutang Lama -->
+        <!-- Card 3: Total Sisa Piutang Lama -->
         <div class="fi-wi-stats-overview-stat relative rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="space-y-1">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -52,7 +39,7 @@
                 <div class="text-2xl font-semibold tracking-tight {{ $stats['total_piutang'] > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-950 dark:text-white' }}">
                     Rp {{ number_format($stats['total_piutang'], 0, ',', '.') }}
                 </div>
-                <div class="text-xs text-gray-400">Sisa saldo piutang sebelum 2026</div>
+                <div class="text-xs text-gray-400">Saldo Awal - Total Pelunasan</div>
             </div>
         </div>
     </div>

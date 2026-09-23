@@ -43,25 +43,7 @@ class PiutangLamaPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
-        // 2. Invoices Sebelum 2026
-        $invSql = "
-            SELECT client_id, SUM(amount) as total_invoice
-            FROM (
-                SELECT 
-                    COALESCE(NULLIF(i.client_id, 0), m.client_id) as client_id,
-                    cli.amount
-                FROM cost_list_invoices cli
-                JOIN invoices i ON cli.invoice_id = i.id
-                LEFT JOIN mous m ON (i.mou_id IS NOT NULL AND i.mou_id <> 0 AND i.mou_id = m.id)
-                WHERE cli.deleted_at IS NULL 
-                  AND i.deleted_at IS NULL
-                  AND i.invoice_date < '2026-01-01'
-            ) as t_inv
-            WHERE client_id IS NOT NULL
-            GROUP BY client_id
-        ";
-
-        // 3. Pembayaran Piutang Lama (Transaksi sebelum 2026 ATAU CoA 180 AO-103.5)
+        // 2. Pembayaran Piutang Lama (Transaksi sebelum 2026 ATAU CoA 180 AO-103.5)
         $paySql = "
             SELECT client_id, SUM(amount) as total_pembayaran
             FROM (
@@ -87,28 +69,13 @@ class PiutangLamaPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
-        // 4. Potongan MoU Sebelum 2026
-        $potSql = "
-            SELECT 
-                client_id,
-                SUM(COALESCE(discount_amount, 0) + COALESCE(cancel_mou_amount, 0)) as total_potongan
-            FROM mous
-            WHERE deleted_at IS NULL
-              AND (start_date < '2026-01-01' OR (start_date IS NULL AND created_at < '2026-01-01'))
-            GROUP BY client_id
-        ";
-
         return Client::query()
             ->select('clients.*')
             ->selectRaw('COALESCE(sa.saldo_awal, 0) as saldo_awal')
-            ->selectRaw('COALESCE(inv.total_invoice, 0) as total_invoice')
             ->selectRaw('COALESCE(pay.total_pembayaran, 0) as total_pembayaran')
-            ->selectRaw('COALESCE(pot.total_potongan, 0) as total_potongan')
-            ->selectRaw('(COALESCE(sa.saldo_awal, 0) + COALESCE(inv.total_invoice, 0) - COALESCE(pay.total_pembayaran, 0) - COALESCE(pot.total_potongan, 0)) as total_piutang')
+            ->selectRaw('(COALESCE(sa.saldo_awal, 0) - COALESCE(pay.total_pembayaran, 0)) as total_piutang')
             ->leftJoin(DB::raw("({$saSql}) as sa"), 'clients.id', '=', 'sa.client_id')
-            ->leftJoin(DB::raw("({$invSql}) as inv"), 'clients.id', '=', 'inv.client_id')
-            ->leftJoin(DB::raw("({$paySql}) as pay"), 'clients.id', '=', 'pay.client_id')
-            ->leftJoin(DB::raw("({$potSql}) as pot"), 'clients.id', '=', 'pot.client_id');
+            ->leftJoin(DB::raw("({$paySql}) as pay"), 'clients.id', '=', 'pay.client_id');
     }
 
     /**
@@ -209,11 +176,6 @@ class PiutangLamaPerClient extends Page implements HasTable
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
-                TextColumn::make('total_invoice')
-                    ->label('Total Invoice (&lt; 2026)')
-                    ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
-                    ->alignEnd()
-                    ->sortable(),
                 TextColumn::make('total_pembayaran')
                     ->label('Total Pelunasan / CoA 180')
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
@@ -292,34 +254,7 @@ class PiutangLamaPerClient extends Page implements HasTable
             }
         }
 
-        // 2. Invoices (< 2026)
-        $invoices = \App\Models\Invoice::query()
-            ->where(function ($q) use ($client) {
-                $q->where('client_id', $client->id)
-                    ->orWhereIn('mou_id', function ($sub) use ($client) {
-                        $sub->select('id')->from('mous')->where('client_id', $client->id);
-                    });
-            })
-            ->whereNull('deleted_at')
-            ->where('invoice_date', '<', '2026-01-01')
-            ->with('costListInvoices')
-            ->get();
-
-        foreach ($invoices as $inv) {
-            $amount = $inv->costListInvoices->sum('amount');
-            $transactions[] = [
-                'date' => $inv->invoice_date,
-                'date_sort' => $inv->invoice_date,
-                'type' => 'Sales Invoice',
-                'ref' => $inv->invoice_number,
-                'description' => $inv->description ?: 'Tagihan Invoice (< 2026)',
-                'debit' => $amount,
-                'kredit' => 0,
-                'amount' => $amount,
-            ];
-        }
-
-        // 3. Payments (< 2026 ATAU CoA 180 AO-103.5)
+        // 2. Payments (< 2026 ATAU CoA 180 AO-103.5)
         $cashReports = \App\Models\CashReport::query()
             ->where(function ($q) use ($client) {
                 $q->where('cash_reports.client_id', $client->id)
@@ -363,48 +298,6 @@ class PiutangLamaPerClient extends Page implements HasTable
             ];
         }
 
-        // 4. Discounts and Cancel MoUs (< 2026)
-        $mous = \App\Models\MoU::query()
-            ->where('client_id', $client->id)
-            ->whereNull('deleted_at')
-            ->where(function ($q) {
-                $q->where('start_date', '<', '2026-01-01')
-                    ->orWhere(function ($sub) {
-                        $sub->whereNull('start_date')->where('created_at', '<', '2026-01-01');
-                    });
-            })
-            ->get();
-
-        foreach ($mous as $mou) {
-            if ($mou->discount_amount > 0) {
-                $tglDiscount = $mou->tgl_discount;
-                $transactions[] = [
-                    'date' => $tglDiscount,
-                    'date_sort' => $tglDiscount ?: '9999-12-31',
-                    'type' => 'Discount MoU',
-                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
-                    'description' => 'Discount MoU' . ($mou->description ? " - {$mou->description}" : ''),
-                    'debit' => 0,
-                    'kredit' => $mou->discount_amount,
-                    'amount' => -$mou->discount_amount,
-                ];
-            }
-
-            if ($mou->cancel_mou_amount > 0) {
-                $tglCancel = $mou->tgl_cancel_mou;
-                $transactions[] = [
-                    'date' => $tglCancel,
-                    'date_sort' => $tglCancel ?: '9999-12-31',
-                    'type' => 'Cancel MoU',
-                    'ref' => $mou->mou_number ?: 'MoU #' . $mou->id,
-                    'description' => 'Cancel MoU' . ($mou->description ? " - {$mou->description}" : ''),
-                    'debit' => 0,
-                    'kredit' => $mou->cancel_mou_amount,
-                    'amount' => -$mou->cancel_mou_amount,
-                ];
-            }
-        }
-
         // Sort transactions chronologically
         usort($transactions, function ($a, $b) {
             if ($a['date_sort'] === $b['date_sort']) {
@@ -435,7 +328,6 @@ class PiutangLamaPerClient extends Page implements HasTable
         $stats = DB::selectOne("
             SELECT 
                 SUM(temp.saldo_awal) as total_saldo_awal,
-                SUM(temp.total_invoice) as total_invoice,
                 SUM(temp.total_pembayaran) as total_pembayaran,
                 SUM(temp.total_piutang) as total_piutang
             FROM ({$sql}) as temp
@@ -443,7 +335,6 @@ class PiutangLamaPerClient extends Page implements HasTable
 
         return [
             'total_saldo_awal' => $stats->total_saldo_awal ?? 0,
-            'total_invoice' => $stats->total_invoice ?? 0,
             'total_pembayaran' => $stats->total_pembayaran ?? 0,
             'total_piutang' => $stats->total_piutang ?? 0,
         ];
