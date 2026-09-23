@@ -5,6 +5,7 @@ namespace App\Filament\Resources\MouResource\Pages;
 use App\Models\Coa;
 use App\Models\MoU;
 use App\Models\CaseProject;
+use App\Jobs\SendMouWhatsapp;
 use Filament\Actions;
 use Filament\Support\RawJs;
 use App\Models\Invoice;
@@ -530,126 +531,36 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
 
     private function handleSendMouWhatsapp(array $data): void
     {
-        try {
-            $phoneInput = $data['phone_number'];
+        $phoneInput = $data['phone_number'] ?? '';
 
-            if (empty($phoneInput)) {
-                \Filament\Notifications\Notification::make()
-                    ->title('Error')
-                    ->body('Nomor WhatsApp wajib diisi!')
-                    ->danger()
-                    ->send();
-                return;
-            }
-
-            // Clean phone number
-            $phone = preg_replace('/[^0-9]/', '', $phoneInput);
-            if (substr($phone, 0, 1) === '0') {
-                $phone = '62' . substr($phone, 1);
-            } elseif (substr($phone, 0, 2) !== '62') {
-                $phone = '62' . $phone;
-            }
-
-            // Build caption message
-            $ownerName = $this->mou->client?->owner_name ?? 'Bapak/Ibu';
-            $mouNumber = $this->mou->mou_number ?? '-';
-            $categoryName = $this->mou->categoryMou?->name ?? '-';
-            $companyName = $this->mou->client?->company_name ?? '-';
-
-            $caption = "Yth. Bapak/Ibu {$ownerName}\n";
-            $caption .= "Kami dari Tim Admin RAFATAX Consulting bersama ini mengirimkan draft MOU Kerjasama untuk tahun 2026.\n";
-            $caption .= "Mohon dapat dipelajari dan ditandatangani sebagi bukti persetujuan.\n";
-            $caption .= "No Mou \t\t: {$mouNumber}\n";
-            $caption .= "Jenis Pekerjaan \t: {$categoryName} {$companyName}\n";
-            $caption .= "Ketentuan:\n";
-            $caption .= "- MoU wajib di Tandatangani dan di kirim kembali kepada kami Max 7 Hari setelah pesan ini di kirim.\n\n";
-            $caption .= "Terima kasih\n";
-            $caption .= "Admin Rafatax Consulting";
-
-            // Generate PDF using same logic as MouPrintViewController
-            $mou = MoU::with(['client', 'categoryMou'])->findOrFail($this->mou->id);
-            $costLists = CostListMou::query()->where('mou_id', '=', $mou->id, 'and')->get();
-
-            if ($mou->has_custom_builder && !empty($mou->custom_sections)) {
-                $view = 'format-mous.preview.custom-builder';
-            } else {
-                $format = $mou->type === 'pt'
-                    ? $mou->categoryMou->format_mou_pt
-                    : $mou->categoryMou->format_mou_kkp;
-
-                if (!$format) {
-                    \Filament\Notifications\Notification::make()
-                        ->title('Error')
-                        ->body('Format print PDF belum diatur untuk kategori MoU ini.')
-                        ->danger()
-                        ->send();
-                    return;
-                }
-
-                $view = 'format-mous.preview.' . $format;
-            }
-
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
-                'mou' => $mou,
-                'costLists' => $costLists,
-                'printMode' => true,
-                'isPdf' => true,
-                'withSignature' => isset($data['with_signature']) && $data['with_signature'] ? 1 : 0,
-            ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
-
-            // Save to temporary file
-            $tempDir = storage_path('app/temp');
-            if (!file_exists($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
-
-            $mouNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number);
-            $filename = 'MoU-' . $mouNumberClean . '.pdf';
-            $tempPath = $tempDir . '/' . $filename;
-
-            $pdf->save($tempPath);
-
-            // Send via Wablas
-            /** @var \App\Services\WablasService $wablasService */
-            $wablasService = app(\App\Services\WablasService::class);
-
-            // Send text caption first
-            $wablasService->sendMessage($phone, $caption);
-
-            // Send PDF document
-            $sendResult = $wablasService->sendDocument($phone, $tempPath);
-
-            // Clean up temp file
-            if (file_exists($tempPath)) {
-                unlink($tempPath);
-            }
-
-            if (isset($sendResult['status']) && $sendResult['status']) {
-                $this->mou->update([
-                    'is_send_mou' => true,
-                    'send_mou_date' => now()->toDateString(),
-                ]);
-
-                \Filament\Notifications\Notification::make()
-                    ->title('Berhasil')
-                    ->body('MoU berhasil dikirim ke client via WhatsApp.')
-                    ->success()
-                    ->send();
-            } else {
-                \Filament\Notifications\Notification::make()
-                    ->title('Warning')
-                    ->body('Pesan terkirim, tetapi gagal mengirim PDF. ' . ($sendResult['message'] ?? ''))
-                    ->warning()
-                    ->send();
-            }
-        } catch (\Exception $e) {
+        if (empty($phoneInput)) {
             \Filament\Notifications\Notification::make()
                 ->title('Error')
-                ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                ->body('Nomor WhatsApp wajib diisi!')
                 ->danger()
                 ->send();
-            \Illuminate\Support\Facades\Log::error($e);
+            return;
         }
+
+        // Clean phone number
+        $phone = preg_replace('/[^0-9]/', '', $phoneInput);
+        if (substr($phone, 0, 1) === '0') {
+            $phone = '62' . substr($phone, 1);
+        } elseif (substr($phone, 0, 2) !== '62') {
+            $phone = '62' . $phone;
+        }
+
+        SendMouWhatsapp::dispatch(
+            $this->mou->id,
+            $phone,
+            (bool) ($data['with_signature'] ?? true)
+        );
+
+        \Filament\Notifications\Notification::make()
+            ->title('Pengiriman Dijadwalkan')
+            ->body('MoU sedang diproses dan akan dikirim ke WhatsApp client di background antrean.')
+            ->success()
+            ->send();
     }
 
     private function makeBackAction(): Action
