@@ -29,7 +29,11 @@ class JournalBookReportResource extends Resource
                     ->maxLength(500)
                     ->label('Deskripsi'),
                 Forms\Components\Select::make('journal_book_id')
-                    ->relationship('journal_book', 'name')
+                    ->relationship(
+                        'journal_book',
+                        'name',
+                        fn(Builder $query) => $query->where('id', '!=', \App\Services\JurnalPendapatanService::getJurnalPendapatanId())
+                    )
                     ->label('Buku Jurnal')
                     ->required()
                     ->searchable()
@@ -146,6 +150,30 @@ class JournalBookReportResource extends Resource
             'edit' => Pages\EditJournalBookReport::route('/{record}/edit'),
 
         ];
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        if ($record->journal_book_id == \App\Services\JurnalPendapatanService::getJurnalPendapatanId()) {
+            return false;
+        }
+        return parent::canEdit($record);
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        if ($record->journal_book_id == \App\Services\JurnalPendapatanService::getJurnalPendapatanId()) {
+            return false;
+        }
+        return parent::canDelete($record);
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        if ($record->journal_book_id == \App\Services\JurnalPendapatanService::getJurnalPendapatanId()) {
+            return false;
+        }
+        return parent::canForceDelete($record);
     }
 
     public static function getEloquentQuery(): Builder

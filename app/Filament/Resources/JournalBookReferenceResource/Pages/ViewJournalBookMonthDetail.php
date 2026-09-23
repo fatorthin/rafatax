@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Filament\Resources\JournalBookReferenceResource;
+use App\Services\JurnalPendapatanService;
 
 class ViewJournalBookMonthDetail extends Page implements HasTable
 {
@@ -30,6 +31,15 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     {
         $this->year = (int) request('year');
         $this->month = (int) request('month');
+
+        if ($this->isJurnalPendapatan() && $this->year && $this->month) {
+            JurnalPendapatanService::syncMonth($this->year, $this->month);
+        }
+    }
+
+    public function isJurnalPendapatan(): bool
+    {
+        return JurnalPendapatanService::isJurnalPendapatan($this->record);
     }
 
     public function getTitle(): string
@@ -105,8 +115,10 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
-                    ->url(fn(JournalBookReport $record) => \App\Filament\Resources\JournalBookReportResource::getUrl('edit', ['record' => $record])),
-                \Filament\Tables\Actions\DeleteAction::make(),
+                    ->url(fn(JournalBookReport $record) => \App\Filament\Resources\JournalBookReportResource::getUrl('edit', ['record' => $record]))
+                    ->visible(fn() => !$this->isJurnalPendapatan()),
+                \Filament\Tables\Actions\DeleteAction::make()
+                    ->visible(fn() => !$this->isJurnalPendapatan()),
             ])
             ->striped()
             ->defaultSort('transaction_date', 'asc')
@@ -126,10 +138,27 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('syncMonth')
+                ->label('Sinkronkan Bulan Ini')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Sinkronisasi Jurnal Pendapatan Bulan Ini')
+                ->modalDescription(fn() => "Perbarui dan sinkronkan kalkulasi Jurnal Pendapatan bulan {$this->month}/{$this->year} dari data transaksi Piutang?")
+                ->action(function (): void {
+                    $count = JurnalPendapatanService::syncMonth($this->year, $this->month);
+                    \Filament\Notifications\Notification::make()
+                        ->title('Sinkronisasi Berhasil')
+                        ->body("Data Jurnal Pendapatan bulan {$this->month}/{$this->year} berhasil diperbarui ({$count} entri).")
+                        ->success()
+                        ->send();
+                })
+                ->visible(fn() => $this->isJurnalPendapatan()),
             Actions\CreateAction::make('addTransaction')
                 ->label('Add Transaction')
                 ->model(JournalBookReport::class)
                 ->icon('heroicon-o-plus')
+                ->visible(fn() => !$this->isJurnalPendapatan())
                 ->form([
                     \Filament\Forms\Components\Hidden::make('journal_book_id')
                         ->default(fn() => $this->record->id),

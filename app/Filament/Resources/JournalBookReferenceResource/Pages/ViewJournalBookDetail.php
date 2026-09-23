@@ -27,6 +27,7 @@ use Filament\Tables\Actions\RestoreBulkAction;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Actions\ForceDeleteBulkAction;
 use App\Filament\Resources\JournalBookReferenceResource;
+use App\Services\JurnalPendapatanService;
 
 class ViewJournalBookDetail extends Page implements HasTable
 {
@@ -37,6 +38,20 @@ class ViewJournalBookDetail extends Page implements HasTable
     protected static string $view = 'filament.resources.journal-book-reference-resource.pages.view-journal-book-detail';
 
     public JournalBookReference $record;
+
+    public function mount(): void
+    {
+        if ($this->isJurnalPendapatan()) {
+            if (JournalBookReport::where('journal_book_id', $this->record->id)->count() === 0) {
+                JurnalPendapatanService::syncAll();
+            }
+        }
+    }
+
+    public function isJurnalPendapatan(): bool
+    {
+        return JurnalPendapatanService::isJurnalPendapatan($this->record);
+    }
 
     public function getTitle(): string
     {
@@ -160,17 +175,21 @@ class ViewJournalBookDetail extends Page implements HasTable
             ])
             ->actions([
                 EditAction::make()
-                    ->url(fn(JournalBookReport $record) => route('filament.admin.resources.journal-book-reports.edit', ['record' => $record])),
-                DeleteAction::make(),
-                RestoreAction::make(),
-                ForceDeleteAction::make(),
+                    ->url(fn(JournalBookReport $record) => route('filament.admin.resources.journal-book-reports.edit', ['record' => $record]))
+                    ->visible(fn() => !$this->isJurnalPendapatan()),
+                DeleteAction::make()
+                    ->visible(fn() => !$this->isJurnalPendapatan()),
+                RestoreAction::make()
+                    ->visible(fn() => !$this->isJurnalPendapatan()),
+                ForceDeleteAction::make()
+                    ->visible(fn() => !$this->isJurnalPendapatan()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
-                ]),
+                ])->visible(fn() => !$this->isJurnalPendapatan()),
             ])
             ->striped()
             ->defaultSort('transaction_date', 'asc');
@@ -179,12 +198,29 @@ class ViewJournalBookDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('syncData')
+                ->label('Sinkronkan Data Piutang')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Sinkronisasi Jurnal Pendapatan')
+                ->modalDescription('Perbarui seluruh data Jurnal Pendapatan dari kalkulasi transaksi Piutang (Invoice, Kas/Bank, MoU) agar konsisten dengan Neraca Lajur Piutang.')
+                ->action(function (): void {
+                    $count = JurnalPendapatanService::syncAll();
+                    \Filament\Notifications\Notification::make()
+                        ->title('Sinkronisasi Berhasil')
+                        ->body("Sebanyak {$count} entri Jurnal Pendapatan berhasil disinkronkan.")
+                        ->success()
+                        ->send();
+                })
+                ->visible(fn() => $this->isJurnalPendapatan()),
             Actions\Action::make('back')
                 ->label('Back to List')
                 ->url(JournalBookReferenceResource::getUrl('index'))
                 ->color('info')
                 ->icon('heroicon-o-arrow-left'),
             Actions\Action::make('create')
+                ->visible(fn() => !$this->isJurnalPendapatan())
                 ->form([
                     Forms\Components\Textarea::make('description')
                         ->nullable()
