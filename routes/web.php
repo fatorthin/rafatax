@@ -197,13 +197,16 @@ Route::get('/run-queue-worker', function () {
         abort(403, 'Unauthorized');
     }
 
+    @set_time_limit(120);
+    @ini_set('max_execution_time', '120');
+
     try {
         // Jalankan worker untuk antrian whatsapp & default
-        // Batasi hanya berjalan max 50 detik agar tidak timeout gateway (biasanya 60s)
+        // Batasi hanya berjalan max 20 detik agar tidak timeout gateway web server (biasanya 30-60s)
         \Illuminate\Support\Facades\Artisan::call('queue:work', [
             '--queue' => 'whatsapp,default',
             '--stop-when-empty' => true,
-            '--max-time' => 50, // Stop before PHP max execution time
+            '--max-time' => 20, // Stop before web server gateway timeout
             '--tries' => 3
         ]);
 
@@ -212,7 +215,7 @@ Route::get('/run-queue-worker', function () {
             'message' => 'Queue worker executed successfully',
             'output' => \Illuminate\Support\Facades\Artisan::output()
         ]);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         return response()->json([
             'success' => false,
             'message' => $e->getMessage()

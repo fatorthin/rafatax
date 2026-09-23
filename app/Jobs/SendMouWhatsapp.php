@@ -152,6 +152,8 @@ class SendMouWhatsapp implements ShouldQueue
                     'phone' => $phone,
                     'result' => $sendResult,
                 ]);
+
+                throw new \RuntimeException('Wablas gagal mengirim dokumen PDF: ' . ($sendResult['message'] ?? 'Unknown error'));
             }
         } catch (\Throwable $e) {
             Log::error('SendMouWhatsapp: Exception during job processing', [
