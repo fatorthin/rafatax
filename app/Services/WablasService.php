@@ -41,8 +41,8 @@ class WablasService
         curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/send-message");
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 60);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 120);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 25);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -389,8 +389,8 @@ class WablasService
         curl_setopt($curl, CURLOPT_URL, $this->baseUrl . "/v2/send-message");
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 60);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 120);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 25);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -436,7 +436,7 @@ class WablasService
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 60);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 25);
 
         $result = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -453,12 +453,36 @@ class WablasService
         }
 
         $response = json_decode($result, true);
+        $isSuccess = ($httpCode === 200) && (!isset($response['status']) || $response['status'] === true);
 
         return [
-            'success' => $httpCode === 200,
+            'success' => $isSuccess,
+            'status' => $response['status'] ?? ($httpCode === 200),
             'message' => $response['message'] ?? 'Unknown response',
             'data' => $response,
             'http_code' => $httpCode,
         ];
+    }
+
+    /**
+     * Kirim satu dokumen via URL publik
+     * Sesuai dokumentasi: https://texas.wablas.com/documentation/api#send-document
+     */
+    public function sendDocumentUrl(string $phone, string $url, string $caption = ''): array
+    {
+        $payload = [
+            'data' => [
+                [
+                    'phone' => $phone,
+                    'document' => $url,
+                    'caption' => $caption,
+                    'secret' => false,
+                    'retry' => false,
+                    'isGroup' => false,
+                ]
+            ]
+        ];
+
+        return $this->sendBulkDocument($payload);
     }
 }

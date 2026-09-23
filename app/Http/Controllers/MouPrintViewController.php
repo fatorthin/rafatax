@@ -57,7 +57,50 @@ class MouPrintViewController extends Controller
         }
     }
 
-    private function preparePdf($id)
+    public function streamPublicPdf($id, $filename = '')
+    {
+        try {
+            $cacheDir = storage_path('app/public/mous');
+            $cleanFilename = $filename ? basename($filename) : '';
+            $filePath = $cleanFilename ? $cacheDir . '/' . $cleanFilename : null;
+            $disposition = request()->has('download') ? 'attachment' : 'inline';
+
+            if ($filePath && file_exists($filePath)) {
+                return response()->file($filePath, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => "{$disposition}; filename=\"{$cleanFilename}\"",
+                ]);
+            }
+
+            list($pdf, $actualFilename) = $this->preparePdf($id);
+            $targetFilename = $cleanFilename ?: $actualFilename;
+
+            // Cache generated PDF file for fast repeated access
+            if ($filePath) {
+                try {
+                    if (!file_exists($cacheDir)) {
+                        @mkdir($cacheDir, 0755, true);
+                    }
+                    $pdf->save($filePath);
+                } catch (\Throwable $ignored) {
+                    // Ignore cache write errors
+                }
+            }
+
+            return request()->has('download')
+                ? $pdf->download($targetFilename)
+                : $pdf->stream($targetFilename);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('MouPrintViewController streamPublicPdf error', [
+                'id' => $id,
+                'filename' => $filename,
+                'error' => $e->getMessage(),
+            ]);
+            return response($e->getMessage(), 500);
+        }
+    }
+
+    public function preparePdf($id, $withSignature = null)
     {
         $mou = MoU::with(['client', 'categoryMou'])->findOrFail($id);
         $costLists = CostListMou::where('mou_id', $id)->get();
@@ -85,7 +128,9 @@ class MouPrintViewController extends Controller
             $view = 'format-mous.preview.' . $format;
         }
 
-        $withSignature = request('with_signature', 1);
+        if ($withSignature === null) {
+            $withSignature = request('with_signature', 1);
+        }
 
         // Use DomPDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
@@ -94,9 +139,11 @@ class MouPrintViewController extends Controller
             'printMode' => true,
             'isPdf' => true,
             'withSignature' => $withSignature,
-        ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true]);
+        ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
 
-        $filename = 'MoU-' . str_replace(['/', '\\'], '-', $mou->mou_number) . '-' . str_replace(['/', '\\'], '-', $mou->client->company_name ?? '') . '.pdf';
+        $cleanMouNumber = str_replace(['/', '\\', ' ', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number ?? (string)$mou->id);
+        $cleanCompany = str_replace(['/', '\\', ' ', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->client->company_name ?? 'Client');
+        $filename = 'MoU-' . $cleanMouNumber . '-' . $cleanCompany . '.pdf';
 
         return [$pdf, $filename];
     }

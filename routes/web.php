@@ -80,6 +80,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/mou/{id}/print-view', [MouPrintViewController::class, 'show'])->name('mou.print.view');
+Route::get('/mou/{id}/document/{filename?}', [MouPrintViewController::class, 'streamPublicPdf'])->name('mou.pdf.document');
 Route::get('/mou/{id}/pdf/download', [MouPrintViewController::class, 'downloadPdf'])->name('mou.pdf.download')->middleware('auth');
 Route::get('/mou/{id}/pdf/preview', [MouPrintViewController::class, 'previewPdf'])->name('mou.pdf.preview')->middleware('auth');
 Route::get('/mou/{id}/pdf/test', [MouPrintViewController::class, 'previewPdfTest'])->name('mou.pdf.test')->middleware('auth');

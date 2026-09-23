@@ -2,10 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Models\CostListMou;
+use App\Http\Controllers\MouPrintViewController;
 use App\Models\MoU;
 use App\Services\WablasService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,7 +29,7 @@ class SendMouWhatsapp implements ShouldQueue
     }
 
     /** @var int */
-    public $timeout = 180; // seconds
+    public $timeout = 60; // seconds
 
     /**
      * Create a new job instance.
@@ -57,12 +56,11 @@ class SendMouWhatsapp implements ShouldQueue
             return;
         }
 
-        $tempPath = null;
-
         try {
-            Log::info('SendMouWhatsapp: start processing', [
+            Log::info('SendMouWhatsapp: start processing via fast URL delivery', [
                 'mou_id' => $mou->id,
                 'phone' => $this->phone,
+                'with_signature' => $this->withSignature,
             ]);
 
             // Clean phone number
@@ -89,113 +87,88 @@ class SendMouWhatsapp implements ShouldQueue
             $caption .= "Terima kasih\n";
             $caption .= "Admin Rafatax Consulting";
 
-            // Query cost lists
-            $costLists = CostListMou::query()->where('mou_id', '=', $mou->id)->get();
+            // Clean filename for public URL
+            $mouNumberClean = str_replace(['/', '\\', ' ', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number ?? (string)$mou->id);
+            $clientClean = str_replace(['/', '\\', ' ', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->client?->company_name ?? 'Client');
+            $filename = 'MoU-' . $mouNumberClean . '-' . $clientClean . '.pdf';
 
-            if ($mou->has_custom_builder && !empty($mou->custom_sections)) {
-                $view = 'format-mous.preview.custom-builder';
-            } else {
-                $format = $mou->type === 'pt'
-                    ? $mou->categoryMou?->format_mou_pt
-                    : $mou->categoryMou?->format_mou_kkp;
+            // Determine public base URL
+            $baseUrl = rtrim(config('app.url', 'https://keu.rafatax.id'), '/');
+            if (str_contains($baseUrl, 'localhost') || str_contains($baseUrl, '.test') || str_contains($baseUrl, '127.0.0.1')) {
+                $baseUrl = 'https://keu.rafatax.id';
+            }
 
-                if (!$format) {
-                    Log::error('SendMouWhatsapp: Format print PDF belum diatur', [
-                        'mou_id' => $mou->id,
-                        'category_id' => $mou->category_mou_id,
-                    ]);
-                    return;
+            $sigParam = $this->withSignature ? '1' : '0';
+            $documentUrl = "{$baseUrl}/mou/{$mou->id}/document/{$filename}?with_signature={$sigParam}";
+
+            // 1. Send greeting/intro caption text
+            $msgResult = $wablasService->sendMessage($phone, $caption);
+            Log::info('SendMouWhatsapp: Text caption sent', [
+                'mou_id' => $mou->id,
+                'phone' => $phone,
+                'result' => $msgResult,
+            ]);
+
+            // 2. Pre-generate and cache PDF so public route serves instantly (10ms)
+            try {
+                $controller = app(MouPrintViewController::class);
+                list($pdf, $actualFilename) = $controller->preparePdf($mou->id, $this->withSignature ? 1 : 0);
+
+                $cacheDir = storage_path('app/public/mous');
+                if (!file_exists($cacheDir)) {
+                    @mkdir($cacheDir, 0755, true);
                 }
-
-                $view = 'format-mous.preview.' . $format;
+                $pdf->save($cacheDir . '/' . $filename);
+                Log::info('SendMouWhatsapp: PDF pre-rendered and cached', ['filename' => $filename]);
+            } catch (\Throwable $e) {
+                Log::warning('SendMouWhatsapp: Pre-render PDF notice (will stream dynamically): ' . $e->getMessage());
             }
 
-            $pdf = Pdf::loadView($view, [
-                'mou' => $mou,
-                'costLists' => $costLists,
-                'printMode' => true,
-                'isPdf' => true,
-                'withSignature' => $this->withSignature ? 1 : 0,
-            ])->setPaper('a4', 'portrait')->setOption(['isPhpEnabled' => true, 'compress' => 1]);
+            // 3. Send PDF Document via Wablas URL endpoint (/v2/send-document)
+            $docResult = $wablasService->sendDocumentUrl($phone, $documentUrl, $filename);
+            Log::info('SendMouWhatsapp: Document URL sent to Wablas', [
+                'mou_id' => $mou->id,
+                'phone' => $phone,
+                'url' => $documentUrl,
+                'result' => $docResult,
+            ]);
 
-            // Save to temporary file
-            $tempDir = storage_path('app/temp');
-            if (!file_exists($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
+            $docSuccess = isset($docResult['success']) && $docResult['success'] === true;
 
-            $mouNumberClean = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '-', $mou->mou_number);
-            $filename = 'MoU-' . $mouNumberClean . '.pdf';
-            $tempPath = $tempDir . '/' . $filename;
-
-            $pdf->save($tempPath);
-
-            // Send text caption first
-            $wablasService->sendMessage($phone, $caption);
-
-            // Send PDF document
-            $sendResult = $wablasService->sendDocument($phone, $tempPath);
-
-            if (isset($sendResult['status']) && $sendResult['status']) {
+            if ($docSuccess) {
                 $mou->update([
                     'is_send_mou' => true,
                     'send_mou_date' => now()->toDateString(),
                 ]);
 
-                Log::info('SendMouWhatsapp: MoU successfully sent via WhatsApp as document', [
+                Log::info('SendMouWhatsapp: MoU successfully sent via WhatsApp URL delivery', [
                     'mou_id' => $mou->id,
                     'phone' => $phone,
                 ]);
             } else {
-                Log::warning('SendMouWhatsapp: Failed sending MoU PDF via document, using fallback link method', [
+                Log::warning('SendMouWhatsapp: Wablas sendDocumentUrl failed, sending fallback direct link message', [
                     'mou_id' => $mou->id,
                     'phone' => $phone,
-                    'result' => $sendResult,
+                    'result' => $docResult,
                 ]);
 
-                // Fallback: Simpan PDF ke public storage agar client tetap menerima dokumen
-                $publicPath = public_path('storage/mous/');
-                if (!file_exists($publicPath)) {
-                    mkdir($publicPath, 0755, true);
-                }
+                // Fallback: Kirim direct link via text message
+                $fallbackMessage = "📄 *DRAFT MOU KERJASAMA*\n\n";
+                $fallbackMessage .= "Dokumen MoU No: {$mouNumber} dapat diunduh melalui tautan berikut:\n\n";
+                $fallbackMessage .= "🔗 {$documentUrl}\n\n";
+                $fallbackMessage .= "Mohon dipelajari dan ditandatangani sebagai bukti persetujuan.\n";
+                $fallbackMessage .= "Terima kasih.\nAdmin Rafatax Consulting";
 
-                $publicFile = $publicPath . $filename;
-                @copy($tempPath, $publicFile);
-
-                $downloadUrl = url('storage/mous/' . $filename);
-
-                // Coba kirim via endpoint Wablas URL (/v2/send-document)
-                $bulkResult = $wablasService->sendBulkDocument([
-                    'data' => [
-                        [
-                            'phone' => $phone,
-                            'document' => $downloadUrl,
-                        ]
-                    ]
-                ]);
-
-                $bulkSuccess = isset($bulkResult['success']) && $bulkResult['success'] === true;
-
-                if (!$bulkSuccess) {
-                    // Jika kirim dokumen via Wablas tetap gagal, kirimkan link download via chat WhatsApp
-                    $fallbackMessage = "📄 *DRAFT MOU KERJASAMA*\n\n";
-                    $fallbackMessage .= "Dokumen MoU No: {$mouNumber} dapat diunduh melalui tautan berikut:\n\n";
-                    $fallbackMessage .= "🔗 {$downloadUrl}\n\n";
-                    $fallbackMessage .= "Mohon dipelajari dan ditandatangani sebagai bukti persetujuan.\n";
-                    $fallbackMessage .= "Terima kasih.\nAdmin Rafatax Consulting";
-
-                    $wablasService->sendMessage($phone, $fallbackMessage);
-                }
+                $wablasService->sendMessage($phone, $fallbackMessage);
 
                 $mou->update([
                     'is_send_mou' => true,
                     'send_mou_date' => now()->toDateString(),
                 ]);
 
-                Log::info('SendMouWhatsapp: MoU successfully handled via fallback mode', [
+                Log::info('SendMouWhatsapp: MoU sent via fallback direct link', [
                     'mou_id' => $mou->id,
                     'phone' => $phone,
-                    'download_url' => $downloadUrl,
                 ]);
             }
         } catch (\Throwable $e) {
@@ -205,10 +178,6 @@ class SendMouWhatsapp implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
-        } finally {
-            if ($tempPath && file_exists($tempPath)) {
-                @unlink($tempPath);
-            }
         }
     }
 }
