@@ -20,6 +20,7 @@ use Filament\Tables;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
 
 class InvoiceResource extends Resource
@@ -576,6 +577,40 @@ class InvoiceResource extends Resource
     {
         return [
             Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\BulkAction::make('updateSendInvoiceStatus')
+                    ->label('Ubah Status Terkirim (is_send_invoice)')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\Select::make('is_send_invoice')
+                            ->label('Status Terkirim')
+                            ->options([
+                                '1' => 'Sudah Terkirim (Yes)',
+                                '0' => 'Belum Terkirim (No)',
+                            ])
+                            ->required()
+                            ->default('1'),
+                        Forms\Components\DatePicker::make('send_invoice_date')
+                            ->label('Tanggal Kirim Invoice')
+                            ->default(now())
+                            ->visible(fn (Forms\Get $get) => (string) $get('is_send_invoice') === '1'),
+                    ])
+                    ->action(function (Collection $records, array $data): void {
+                        $isSend = (bool) $data['is_send_invoice'];
+                        $sendDate = $isSend ? ($data['send_invoice_date'] ?? now()->toDateString()) : null;
+
+                        $records->each(function (Invoice $record) use ($isSend, $sendDate) {
+                            $record->update([
+                                'is_send_invoice' => $isSend,
+                                'send_invoice_date' => $sendDate,
+                            ]);
+                        });
+
+                        Notification::make()
+                            ->title('Status terkirim invoice berhasil diperbarui')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\DeleteBulkAction::make(),
                 Tables\Actions\ForceDeleteBulkAction::make(),
                 Tables\Actions\RestoreBulkAction::make(),
