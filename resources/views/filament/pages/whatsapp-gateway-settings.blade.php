@@ -101,17 +101,5 @@
                     </div>
                 </div>
             @endif
-        </div>
-
-        {{-- Form Setting --}}
-        <form wire:submit.prevent="saveSettings" class="space-y-6">
-            {{ $this->form }}
-
-            <div class="flex justify-end gap-3">
-                <x-filament::button type="submit" color="primary" icon="heroicon-o-check">
-                    Simpan Pengaturan
-                </x-filament::button>
-            </div>
-        </form>
     </div>
 </x-filament-panels::page>

@@ -19,7 +19,6 @@ class WhatsAppGatewaySettings extends Page implements Forms\Contracts\HasForms
     protected static ?int $navigationSort = 99;
     protected static string $view = 'filament.pages.whatsapp-gateway-settings';
 
-    public ?array $data = [];
     public array $gatewayStatus = [];
     public ?string $qrCodeBase64 = null;
     public ?string $qrCodeMessage = null;
@@ -38,64 +37,12 @@ class WhatsAppGatewaySettings extends Page implements Forms\Contracts\HasForms
 
     public function mount(): void
     {
-        $cfg = config('services.whatsapp_gateway', []);
-
-        $this->form->fill([
-            'enabled' => (bool)($cfg['enabled'] ?? true),
-            'url' => (string)($cfg['url'] ?? 'https://wagateway.surakana.my.id'),
-            'auth' => (string)($cfg['auth'] ?? 'admin:admin'),
-            'device_id' => (string)($cfg['device_id'] ?? 'rafatax'),
-            'verify_ssl' => (bool)($cfg['verify_ssl'] ?? true),
-            'timeout' => (int)($cfg['timeout'] ?? 30),
-        ]);
-
         $this->checkGatewayStatus();
     }
 
     public function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Konfigurasi WhatsApp Gateway (go-whatsapp-web-multidevice)')
-                    ->description('Pengaturan server WhatsApp Gateway mandiri untuk seluruh pengiriman pesan & dokumen Rafatax.')
-                    ->schema([
-                        Forms\Components\Toggle::make('enabled')
-                            ->label('Aktifkan WhatsApp Gateway')
-                            ->helperText('Jika dinonaktifkan, pengiriman via WhatsApp Gateway tidak akan diproses.')
-                            ->default(true),
-
-                        Forms\Components\TextInput::make('url')
-                            ->label('URL Server WhatsApp Gateway')
-                            ->placeholder('https://wagateway.surakana.my.id')
-                            ->helperText('URL endpoint server go-whatsapp-web-multidevice Anda.')
-                            ->url()
-                            ->required(),
-
-                        Forms\Components\TextInput::make('auth')
-                            ->label('Kredensial Autentikasi (Basic Auth / Token)')
-                            ->placeholder('admin:admin')
-                            ->helperText('Format `username:password` untuk Basic Auth, atau Token tunggal.')
-                            ->required(),
-
-                        Forms\Components\TextInput::make('device_id')
-                            ->label('Device ID Aktif')
-                            ->placeholder('rafatax')
-                            ->helperText('ID perangkat pada gateway yang digunakan oleh sistem Rafatax (Default: rafatax).')
-                            ->required(),
-
-                        Forms\Components\Toggle::make('verify_ssl')
-                            ->label('Verifikasi SSL Certificate')
-                            ->helperText('Matikan jika server menggunakan Self-Signed Certificate.')
-                            ->default(true),
-
-                        Forms\Components\TextInput::make('timeout')
-                            ->label('HTTP Timeout (Detik)')
-                            ->numeric()
-                            ->default(30)
-                            ->required(),
-                    ])->columns(2)
-            ])
-            ->statePath('data');
+        return $form->schema([]);
     }
 
     public function checkGatewayStatus(): void
@@ -159,38 +106,7 @@ class WhatsAppGatewaySettings extends Page implements Forms\Contracts\HasForms
         $this->checkGatewayStatus();
     }
 
-    public function saveSettings(): void
-    {
-        $state = $this->form->getState();
 
-        $envUpdates = [
-            'WHATSAPP_GATEWAY_ENABLED' => $state['enabled'] ? 'true' : 'false',
-            'WHATSAPP_GATEWAY_URL' => $state['url'],
-            'WHATSAPP_GATEWAY_AUTH' => $state['auth'],
-            'WHATSAPP_DEVICE_ID' => $state['device_id'] ?? 'rafatax',
-            'WHATSAPP_GATEWAY_VERIFY_SSL' => $state['verify_ssl'] ? 'true' : 'false',
-            'WHATSAPP_GATEWAY_TIMEOUT' => (string)($state['timeout'] ?? 30),
-        ];
-
-        $this->updateEnvFile($envUpdates);
-
-        // Update runtime config
-        config([
-            'services.whatsapp_gateway.enabled' => $state['enabled'],
-            'services.whatsapp_gateway.url' => $state['url'],
-            'services.whatsapp_gateway.auth' => $state['auth'],
-            'services.whatsapp_gateway.device_id' => $state['device_id'] ?? 'rafatax',
-            'services.whatsapp_gateway.verify_ssl' => $state['verify_ssl'],
-            'services.whatsapp_gateway.timeout' => $state['timeout'],
-        ]);
-
-        $this->checkGatewayStatus();
-
-        Notification::make()
-            ->title('Pengaturan WhatsApp Gateway berhasil disimpan!')
-            ->success()
-            ->send();
-    }
 
     public function testSendAction(): Action
     {
@@ -251,23 +167,5 @@ class WhatsAppGatewaySettings extends Page implements Forms\Contracts\HasForms
             });
     }
 
-    private function updateEnvFile(array $values): void
-    {
-        $envPath = base_path('.env');
-        if (!file_exists($envPath)) {
-            return;
-        }
 
-        $content = file_get_contents($envPath);
-
-        foreach ($values as $key => $val) {
-            if (preg_match("/^{$key}=.*/m", $content)) {
-                $content = preg_replace("/^{$key}=.*/m", "{$key}={$val}", $content);
-            } else {
-                $content .= "\n{$key}={$val}";
-            }
-        }
-
-        file_put_contents($envPath, $content);
-    }
 }
