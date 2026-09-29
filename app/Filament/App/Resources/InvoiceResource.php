@@ -35,7 +35,7 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationGroup = 'Keuangan';
 
-    protected static ?string $navigationLabel = 'Daftar Invoice & Tagihan';
+    protected static ?string $navigationLabel = 'Daftar Invoice';
 
     public static function form(Form $form): Form
     {
