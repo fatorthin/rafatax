@@ -16,6 +16,7 @@ class CashReference extends Model implements Sortable
     protected $fillable = [
         'name',
         'description',
+        'status_kepemilikan',
         'sort_order',
     ];
 
@@ -23,6 +24,11 @@ class CashReference extends Model implements Sortable
         'order_column_name' => 'sort_order',
         'sort_when_creating' => true,
     ];
+
+    public function getKepemilikanAttribute(): ?string
+    {
+        return $this->status_kepemilikan;
+    }
 
     public function cashReports()
     {

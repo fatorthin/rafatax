@@ -126,6 +126,14 @@ class StaffResource extends Resource
                         'magang' => 'Magang',
                     ])
                     ->required(),
+                Forms\Components\Select::make('status_pegawai')
+                    ->label('Status Pegawai')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->placeholder('Pilih Status Pegawai')
+                    ->nullable(),
             ]);
     }
 
@@ -192,9 +200,23 @@ class StaffResource extends Resource
                         'magang' => 'Magang',
                     ])
                     ->sortable(),
+                Tables\Columns\SelectColumn::make('status_pegawai')
+                    ->label('Status Pegawai')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->placeholder('Pilih')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('status_pegawai')
+                    ->label('Status Pegawai')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
                 Tables\Filters\Filter::make('is_active')
                     ->label('Staff Aktif')
                     ->query(fn(Builder $query): Builder => $query->where('is_active', true))

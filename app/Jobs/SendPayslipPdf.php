@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\PayrollDetail;
-use App\Services\WablasService;
+use App\Services\WhatsAppGatewayService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -41,7 +41,7 @@ class SendPayslipPdf implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(WablasService $wablas): void
+    public function handle(WhatsAppGatewayService $whatsappGatewayService): void
     {
         $detail = PayrollDetail::with('staff')->find($this->payrollDetailId);
 
@@ -59,7 +59,7 @@ class SendPayslipPdf implements ShouldQueue
             ]);
 
             // Gunakan controller yang sudah menangani generate PDF + kirim WA + fallback
-            $controller = new \App\Http\Controllers\PayrollWhatsAppController($wablas);
+            $controller = new \App\Http\Controllers\PayrollWhatsAppController($whatsappGatewayService);
             $result = $controller->sendPayslipWithPdf($detail);
 
             // Normalisasi hasil

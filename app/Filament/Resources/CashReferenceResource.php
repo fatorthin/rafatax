@@ -29,6 +29,14 @@ class CashReferenceResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required(),
                 Forms\Components\TextInput::make('description'),
+                Forms\Components\Select::make('status_kepemilikan')
+                    ->label('Status Kepemilikan Kas')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->placeholder('Pilih Kepemilikan Kas')
+                    ->nullable(),
             ]);
     }
 
@@ -41,6 +49,14 @@ class CashReferenceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\SelectColumn::make('status_kepemilikan')
+                    ->label('Kepemilikan Kas')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->placeholder('Pilih')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('description')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
@@ -59,6 +75,12 @@ class CashReferenceResource extends Resource
             ->defaultSort('sort_order')
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('status_kepemilikan')
+                    ->label('Status Kepemilikan Kas')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

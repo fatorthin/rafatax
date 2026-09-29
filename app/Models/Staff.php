@@ -32,6 +32,7 @@ class Staff extends Model
         'is_active',
         'salary',
         'position_status',
+        'status_pegawai',
     ];
 
     public function clients(): BelongsToMany

@@ -34,6 +34,7 @@ class StaffResource extends JsonResource
             'is_active' => (bool) $this->is_active,
             'salary' => $this->salary,
             'position_status' => $this->position_status,
+            'status_pegawai' => $this->status_pegawai,
 
             // Conditional Attributes (hanya muncul jika sudah di-load)
             'department' => $this->whenLoaded('departmentReference', function () {

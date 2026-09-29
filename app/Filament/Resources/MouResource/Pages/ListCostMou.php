@@ -380,11 +380,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     $message .= "Terima kasih,\n";
                     $message .= "_Sistem Rafatax_";
 
-                    /** @var \App\Services\WablasService $wablasService */
-                    $wablasService = app(\App\Services\WablasService::class);
-                    $wablasService->sendMessage('6285725380708', $message);
+                    /** @var \App\Services\WhatsAppGatewayService $whatsAppService */
+                    $whatsAppService = app(\App\Services\WhatsAppGatewayService::class);
+                    $whatsAppService->sendMessage('6285725380708', $message);
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Gagal kirim notifikasi Wablas case project: ' . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error('Gagal kirim notifikasi WhatsApp case project: ' . $e->getMessage());
                 }
             });
     }

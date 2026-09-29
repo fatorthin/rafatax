@@ -56,8 +56,16 @@ class CashReferenceResource extends Resource
                             ->label('Deskripsi')
                             ->maxLength(500)
                             ->placeholder('Masukkan deskripsi kas (opsional)'),
+                        Forms\Components\Select::make('status_kepemilikan')
+                            ->label('Status Kepemilikan Kas')
+                            ->options([
+                                'PT' => 'PT',
+                                'KKP' => 'KKP',
+                            ])
+                            ->placeholder('Pilih kepemilikan kas')
+                            ->nullable(),
                     ])
-                    ->columns(2),
+                    ->columns(3),
             ]);
     }
 
@@ -76,6 +84,14 @@ class CashReferenceResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->copyable(),
+                Tables\Columns\SelectColumn::make('status_kepemilikan')
+                    ->label('Kepemilikan Kas')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->placeholder('Pilih')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('description')
                     ->label('Deskripsi')
                     ->searchable()
@@ -109,6 +125,12 @@ class CashReferenceResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('status_kepemilikan')
+                    ->label('Status Kepemilikan Kas')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
                 Tables\Filters\SelectFilter::make('has_transactions')
                     ->label('Memiliki Transaksi')
                     ->options([

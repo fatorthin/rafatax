@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Http\Controllers\MouPrintViewController;
 use App\Models\MoU;
-use App\Services\WablasService;
+use App\Services\WhatsAppGatewayService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -45,7 +45,7 @@ class SendMouWhatsapp implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(WablasService $wablasService): void
+    public function handle(WhatsAppGatewayService $whatsAppService): void
     {
         $mou = MoU::with(['client', 'categoryMou'])->find($this->mouId);
 
@@ -102,7 +102,7 @@ class SendMouWhatsapp implements ShouldQueue
             $documentUrl = "{$baseUrl}/mou/{$mou->id}/document/{$filename}?with_signature={$sigParam}";
 
             // 1. Send greeting/intro caption text
-            $msgResult = $wablasService->sendMessage($phone, $caption);
+            $msgResult = $whatsAppService->sendMessage($phone, $caption);
             Log::info('SendMouWhatsapp: Text caption sent', [
                 'mou_id' => $mou->id,
                 'phone' => $phone,
@@ -125,7 +125,7 @@ class SendMouWhatsapp implements ShouldQueue
             }
 
             // 3. Send PDF Document via Wablas URL endpoint (/v2/send-document)
-            $docResult = $wablasService->sendDocumentUrl($phone, $documentUrl, $filename);
+            $docResult = $whatsAppService->sendDocumentUrl($phone, $documentUrl, $filename);
             Log::info('SendMouWhatsapp: Document URL sent to Wablas', [
                 'mou_id' => $mou->id,
                 'phone' => $phone,
@@ -159,7 +159,7 @@ class SendMouWhatsapp implements ShouldQueue
                 $fallbackMessage .= "Mohon dipelajari dan ditandatangani sebagai bukti persetujuan.\n";
                 $fallbackMessage .= "Terima kasih.\nAdmin Rafatax Consulting";
 
-                $wablasService->sendMessage($phone, $fallbackMessage);
+                $whatsAppService->sendMessage($phone, $fallbackMessage);
 
                 $mou->update([
                     'is_send_mou' => true,

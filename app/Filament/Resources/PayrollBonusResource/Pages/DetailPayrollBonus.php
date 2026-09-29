@@ -8,7 +8,7 @@ use App\Models\CaseProjectDetail;
 use App\Models\PayrollBonus;
 use App\Models\PayrollBonusDetail;
 use App\Models\Staff;
-use App\Services\WablasService;
+use App\Services\WhatsAppGatewayService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -100,14 +100,14 @@ class DetailPayrollBonus extends Page implements HasTable
                 ->requiresConfirmation()
                 ->modalHeading('Kirim Semua Slip Bonus via WhatsApp')
                 ->modalDescription('Apakah Anda yakin ingin mengirim semua slip bonus ke staff terkait?')
-                ->action(function (WablasService $wablasService) {
+                ->action(function (WhatsAppGatewayService $whatsappService) {
                     /** @var Collection<int, PayrollBonusDetail> $details */
                     $details = PayrollBonusDetail::where('payroll_bonus_id', $this->record->id)->get();
                     $successCount = 0;
                     $failCount = 0;
 
                     foreach ($details as $detail) {
-                        $result = $this->sendBonusWablas($detail, $wablasService);
+                        $result = $this->sendBonusWhatsApp($detail, $whatsappService);
                         if ($result['success']) {
                             $successCount++;
                         } else {
@@ -319,13 +319,13 @@ class DetailPayrollBonus extends Page implements HasTable
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup'),
 
-                \Filament\Tables\Actions\Action::make('send_wablas')
+                \Filament\Tables\Actions\Action::make('send_whatsapp')
                     ->label('Kirim Slip WA')
                     ->icon('heroicon-o-chat-bubble-left-right')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(function (PayrollBonusDetail $record, WablasService $wablasService) {
-                        $result = $this->sendBonusWablas($record, $wablasService);
+                    ->action(function (PayrollBonusDetail $record, WhatsAppGatewayService $whatsappService) {
+                        $result = $this->sendBonusWhatsApp($record, $whatsappService);
 
                         if ($result['success']) {
                             Notification::make()
@@ -351,7 +351,7 @@ class DetailPayrollBonus extends Page implements HasTable
             ]);
     }
 
-    private function sendBonusWablas(PayrollBonusDetail $record, WablasService $wablasService): array
+    private function sendBonusWhatsApp(PayrollBonusDetail $record, WhatsAppGatewayService $whatsappService): array
     {
         try {
             $staff = Staff::find($record->staff_id);
@@ -398,10 +398,10 @@ class DetailPayrollBonus extends Page implements HasTable
             $pdf->save($tempPath);
 
             // Send Message
-            $wablasService->sendMessage($staff->phone, $message);
+            $whatsappService->sendMessage($staff->phone, $message);
 
             // Send Document
-            $result = $wablasService->sendDocument($staff->phone, $tempPath, "📄 Slip Bonus {$staff->name} - {$this->record->description}");
+            $result = $whatsappService->sendDocument($staff->phone, $tempPath, "📄 Slip Bonus {$staff->name} - {$this->record->description}");
 
             // Cleanup
             if (file_exists($tempPath)) {

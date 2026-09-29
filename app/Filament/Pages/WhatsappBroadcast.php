@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Client;
 use App\Models\Staff;
-use App\Services\WablasService;
+use App\Services\WhatsAppGatewayService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -169,7 +169,7 @@ class WhatsappBroadcast extends Page implements Forms\Contracts\HasForms
             $list = $list->take(3);
         }
 
-        $svc = app(WablasService::class);
+        $svc = app(WhatsAppGatewayService::class);
 
         $total = $list->count();
         $ok = 0;

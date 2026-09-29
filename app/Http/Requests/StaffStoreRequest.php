@@ -42,6 +42,7 @@ class StaffStoreRequest extends FormRequest
             'is_active' => ['nullable', 'boolean'],
             'salary' => ['nullable', 'numeric', 'min:0'],
             'position_status' => ['nullable', 'string', 'max:100'],
+            'status_pegawai' => ['nullable', 'string', 'in:PT,KKP'],
         ];
     }
 

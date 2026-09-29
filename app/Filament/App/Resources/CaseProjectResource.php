@@ -11,7 +11,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\CaseProject;
 use App\Traits\HasPermissions;
-use App\Services\WablasService;
+use App\Services\WhatsAppGatewayService;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\ActionsPosition;
@@ -296,7 +296,7 @@ class CaseProjectResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Notifikasi Invoice & Payroll')
                     ->modalDescription('Apakah Anda yakin ingin mengirim notifikasi ini via WhatsApp?')
-                    ->action(function (CaseProject $record, WablasService $wablasService) {
+                    ->action(function (CaseProject $record, WhatsAppGatewayService $whatsAppService) {
                         $phone = '6281359976015';
 
                         $staffNames = Staff::whereIn('id', $record->staff_id ?? [])->pluck('name')->join(', ');
@@ -312,7 +312,7 @@ class CaseProjectResource extends Resource
                         $message .= "📅 *Tanggal*: {$caseDate}\n\n";
                         $message .= "Mohon segera diproses. Terima kasih.";
 
-                        $result = $wablasService->sendMessage($phone, $message);
+                        $result = $whatsAppService->sendMessage($phone, $message);
 
                         if ($result['success']) {
                             \Filament\Notifications\Notification::make()

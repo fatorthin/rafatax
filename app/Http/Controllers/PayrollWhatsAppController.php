@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayrollDetail;
+use App\Services\WhatsAppGatewayService;
 use App\Services\WablasService;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
@@ -11,11 +12,17 @@ use Illuminate\Support\Facades\Log;
 
 class PayrollWhatsAppController extends Controller
 {
+    protected WhatsAppGatewayService $whatsAppService;
     protected $wablasService;
 
-    public function __construct(WablasService $wablasService)
+    public function __construct(WhatsAppGatewayService|WablasService|null $whatsAppService = null)
     {
-        $this->wablasService = $wablasService;
+        if ($whatsAppService instanceof WhatsAppGatewayService) {
+            $this->whatsAppService = $whatsAppService;
+        } else {
+            $this->whatsAppService = app(WhatsAppGatewayService::class);
+        }
+        $this->wablasService = $this->whatsAppService;
     }
 
     public function sendBulkPayslips(Collection $details)

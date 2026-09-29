@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Http\Controllers\InvoicePrintController;
 use App\Models\Invoice;
-use App\Services\WablasService;
+use App\Services\WhatsAppGatewayService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,7 +44,7 @@ class SendInvoiceWhatsapp implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(WablasService $wablasService): void
+    public function handle(WhatsAppGatewayService $whatsAppService): void
     {
         $invoice = Invoice::with(['mou.client', 'memo', 'client'])->find($this->invoiceId);
 
@@ -121,7 +121,7 @@ class SendInvoiceWhatsapp implements ShouldQueue
             $documentUrl = "{$baseUrl}/invoices/{$invoice->id}/document/{$filename}";
 
             // 1. Send greeting/intro caption text
-            $msgResult = $wablasService->sendMessage($phone, $caption);
+            $msgResult = $whatsAppService->sendMessage($phone, $caption);
             Log::info('SendInvoiceWhatsapp: Text caption sent', [
                 'invoice_id' => $invoice->id,
                 'phone' => $phone,
@@ -144,7 +144,7 @@ class SendInvoiceWhatsapp implements ShouldQueue
             }
 
             // 3. Send PDF Document via Wablas URL endpoint (/v2/send-document)
-            $docResult = $wablasService->sendDocumentUrl($phone, $documentUrl, $filename);
+            $docResult = $whatsAppService->sendDocumentUrl($phone, $documentUrl, $filename);
             Log::info('SendInvoiceWhatsapp: Document URL sent to Wablas', [
                 'invoice_id' => $invoice->id,
                 'phone' => $phone,
@@ -177,7 +177,7 @@ class SendInvoiceWhatsapp implements ShouldQueue
                 $fallbackMessage .= "🔗 {$documentUrl}\n\n";
                 $fallbackMessage .= "Terima kasih.\nAdmin Rafatax Consulting";
 
-                $wablasService->sendMessage($phone, $fallbackMessage);
+                $whatsAppService->sendMessage($phone, $fallbackMessage);
 
                 $invoice->update([
                     'is_send_invoice' => true,
