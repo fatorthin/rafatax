@@ -57,32 +57,34 @@ class ViewJournalBookMonthly extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        $subquery = JournalBookReport::query()
-            ->selectRaw('
-                YEAR(transaction_date) as year,
-                MONTH(transaction_date) as month,
-                SUM(debit_amount) as total_debit,
-                SUM(credit_amount) as total_credit,
-                COUNT(*) as transaction_count
-            ')
-            ->where('journal_book_id', $this->record->id)
-            ->groupBy(DB::raw('YEAR(transaction_date)'), DB::raw('MONTH(transaction_date)'));
-
         return $table
             ->query(
                 JournalBookReport::query()
-                    ->fromSub($subquery, 'monthly_transactions')
+                    ->where('journal_book_id', $this->record->id)
+                    ->select([
+                        DB::raw('YEAR(transaction_date) as year'),
+                        DB::raw('MONTH(transaction_date) as month'),
+                        DB::raw('SUM(debit_amount) as total_debit'),
+                        DB::raw('SUM(credit_amount) as total_credit'),
+                        DB::raw('SUM(debit_amount - credit_amount) as monthly_balance'),
+                        DB::raw('COUNT(*) as transaction_count')
+                    ])
+                    ->groupBy('year', 'month')
+                    ->orderBy('year', 'desc')
+                    ->orderBy('month', 'asc')
             )
             ->columns([
                 TextColumn::make('year')
                     ->label('Year')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
                 TextColumn::make('month')
                     ->label('Month')
                     ->formatStateUsing(fn(int $state): string => Carbon::create()->month($state)->format('F'))
+                    ->sortable(),
+                TextColumn::make('transaction_count')
+                    ->label('# of Transactions')
                     ->sortable()
-                    ->searchable(),
+                    ->alignCenter(),
                 TextColumn::make('total_debit')
                     ->label('Total Debit')
                     ->formatStateUsing(fn(float $state): string => number_format($state, 0, ',', '.'))
@@ -103,24 +105,25 @@ class ViewJournalBookMonthly extends Page implements HasTable
                             ->label('Sum of Total Credit')
                             ->formatStateUsing(fn($state) => number_format((float)$state, 0, ',', '.'))
                     ),
-                TextColumn::make('transaction_count')
-                    ->label('Total Transactions')
-                    ->sortable()
-                    ->alignEnd(),
             ])
             ->filters([
                 Filter::make('year')
                     ->form([
-                        Forms\Components\TextInput::make('year')
+                        Forms\Components\Select::make('year')
                             ->label('Year')
-                            ->numeric()
-                            ->maxLength(4),
+                            ->options(function () {
+                                return JournalBookReport::where('journal_book_id', $this->record->id)
+                                    ->selectRaw('DISTINCT YEAR(transaction_date) as year')
+                                    ->orderBy('year', 'desc')
+                                    ->pluck('year', 'year')
+                                    ->toArray();
+                            }),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        return $query->when(
-                            $data['year'],
-                            fn(Builder $query, $year): Builder => $query->where('year', $year)
-                        );
+                        if (isset($data['year']) && $data['year']) {
+                            return $query->having('year', '=', $data['year']);
+                        }
+                        return $query;
                     }),
             ])
             ->actions([
