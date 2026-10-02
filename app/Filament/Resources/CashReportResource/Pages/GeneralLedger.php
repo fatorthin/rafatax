@@ -362,24 +362,24 @@ class GeneralLedger extends Page
                 });
         }
 
-        // ── 2. Journal Book Reports (Jurnal Umum, AJE, Jurnal Pendapatan) ──
+        // ── 2. Journal Book Reports (Jurnal Umum, AJE) ──
+        // Catatan: journal_book_id = 4 (Jurnal Pendapatan) adalah rekap bulanan yang di-generate ke DB.
+        // Detail transaksi per invoice/kas/mou sudah dihandle secara rinci di getDynamicJurnalPendapatan()
+        // sehingga ID 4 tidak disertakan agar tidak terjadi duplikasi angka rekap di General Ledger.
         $journalLabels = [
             1 => 'Jurnal Umum',
             2 => 'AJE',
-            4 => 'Jurnal Pendapatan',
         ];
 
         $allowedJournalBookIds = [];
         if (!$jurnal) {
             if (!$cashReferenceId) {
-                $allowedJournalBookIds = [1, 2, 4];
+                $allowedJournalBookIds = [1, 2];
             }
         } elseif ($jurnal === 'jurnal_umum') {
             $allowedJournalBookIds = [1];
         } elseif ($jurnal === 'aje') {
             $allowedJournalBookIds = [2];
-        } elseif ($jurnal === 'jurnal_pendapatan') {
-            $allowedJournalBookIds = [4];
         }
 
         if (!empty($allowedJournalBookIds)) {
