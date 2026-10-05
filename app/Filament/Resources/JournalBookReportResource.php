@@ -38,6 +38,14 @@ class JournalBookReportResource extends Resource
                     ->required()
                     ->searchable()
                     ->preload(),
+                Forms\Components\Select::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->default('KKP')
+                    ->required(),
                 Forms\Components\Select::make(name: 'coa_id')
                     ->label('CoA')
                     ->options(function () {
@@ -77,6 +85,16 @@ class JournalBookReportResource extends Resource
                     ->label('Deskripsi')
                     ->sortable()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'PT' => 'primary',
+                        'KKP' => 'success',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('journal_book.name')
                     ->label('Buku Jurnal')
                     ->sortable()
@@ -115,6 +133,12 @@ class JournalBookReportResource extends Resource
                     ),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([

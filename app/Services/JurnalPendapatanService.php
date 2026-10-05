@@ -400,6 +400,7 @@ class JurnalPendapatanService
                 'journal_book_id'  => $journalBookId,
                 'coa_id'           => $coaId,
                 'description'      => $description,
+                'kepemilikan'      => 'KKP',
                 'debit_amount'     => round($debit, 2),
                 'credit_amount'    => round($credit, 2),
                 'created_at'       => now(),

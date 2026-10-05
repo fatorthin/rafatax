@@ -193,6 +193,14 @@ class ViewJournalBookMonthly extends Page implements HasTable
                         ->label('Deskripsi'),
                     Forms\Components\Hidden::make('journal_book_id')
                         ->default($this->record->id),
+                    Forms\Components\Select::make('kepemilikan')
+                        ->label('Kepemilikan')
+                        ->options([
+                            'PT' => 'PT',
+                            'KKP' => 'KKP',
+                        ])
+                        ->default('KKP')
+                        ->required(),
                     Forms\Components\Select::make(name: 'coa_id')
                         ->label('CoA')
                         ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [

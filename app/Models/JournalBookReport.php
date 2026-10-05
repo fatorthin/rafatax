@@ -18,6 +18,11 @@ class JournalBookReport extends Model
         'credit_amount',
         'coa_id',
         'transaction_date',
+        'kepemilikan',
+    ];
+
+    protected $attributes = [
+        'kepemilikan' => 'KKP',
     ];
 
     public function journal_book()

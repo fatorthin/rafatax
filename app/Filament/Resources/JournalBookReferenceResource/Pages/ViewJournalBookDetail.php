@@ -94,6 +94,16 @@ class ViewJournalBookDetail extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('description')
                     ->searchable(),
+                TextColumn::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'PT' => 'primary',
+                        'KKP' => 'success',
+                        default => 'gray',
+                    }),
                 TextColumn::make('debit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {
@@ -125,6 +135,12 @@ class ViewJournalBookDetail extends Page implements HasTable
 
             ])
             ->filters([
+                SelectFilter::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
                 SelectFilter::make('coa_id')
                     ->label('CoA')
                     ->options(Coa::all()->pluck('name', 'id')),
@@ -228,6 +244,14 @@ class ViewJournalBookDetail extends Page implements HasTable
                         ->label('Deskripsi'),
                     Forms\Components\Hidden::make('journal_book_id')
                         ->default($this->record->id),
+                    Forms\Components\Select::make('kepemilikan')
+                        ->label('Kepemilikan')
+                        ->options([
+                            'PT' => 'PT',
+                            'KKP' => 'KKP',
+                        ])
+                        ->default('KKP')
+                        ->required(),
                     Forms\Components\Select::make(name: 'coa_id')
                         ->label('CoA')
                         ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [

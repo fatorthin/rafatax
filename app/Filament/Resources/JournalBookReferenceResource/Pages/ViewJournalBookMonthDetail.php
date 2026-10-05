@@ -84,6 +84,16 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                     ->label('Description')
                     ->searchable()
                     ->wrap(),
+                TextColumn::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'PT' => 'primary',
+                        'KKP' => 'success',
+                        default => 'gray',
+                    }),
                 TextColumn::make('debit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {
@@ -111,7 +121,12 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
 
             ])
             ->filters([
-                // No additional filters needed here since we're already filtering by month/year
+                \Filament\Tables\Filters\SelectFilter::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
             ])
             ->actions([
                 \Filament\Tables\Actions\EditAction::make()
@@ -162,6 +177,14 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                 ->form([
                     \Filament\Forms\Components\Hidden::make('journal_book_id')
                         ->default(fn() => $this->record->id),
+                    \Filament\Forms\Components\Select::make('kepemilikan')
+                        ->label('Kepemilikan')
+                        ->options([
+                            'PT' => 'PT',
+                            'KKP' => 'KKP',
+                        ])
+                        ->default('KKP')
+                        ->required(),
                     \Filament\Forms\Components\Textarea::make('description')
                         ->nullable()
                         ->maxLength(500)
