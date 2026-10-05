@@ -84,16 +84,15 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                     ->label('Description')
                     ->searchable()
                     ->wrap(),
-                TextColumn::make('kepemilikan')
+                \Filament\Tables\Columns\SelectColumn::make('kepemilikan')
                     ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->selectablePlaceholder(false)
                     ->sortable()
-                    ->searchable()
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'PT' => 'primary',
-                        'KKP' => 'success',
-                        default => 'gray',
-                    }),
+                    ->searchable(),
                 TextColumn::make('debit_amount')
                     ->numeric()
                     ->formatStateUsing(function ($state) {

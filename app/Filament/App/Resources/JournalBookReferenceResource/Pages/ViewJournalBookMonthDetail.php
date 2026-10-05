@@ -83,6 +83,15 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                     ->label('Deskripsi')
                     ->sortable()
                     ->searchable(),
+                Tables\Columns\SelectColumn::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ])
+                    ->selectablePlaceholder(false)
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('journal_book.name')
                     ->label('Buku Jurnal')
                     ->sortable()
@@ -121,6 +130,12 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                     ),
             ])
             ->filters([
+                SelectFilter::make('kepemilikan')
+                    ->label('Kepemilikan')
+                    ->options([
+                        'PT' => 'PT',
+                        'KKP' => 'KKP',
+                    ]),
                 SelectFilter::make('coa_id')
                     ->label('COA')
                     ->options(function () {
@@ -141,6 +156,14 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                             ->label('Deskripsi'),
                         Forms\Components\Hidden::make('journal_book_id')
                             ->default($this->record->id),
+                        Forms\Components\Select::make('kepemilikan')
+                            ->label('Kepemilikan')
+                            ->options([
+                                'PT' => 'PT',
+                                'KKP' => 'KKP',
+                            ])
+                            ->default('KKP')
+                            ->required(),
                         Forms\Components\Select::make('coa_id')
                             ->label('CoA')
                             ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [

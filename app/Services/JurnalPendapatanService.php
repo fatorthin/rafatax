@@ -516,12 +516,31 @@ class JurnalPendapatanService
         static::$isSyncing = true;
         try {
             DB::transaction(function () use ($journalBookId, $year, $month, $entries) {
+                // Ambil pilihan kepemilikan yang sudah diset oleh user (keyed by coa_id and description)
+                $existingKepemilikan = JournalBookReport::where('journal_book_id', $journalBookId)
+                    ->whereYear('transaction_date', $year)
+                    ->whereMonth('transaction_date', $month)
+                    ->get()
+                    ->groupBy('coa_id')
+                    ->map(fn($group) => $group->pluck('kepemilikan', 'description')->toArray())
+                    ->toArray();
+
                 JournalBookReport::where('journal_book_id', $journalBookId)
                     ->whereYear('transaction_date', $year)
                     ->whereMonth('transaction_date', $month)
                     ->forceDelete();
 
                 if (!empty($entries)) {
+                    // Jika sebelumnya user sudah mengubah kepemilikan menjadi PT, pertahankan nilainya
+                    foreach ($entries as &$entry) {
+                        $cId  = $entry['coa_id'] ?? null;
+                        $desc = $entry['description'] ?? '';
+                        if (isset($existingKepemilikan[$cId][$desc])) {
+                            $entry['kepemilikan'] = $existingKepemilikan[$cId][$desc];
+                        }
+                    }
+                    unset($entry);
+
                     JournalBookReport::insert($entries);
                 }
             });
