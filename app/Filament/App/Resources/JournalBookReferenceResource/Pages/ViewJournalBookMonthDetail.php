@@ -200,6 +200,59 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\CreateAction::make('create')
+                ->label('Tambah Transaksi')
+                ->model(JournalBookReport::class)
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->visible(fn() => !$this->isJurnalPendapatan() && static::getResource()::canCreate())
+                ->form([
+                    Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Tanggal Transaksi')
+                        ->default(function () {
+                            if ($this->year && $this->month) {
+                                return Carbon::create($this->year, $this->month, 1)->endOfMonth()->format('Y-m-d');
+                            }
+                            return now()->format('Y-m-d');
+                        }),
+                    Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi'),
+                    Forms\Components\Hidden::make('journal_book_id')
+                        ->default(fn() => $this->record->id),
+                    Forms\Components\Select::make('kepemilikan')
+                        ->label('Kepemilikan')
+                        ->options([
+                            'PT' => 'PT',
+                            'KKP' => 'KKP',
+                        ])
+                        ->default('KKP')
+                        ->required(),
+                    Forms\Components\Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [
+                            $coa->id => "{$coa->code} - {$coa->name}"
+                        ]))
+                        ->required()
+                        ->searchable(),
+                    Forms\Components\TextInput::make('debit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Debit')
+                        ->default(0),
+                    Forms\Components\TextInput::make('credit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Kredit')
+                        ->default(0),
+                ])
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['journal_book_id'] = $this->record->id;
+                    return $data;
+                })
+                ->successNotificationTitle('Transaksi berhasil ditambahkan'),
             Actions\Action::make('syncMonth')
                 ->label('Sinkronkan Bulan Ini')
                 ->icon('heroicon-o-arrow-path')
