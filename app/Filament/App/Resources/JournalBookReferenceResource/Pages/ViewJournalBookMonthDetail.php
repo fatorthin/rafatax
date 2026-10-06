@@ -215,11 +215,6 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                             }
                             return now()->format('Y-m-d');
                         }),
-                    Forms\Components\Textarea::make('description')
-                        ->nullable()
-                        ->maxLength(500)
-                        ->label('Deskripsi')
-                        ->required(),
                     Forms\Components\Select::make('kepemilikan')
                         ->label('Kepemilikan')
                         ->options([
@@ -255,9 +250,10 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ->required(),
                 ])
                 ->action(function (array $data): void {
+                    $coas = Coa::whereIn('id', array_column($data['items'] ?? [], 'coa_id'))->get()->keyBy('id');
+
                     $commonData = [
                         'transaction_date' => $data['transaction_date'],
-                        'description'      => $data['description'],
                         'kepemilikan'      => $data['kepemilikan'],
                         'journal_book_id'  => $this->record->id,
                     ];
@@ -268,8 +264,12 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                             continue;
                         }
 
+                        $coa = $coas->get($item['coa_id']);
+                        $description = $coa ? $coa->name : 'Transaksi';
+
                         JournalBookReport::create(array_merge($commonData, [
                             'coa_id'        => $item['coa_id'],
+                            'description'   => $description,
                             'debit_amount'  => (float) ($item['debit_amount'] ?? 0),
                             'credit_amount' => (float) ($item['credit_amount'] ?? 0),
                         ]));
