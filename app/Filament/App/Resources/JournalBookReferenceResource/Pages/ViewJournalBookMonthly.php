@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\JournalBookReferenceResource\Pages;
 
 use App\Filament\App\Resources\JournalBookReferenceResource;
+use App\Models\Coa;
 use App\Models\JournalBookReference;
 use App\Models\JournalBookReport;
 use App\Services\JurnalPendapatanService;
@@ -145,6 +146,54 @@ class ViewJournalBookMonthly extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\CreateAction::make('create')
+                ->label('Tambah Transaksi')
+                ->model(JournalBookReport::class)
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->visible(fn() => !$this->isJurnalPendapatan() && static::getResource()::canCreate())
+                ->form([
+                    Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Tanggal Transaksi')
+                        ->default(now()),
+                    Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi'),
+                    Forms\Components\Hidden::make('journal_book_id')
+                        ->default(fn() => $this->record->id),
+                    Forms\Components\Select::make('kepemilikan')
+                        ->label('Kepemilikan')
+                        ->options([
+                            'PT' => 'PT',
+                            'KKP' => 'KKP',
+                        ])
+                        ->default('KKP')
+                        ->required(),
+                    Forms\Components\Select::make('coa_id')
+                        ->label('CoA')
+                        ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [
+                            $coa->id => "{$coa->code} - {$coa->name}"
+                        ]))
+                        ->required()
+                        ->searchable(),
+                    Forms\Components\TextInput::make('debit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Debit')
+                        ->default(0),
+                    Forms\Components\TextInput::make('credit_amount')
+                        ->numeric()
+                        ->required()
+                        ->label('Kredit')
+                        ->default(0),
+                ])
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['journal_book_id'] = $this->record->id;
+                    return $data;
+                })
+                ->successNotificationTitle('Transaksi berhasil ditambahkan'),
             Actions\Action::make('syncAll')
                 ->label('Sinkronkan Data Piutang')
                 ->icon('heroicon-o-arrow-path')
