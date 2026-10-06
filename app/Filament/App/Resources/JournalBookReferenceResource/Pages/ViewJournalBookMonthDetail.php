@@ -219,7 +219,8 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                     Forms\Components\Textarea::make('description')
                         ->nullable()
                         ->maxLength(500)
-                        ->label('Deskripsi'),
+                        ->label('Deskripsi')
+                        ->required(),
                     Forms\Components\Hidden::make('journal_book_id')
                         ->default(fn() => $this->record->id),
                     Forms\Components\Select::make('kepemilikan')
