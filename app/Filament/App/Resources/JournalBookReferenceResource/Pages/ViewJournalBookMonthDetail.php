@@ -200,9 +200,8 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make('create')
+            Actions\Action::make('create')
                 ->label('Tambah Transaksi')
-                ->model(JournalBookReport::class)
                 ->icon('heroicon-o-plus')
                 ->color('primary')
                 ->visible(fn() => !$this->isJurnalPendapatan() && static::getResource()::canCreate())
@@ -221,8 +220,6 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ->maxLength(500)
                         ->label('Deskripsi')
                         ->required(),
-                    Forms\Components\Hidden::make('journal_book_id')
-                        ->default(fn() => $this->record->id),
                     Forms\Components\Select::make('kepemilikan')
                         ->label('Kepemilikan')
                         ->options([
@@ -231,29 +228,59 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ])
                         ->default('KKP')
                         ->required(),
-                    Forms\Components\Select::make('coa_id')
-                        ->label('CoA')
-                        ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [
-                            $coa->id => "{$coa->code} - {$coa->name}"
-                        ]))
-                        ->required()
-                        ->searchable(),
-                    Forms\Components\TextInput::make('debit_amount')
-                        ->numeric()
-                        ->required()
-                        ->label('Debit')
-                        ->default(0),
-                    Forms\Components\TextInput::make('credit_amount')
-                        ->numeric()
-                        ->required()
-                        ->label('Kredit')
-                        ->default(0),
+                    Forms\Components\Repeater::make('items')
+                        ->label('Rincian Akun (CoA)')
+                        ->schema([
+                            Forms\Components\Select::make('coa_id')
+                                ->label('CoA')
+                                ->options(fn() => Coa::all()->mapWithKeys(fn($coa) => [
+                                    $coa->id => "{$coa->code} - {$coa->name}"
+                                ]))
+                                ->required()
+                                ->searchable(),
+                            Forms\Components\TextInput::make('debit_amount')
+                                ->numeric()
+                                ->required()
+                                ->label('Debit')
+                                ->default(0),
+                            Forms\Components\TextInput::make('credit_amount')
+                                ->numeric()
+                                ->required()
+                                ->label('Kredit')
+                                ->default(0),
+                        ])
+                        ->columns(3)
+                        ->minItems(1)
+                        ->defaultItems(2)
+                        ->required(),
                 ])
-                ->mutateFormDataUsing(function (array $data): array {
-                    $data['journal_book_id'] = $this->record->id;
-                    return $data;
-                })
-                ->successNotificationTitle('Transaksi berhasil ditambahkan'),
+                ->action(function (array $data): void {
+                    $commonData = [
+                        'transaction_date' => $data['transaction_date'],
+                        'description'      => $data['description'],
+                        'kepemilikan'      => $data['kepemilikan'],
+                        'journal_book_id'  => $this->record->id,
+                    ];
+
+                    $createdCount = 0;
+                    foreach ($data['items'] ?? [] as $item) {
+                        if (empty($item['coa_id'])) {
+                            continue;
+                        }
+
+                        JournalBookReport::create(array_merge($commonData, [
+                            'coa_id'        => $item['coa_id'],
+                            'debit_amount'  => (float) ($item['debit_amount'] ?? 0),
+                            'credit_amount' => (float) ($item['credit_amount'] ?? 0),
+                        ]));
+                        $createdCount++;
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title("{$createdCount} transaksi berhasil ditambahkan")
+                        ->success()
+                        ->send();
+                }),
             Actions\Action::make('syncMonth')
                 ->label('Sinkronkan Bulan Ini')
                 ->icon('heroicon-o-arrow-path')

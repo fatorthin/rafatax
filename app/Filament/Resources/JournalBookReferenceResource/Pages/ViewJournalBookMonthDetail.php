@@ -168,14 +168,25 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ->send();
                 })
                 ->visible(fn() => $this->isJurnalPendapatan()),
-            Actions\CreateAction::make('addTransaction')
+            Actions\Action::make('addTransaction')
                 ->label('Add Transaction')
-                ->model(JournalBookReport::class)
                 ->icon('heroicon-o-plus')
                 ->visible(fn() => !$this->isJurnalPendapatan())
                 ->form([
-                    \Filament\Forms\Components\Hidden::make('journal_book_id')
-                        ->default(fn() => $this->record->id),
+                    \Filament\Forms\Components\DatePicker::make('transaction_date')
+                        ->required()
+                        ->label('Tanggal Transaksi')
+                        ->default(function () {
+                            if ($this->year && $this->month) {
+                                return \Illuminate\Support\Carbon::create($this->year, $this->month, 1)->endOfMonth()->format('Y-m-d');
+                            }
+                            return now()->format('Y-m-d');
+                        }),
+                    \Filament\Forms\Components\Textarea::make('description')
+                        ->nullable()
+                        ->maxLength(500)
+                        ->label('Deskripsi')
+                        ->required(),
                     \Filament\Forms\Components\Select::make('kepemilikan')
                         ->label('Kepemilikan')
                         ->options([
@@ -184,37 +195,61 @@ class ViewJournalBookMonthDetail extends Page implements HasTable
                         ])
                         ->default('KKP')
                         ->required(),
-                    \Filament\Forms\Components\Textarea::make('description')
-                        ->nullable()
-                        ->maxLength(500)
-                        ->label('Deskripsi'),
-                    \Filament\Forms\Components\Select::make('coa_id')
-                        ->label('CoA')
-                        ->options(function () {
-                            return \App\Models\Coa::all()->mapWithKeys(function ($coa) {
-                                return [$coa->id => $coa->code . ' - ' . $coa->name];
-                            });
-                        })
-                        ->required()
-                        ->searchable(),
-                    \Filament\Forms\Components\TextInput::make('debit_amount')
-                        ->numeric()
-                        ->required()
-                        ->label('Debit')
-                        ->default(0),
-                    \Filament\Forms\Components\TextInput::make('credit_amount')
-                        ->numeric()
-                        ->required()
-                        ->label('Kredit')
-                        ->default(0),
-                    \Filament\Forms\Components\Hidden::make('transaction_date')
-                        ->default(function () {
-                            if ($this->year && $this->month) {
-                                return \Illuminate\Support\Carbon::create($this->year, $this->month, 1)->endOfMonth()->format('Y-m-d');
-                            }
-                            return now()->format('Y-m-d');
-                        }),
-                ]),
+                    \Filament\Forms\Components\Repeater::make('items')
+                        ->label('Rincian Akun (CoA)')
+                        ->schema([
+                            \Filament\Forms\Components\Select::make('coa_id')
+                                ->label('CoA')
+                                ->options(function () {
+                                    return \App\Models\Coa::all()->mapWithKeys(function ($coa) {
+                                        return [$coa->id => $coa->code . ' - ' . $coa->name];
+                                    });
+                                })
+                                ->required()
+                                ->searchable(),
+                            \Filament\Forms\Components\TextInput::make('debit_amount')
+                                ->numeric()
+                                ->required()
+                                ->label('Debit')
+                                ->default(0),
+                            \Filament\Forms\Components\TextInput::make('credit_amount')
+                                ->numeric()
+                                ->required()
+                                ->label('Kredit')
+                                ->default(0),
+                        ])
+                        ->columns(3)
+                        ->minItems(1)
+                        ->defaultItems(2)
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $commonData = [
+                        'transaction_date' => $data['transaction_date'],
+                        'description'      => $data['description'],
+                        'kepemilikan'      => $data['kepemilikan'],
+                        'journal_book_id'  => $this->record->id,
+                    ];
+
+                    $createdCount = 0;
+                    foreach ($data['items'] ?? [] as $item) {
+                        if (empty($item['coa_id'])) {
+                            continue;
+                        }
+
+                        JournalBookReport::create(array_merge($commonData, [
+                            'coa_id'        => $item['coa_id'],
+                            'debit_amount'  => (float) ($item['debit_amount'] ?? 0),
+                            'credit_amount' => (float) ($item['credit_amount'] ?? 0),
+                        ]));
+                        $createdCount++;
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title("{$createdCount} transaksi berhasil ditambahkan")
+                        ->success()
+                        ->send();
+                }),
             Actions\Action::make('back')
                 ->label('Back to Monthly View')
                 ->url(JournalBookReferenceResource::getUrl('viewMonthly', ['record' => $this->record]))
