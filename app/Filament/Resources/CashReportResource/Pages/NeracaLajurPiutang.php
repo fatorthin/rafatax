@@ -162,15 +162,70 @@ class NeracaLajurPiutang extends Page implements HasTable
     }
 
     /**
+     * Mapping CoA Piutang (AO-103.x) ke CoA Pendapatan Belum Diterima (AO-208.x).
+     */
+    private function getPiutangToBelumDiterimaMap(): array
+    {
+        return [
+            188 => 175, // AO-103.6  -> AO-208   (Fee Bulanan)
+            182 => 193, // AO-103.7  -> AO-208.1 (Fee SPT)
+            183 => 194, // AO-103.8  -> AO-208.2 (Fee SP2DK)
+            184 => 195, // AO-103.9  -> AO-208.3 (Fee Pembetulan)
+            185 => 196, // AO-103.10 -> AO-208.4 (Fee Internal)
+            186 => 197, // AO-103.11 -> AO-208.5 (Fee Restitusi)
+            187 => 198, // AO-103.12 -> AO-208.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    /**
+     * Mapping CoA Pendapatan (AO-401.x) ke CoA Pendapatan Belum Diterima (AO-208.x).
+     */
+    private function getRevenueToBelumDiterimaMap(): array
+    {
+        return [
+            119 => 175, // AO-401   -> AO-208   (Fee Bulanan)
+            120 => 193, // AO-401.1 -> AO-208.1 (Fee SPT)
+            121 => 194, // AO-401.2 -> AO-208.2 (Fee SP2DK)
+            122 => 195, // AO-401.3 -> AO-208.3 (Fee Pembetulan)
+            123 => 196, // AO-401.4 -> AO-208.4 (Fee Internal)
+            124 => 197, // AO-401.5 -> AO-208.5 (Fee Restitusi)
+            125 => 198, // AO-401.6 -> AO-208.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    /**
+     * Dapatkan ID CoA AO-208.x berdasarkan CoA ID (Piutang / Pendapatan / AO-208).
+     */
+    private function getBelumDiterimaCoaId(int $coaId): int
+    {
+        $piutangMap = $this->getPiutangToBelumDiterimaMap();
+        if (isset($piutangMap[$coaId])) {
+            return $piutangMap[$coaId];
+        }
+
+        $revenueMap = $this->getRevenueToBelumDiterimaMap();
+        if (isset($revenueMap[$coaId])) {
+            return $revenueMap[$coaId];
+        }
+
+        if (in_array($coaId, array_values($piutangMap), true)) {
+            return $coaId;
+        }
+
+        return self::COA_PENDAPATAN_BELUM_DITERIMA_ID;
+    }
+
+    /**
      * Sumber 1 — invoices & cost_list_invoices (Invoice dibuat pada bulan berjalan).
      *
      * Entri JP yang dihasilkan:
      *   JP DEBIT  : AO-103.x (piutang) = nilai per CoA dari Invoice
-     *   JP KREDIT : AO-208 (Pendapatan Belum Diterima) = total semua Invoice
+     *   JP KREDIT : AO-208.x (Pendapatan Belum Diterima) = nilai per case CoA
      *
      * Return:
-     *   - by_piutang_coa : [ piutang_coa_id => total ]  -> JP DEBIT  AO-103.x
-     *   - total          : grand total                   -> JP KREDIT AO-208
+     *   - by_piutang_coa        : [ piutang_coa_id => total ]        -> JP DEBIT  AO-103.x
+     *   - by_belum_diterima_coa : [ belum_diterima_coa_id => total ] -> JP KREDIT AO-208.x
+     *   - total                 : grand total
      */
     private function getInvoicePiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
@@ -186,8 +241,9 @@ class NeracaLajurPiutang extends Page implements HasTable
         $revenueToPiutangMap    = $this->getRevenueToPiutangMap();
         $piutangToPendapatanMap = $this->getPiutangToPendapatanMap();
 
-        $byPiutangCoa = [];
-        $grandTotal   = 0;
+        $byPiutangCoa       = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         foreach ($rows as $row) {
             $coaId = $row->coa_id;
@@ -200,13 +256,17 @@ class NeracaLajurPiutang extends Page implements HasTable
                 continue;
             }
 
-            $byPiutangCoa[$piutangCoaId] = ($byPiutangCoa[$piutangCoaId] ?? 0) + $row->amount;
-            $grandTotal                  += $row->amount;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
+
+            $byPiutangCoa[$piutangCoaId]             = ($byPiutangCoa[$piutangCoaId] ?? 0) + $row->amount;
+            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $row->amount;
+            $grandTotal                              += $row->amount;
         }
 
         return [
-            'by_piutang_coa' => $byPiutangCoa, // JP DEBIT  AO-103.x
-            'total'          => $grandTotal,    // JP KREDIT AO-208
+            'by_piutang_coa'        => $byPiutangCoa,
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
+            'total'                 => $grandTotal,
         ];
     }
 
@@ -222,12 +282,13 @@ class NeracaLajurPiutang extends Page implements HasTable
      * Sumber 2 — cash_reports (CoA AO-103.x yang muncul di kolom kas/bank).
      *
      * Ketika piutang diterima di kas/bank, dua entri JP dihasilkan:
-     *   JP DEBIT  : AO-208 (Pendapatan Belum Diterima) = total kas diterima (pengurang accrual)
+     *   JP DEBIT  : AO-208.x (Pendapatan Belum Diterima) = nilai per CoA kas diterima (pengurang accrual)
      *   JP KREDIT : AO-401.x (Pendapatan)              = nilai per CoA (pengakuan pendapatan aktual)
      *
      * Return:
-     *   - by_pendapatan_coa : [ pendapatan_coa_id => total ] -> JP KREDIT AO-401.x
-     *   - total             : grand total kas diterima       -> JP DEBIT  AO-208
+     *   - by_pendapatan_coa    : [ pendapatan_coa_id => total ]     -> JP KREDIT AO-401.x
+     *   - by_belum_diterima_coa : [ belum_diterima_coa_id => total ] -> JP DEBIT  AO-208.x
+     *   - total                : grand total kas diterima
      */
     private function getCashReportPiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
@@ -241,20 +302,25 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->selectRaw('coa_id, SUM(debit_amount) as total')
             ->get();
 
-        $byPendapatanCoa = [];
-        $grandTotal      = 0;
+        $byPendapatanCoa    = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         foreach ($rows as $row) {
-            $pendapatanCoaId = $map[$row->coa_id] ?? null;
+            $pendapatanCoaId    = $map[$row->coa_id] ?? null;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($row->coa_id);
+
             if ($pendapatanCoaId) {
-                $byPendapatanCoa[$pendapatanCoaId] = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $row->total;
-                $grandTotal                        += $row->total;
+                $byPendapatanCoa[$pendapatanCoaId]       = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $row->total;
+                $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $row->total;
+                $grandTotal                              += $row->total;
             }
         }
 
         return [
-            'by_pendapatan_coa' => $byPendapatanCoa, // JP KREDIT AO-401.x
-            'total'             => $grandTotal,       // JP DEBIT  AO-208
+            'by_pendapatan_coa'    => $byPendapatanCoa,
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
+            'total'                => $grandTotal,
         ];
     }
 
@@ -263,11 +329,12 @@ class NeracaLajurPiutang extends Page implements HasTable
      *
      * Entri JP yang dihasilkan:
      *   JP DEBIT  : AO-103.x (piutang, disesuaikan) = nilai PPh23 per CoA
-     *   JP KREDIT : AO-208 (Pendapatan Belum Diterima) = total PPh23
+     *   JP KREDIT : AO-208.x (Pendapatan Belum Diterima) = nilai PPh23 per CoA
      *
      * Return:
-     *   - by_piutang_coa : [ piutang_coa_id => total ]  -> JP DEBIT
-     *   - total          : grand total                   -> JP KREDIT AO-208
+     *   - by_piutang_coa        : [ piutang_coa_id => total ]        -> JP DEBIT
+     *   - by_belum_diterima_coa : [ belum_diterima_coa_id => total ] -> JP KREDIT AO-208.x
+     *   - total                 : grand total
      */
     private function getInvoicePph23ForJP(string $startOfMonth, string $endOfMonth): array
     {
@@ -280,8 +347,9 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->selectRaw('cli.coa_id, cli.amount')
             ->get();
 
-        $byPiutangCoa = [];
-        $grandTotal   = 0;
+        $byPiutangCoa       = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         $revenueToPiutangMap = [
             119 => 188, // Fee Bulanan
@@ -306,15 +374,18 @@ class NeracaLajurPiutang extends Page implements HasTable
                 $coaId = 188;
             }
 
-            $pph23Amount = ($row->amount / 98) * 2;
+            $pph23Amount        = ($row->amount / 98) * 2;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($coaId);
 
-            $byPiutangCoa[$coaId] = ($byPiutangCoa[$coaId] ?? 0) + $pph23Amount;
-            $grandTotal          += $pph23Amount;
+            $byPiutangCoa[$coaId]                    = ($byPiutangCoa[$coaId] ?? 0) + $pph23Amount;
+            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $pph23Amount;
+            $grandTotal                              += $pph23Amount;
         }
 
         return [
-            'by_piutang_coa' => $byPiutangCoa,
-            'total'          => $grandTotal,
+            'by_piutang_coa'        => $byPiutangCoa,
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
+            'total'                 => $grandTotal,
         ];
     }
 
@@ -322,7 +393,7 @@ class NeracaLajurPiutang extends Page implements HasTable
      * Sumber 4 — invoices (is_pph23_checked = true, dibuat pada bulan berjalan).
      *
      * Entri JP yang dihasilkan:
-     *   JP DEBIT  : AO-208 (Pendapatan Belum Diterima) = total PPh23
+     *   JP DEBIT  : AO-208.x (Pendapatan Belum Diterima) = nilai PPh23 per case CoA
      *   JP DEBIT  : AO-518.1 (Biaya PPH 23)           = total PPh23
      *   JP KREDIT : AO-401.x (Pendapatan, disesuaikan) = nilai per CoA
      *   JP KREDIT : AO-103.x (Piutang, disesuaikan)   = nilai per CoA
@@ -343,9 +414,10 @@ class NeracaLajurPiutang extends Page implements HasTable
             $invoiceTotals[$row->invoice_id] = ($invoiceTotals[$row->invoice_id] ?? 0) + $row->item_amount;
         }
 
-        $byPiutangCoa = [];
-        $byPendapatanCoa = [];
-        $grandTotal   = 0;
+        $byPiutangCoa       = [];
+        $byPendapatanCoa    = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         $revenueToPiutangMap = [
             119 => 188, // Fee Bulanan
@@ -372,33 +444,37 @@ class NeracaLajurPiutang extends Page implements HasTable
 
             if (isset($revenueToPiutangMap[$coaId])) {
                 $pendapatanCoaId = $coaId;
-                $piutangCoaId = $revenueToPiutangMap[$coaId];
+                $piutangCoaId    = $revenueToPiutangMap[$coaId];
             } elseif (isset($piutangToPendapatanMap[$coaId])) {
-                $piutangCoaId = $coaId;
+                $piutangCoaId    = $coaId;
                 $pendapatanCoaId = $piutangToPendapatanMap[$coaId];
             } else {
-                $piutangCoaId = $coaId;
+                $piutangCoaId    = $coaId;
                 $pendapatanCoaId = $coaId;
             }
 
             // Override Bulanan/Tahunan to Bulanan (AO-103.6 / AO-401)
             if ($piutangCoaId == 188 || $piutangCoaId == 182) {
-                $piutangCoaId = 188;
+                $piutangCoaId    = 188;
                 $pendapatanCoaId = 119;
             }
 
-            $invoiceTotal = $invoiceTotals[$row->invoice_id] ?? 0;
-            $pph23Amount = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
 
-            $byPiutangCoa[$piutangCoaId] = ($byPiutangCoa[$piutangCoaId] ?? 0) + $pph23Amount;
-            $byPendapatanCoa[$pendapatanCoaId] = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $pph23Amount;
-            $grandTotal += $pph23Amount;
+            $invoiceTotal = $invoiceTotals[$row->invoice_id] ?? 0;
+            $pph23Amount  = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
+
+            $byPiutangCoa[$piutangCoaId]             = ($byPiutangCoa[$piutangCoaId] ?? 0) + $pph23Amount;
+            $byPendapatanCoa[$pendapatanCoaId]       = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $pph23Amount;
+            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $pph23Amount;
+            $grandTotal                              += $pph23Amount;
         }
 
         return [
-            'by_piutang_coa' => $byPiutangCoa,
-            'by_pendapatan_coa' => $byPendapatanCoa,
-            'total'          => $grandTotal,
+            'by_piutang_coa'        => $byPiutangCoa,
+            'by_pendapatan_coa'    => $byPendapatanCoa,
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
+            'total'                 => $grandTotal,
         ];
     }
 
@@ -422,7 +498,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $map = $this->getPiutangToPendapatanMap();
 
-        $debits = [];
+        $debits  = [];
         $kredits = [];
 
         foreach ($mous as $mou) {
@@ -446,14 +522,15 @@ class NeracaLajurPiutang extends Page implements HasTable
                 };
             }
 
-            $pendapatanCoaId = $map[$piutangCoaId] ?? 119;
-            $discountAmount = (float) $mou->discount_amount;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
+            $pendapatanCoaId    = $map[$piutangCoaId] ?? 119;
+            $discountAmount     = (float) $mou->discount_amount;
 
             // Debits:
             // 1. AO-420 (Potongan Pendapatan: 190)
             $debits[190] = ($debits[190] ?? 0) + $discountAmount;
-            // 2. AO-208 (Pendapatan Yang Belum Diterima: 175)
-            $debits[175] = ($debits[175] ?? 0) + $discountAmount;
+            // 2. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
+            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $discountAmount;
 
             // Kredits:
             // 1. AO-103.x (Piutang: $piutangCoaId)
@@ -463,7 +540,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
 
         return [
-            'debits' => $debits,
+            'debits'  => $debits,
             'kredits' => $kredits
         ];
     }
@@ -488,7 +565,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $map = $this->getPiutangToPendapatanMap();
 
-        $debits = [];
+        $debits  = [];
         $kredits = [];
 
         foreach ($mous as $mou) {
@@ -512,11 +589,12 @@ class NeracaLajurPiutang extends Page implements HasTable
                 };
             }
 
-            $cancelAmount = (float) $mou->cancel_mou_amount;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
+            $cancelAmount       = (float) $mou->cancel_mou_amount;
 
             // Debits:
-            // 1. AO-208 (Pendapatan Yang Belum Diterima: 175)
-            $debits[175] = ($debits[175] ?? 0) + $cancelAmount;
+            // 1. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
+            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $cancelAmount;
 
             // Kredits:
             // 1. AO-103.x (Piutang: $piutangCoaId)
@@ -524,7 +602,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
 
         return [
-            'debits' => $debits,
+            'debits'  => $debits,
             'kredits' => $kredits
         ];
     }
@@ -638,39 +716,47 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         // ── Sumber 1: Invoice dibuat (cost_list_invoices) ──
         // JP DEBIT  AO-103.x = piutang per CoA dari Invoice
-        // JP KREDIT AO-208   = total Invoice (Pendapatan Belum Diterima)
+        // JP KREDIT AO-208.x = per sub-CoA Pendapatan Belum Diterima
         $invoiceJP = $this->getInvoicePiutangForJP($startOfCurrentMonth, $endOfCurrentMonth);
         foreach ($invoiceJP['by_piutang_coa'] as $coaId => $total) {
             $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
         }
-        $jpKredits[$coaBelumDiterimaId] = ($jpKredits[$coaBelumDiterimaId] ?? 0) + $invoiceJP['total'];
+        foreach ($invoiceJP['by_belum_diterima_coa'] as $coaId => $total) {
+            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
+        }
 
         // ── Sumber 2: cash_reports (CoA AO-103.x di kas/bank) ──
-        // JP DEBIT  AO-208   = total kas diterima (pengurang accrual Pendapatan Belum Diterima)
+        // JP DEBIT  AO-208.x = penerimaan kas per sub-CoA (pengurang accrual Pendapatan Belum Diterima)
         // JP KREDIT AO-401.x = nilai penerimaan per CoA (pengakuan pendapatan aktual)
         $cashJP = $this->getCashReportPiutangForJP($startOfCurrentMonth, $endOfCurrentMonth);
         foreach ($cashJP['by_pendapatan_coa'] as $coaId => $total) {
             $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
         }
-        $jpDebits[$coaBelumDiterimaId] = ($jpDebits[$coaBelumDiterimaId] ?? 0) + $cashJP['total'];
+        foreach ($cashJP['by_belum_diterima_coa'] as $coaId => $total) {
+            $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
+        }
 
         // ── Sumber 3: PPh23 dari Invoice yang di-checklist is_include_pph23 ──
         // JP DEBIT  AO-103.x = nilai PPh23 per CoA
-        // JP KREDIT AO-208   = total PPh23
+        // JP KREDIT AO-208.x = nilai PPh23 per sub-CoA Pendapatan Belum Diterima
         $pph23JP = $this->getInvoicePph23ForJP($startOfCurrentMonth, $endOfCurrentMonth);
         foreach ($pph23JP['by_piutang_coa'] as $coaId => $total) {
             $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
         }
-        $jpKredits[$coaBelumDiterimaId] = ($jpKredits[$coaBelumDiterimaId] ?? 0) + $pph23JP['total'];
+        foreach ($pph23JP['by_belum_diterima_coa'] as $coaId => $total) {
+            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
+        }
 
         // ── Sumber 4: PPh23 dari Invoice yang di-checklist is_pph23_checked ──
-        // JP DEBIT  AO-208   = total PPh23
-        // JP DEBIT  AO-518.1 = total PPh23 (Biaya PPH 23)
+        // JP DEBIT  AO-208.x = nilai PPh23 per sub-CoA Pendapatan Belum Diterima
+        // JP DEBIT  AO-518.1 / AO-108.1 = total PPh23 (Biaya PPH 23)
         // JP KREDIT AO-401.x = nilai PPh23 per Pendapatan CoA
         // JP KREDIT AO-103.x = nilai PPh23 per Piutang CoA
         $pphCheckedJP = $this->getInvoicePphCheckedForJP($startOfCurrentMonth, $endOfCurrentMonth);
-        $jpDebits[$coaBelumDiterimaId] = ($jpDebits[$coaBelumDiterimaId] ?? 0) + $pphCheckedJP['total'];
-        $jpDebits[$biayaPph23Id]       = ($jpDebits[$biayaPph23Id] ?? 0) + $pphCheckedJP['total'];
+        foreach ($pphCheckedJP['by_belum_diterima_coa'] as $coaId => $total) {
+            $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
+        }
+        $jpDebits[$biayaPph23Id] = ($jpDebits[$biayaPph23Id] ?? 0) + $pphCheckedJP['total'];
         foreach ($pphCheckedJP['by_pendapatan_coa'] as $coaId => $total) {
             $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
         }
@@ -1022,10 +1108,11 @@ class NeracaLajurPiutang extends Page implements HasTable
         $piutangCoaList    = DB::table('coa')->whereIn('id', $piutangCoaIds)->get()->keyBy('id');
         $coaBelumDiterima  = DB::table('coa')->where('id', self::COA_PENDAPATAN_BELUM_DITERIMA_ID)->first();
 
-        // ── Bagian 1: Invoice (DR AO-103.x / CR AO-208) ──
-        $invoiceJP    = $this->getInvoicePiutangForJP($startOfMonth, $endOfMonth);
-        $byInvoiceCoa = $invoiceJP['by_piutang_coa'];
-        $invoiceTotal = $invoiceJP['total'];
+        // ── Bagian 1: Invoice (DR AO-103.x / CR AO-208.x) ──
+        $invoiceJP         = $this->getInvoicePiutangForJP($startOfMonth, $endOfMonth);
+        $byInvoiceCoa      = $invoiceJP['by_piutang_coa'];
+        $byInvoiceBelumCoa = $invoiceJP['by_belum_diterima_coa'];
+        $invoiceTotal      = $invoiceJP['total'];
 
         $sumRow = 4;
 
@@ -1047,60 +1134,60 @@ class NeracaLajurPiutang extends Page implements HasTable
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
         }
-        // CR AO-208 = total Invoice
-        $sheetSum->setCellValue('A' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->code : 'AO-208');
-        $sheetSum->setCellValue('B' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->name : 'Pendapatan Yang Belum Diterima');
-        $sheetSum->setCellValue('C' . $sumRow, 'Invoice Dibuat');
-        $sheetSum->setCellValue('D' . $sumRow, $invoiceTotal ?: '');
-        $sheetSum->setCellValue('E' . $sumRow, '');
-        $sheetSum->setCellValue('F' . $sumRow, $invoiceTotal ?: ''); // Kredit
-        $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sumRow++;
+        // CR AO-208.x per case CoA
+        foreach ($byInvoiceBelumCoa as $coaId => $total) {
+            $bCoa = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $bCoa ? $bCoa->code : 'AO-208');
+            $sheetSum->setCellValue('B' . $sumRow, $bCoa ? $bCoa->name : 'Pendapatan Yang Belum Diterima');
+            $sheetSum->setCellValue('C' . $sumRow, 'Invoice Dibuat');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, '');
+            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sumRow++;
+        }
 
-        // ── Bagian 2: Penerimaan Kas (CR AO-401.x) ──
-        $cashRows = DB::table('cash_reports')
-            ->whereNull('deleted_at')
-            ->whereIn('coa_id', $piutangCoaIds)
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
-            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-            ->groupBy('coa_id')
-            ->selectRaw('coa_id as piutang_coa_id, SUM(debit_amount) as total')
-            ->get();
-
-        $cashTotal = $cashRows->sum('total');
+        // ── Bagian 2: Penerimaan Kas (CR AO-401.x / DR AO-208.x) ──
+        $cashJP              = $this->getCashReportPiutangForJP($startOfMonth, $endOfMonth);
+        $byCashPendapatan    = $cashJP['by_pendapatan_coa'];
+        $byCashBelumDiterima = $cashJP['by_belum_diterima_coa'];
+        $cashTotal           = $cashJP['total'];
 
         $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 2: Penerimaan Kas (Pengakuan Pendapatan) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
         $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
         $sumRow++;
 
-        foreach ($cashRows as $row) {
-            $pendapatanCoaId = $piutangMap[$row->piutang_coa_id] ?? null;
-            $pendapatanCoa   = $pendapatanCoaId ? $pendapatanCoaList->get($pendapatanCoaId) : null;
+        foreach ($byCashPendapatan as $coaId => $total) {
+            $pendapatanCoa = $pendapatanCoaList->get($coaId) ?? DB::table('coa')->where('id', $coaId)->first();
             // CR AO-401.x
             $sheetSum->setCellValue('A' . $sumRow, $pendapatanCoa ? $pendapatanCoa->code : '-');
             $sheetSum->setCellValue('B' . $sumRow, $pendapatanCoa ? $pendapatanCoa->name : '-');
             $sheetSum->setCellValue('C' . $sumRow, 'Penerimaan Kas');
-            $sheetSum->setCellValue('D' . $sumRow, $row->total ?: '');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
             $sheetSum->setCellValue('E' . $sumRow, '');
-            $sheetSum->setCellValue('F' . $sumRow, $row->total ?: ''); // Kredit
+            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
         }
-        // DR AO-208 = total penerimaan kas (pengurang accrual Pendapatan Belum Diterima)
-        $sheetSum->setCellValue('A' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->code : 'AO-208');
-        $sheetSum->setCellValue('B' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->name : 'Pendapatan Yang Belum Diterima');
-        $sheetSum->setCellValue('C' . $sumRow, 'Penerimaan Kas');
-        $sheetSum->setCellValue('D' . $sumRow, $cashTotal ?: '');
-        $sheetSum->setCellValue('E' . $sumRow, $cashTotal ?: ''); // Debit
-        $sheetSum->setCellValue('F' . $sumRow, '');
-        $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sumRow++;
+        // DR AO-208.x per case CoA
+        foreach ($byCashBelumDiterima as $coaId => $total) {
+            $bCoa = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $bCoa ? $bCoa->code : 'AO-208');
+            $sheetSum->setCellValue('B' . $sumRow, $bCoa ? $bCoa->name : 'Pendapatan Yang Belum Diterima');
+            $sheetSum->setCellValue('C' . $sumRow, 'Penerimaan Kas');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
+            $sheetSum->setCellValue('F' . $sumRow, '');
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sumRow++;
+        }
 
-        // ── Bagian 3: PPh23 dari Invoice (DR AO-103.x / CR AO-208) ──
-        $pph23JP      = $this->getInvoicePph23ForJP($startOfMonth, $endOfMonth);
-        $byPph23Coa   = $pph23JP['by_piutang_coa'];
-        $pph23Total   = $pph23JP['total'];
+        // ── Bagian 3: PPh23 dari Invoice (DR AO-103.x / CR AO-208.x) ──
+        $pph23JP          = $this->getInvoicePph23ForJP($startOfMonth, $endOfMonth);
+        $byPph23Coa       = $pph23JP['by_piutang_coa'];
+        $byPph23BelumCoa  = $pph23JP['by_belum_diterima_coa'];
+        $pph23Total       = $pph23JP['total'];
 
         $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 3: PPh23 Invoice (Pengakuan PPh23) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
@@ -1119,36 +1206,43 @@ class NeracaLajurPiutang extends Page implements HasTable
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
         }
-        // CR AO-208 = total PPh23
-        $sheetSum->setCellValue('A' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->code : 'AO-208');
-        $sheetSum->setCellValue('B' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->name : 'Pendapatan Yang Belum Diterima');
-        $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Invoice');
-        $sheetSum->setCellValue('D' . $sumRow, $pph23Total ?: '');
-        $sheetSum->setCellValue('E' . $sumRow, '');
-        $sheetSum->setCellValue('F' . $sumRow, $pph23Total ?: ''); // Kredit
-        $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sumRow++;
+        // CR AO-208.x per case CoA
+        foreach ($byPph23BelumCoa as $coaId => $total) {
+            $bCoa = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $bCoa ? $bCoa->code : 'AO-208');
+            $sheetSum->setCellValue('B' . $sumRow, $bCoa ? $bCoa->name : 'Pendapatan Yang Belum Diterima');
+            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Invoice');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, '');
+            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sumRow++;
+        }
 
-        // ── Bagian 4: PPh23 dari Invoice yang di-checklist (DR AO-208 & DR AO-518.1 / CR AO-401.x & CR AO-103.x) ──
-        $pphCheckedJP   = $this->getInvoicePphCheckedForJP($startOfMonth, $endOfMonth);
-        $byPphCheckedPiutang = $pphCheckedJP['by_piutang_coa'];
+        // ── Bagian 4: PPh23 dari Invoice yang di-checklist (DR AO-208.x & DR AO-518.1 / CR AO-401.x & CR AO-103.x) ──
+        $pphCheckedJP           = $this->getInvoicePphCheckedForJP($startOfMonth, $endOfMonth);
+        $byPphCheckedPiutang    = $pphCheckedJP['by_piutang_coa'];
         $byPphCheckedPendapatan = $pphCheckedJP['by_pendapatan_coa'];
-        $pphCheckedTotal = $pphCheckedJP['total'];
+        $byPphCheckedBelumCoa   = $pphCheckedJP['by_belum_diterima_coa'];
+        $pphCheckedTotal        = $pphCheckedJP['total'];
 
         $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 4: PPh23 Checklist (Biaya PPh23) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
         $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
         $sumRow++;
 
-        // DR AO-208
-        $sheetSum->setCellValue('A' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->code : 'AO-208');
-        $sheetSum->setCellValue('B' . $sumRow, $coaBelumDiterima ? $coaBelumDiterima->name : 'Pendapatan Yang Belum Diterima');
-        $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Checklist');
-        $sheetSum->setCellValue('D' . $sumRow, $pphCheckedTotal ?: '');
-        $sheetSum->setCellValue('E' . $sumRow, $pphCheckedTotal ?: ''); // Debit
-        $sheetSum->setCellValue('F' . $sumRow, '');
-        $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sumRow++;
+        // DR AO-208.x per case CoA
+        foreach ($byPphCheckedBelumCoa as $coaId => $total) {
+            $bCoa = DB::table('coa')->where('id', $coaId)->first();
+            $sheetSum->setCellValue('A' . $sumRow, $bCoa ? $bCoa->code : 'AO-208');
+            $sheetSum->setCellValue('B' . $sumRow, $bCoa ? $bCoa->name : 'Pendapatan Yang Belum Diterima');
+            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Checklist');
+            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
+            $sheetSum->setCellValue('F' . $sumRow, '');
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sumRow++;
+        }
 
         // DR AO-108.1
         $coaBiayaPph = DB::table('coa')->where('id', 91)->first();

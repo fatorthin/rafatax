@@ -461,12 +461,56 @@ class GeneralLedger extends Page
         ];
     }
 
+    private function getPiutangToBelumDiterimaMap(): array
+    {
+        return [
+            188 => 175, // AO-103.6  -> AO-208   (Fee Bulanan)
+            182 => 193, // AO-103.7  -> AO-208.1 (Fee SPT)
+            183 => 194, // AO-103.8  -> AO-208.2 (Fee SP2DK)
+            184 => 195, // AO-103.9  -> AO-208.3 (Fee Pembetulan)
+            185 => 196, // AO-103.10 -> AO-208.4 (Fee Internal)
+            186 => 197, // AO-103.11 -> AO-208.5 (Fee Restitusi)
+            187 => 198, // AO-103.12 -> AO-208.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    private function getRevenueToBelumDiterimaMap(): array
+    {
+        return [
+            119 => 175, // AO-401   -> AO-208   (Fee Bulanan)
+            120 => 193, // AO-401.1 -> AO-208.1 (Fee SPT)
+            121 => 194, // AO-401.2 -> AO-208.2 (Fee SP2DK)
+            122 => 195, // AO-401.3 -> AO-208.3 (Fee Pembetulan)
+            123 => 196, // AO-401.4 -> AO-208.4 (Fee Internal)
+            124 => 197, // AO-401.5 -> AO-208.5 (Fee Restitusi)
+            125 => 198, // AO-401.6 -> AO-208.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    private function getBelumDiterimaCoaId(int $coaId): int
+    {
+        $piutangMap = $this->getPiutangToBelumDiterimaMap();
+        if (isset($piutangMap[$coaId])) {
+            return $piutangMap[$coaId];
+        }
+
+        $revenueMap = $this->getRevenueToBelumDiterimaMap();
+        if (isset($revenueMap[$coaId])) {
+            return $revenueMap[$coaId];
+        }
+
+        if (in_array($coaId, array_values($piutangMap), true)) {
+            return $coaId;
+        }
+
+        return 175;
+    }
+
     private function getDynamicJurnalPendapatan(string $startDate, string $endDate): \Illuminate\Support\Collection
     {
         $transactions = collect();
         $coas = \App\Models\Coa::all()->keyBy('id');
         $map = $this->getPiutangToPendapatanMap();
-        $coaBelumDiterimaId = 175; // AO-208 Pendapatan Yang Belum Diterima
         $biayaPph23Id = 91; // AO-108.1 PPh 23
 
         $revenueToPiutangMap = [
@@ -512,6 +556,7 @@ class GeneralLedger extends Page
                 continue;
             }
 
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
             $clientName = $row->client_name_inv ?: ($row->client_name_mou ?: '');
             $desc = "Piutang Invoice No. " . $row->invoice_number . ($clientName ? " - " . $clientName : "");
 
@@ -526,13 +571,13 @@ class GeneralLedger extends Page
             $transactions->push($tDebit);
 
             $tCredit = new \stdClass();
-            $tCredit->coa_id = $coaBelumDiterimaId;
+            $tCredit->coa_id = $belumDiterimaCoaId;
             $tCredit->transaction_date = $row->invoice_date;
             $tCredit->description = $desc;
             $tCredit->source = 'Jurnal Pendapatan';
             $tCredit->display_debit = 0;
             $tCredit->display_credit = $row->amount;
-            $tCredit->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $tCredit->coa = $coas[$belumDiterimaCoaId] ?? null;
             $transactions->push($tCredit);
         }
 
@@ -552,16 +597,17 @@ class GeneralLedger extends Page
             $pendapatanCoaId = $map[$row->coa_id] ?? null;
             if (!$pendapatanCoaId) continue;
 
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($row->coa_id);
             $desc = "Penerimaan Piutang - " . ($row->description ?: 'Tanpa Keterangan');
 
             $tDebit = new \stdClass();
-            $tDebit->coa_id = $coaBelumDiterimaId;
+            $tDebit->coa_id = $belumDiterimaCoaId;
             $tDebit->transaction_date = $row->transaction_date;
             $tDebit->description = $desc;
             $tDebit->source = 'Jurnal Pendapatan';
             $tDebit->display_debit = $row->debit_amount;
             $tDebit->display_credit = 0;
-            $tDebit->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $tDebit->coa = $coas[$belumDiterimaCoaId] ?? null;
             $transactions->push($tDebit);
 
             $tCredit = new \stdClass();
@@ -595,6 +641,7 @@ class GeneralLedger extends Page
             $coaId = isset($revenueToPiutangMap[$row->coa_id]) ? $revenueToPiutangMap[$row->coa_id] : $row->coa_id;
             if ($coaId == 188 || $coaId == 182) $coaId = 188;
             $pph23Amount = ($row->amount / 98) * 2;
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($coaId);
 
             $tDebit = new \stdClass();
             $tDebit->coa_id = $coaId;
@@ -607,13 +654,13 @@ class GeneralLedger extends Page
             $transactions->push($tDebit);
 
             $tCredit = new \stdClass();
-            $tCredit->coa_id = $coaBelumDiterimaId;
+            $tCredit->coa_id = $belumDiterimaCoaId;
             $tCredit->transaction_date = $row->invoice_date;
             $tCredit->description = $desc;
             $tCredit->source = 'Jurnal Pendapatan';
             $tCredit->display_debit = 0;
             $tCredit->display_credit = $pph23Amount;
-            $tCredit->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $tCredit->coa = $coas[$belumDiterimaCoaId] ?? null;
             $transactions->push($tCredit);
         }
 
@@ -655,18 +702,20 @@ class GeneralLedger extends Page
                 $pendapatanCoaId = 119;
             }
 
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
             $invoiceTotal = $checkedInvoiceTotals[$row->invoice_id] ?? 0;
             $pph23Amount = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
 
             $tDebit208 = new \stdClass();
-            $tDebit208->coa_id = $coaBelumDiterimaId;
+            $tDebit208->coa_id = $belumDiterimaCoaId;
             $tDebit208->transaction_date = $row->tanggal_bukti_potong_pph23;
             $tDebit208->description = $desc;
             $tDebit208->source = 'Jurnal Pendapatan';
             $tDebit208->display_debit = $pph23Amount;
             $tDebit208->display_credit = 0;
-            $tDebit208->coa = $coas[$coaBelumDiterimaId] ?? null;
+            $tDebit208->coa = $coas[$belumDiterimaCoaId] ?? null;
             $transactions->push($tDebit208);
+
             $tDebit518 = new \stdClass();
             $tDebit518->coa_id = $biayaPph23Id;
             $tDebit518->transaction_date = $row->tanggal_bukti_potong_pph23;
@@ -676,6 +725,7 @@ class GeneralLedger extends Page
             $tDebit518->display_credit = 0;
             $tDebit518->coa = $coas[$biayaPph23Id] ?? null;
             $transactions->push($tDebit518);
+
             $tCredit401 = new \stdClass();
             $tCredit401->coa_id = $pendapatanCoaId;
             $tCredit401->transaction_date = $row->tanggal_bukti_potong_pph23;
@@ -685,6 +735,7 @@ class GeneralLedger extends Page
             $tCredit401->display_credit = $pph23Amount;
             $tCredit401->coa = $coas[$pendapatanCoaId] ?? null;
             $transactions->push($tCredit401);
+
             $tCredit103 = new \stdClass();
             $tCredit103->coa_id = $piutangCoaId;
             $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23;
@@ -738,6 +789,7 @@ class GeneralLedger extends Page
                 };
             }
 
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
             $pendapatanCoaId = $map[$piutangCoaId] ?? 119;
             $discountAmount = (float) $row->discount_amount;
             $desc = "Potongan Pendapatan MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
@@ -764,15 +816,15 @@ class GeneralLedger extends Page
             $tCredit103->coa = $coas[$piutangCoaId] ?? null;
             $transactions->push($tCredit103);
 
-            // 3. Debit AO-208 (Pendapatan Belum Diterima: 175)
+            // 3. Debit AO-208.x (Pendapatan Belum Diterima: $belumDiterimaCoaId)
             $tDebit208 = new \stdClass();
-            $tDebit208->coa_id = 175;
+            $tDebit208->coa_id = $belumDiterimaCoaId;
             $tDebit208->transaction_date = $row->tgl_discount;
             $tDebit208->description = $desc;
             $tDebit208->source = 'Jurnal Pendapatan';
             $tDebit208->display_debit = $discountAmount;
             $tDebit208->display_credit = 0;
-            $tDebit208->coa = $coas[175] ?? null;
+            $tDebit208->coa = $coas[$belumDiterimaCoaId] ?? null;
             $transactions->push($tDebit208);
 
             // 4. Kredit AO-401.x (Pendapatan: $pendapatanCoaId)
@@ -829,18 +881,19 @@ class GeneralLedger extends Page
                 };
             }
 
+            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
             $cancelAmount = (float) $row->cancel_mou_amount;
             $desc = "Pembatalan MoU No. " . $row->mou_number . ($row->company_name ? " - " . $row->company_name : "");
 
-            // 1. Debit AO-208 (Pendapatan Belum Diterima: 175)
+            // 1. Debit AO-208.x (Pendapatan Belum Diterima: $belumDiterimaCoaId)
             $tDebit208 = new \stdClass();
-            $tDebit208->coa_id = 175;
+            $tDebit208->coa_id = $belumDiterimaCoaId;
             $tDebit208->transaction_date = $row->tgl_cancel_mou;
             $tDebit208->description = $desc;
             $tDebit208->source = 'Jurnal Pendapatan';
             $tDebit208->display_debit = $cancelAmount;
             $tDebit208->display_credit = 0;
-            $tDebit208->coa = $coas[175] ?? null;
+            $tDebit208->coa = $coas[$belumDiterimaCoaId] ?? null;
             $transactions->push($tDebit208);
 
             // 2. Kredit AO-103.x (Piutang: $piutangCoaId)

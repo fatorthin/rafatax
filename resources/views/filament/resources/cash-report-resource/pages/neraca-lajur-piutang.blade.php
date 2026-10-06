@@ -170,17 +170,11 @@
                         $totalNeracaSetelahAJEDebit += $nstDebitGT;
                         $totalNeracaSetelahAJEKredit += $nstKreditGT;
 
-                        $showInNeraca = preg_match(
-                            '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
-                            $row->code,
-                        );
+                        $showInNeraca = in_array((int) $row->group_coa_id, [10, 11, 12, 20, 21, 30], true);
                         $totalNeracaDebit += $showInNeraca ? $nstDebitGT : 0;
                         $totalNeracaKredit += $showInNeraca ? $nstKreditGT : 0;
 
-                        $showInLabaRugi = preg_match(
-                            '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
-                            $row->code,
-                        );
+                        $showInLabaRugi = in_array((int) $row->group_coa_id, [40, 50, 60, 70], true);
                         $totalLabaRugiDebit += $showInLabaRugi ? $nstDebitGT : 0;
                         $totalLabaRugiKredit += $showInLabaRugi ? $nstKreditGT : 0;
                     } else {
@@ -193,17 +187,11 @@
                         $totalNeracaSetelahAJEDebit += $neracaSetelahAJEDebit;
                         $totalNeracaSetelahAJEKredit += $neracaSetelahAJEKredit;
 
-                        $showInNeraca = preg_match(
-                            '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
-                            $row->code,
-                        );
+                        $showInNeraca = in_array((int) $row->group_coa_id, [10, 11, 12, 20, 21, 30], true);
                         $totalNeracaDebit += $showInNeraca ? $neracaSetelahAJEDebit : 0;
                         $totalNeracaKredit += $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
-                        $showInLabaRugi = preg_match(
-                            '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
-                            $row->code,
-                        );
+                        $showInLabaRugi = in_array((int) $row->group_coa_id, [40, 50, 60, 70], true);
                         $totalLabaRugiDebit += $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
                         $totalLabaRugiKredit += $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
                     }
@@ -494,17 +482,11 @@
                                 $neracaSetelahAJEDebit = $selisihSetelahAJE > 0 ? $selisihSetelahAJE : 0;
                                 $neracaSetelahAJEKredit = $selisihSetelahAJE < 0 ? abs($selisihSetelahAJE) : 0;
 
-                                $showInNeraca = preg_match(
-                                    '/^AO-(([1-2][0-9]{2}|30[0-5])(\.[1-5])?|(10[1-2])\.[1-5]|1010(\.[1-9])?|1011(\.[1-9])?)$/',
-                                    $row->code,
-                                );
+                                $showInNeraca = in_array((int) $row->group_coa_id, [10, 11, 12, 20, 21, 30], true);
                                 $neracaDebit = $showInNeraca ? $neracaSetelahAJEDebit : 0;
                                 $neracaKredit = $showInNeraca ? $neracaSetelahAJEKredit : 0;
 
-                                $showInLabaRugi = preg_match(
-                                    '/^AO-(4[0-9]{2}(\.[1-6])?|501(\.[1-4])?|50[0-9](\.[1-9])?|5[1-9][0-9](\.[1-9])?|6[0-9]{2}|70[0-2])$/',
-                                    $row->code,
-                                );
+                                $showInLabaRugi = in_array((int) $row->group_coa_id, [40, 50, 60, 70], true);
                                 $labaRugiDebit = $showInLabaRugi ? $neracaSetelahAJEDebit : 0;
                                 $labaRugiKredit = $showInLabaRugi ? $neracaSetelahAJEKredit : 0;
 

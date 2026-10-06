@@ -71,6 +71,60 @@ class JurnalPendapatanService
     }
 
     /**
+     * Mapping CoA Piutang (AO-103.x) ke CoA Pendapatan Belum Diterima (AO-208.x).
+     */
+    public static function getPiutangToBelumDiterimaMap(): array
+    {
+        return [
+            188 => 175, // AO-103.6  -> AO-208   (Fee Bulanan)
+            182 => 193, // AO-103.7  -> AO-208.1 (Fee SPT)
+            183 => 194, // AO-103.8  -> AO-208.2 (Fee SP2DK)
+            184 => 195, // AO-103.9  -> AO-208.3 (Fee Pembetulan)
+            185 => 196, // AO-103.10 -> AO-208.4 (Fee Internal)
+            186 => 197, // AO-103.11 -> AO-208.5 (Fee Restitusi)
+            187 => 198, // AO-103.12 -> AO-208.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    /**
+     * Mapping CoA Pendapatan (AO-401.x) ke CoA Pendapatan Belum Diterima (AO-208.x).
+     */
+    public static function getRevenueToBelumDiterimaMap(): array
+    {
+        return [
+            119 => 175, // AO-401   -> AO-208   (Fee Bulanan)
+            120 => 193, // AO-401.1 -> AO-208.1 (Fee SPT)
+            121 => 194, // AO-401.2 -> AO-208.2 (Fee SP2DK)
+            122 => 195, // AO-401.3 -> AO-208.3 (Fee Pembetulan)
+            123 => 196, // AO-401.4 -> AO-208.4 (Fee Internal)
+            124 => 197, // AO-401.5 -> AO-208.5 (Fee Restitusi)
+            125 => 198, // AO-401.6 -> AO-208.6 (Fee Pemeriksaan)
+        ];
+    }
+
+    /**
+     * Dapatkan ID CoA AO-208.x berdasarkan CoA ID (Piutang / Pendapatan / AO-208).
+     */
+    public static function getBelumDiterimaCoaId(int $coaId): int
+    {
+        $piutangMap = static::getPiutangToBelumDiterimaMap();
+        if (isset($piutangMap[$coaId])) {
+            return $piutangMap[$coaId];
+        }
+
+        $revenueMap = static::getRevenueToBelumDiterimaMap();
+        if (isset($revenueMap[$coaId])) {
+            return $revenueMap[$coaId];
+        }
+
+        if (in_array($coaId, array_values($piutangMap), true)) {
+            return $coaId;
+        }
+
+        return self::COA_PENDAPATAN_BELUM_DITERIMA_ID;
+    }
+
+    /**
      * Sumber 1 — Invoices & cost_list_invoices (Invoice dibuat pada bulan berjalan).
      */
     public static function getInvoicePiutangForJP(string $startOfMonth, string $endOfMonth): array
@@ -87,8 +141,9 @@ class JurnalPendapatanService
         $revenueToPiutangMap    = static::getRevenueToPiutangMap();
         $piutangToPendapatanMap = static::getPiutangToPendapatanMap();
 
-        $byPiutangCoa = [];
-        $grandTotal   = 0;
+        $byPiutangCoa       = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         foreach ($rows as $row) {
             $coaId = $row->coa_id;
@@ -101,13 +156,17 @@ class JurnalPendapatanService
                 continue;
             }
 
-            $byPiutangCoa[$piutangCoaId] = ($byPiutangCoa[$piutangCoaId] ?? 0) + (float) $row->amount;
-            $grandTotal                  += (float) $row->amount;
+            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($piutangCoaId);
+
+            $byPiutangCoa[$piutangCoaId]             = ($byPiutangCoa[$piutangCoaId] ?? 0) + (float) $row->amount;
+            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + (float) $row->amount;
+            $grandTotal                              += (float) $row->amount;
         }
 
         return [
-            'by_piutang_coa' => $byPiutangCoa, // JP DEBIT  AO-103.x
-            'total'          => $grandTotal,    // JP KREDIT AO-208
+            'by_piutang_coa'        => $byPiutangCoa,        // JP DEBIT  AO-103.x
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa, // JP KREDIT AO-208.x
+            'total'                 => $grandTotal,
         ];
     }
 
@@ -126,20 +185,25 @@ class JurnalPendapatanService
             ->selectRaw('coa_id, SUM(debit_amount) as total')
             ->get();
 
-        $byPendapatanCoa = [];
-        $grandTotal      = 0;
+        $byPendapatanCoa    = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         foreach ($rows as $row) {
-            $pendapatanCoaId = $map[$row->coa_id] ?? null;
+            $pendapatanCoaId    = $map[$row->coa_id] ?? null;
+            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($row->coa_id);
+
             if ($pendapatanCoaId) {
-                $byPendapatanCoa[$pendapatanCoaId] = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + (float) $row->total;
-                $grandTotal                        += (float) $row->total;
+                $byPendapatanCoa[$pendapatanCoaId]       = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + (float) $row->total;
+                $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + (float) $row->total;
+                $grandTotal                              += (float) $row->total;
             }
         }
 
         return [
-            'by_pendapatan_coa' => $byPendapatanCoa, // JP KREDIT AO-401.x
-            'total'             => $grandTotal,       // JP DEBIT  AO-208
+            'by_pendapatan_coa'    => $byPendapatanCoa,    // JP KREDIT AO-401.x
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa, // JP DEBIT  AO-208.x
+            'total'                => $grandTotal,
         ];
     }
 
@@ -157,8 +221,9 @@ class JurnalPendapatanService
             ->selectRaw('cli.coa_id, cli.amount')
             ->get();
 
-        $byPiutangCoa = [];
-        $grandTotal   = 0;
+        $byPiutangCoa       = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         $revenueToPiutangMap = static::getRevenueToPiutangMap();
 
@@ -175,15 +240,18 @@ class JurnalPendapatanService
                 $coaId = 188;
             }
 
-            $pph23Amount = ((float) $row->amount / 98) * 2;
+            $pph23Amount        = ((float) $row->amount / 98) * 2;
+            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($coaId);
 
-            $byPiutangCoa[$coaId] = ($byPiutangCoa[$coaId] ?? 0) + $pph23Amount;
-            $grandTotal          += $pph23Amount;
+            $byPiutangCoa[$coaId]                    = ($byPiutangCoa[$coaId] ?? 0) + $pph23Amount;
+            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $pph23Amount;
+            $grandTotal                              += $pph23Amount;
         }
 
         return [
-            'by_piutang_coa' => $byPiutangCoa,
-            'total'          => $grandTotal,
+            'by_piutang_coa'        => $byPiutangCoa,
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
+            'total'                 => $grandTotal,
         ];
     }
 
@@ -206,9 +274,10 @@ class JurnalPendapatanService
             $invoiceTotals[$row->invoice_id] = ($invoiceTotals[$row->invoice_id] ?? 0) + (float) $row->item_amount;
         }
 
-        $byPiutangCoa    = [];
-        $byPendapatanCoa = [];
-        $grandTotal      = 0;
+        $byPiutangCoa       = [];
+        $byPendapatanCoa    = [];
+        $byBelumDiterimaCoa = [];
+        $grandTotal         = 0;
 
         $revenueToPiutangMap    = static::getRevenueToPiutangMap();
         $piutangToPendapatanMap = static::getPiutangToPendapatanMap();
@@ -233,18 +302,22 @@ class JurnalPendapatanService
                 $pendapatanCoaId = 119;
             }
 
+            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($piutangCoaId);
+
             $invoiceTotal = $invoiceTotals[$row->invoice_id] ?? 0;
             $pph23Amount  = ($invoiceTotal > 0) ? ((float) $row->item_amount / $invoiceTotal) * (float) $row->nominal_bukti_potong_pph23 : 0;
 
-            $byPiutangCoa[$piutangCoaId]       = ($byPiutangCoa[$piutangCoaId] ?? 0) + $pph23Amount;
-            $byPendapatanCoa[$pendapatanCoaId] = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $pph23Amount;
-            $grandTotal                        += $pph23Amount;
+            $byPiutangCoa[$piutangCoaId]             = ($byPiutangCoa[$piutangCoaId] ?? 0) + $pph23Amount;
+            $byPendapatanCoa[$pendapatanCoaId]       = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $pph23Amount;
+            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $pph23Amount;
+            $grandTotal                              += $pph23Amount;
         }
 
         return [
-            'by_piutang_coa'    => $byPiutangCoa,
-            'by_pendapatan_coa' => $byPendapatanCoa,
-            'total'             => $grandTotal,
+            'by_piutang_coa'        => $byPiutangCoa,
+            'by_pendapatan_coa'    => $byPendapatanCoa,
+            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
+            'total'                 => $grandTotal,
         ];
     }
 
@@ -292,14 +365,15 @@ class JurnalPendapatanService
                 };
             }
 
-            $pendapatanCoaId = $map[$piutangCoaId] ?? 119;
-            $discountAmount  = (float) $mou->discount_amount;
+            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($piutangCoaId);
+            $pendapatanCoaId    = $map[$piutangCoaId] ?? 119;
+            $discountAmount     = (float) $mou->discount_amount;
 
             // Debits:
             // 1. AO-420 (Potongan Pendapatan: 190)
             $debits[self::COA_POTONGAN_PENDAPATAN_ID] = ($debits[self::COA_POTONGAN_PENDAPATAN_ID] ?? 0) + $discountAmount;
-            // 2. AO-208 (Pendapatan Yang Belum Diterima: 175)
-            $debits[self::COA_PENDAPATAN_BELUM_DITERIMA_ID] = ($debits[self::COA_PENDAPATAN_BELUM_DITERIMA_ID] ?? 0) + $discountAmount;
+            // 2. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
+            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $discountAmount;
 
             // Kredits:
             // 1. AO-103.x (Piutang: $piutangCoaId)
@@ -322,7 +396,7 @@ class JurnalPendapatanService
         $mous = DB::table('mous as m')
             ->whereNull('m.deleted_at')
             ->where('m.status', 'approved')
-            ->where('m.cancel_mou_amount', '>', 0)
+            ->where('cancel_mou_amount', '>', 0)
             ->whereNotNull('m.tgl_cancel_mou')
             ->whereBetween('m.tgl_cancel_mou', [$startOfMonth, $endOfMonth])
             ->select([
@@ -358,11 +432,12 @@ class JurnalPendapatanService
                 };
             }
 
-            $cancelAmount = (float) $mou->cancel_mou_amount;
+            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($piutangCoaId);
+            $cancelAmount       = (float) $mou->cancel_mou_amount;
 
             // Debits:
-            // 1. AO-208 (Pendapatan Yang Belum Diterima: 175)
-            $debits[self::COA_PENDAPATAN_BELUM_DITERIMA_ID] = ($debits[self::COA_PENDAPATAN_BELUM_DITERIMA_ID] ?? 0) + $cancelAmount;
+            // 1. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
+            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $cancelAmount;
 
             // Kredits:
             // 1. AO-103.x (Piutang: $piutangCoaId)
@@ -417,14 +492,22 @@ class JurnalPendapatanService
                 $addEntry($coaId, "[Invoice Dibuat] Pengakuan Piutang ({$coaLabel})", (float) $amount, 0);
             }
         }
-        if ($invoiceJP['total'] > 0) {
-            $addEntry(self::COA_PENDAPATAN_BELUM_DITERIMA_ID, "[Invoice Dibuat] Pendapatan Belum Diterima (Total Akrual)", 0, (float) $invoiceJP['total']);
+        foreach ($invoiceJP['by_belum_diterima_coa'] as $coaId => $amount) {
+            if ($amount > 0) {
+                $coa = $coas->get($coaId);
+                $coaLabel = $coa ? "{$coa->code} - {$coa->name}" : "CoA #{$coaId}";
+                $addEntry($coaId, "[Invoice Dibuat] Pendapatan Belum Diterima ({$coaLabel})", 0, (float) $amount);
+            }
         }
 
         // ── Bagian 2: Penerimaan Kas (Pengakuan Pendapatan) ──
         $cashJP = static::getCashReportPiutangForJP($startOfMonth, $endOfMonth);
-        if ($cashJP['total'] > 0) {
-            $addEntry(self::COA_PENDAPATAN_BELUM_DITERIMA_ID, "[Penerimaan Kas] Pendapatan Belum Diterima (Pengurang Akrual)", (float) $cashJP['total'], 0);
+        foreach ($cashJP['by_belum_diterima_coa'] as $coaId => $amount) {
+            if ($amount > 0) {
+                $coa = $coas->get($coaId);
+                $coaLabel = $coa ? "{$coa->code} - {$coa->name}" : "CoA #{$coaId}";
+                $addEntry($coaId, "[Penerimaan Kas] Pendapatan Belum Diterima ({$coaLabel})", (float) $amount, 0);
+            }
         }
         foreach ($cashJP['by_pendapatan_coa'] as $coaId => $amount) {
             if ($amount > 0) {
@@ -443,14 +526,24 @@ class JurnalPendapatanService
                 $addEntry($coaId, "[PPh 23 Invoice] Pengakuan PPh 23 ({$coaLabel})", (float) $amount, 0);
             }
         }
-        if ($pph23JP['total'] > 0) {
-            $addEntry(self::COA_PENDAPATAN_BELUM_DITERIMA_ID, "[PPh 23 Invoice] Pendapatan Belum Diterima (Total PPh 23)", 0, (float) $pph23JP['total']);
+        foreach ($pph23JP['by_belum_diterima_coa'] as $coaId => $amount) {
+            if ($amount > 0) {
+                $coa = $coas->get($coaId);
+                $coaLabel = $coa ? "{$coa->code} - {$coa->name}" : "CoA #{$coaId}";
+                $addEntry($coaId, "[PPh 23 Invoice] Pendapatan Belum Diterima ({$coaLabel})", 0, (float) $amount);
+            }
         }
 
         // ── Bagian 4: PPh 23 Checklist (Biaya PPh 23) ──
         $pphCheckedJP = static::getInvoicePphCheckedForJP($startOfMonth, $endOfMonth);
+        foreach ($pphCheckedJP['by_belum_diterima_coa'] as $coaId => $amount) {
+            if ($amount > 0) {
+                $coa = $coas->get($coaId);
+                $coaLabel = $coa ? "{$coa->code} - {$coa->name}" : "CoA #{$coaId}";
+                $addEntry($coaId, "[PPh 23 Checklist] Pendapatan Belum Diterima ({$coaLabel})", (float) $amount, 0);
+            }
+        }
         if ($pphCheckedJP['total'] > 0) {
-            $addEntry(self::COA_PENDAPATAN_BELUM_DITERIMA_ID, "[PPh 23 Checklist] Pendapatan Belum Diterima", (float) $pphCheckedJP['total'], 0);
             $addEntry(self::COA_BIAYA_PPH23_ID, "[PPh 23 Checklist] PPh 23 (Biaya)", (float) $pphCheckedJP['total'], 0);
         }
         foreach ($pphCheckedJP['by_pendapatan_coa'] as $coaId => $amount) {
