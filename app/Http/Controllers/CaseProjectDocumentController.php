@@ -58,7 +58,7 @@ class CaseProjectDocumentController extends Controller
                 'wp_badan_nama' => $client?->company_name ?? '',
                 'wp_badan_npwp' => $client?->npwp ?? '',
                 'kuasa_kategori' => 'konsultan_pajak',
-                'penerima_nama' => 'ANTIN OKFITASARI, S.E., S.H., M.Si., Ak., CA.AB., BKP., CATr., ACPA',
+                'penerima_nama' => 'ANTIN OKFITASARI',
                 'penerima_npwp' => '',
                 'penerima_izin_no' => '',
                 'penerima_status_keluarga' => '-',
@@ -81,7 +81,7 @@ class CaseProjectDocumentController extends Controller
             'caseProject' => $caseProject,
             'poa' => $poa,
         ])->setPaper('a4', 'portrait')
-          ->setOption(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+            ->setOption(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
 
         $safeClientName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $caseProject->client?->company_name ?? 'Client');
         $safeNumber = preg_replace('/[^A-Za-z0-9_\-]/', '-', $poa->nomor_surat_kuasa ?: 'Surat-Kuasa');

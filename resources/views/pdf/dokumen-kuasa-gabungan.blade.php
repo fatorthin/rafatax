@@ -172,16 +172,16 @@
             </tr>
             <tr>
                 <td colspan="3" style="padding-left: 10px;">
-                    <span class="checkbox-box">{!! ($poa->bertindak_selaku ?? '') === 'wajib_pajak' ? '&#10003;' : '&nbsp;' !!}</span> Wajib Pajak
+                    <span class="checkbox-box">{!! ($poa->bertindak_selaku ?? '') === 'wajib_pajak' ? 'X' : '&nbsp;' !!}</span> Wajib Pajak
                 </td>
             </tr>
             <tr>
                 <td colspan="3" style="padding-left: 10px;">
-                    <span class="checkbox-box">{!! ($poa->bertindak_selaku ?? 'wakil_wajib_pajak') === 'wakil_wajib_pajak' ? '&#10003;' : '&nbsp;' !!}</span> Wakil Wajib Pajak:
+                    <span class="checkbox-box">{!! ($poa->bertindak_selaku ?? 'wakil_wajib_pajak') === 'wakil_wajib_pajak' ? 'X' : '&nbsp;' !!}</span> Wakil Wajib Pajak:
                 </td>
             </tr>
             <tr>
-                <td style="padding-left: 35px;">nama</td>
+                <td style="padding-left: 35px;">Nama</td>
                 <td>:</td>
                 <td>{{ $poa->wp_badan_nama ?? '..................................................................' }}</td>
             </tr>
@@ -196,21 +196,21 @@
         <table class="data-table" style="margin-left: 10px;">
             <tr>
                 <td colspan="3">
-                    <span class="checkbox-box">{!! ($poa->kuasa_kategori ?? 'konsultan_pajak') === 'konsultan_pajak' ? '&#10003;' : '&nbsp;' !!}</span> Konsultan Pajak
+                    <span class="checkbox-box">{!! ($poa->kuasa_kategori ?? 'konsultan_pajak') === 'konsultan_pajak' ? 'X' : '&nbsp;' !!}</span> Konsultan Pajak
                 </td>
             </tr>
             <tr>
                 <td colspan="3">
-                    <span class="checkbox-box">{!! ($poa->kuasa_kategori ?? '') === 'pihak_lain' ? '&#10003;' : '&nbsp;' !!}</span> Pihak lain
+                    <span class="checkbox-box">{!! ($poa->kuasa_kategori ?? '') === 'pihak_lain' ? 'X' : '&nbsp;' !!}</span> Pihak lain
                 </td>
             </tr>
             <tr>
                 <td colspan="3">
-                    <span class="checkbox-box">{!! ($poa->kuasa_kategori ?? '') === 'keluarga' ? '&#10003;' : '&nbsp;' !!}</span> keluarga Wajib Pajak,
+                    <span class="checkbox-box">{!! ($poa->kuasa_kategori ?? '') === 'keluarga' ? 'X' : '&nbsp;' !!}</span> keluarga Wajib Pajak,
                 </td>
             </tr>
             <tr>
-                <td style="width: 220px; padding-left: 25px;">nama</td>
+                <td style="width: 220px; padding-left: 25px;">Nama</td>
                 <td style="width: 15px;">:</td>
                 <td>{{ $poa->penerima_nama ?? '..................................................................' }}</td>
             </tr>
@@ -225,7 +225,7 @@
                 <td>{{ $poa->penerima_izin_no ?? '..................................................................' }}</td>
             </tr>
             <tr>
-                <td style="padding-left: 25px;">status hubungan keluarga</td>
+                <td style="padding-left: 25px;">Status hubungan keluarga</td>
                 <td>:</td>
                 <td>{{ $poa->penerima_status_keluarga ?? '-' }}</td>
             </tr>
@@ -298,7 +298,7 @@
         </table>
 
         <div class="footnotes">
-            *) Beri tanda " &radic; " pada kolom yang sesuai.<br>
+            *) Beri tanda " X " pada kolom yang sesuai.<br>
             **) Pilih salah satu yang sesuai.
         </div>
     </div>
