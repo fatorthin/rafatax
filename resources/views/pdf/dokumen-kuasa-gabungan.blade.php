@@ -7,13 +7,13 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 20mm 25mm 20mm 25mm;
+            margin: 12mm 20mm 12mm 20mm;
         }
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11.5pt;
-            line-height: 1.4;
+            font-size: 10.5pt;
+            line-height: 1.25;
             color: #000;
             margin: 0;
             padding: 0;
@@ -40,7 +40,7 @@
         }
 
         .doc-title {
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: bold;
             text-align: center;
             margin-bottom: 2px;
@@ -48,37 +48,37 @@
         }
 
         .doc-subtitle {
-            font-size: 11.5pt;
+            font-size: 10.5pt;
             text-align: center;
             margin-top: 0;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         p {
-            margin: 6px 0;
+            margin: 3px 0;
             text-align: justify;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 4px 0;
+            margin: 2px 0;
         }
 
         .data-table td {
-            padding: 2px 0;
+            padding: 1px 0;
             vertical-align: top;
-            font-size: 11.5pt;
+            font-size: 10.5pt;
         }
 
         .checkbox-box {
             display: inline-block;
-            width: 13px;
-            height: 13px;
+            width: 12px;
+            height: 12px;
             border: 1px solid #000;
             text-align: center;
-            line-height: 12px;
-            font-size: 10px;
+            line-height: 11px;
+            font-size: 9px;
             font-weight: bold;
             margin-right: 4px;
             vertical-align: middle;
@@ -89,18 +89,19 @@
         }
 
         ol.kuasa-list {
-            margin: 4px 0 6px 20px;
-            padding-left: 5px;
+            margin: 2px 0 4px 18px;
+            padding-left: 4px;
         }
 
         ol.kuasa-list li {
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             text-align: justify;
+            line-height: 1.2;
         }
 
         .signatures-table {
             width: 100%;
-            margin-top: 15px;
+            margin-top: 8px;
             border-collapse: collapse;
         }
 
@@ -108,26 +109,18 @@
             vertical-align: top;
             width: 50%;
             text-align: center;
-            font-size: 11.5pt;
+            font-size: 10.5pt;
         }
 
         .meterai-box {
-            width: 85px;
-            height: 48px;
+            width: 80px;
+            height: 42px;
             border: 1px dashed #666;
             text-align: center;
-            line-height: 48px;
-            font-size: 9pt;
+            line-height: 42px;
+            font-size: 8.5pt;
             color: #555;
-            margin: 8px auto;
-        }
-
-        .footnotes {
-            margin-top: 20px;
-            font-size: 9pt;
-            font-style: italic;
-            border-top: 0.5px solid #ccc;
-            padding-top: 4px;
+            margin: 4px auto;
         }
 
         .page-break {
@@ -153,7 +146,7 @@
         <p>Yang bertanda tangan di bawah ini:</p>
         <table class="data-table" style="margin-left: 5px;">
             <tr>
-                <td style="width: 150px;">nama</td>
+                <td style="width: 150px;">Nama</td>
                 <td style="width: 15px;">:</td>
                 <td>{{ $poa->pemberi_nama ?? '..................................................................' }}</td>
             </tr>
@@ -163,12 +156,12 @@
                 <td>{{ $poa->pemberi_npwp ?? '..................................................................' }}</td>
             </tr>
             <tr>
-                <td>jabatan</td>
+                <td>Jabatan</td>
                 <td>:</td>
                 <td>{{ $poa->pemberi_jabatan ?? '..................................................................' }}</td>
             </tr>
             <tr>
-                <td colspan="3" style="padding-top: 4px;">bertindak selaku: *)</td>
+                <td colspan="3" style="padding-top: 4px;">bertindak selaku:</td>
             </tr>
             <tr>
                 <td colspan="3" style="padding-left: 10px;">
@@ -192,7 +185,7 @@
             </tr>
         </table>
 
-        <p style="margin-top: 6px;">dengan ini memberikan kuasa khusus kepada: *)</p>
+        <p style="margin-top: 6px;">dengan ini memberikan kuasa khusus kepada:</p>
         <table class="data-table" style="margin-left: 10px;">
             <tr>
                 <td colspan="3">
@@ -282,7 +275,7 @@
                 <td>Pemberi kuasa,</td>
             </tr>
             <tr>
-                <td style="height: 60px;"></td>
+                <td style="height: 45px;"></td>
                 <td>
                     <div class="meterai-box">Meterai</div>
                 </td>
@@ -296,11 +289,6 @@
                 </td>
             </tr>
         </table>
-
-        <div class="footnotes">
-            *) Beri tanda " X " pada kolom yang sesuai.<br>
-            **) Pilih salah satu yang sesuai.
-        </div>
     </div>
 
     {{-- ========================================================= --}}
@@ -374,7 +362,7 @@
                 <td style="width: 50%;"></td>
                 <td style="width: 50%;">
                     Pemberi kuasa,
-                    <div class="meterai-box" style="margin: 15px auto;">Meterai</div>
+                    <div class="meterai-box" style="margin: 15px auto;">Materai</div>
                     <strong>{{ $poa->pemberi_nama ?? '..................................................' }}</strong>
                 </td>
             </tr>
