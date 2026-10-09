@@ -91,6 +91,7 @@ class GeneralLedger extends Page
                             ->options(function () {
                                 return \App\Models\Coa::query()
                                     ->whereNull('deleted_at')
+                                    ->where('code', '!=', 'AO-103')
                                     ->orderBy('code')
                                     ->get()
                                     ->mapWithKeys(fn ($coa) => [$coa->id => $coa->code . ' - ' . $coa->name]);
@@ -171,6 +172,7 @@ class GeneralLedger extends Page
                         ->options(function () {
                             return \App\Models\Coa::query()
                                 ->whereNull('deleted_at')
+                                ->where('code', '!=', 'AO-103')
                                 ->orderBy('code')
                                 ->get()
                                 ->mapWithKeys(fn ($coa) => [$coa->id => $coa->code . ' - ' . $coa->name]);
@@ -442,6 +444,11 @@ class GeneralLedger extends Page
         if ($coaId) {
             $allTransactions = $allTransactions->where('coa_id', (int) $coaId);
         }
+
+        // Filter keluar AO-103 agar tidak dimunculkan di General Ledger
+        $allTransactions = $allTransactions->reject(function ($t) {
+            return ($t->coa_id == 179) || (($t->coa->code ?? '') === 'AO-103');
+        });
 
         return $allTransactions->groupBy('coa_id')->sortBy(function ($transactions) {
             return $transactions->first()->coa->code ?? '999999';

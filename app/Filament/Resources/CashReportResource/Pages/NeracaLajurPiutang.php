@@ -664,36 +664,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
     public function getTableData()
     {
-        $data = $this->getTableQuery()->get();
-
-        $targetCodes = ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'];
-        $subRows = $data->filter(fn($row) => in_array($row->code, $targetCodes));
-        $mainRow = $data->first(fn($row) => $row->code === 'AO-103');
-
-        if ($mainRow && $subRows->isNotEmpty()) {
-            $columnsToSum = [
-                'kas_besar_debit',
-                'kas_besar_kredit',
-                'kas_kecil_debit',
-                'kas_kecil_kredit',
-                'bank_debit',
-                'bank_kredit',
-                'jurnal_pendapatan_debit',
-                'jurnal_pendapatan_kredit',
-                'jurnal_umum_debit',
-                'jurnal_umum_kredit',
-                'aje_debit',
-                'aje_kredit',
-                'neraca_awal_bulan_depan_debit',
-                'neraca_awal_bulan_depan_kredit'
-            ];
-
-            foreach ($columnsToSum as $col) {
-                $mainRow->$col = $subRows->sum($col);
-            }
-        }
-
-        return $data;
+        return $this->getTableQuery()->get();
     }
 
     protected function getTableQuery(): Builder
@@ -1013,6 +984,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
+            ->where('coa.code', '!=', 'AO-103')
             ->orderBy('coa.group_coa_id')
             ->orderBy('coa.sort_order');
 
@@ -1860,12 +1832,8 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $data = $this->getTableData();
         $row  = 5;
-        $ao103Row = null;
 
         foreach ($data as $item) {
-            if ($item->code === 'AO-103') {
-                $ao103Row = $row;
-            }
 
             $totalDebit  = $item->neraca_awal_debit + $item->kas_besar_debit + $item->kas_kecil_debit +
                 $item->bank_debit + $item->jurnal_pendapatan_debit + $item->jurnal_umum_debit;
@@ -1918,13 +1886,8 @@ class NeracaLajurPiutang extends Page implements HasTable
         $sheet->setCellValue('A' . $totalRow, 'Total');
         $sheet->getStyle('A' . $totalRow . ':W' . $totalRow)->applyFromArray($headerStyle);
         $columns = range('B', 'W');
-        $movementCols = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'P', 'Q'];
         foreach ($columns as $col) {
-            if ($ao103Row && in_array($col, $movementCols, true)) {
-                $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ') - ' . $col . $ao103Row);
-            } else {
-                $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
-            }
+            $sheet->setCellValue($col . $totalRow, '=SUM(' . $col . '5:' . $col . ($totalRow - 1) . ')');
         }
         $sheet->getStyle('A5:W' . ($totalRow - 1))->applyFromArray([
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
