@@ -130,7 +130,7 @@
 
     <!-- Top Navigation Bar -->
     <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <!-- Left: Back Button & Title -->
                 <div class="flex items-center gap-3">
@@ -185,7 +185,7 @@
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
         <!-- Account Info Banner -->
         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 text-white shadow-xl">
@@ -325,7 +325,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     
                     <!-- Search input -->
-                    <div class="relative flex-1 max-w-md">
+                    <div class="relative flex-1 max-w-lg">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </div>
