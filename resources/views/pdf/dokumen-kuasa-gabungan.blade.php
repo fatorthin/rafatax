@@ -229,7 +229,7 @@
             <strong>{{ $poa->kewajiban_terkait ?? '............................................................' }}</strong>
             berkenaan dengan jenis pajak
             <strong>{{ $poa->jenis_pajak ?? '............................................................' }}</strong>
-            {{ $poa->masa_pajak_pilihan ?? 'Masa Pajak/Bagian Tahun Pajak/Tahun Pajak' }} **)
+            {{ $poa->masa_pajak_pilihan ?? 'Masa Pajak/Bagian Tahun Pajak/Tahun Pajak' }}
             <strong>{{ $poa->masa_tahun_pajak ?? '........................' }}</strong>.
         </p>
 

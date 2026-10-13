@@ -589,12 +589,19 @@ class GeneralLedger extends Page
         }
 
         // ── 2. Dari cash_reports ──
+        $startCarbon = \Carbon\Carbon::parse($startDate);
+        $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
+        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
+        if ($startCarbon->year >= 2026) {
+            $cashReferenceIds = array_values(array_diff($cashReferenceIds, [5]));
+        }
+
         $cashRows = \Illuminate\Support\Facades\DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
+            ->whereIn('cash_reference_id', $cashReferenceIds)
             ->whereBetween('transaction_date', [
-                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                $startCarbon->startOfDay(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()
             ])
             ->select(['coa_id', 'debit_amount', 'transaction_date', 'description'])

@@ -292,11 +292,17 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getCashReportPiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
+        $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9]; // bank + kas besar + kas kecil
+        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
+        if ($this->year >= 2026) {
+            $cashReferenceIds = array_values(array_diff($cashReferenceIds, [5]));
+        }
+
         $map  = $this->getPiutangToPendapatanMap();
         $rows = DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9]) // bank + kas besar + kas kecil
+            ->whereIn('cash_reference_id', $cashReferenceIds)
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
             ->groupBy('coa_id')
             ->selectRaw('coa_id, SUM(debit_amount) as total')
@@ -1461,12 +1467,18 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
         $sheetDetail->getStyle('A3:I3')->applyFromArray($headerStyle);
 
+        $detailCashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
+        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
+        if ($this->year >= 2026) {
+            $detailCashReferenceIds = array_values(array_diff($detailCashReferenceIds, [5]));
+        }
+
         $detailRows = DB::table('cash_reports as cr')
             ->join('coa as c_piutang', 'c_piutang.id', '=', 'cr.coa_id')
             ->join('cash_references as cref', 'cref.id', '=', 'cr.cash_reference_id')
             ->whereNull('cr.deleted_at')
             ->whereIn('cr.coa_id', $piutangCoaIds)
-            ->whereIn('cr.cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
+            ->whereIn('cr.cash_reference_id', $detailCashReferenceIds)
             ->whereBetween('cr.transaction_date', [$startOfMonth, $endOfMonth])
             ->orderBy('cr.transaction_date')
             ->orderBy('cr.id')

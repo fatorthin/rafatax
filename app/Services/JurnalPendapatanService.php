@@ -175,11 +175,18 @@ class JurnalPendapatanService
      */
     public static function getCashReportPiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
+        $startDate = Carbon::parse($startOfMonth);
+        $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9]; // bank + kas besar + kas kecil
+        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
+        if ($startDate->year >= 2026) {
+            $cashReferenceIds = array_values(array_diff($cashReferenceIds, [5]));
+        }
+
         $map  = static::getPiutangToPendapatanMap();
         $rows = DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9]) // bank + kas besar + kas kecil
+            ->whereIn('cash_reference_id', $cashReferenceIds)
             ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
             ->groupBy('coa_id')
             ->selectRaw('coa_id, SUM(debit_amount) as total')
