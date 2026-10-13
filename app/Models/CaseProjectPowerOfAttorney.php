@@ -45,7 +45,6 @@ class CaseProjectPowerOfAttorney extends Model
     protected $casts = [
         'tanggal_surat_kuasa' => 'date',
         'tanggal_mulai' => 'date',
-        'tanggal_selesai' => 'date',
         'pernyataan_tanggal' => 'date',
         'rincian_kuasa' => 'array',
     ];

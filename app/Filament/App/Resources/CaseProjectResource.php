@@ -386,7 +386,7 @@ class CaseProjectResource extends Resource
                                     'masa_pajak_pilihan' => $poa->masa_pajak_pilihan,
                                     'masa_tahun_pajak' => $poa->masa_tahun_pajak,
                                     'tanggal_mulai' => $poa->tanggal_mulai?->format('Y-m-d'),
-                                    'tanggal_selesai' => $poa->tanggal_selesai?->format('Y-m-d'),
+                                    'tanggal_selesai' => $poa->tanggal_selesai,
                                     'rincian_kuasa' => $poa->rincian_kuasa ?? CaseProjectPowerOfAttorney::getDefaultRincianKuasa(),
                                     'pernyataan_nomor' => $poa->pernyataan_nomor,
                                     'pernyataan_tanggal' => $poa->pernyataan_tanggal?->format('Y-m-d'),
@@ -416,9 +416,9 @@ class CaseProjectResource extends Resource
                                 'wp_badan_nama' => $client?->company_name ?? '',
                                 'wp_badan_npwp' => $client?->npwp ?? '',
                                 'kuasa_kategori' => 'konsultan_pajak',
-                                'penerima_nama' => 'ANTIN OKFITASARI, S.E., S.H., M.Si., Ak., CA.AB., BKP., CATr., ACPA',
-                                'penerima_npwp' => '',
-                                'penerima_izin_no' => '',
+                                'penerima_nama' => 'Antin Okfitasari',
+                                'penerima_npwp' => '03.460.976.6-532.000/3311096410770006',
+                                'penerima_izin_no' => 'KIP-6667/IP.B/PJ/2020',
                                 'penerima_status_keluarga' => '-',
                                 'kewajiban_terkait' => $defaultHak,
                                 'jenis_pajak' => 'Pajak Penghasilan Badan dan Pajak Pertambahan Nilai',
@@ -509,14 +509,16 @@ class CaseProjectResource extends Resource
                                                         ->schema([
                                                             Forms\Components\TextInput::make('penerima_nama')
                                                                 ->label('Nama Penerima Kuasa')
-                                                                ->required(),
+                                                                ->placeholder('Antin Okfitasari'),
                                                             Forms\Components\TextInput::make('penerima_npwp')
-                                                                ->label('NPWP Penerima Kuasa'),
+                                                                ->label('NPWP Penerima Kuasa')
+                                                                ->placeholder('03.460.976.6-532.000/3311096410770006'),
                                                         ]),
                                                     Forms\Components\Grid::make(2)
                                                         ->schema([
                                                             Forms\Components\TextInput::make('penerima_izin_no')
                                                                 ->label('No. Izin Konsultan Pajak / SKT')
+                                                                ->placeholder('KIP-6667/IP.B/PJ/2020')
                                                                 ->visible(fn(Forms\Get $get) => in_array($get('kuasa_kategori'), ['konsultan_pajak', 'pihak_lain'])),
                                                             Forms\Components\TextInput::make('penerima_status_keluarga')
                                                                 ->label('Status Hubungan Keluarga')
@@ -555,10 +557,9 @@ class CaseProjectResource extends Resource
                                                                 ->native(false)
                                                                 ->displayFormat('d/m/Y')
                                                                 ->required(),
-                                                            Forms\Components\DatePicker::make('tanggal_selesai')
+                                                            Forms\Components\TextInput::make('tanggal_selesai')
                                                                 ->label('Sampai Dengan')
-                                                                ->native(false)
-                                                                ->displayFormat('d/m/Y')
+                                                                ->placeholder('Contoh: 31 Desember 2026 atau selesainya pemeriksaan')
                                                                 ->required(),
                                                         ]),
                                                     Forms\Components\Repeater::make('rincian_kuasa')

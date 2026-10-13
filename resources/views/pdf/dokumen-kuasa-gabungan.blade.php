@@ -205,17 +205,17 @@
             <tr>
                 <td style="width: 220px; padding-left: 25px;">Nama</td>
                 <td style="width: 15px;">:</td>
-                <td>{{ $poa->penerima_nama ?? '..................................................................' }}</td>
+                <td>{{ !empty($poa->penerima_nama) ? $poa->penerima_nama : 'Antin Okfitasari' }}</td>
             </tr>
             <tr>
                 <td style="padding-left: 25px;">NPWP</td>
                 <td>:</td>
-                <td>{{ $poa->penerima_npwp ?? '..................................................................' }}</td>
+                <td>{{ !empty($poa->penerima_npwp) ? $poa->penerima_npwp : '03.460.976.6-532.000/3311096410770006' }}</td>
             </tr>
             <tr>
                 <td style="padding-left: 25px;">Nomor Izin Konsultan Pajak/SKT</td>
                 <td>:</td>
-                <td>{{ $poa->penerima_izin_no ?? '..................................................................' }}</td>
+                <td>{{ !empty($poa->penerima_izin_no) ? $poa->penerima_izin_no : 'KIP-6667/IP.B/PJ/2020' }}</td>
             </tr>
             <tr>
                 <td style="padding-left: 25px;">Status hubungan keluarga</td>
@@ -236,8 +236,19 @@
         <p>
             Surat Kuasa Khusus ini berlaku mulai tanggal
             <strong>{{ $poa->tanggal_mulai ? \Carbon\Carbon::parse($poa->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>
-            sampai dengan tanggal
-            <strong>{{ $poa->tanggal_selesai ? \Carbon\Carbon::parse($poa->tanggal_selesai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>.
+            sampai dengan
+            <strong>@php
+                $selesai = $poa->tanggal_selesai;
+                if (!empty($selesai)) {
+                    try {
+                        echo \Carbon\Carbon::parse($selesai)->locale('id')->translatedFormat('d F Y');
+                    } catch (\Throwable $e) {
+                        echo $selesai;
+                    }
+                } else {
+                    echo '....';
+                }
+            @endphp</strong>.
         </p>
 
         <p>Untuk keperluan tersebut, penerima kuasa dikuasakan untuk:</p>
@@ -275,14 +286,14 @@
                 <td>Pemberi kuasa,</td>
             </tr>
             <tr>
-                <td style="height: 45px;"></td>
+                <td style="height: 60px;"></td>
                 <td>
                     <div class="meterai-box">Meterai</div>
                 </td>
             </tr>
             <tr>
                 <td>
-                    <strong>{{ $poa->penerima_nama ?? '..................................................' }}</strong>
+                    <strong>{{ !empty($poa->penerima_nama) ? $poa->penerima_nama : 'Antin Okfitasari' }}</strong>
                 </td>
                 <td>
                     <strong>{{ $poa->pemberi_nama ?? '..................................................' }}</strong>
@@ -334,12 +345,12 @@
             <tr>
                 <td style="width: 120px;">nama</td>
                 <td style="width: 15px;">:</td>
-                <td>{{ $poa->penerima_nama ?? '..................................................................' }}</td>
+                <td>{{ !empty($poa->penerima_nama) ? $poa->penerima_nama : 'Antin Okfitasari' }}</td>
             </tr>
             <tr>
                 <td>NPWP</td>
                 <td>:</td>
-                <td>{{ $poa->penerima_npwp ?? '..................................................................' }}</td>
+                <td>{{ !empty($poa->penerima_npwp) ? $poa->penerima_npwp : '03.460.976.6-532.000/3311096410770006' }}</td>
             </tr>
             <tr>
                 <td>alamat</td>
