@@ -140,7 +140,7 @@
             SURAT KUASA KHUSUS WAJIB PAJAK {{ strtoupper($poa->jenis_wp ?? 'BADAN') }}
         </div>
         <div class="doc-subtitle">
-            Nomor {{ $poa->nomor_surat_kuasa ?? '........................................' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tanggal {{ $poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................' }}
+            Nomor {{ $poa->nomor_surat_kuasa ?? '........................................' }} &nbsp;&nbsp;&nbsp;&nbsp; Tanggal {{ $poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................' }}
         </div>
 
         <p>Yang bertanda tangan di bawah ini:</p>
@@ -313,7 +313,7 @@
             SURAT PERNYATAAN
         </div>
         <div class="doc-subtitle">
-            Nomor {{ $poa->pernyataan_nomor ?? $poa->nomor_surat_kuasa ?? '........................................' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tanggal {{ $poa->pernyataan_tanggal ? \Carbon\Carbon::parse($poa->pernyataan_tanggal)->locale('id')->translatedFormat('d F Y') : ($poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................') }}
+            Nomor {{ $poa->pernyataan_nomor ?? $poa->nomor_surat_kuasa ?? '........................................' }} &nbsp;&nbsp;&nbsp;&nbsp; Tanggal {{ $poa->pernyataan_tanggal ? \Carbon\Carbon::parse($poa->pernyataan_tanggal)->locale('id')->translatedFormat('d F Y') : ($poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................') }}
         </div>
 
         <p>Yang bertanda tangan di bawah ini:</p>
