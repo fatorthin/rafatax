@@ -286,10 +286,8 @@
                 <td>Pemberi kuasa,</td>
             </tr>
             <tr>
-                <td style="height: 60px;"></td>
-                <td>
-                    <div class="meterai-box">Meterai</div>
-                </td>
+                <td style="height: 65px;"></td>
+                <td style="height: 65px;"></td>
             </tr>
             <tr>
                 <td>
@@ -368,12 +366,18 @@
             Demikian Surat Pernyataan ini dibuat sesuai dengan keadaan yang sebenarnya. Apabila di kemudian hari ditemukan bahwa informasi dalam pernyataan ini tidak benar, saya bersedia menerima segala konsekuensi hukum sesuai dengan ketentuan peraturan perundang-undangan yang berlaku.
         </p>
 
-        <table class="signatures-table" style="margin-top: 40px;">
+        <table class="signatures-table" style="margin-top: 30px;">
+            <tr>
+                <td style="width: 50%;"></td>
+                <td style="width: 50%;">Pemberi kuasa,</td>
+            </tr>
+            <tr>
+                <td style="height: 65px;"></td>
+                <td style="height: 65px;"></td>
+            </tr>
             <tr>
                 <td style="width: 50%;"></td>
                 <td style="width: 50%;">
-                    Pemberi kuasa,
-                    <div class="meterai-box" style="margin: 15px auto;">Materai</div>
                     <strong>{{ $poa->pemberi_nama ?? '..................................................' }}</strong>
                 </td>
             </tr>
