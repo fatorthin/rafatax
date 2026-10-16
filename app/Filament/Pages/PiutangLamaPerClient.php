@@ -192,11 +192,11 @@ class PiutangLamaPerClient extends Page implements HasTable
             ->filters([
                 Tables\Filters\Filter::make('has_saldo_awal')
                     ->label('Hanya Memiliki Saldo Awal')
-                    ->query(fn(Builder $query) => $query->having('saldo_awal', '>', 0))
+                    ->query(fn(Builder $query) => $query->whereRaw('COALESCE(sa.saldo_awal, 0) > 0'))
                     ->default(false),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif (> 0)')
-                    ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))
+                    ->query(fn(Builder $query) => $query->whereRaw('(COALESCE(sa.saldo_awal, 0) - COALESCE(pay.total_pembayaran, 0)) > 0'))
                     ->default(false),
             ])
             ->headerActions([
@@ -235,10 +235,10 @@ class PiutangLamaPerClient extends Page implements HasTable
     {
         $transactions = [];
 
-        // 1. Saldo Awal Piutang Lama (Periode 2025)
+        // 1. Saldo Awal Piutang Lama (Periode 2024)
         $saldoAwals = DB::table('saldo_awal_piutangs')
             ->where('client_id', $client->id)
-            ->where('year', 2025)
+            ->where('year', 2024)
             ->orderBy('year', 'asc')
             ->get();
 

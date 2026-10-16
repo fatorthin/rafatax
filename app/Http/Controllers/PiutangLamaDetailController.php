@@ -46,7 +46,7 @@ class PiutangLamaDetailController extends Controller
             ->get();
 
         $saldoAwalRecords = SaldoAwalPiutang::where('client_id', $client->id)->orderBy('year', 'asc')->get();
-        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->where('year', 2025)->first()
+        $saldoAwalRecord = SaldoAwalPiutang::where('client_id', $client->id)->where('year', 2024)->first()
             ?? $saldoAwalRecords->first();
 
         return view('filament.pages.piutang-lama-detail-standalone', compact(
