@@ -190,6 +190,10 @@ class PiutangLamaPerClient extends Page implements HasTable
                     ->color(fn($state) => $state > 0 ? 'amber' : 'success'),
             ])
             ->filters([
+                Tables\Filters\Filter::make('has_saldo_awal')
+                    ->label('Hanya Memiliki Saldo Awal')
+                    ->query(fn(Builder $query) => $query->having('saldo_awal', '>', 0))
+                    ->default(false),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif (> 0)')
                     ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))
