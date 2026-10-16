@@ -292,7 +292,7 @@
                     <tbody class="bg-white divide-y divide-slate-200 dark:bg-slate-900 dark:divide-slate-800">
                         @forelse($mous as $mou)
                             @php
-                                $totalCostList = $mou->cost_lists->sum('price');
+                                $totalCostList = $mou->cost_lists->sum('total_amount');
                                 $totalInvoiceNominal = $mou->invoices->flatMap->costListInvoices->sum('amount');
                             @endphp
                             <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
