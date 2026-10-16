@@ -76,7 +76,7 @@ class PiutangLamaDetailController extends Controller
         SaldoAwalPiutang::updateOrCreate(
             [
                 'client_id' => $client->id,
-                'year' => (int) $request->input('year', 2025),
+                'year' => (int) $request->input('year', 2024),
             ],
             [
                 'amount' => (float) $request->input('amount'),
