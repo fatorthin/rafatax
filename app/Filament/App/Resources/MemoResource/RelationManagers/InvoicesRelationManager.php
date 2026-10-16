@@ -167,6 +167,66 @@ class InvoicesRelationManager extends RelationManager
                     ->url(fn($record) => route('invoices.jpg', $record->id))
                     ->openUrlInNewTab()
                     ->color('warning'),
+                Tables\Actions\Action::make('send_whatsapp')
+                    ->label('Kirim WA')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\TextInput::make('phone_number')
+                            ->label('Nomor WhatsApp')
+                            ->required()
+                            ->default(function ($record) {
+                                if ($record->client && $record->client->phone) {
+                                    return $record->client->phone;
+                                }
+                                $memo = $record->memo;
+                                if ($memo && !empty($memo->telepon_klien ?? null)) {
+                                    return $memo->telepon_klien;
+                                }
+                                return null;
+                            })
+                            ->helperText('Format: 08123456789 atau 628123456789'),
+                    ])
+                    ->modalHeading('Kirim Invoice via WhatsApp')
+                    ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->action(function ($record, array $data) {
+                        try {
+                            $phoneInput = $data['phone_number'];
+
+                            if (empty($phoneInput)) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Error')
+                                    ->body('Nomor WhatsApp wajib diisi!')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // Clean phone number
+                            $phone = preg_replace('/[^0-9]/', '', $phoneInput);
+                            if (substr($phone, 0, 1) === '0') {
+                                $phone = '62' . substr($phone, 1);
+                            } elseif (substr($phone, 0, 2) !== '62') {
+                                $phone = '62' . $phone;
+                            }
+
+                            // Dispatch background job for fast URL-based delivery
+                            \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Pengiriman Dijadwalkan')
+                                ->body('Invoice sedang diproses dan akan dikirim ke WhatsApp client melalui antrean latar belakang.')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\Action::make('view_details')
                     ->label('Detail')
                     ->icon('heroicon-o-eye')
