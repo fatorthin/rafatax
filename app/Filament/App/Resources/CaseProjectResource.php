@@ -535,8 +535,7 @@ class CaseProjectResource extends Resource
                                                                 ->required(),
                                                             Forms\Components\TextInput::make('jenis_pajak')
                                                                 ->label('Jenis Pajak')
-                                                                ->placeholder('Contoh: Pajak Penghasilan Badan, Pajak Pertambahan Nilai')
-                                                                ->required(),
+                                                                ->placeholder('Contoh: Pajak Penghasilan Badan, Pajak Pertambahan Nilai'),
                                                         ]),
                                                     Forms\Components\Grid::make(4)
                                                         ->schema([
