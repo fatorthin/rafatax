@@ -227,7 +227,7 @@
         <p style="margin-top: 6px;">
             untuk melaksanakan hak dan/atau memenuhi kewajiban perpajakan terkait
             <strong>{{ $poa->kewajiban_terkait ?? '............................................................' }}</strong>
-            berkenaan dengan jenis pajak
+            berkenaan dengan 
             <strong>{{ $poa->jenis_pajak ?? '............................................................' }}</strong>
             {{ $poa->masa_pajak_pilihan ?? 'Masa Pajak/Bagian Tahun Pajak/Tahun Pajak' }}
             <strong>{{ $poa->masa_tahun_pajak ?? '........................' }}</strong>.
