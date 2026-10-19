@@ -236,7 +236,7 @@
             Surat Kuasa Khusus ini berlaku mulai tanggal
             <strong>{{ $poa->tanggal_mulai ? \Carbon\Carbon::parse($poa->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>
             sampai dengan tanggal selesai nya permintaaan atas data dan/atau keterangan berkenaan Tahun Pajak {{$poa->masa_tahun_pajak}}
-            @endphp</strong>.
+            </strong>.
         </p>
 
         <p>Untuk keperluan tersebut, penerima kuasa dikuasakan untuk:</p>
