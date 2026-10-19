@@ -239,7 +239,7 @@
             </tr>
         </table>
 
-        <p style="margin-top: 6px;">
+        <p style="margin-top: 6px; margin-bottom: 12px;">
             untuk melaksanakan hak dan/atau memenuhi kewajiban perpajakan terkait
             <strong>{{ $poa->kewajiban_terkait ?? '............................................................' }}</strong>
             berkenaan dengan 
@@ -247,14 +247,14 @@
             <strong>{{ $poa->masa_tahun_pajak ?? '........................' }}</strong>.
         </p>
 
-        <p>
+        <p style="margin-bottom: 12px;">
             Surat Kuasa Khusus ini berlaku mulai tanggal
             <strong>{{ $poa->tanggal_mulai ? \Carbon\Carbon::parse($poa->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>
             sampai dengan tanggal selesai nya permintaaan atas data dan/atau keterangan berkenaan Tahun Pajak {{$poa->masa_tahun_pajak}}
             </strong>.
         </p>
 
-        <p>Untuk keperluan tersebut, penerima kuasa dikuasakan untuk:</p>
+        <p style="margin-bottom: 12px;">Untuk keperluan tersebut, penerima kuasa dikuasakan untuk:</p>
         <ol type="a" class="kuasa-list">
             @if(!empty($poa->rincian_kuasa) && is_array($poa->rincian_kuasa))
                 @foreach($poa->rincian_kuasa as $index => $rincian)
@@ -316,7 +316,7 @@
             SURAT PERNYATAAN
         </div>
         <div class="doc-subtitle">
-            Nomor {{ $poa->pernyataan_nomor ?? $poa->nomor_surat_kuasa ?? '........................................' }} &nbsp;&nbsp;&nbsp;&nbsp; Tanggal {{ $poa->pernyataan_tanggal ? \Carbon\Carbon::parse($poa->pernyataan_tanggal)->locale('id')->translatedFormat('d F Y') : ($poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................') }}
+            Nomor {{ $poa->pernyataan_nomor ?? $poa->nomor_surat_kuasa ?? '........................................' }} <br> Tanggal {{ $poa->pernyataan_tanggal ? \Carbon\Carbon::parse($poa->pernyataan_tanggal)->locale('id')->translatedFormat('d F Y') : ($poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................') }}
         </div>
 
         <p>Yang bertanda tangan di bawah ini:</p>
