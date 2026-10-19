@@ -1,9 +1,24 @@
+@php
+    $isOrangPribadi = ($poa->bertindak_selaku ?? '') === 'wajib_pajak'
+        || strtoupper($poa->jenis_wp ?? '') === 'ORANG PRIBADI'
+        || ($caseProject->client?->jenis_wp ?? '') === 'perseorangan';
+
+    if ($isOrangPribadi) {
+        $namaWpKlien = !empty($poa->pemberi_nama)
+            ? $poa->pemberi_nama
+            : ($caseProject->client?->owner_name ?: ($caseProject->client?->company_name ?? ''));
+    } else {
+        $namaWpKlien = !empty($poa->wp_badan_nama)
+            ? $poa->wp_badan_nama
+            : ($caseProject->client?->company_name ?: ($poa->pemberi_nama ?? ''));
+    }
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Surat Kuasa Khusus & Surat Pernyataan - {{ $poa->wp_badan_nama ?? $poa->pemberi_nama ?? 'Dokumen Kuasa' }}</title>
+    <title>Surat Kuasa Khusus & Surat Pernyataan - {{ $namaWpKlien ?: 'Dokumen Kuasa' }}</title>
     <style>
         @page {
             size: A4 portrait;
@@ -137,7 +152,7 @@
     {{-- ========================================================= --}}
     <div class="page-container">
         <div class="doc-title">
-            SURAT KUASA KHUSUS WAJIB PAJAK {{ strtoupper($poa->jenis_wp ?? 'BADAN') }}
+            SURAT KUASA KHUSUS WAJIB PAJAK {{ strtoupper($namaWpKlien ?: ($poa->jenis_wp ?? '........................................')) }}
         </div>
         <div class="doc-subtitle">
             Nomor {{ $poa->nomor_surat_kuasa ?? '........................................' }} &nbsp;&nbsp;&nbsp;&nbsp; Tanggal {{ $poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................' }}
