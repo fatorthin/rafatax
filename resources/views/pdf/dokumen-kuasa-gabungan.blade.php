@@ -315,7 +315,7 @@
         <div class="doc-title" style="margin-top: 15px;">
             SURAT PERNYATAAN
         </div>
-        <div class="doc-subtitle">
+        <div class="doc-subtitle" style="margin-bottom: 12px;">
             Nomor {{ $poa->pernyataan_nomor ?? $poa->nomor_surat_kuasa ?? '........................................' }} <br> Tanggal {{ $poa->pernyataan_tanggal ? \Carbon\Carbon::parse($poa->pernyataan_tanggal)->locale('id')->translatedFormat('d F Y') : ($poa->tanggal_surat_kuasa ? \Carbon\Carbon::parse($poa->tanggal_surat_kuasa)->locale('id')->translatedFormat('d F Y') : '........................................') }}
         </div>
 
