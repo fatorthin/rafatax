@@ -254,8 +254,8 @@
             </strong>.
         </p>
 
-        <p style="margin-bottom: 12px;">Untuk keperluan tersebut, penerima kuasa dikuasakan untuk:</p>
-        <ol type="a" class="kuasa-list">
+        <p">Untuk keperluan tersebut, penerima kuasa dikuasakan untuk:</p>
+        <ol type="a" class="kuasa-list" style="margin-bottom: 12px;">
             @if(!empty($poa->rincian_kuasa) && is_array($poa->rincian_kuasa))
                 @foreach($poa->rincian_kuasa as $index => $rincian)
                     @php
@@ -275,7 +275,7 @@
             @endif
         </ol>
 
-        <p>
+        <p style="margin-bottom: 12px;">
             Dengan ini, pemberi kuasa menyatakan bahwa dalam hal hak dan/atau kewajiban perpajakan yang dikuasakan dilakukan secara elektronik, penerima kuasa berhak untuk mengakses akun elektronik pemberi kuasa pada sistem elektronik Direktorat Jenderal Pajak.
         </p>
 
