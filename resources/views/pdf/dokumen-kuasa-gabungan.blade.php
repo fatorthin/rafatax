@@ -241,15 +241,15 @@
 
         <p style="margin-top: 6px; margin-bottom: 12px;">
             untuk melaksanakan hak dan/atau memenuhi kewajiban perpajakan terkait
-            <strong>{{ $poa->kewajiban_terkait ?? '............................................................' }}</strong>
+            {{ $poa->kewajiban_terkait ?? '............................................................' }}</strong>
             berkenaan dengan 
             {{ $poa->masa_pajak_pilihan ?? 'Masa Pajak/Bagian Tahun Pajak/Tahun Pajak' }}
-            <strong>{{ $poa->masa_tahun_pajak ?? '........................' }}</strong>.
+            {{ $poa->masa_tahun_pajak ?? '........................' }}</strong>.
         </p>
 
         <p style="margin-bottom: 12px;">
             Surat Kuasa Khusus ini berlaku mulai tanggal
-            <strong>{{ $poa->tanggal_mulai ? \Carbon\Carbon::parse($poa->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>
+            {{ $poa->tanggal_mulai ? \Carbon\Carbon::parse($poa->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>
             sampai dengan tanggal selesai nya permintaaan atas data dan/atau keterangan berkenaan Tahun Pajak {{$poa->masa_tahun_pajak}}
             </strong>.
         </p>
@@ -294,10 +294,10 @@
             </tr>
             <tr>
                 <td>
-                    <strong>{{ !empty($poa->penerima_nama) ? $poa->penerima_nama : 'Antin Okfitasari' }}</strong>
+                    {{ !empty($poa->penerima_nama) ? $poa->penerima_nama : 'Antin Okfitasari' }}
                 </td>
                 <td>
-                    <strong>{{ $poa->pemberi_nama ?? '..................................................' }}</strong>
+                    {{ $poa->pemberi_nama ?? '..................................................' }}
                 </td>
             </tr>
         </table>
@@ -381,7 +381,7 @@
             <tr>
                 <td style="width: 50%;"></td>
                 <td style="width: 50%;">
-                    <strong>{{ $poa->pemberi_nama ?? '..................................................' }}</strong>
+                    {{ $poa->pemberi_nama ?? '..................................................' }}
                 </td>
             </tr>
         </table>
