@@ -533,9 +533,6 @@ class CaseProjectResource extends Resource
                                                                 ->label('Terkait Hak / Kewajiban Perpajakan')
                                                                 ->placeholder('Contoh: Pemeriksaan Pajak, Penagihan Pajak, SP2DK')
                                                                 ->required(),
-                                                            Forms\Components\TextInput::make('jenis_pajak')
-                                                                ->label('Jenis Pajak')
-                                                                ->placeholder('Contoh: Pajak Penghasilan Badan, Pajak Pertambahan Nilai'),
                                                         ]),
                                                     Forms\Components\Grid::make(4)
                                                         ->schema([

@@ -236,18 +236,7 @@
         <p>
             Surat Kuasa Khusus ini berlaku mulai tanggal
             <strong>{{ $poa->tanggal_mulai ? \Carbon\Carbon::parse($poa->tanggal_mulai)->locale('id')->translatedFormat('d F Y') : '....' }}</strong>
-            sampai dengan
-            <strong>@php
-                $selesai = $poa->tanggal_selesai;
-                if (!empty($selesai)) {
-                    try {
-                        echo \Carbon\Carbon::parse($selesai)->locale('id')->translatedFormat('d F Y');
-                    } catch (\Throwable $e) {
-                        echo $selesai;
-                    }
-                } else {
-                    echo '....';
-                }
+            sampai dengan tanggal selesai nya permintaaan atas data dan/atau keterangan berkenaan Tahun Pajak {{$poa->masa_tahun_pajak}}
             @endphp</strong>.
         </p>
 
