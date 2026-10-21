@@ -43,7 +43,7 @@ class PiutangLamaPerClient extends Page implements HasTable
             GROUP BY client_id
         ";
 
-        // 2. Pembayaran Piutang Lama (Transaksi sebelum 2026 ATAU CoA 180 AO-103.5)
+        // 2. Pembayaran Piutang Lama (Transaksi sebelum 2025 ATAU CoA 180 AO-103.5 selain tahun 2025)
         $paySql = "
             SELECT client_id, SUM(amount) as total_pembayaran
             FROM (
@@ -61,8 +61,8 @@ class PiutangLamaPerClient extends Page implements HasTable
                 LEFT JOIN mous inv_m ON (inv.mou_id IS NOT NULL AND inv.mou_id <> 0 AND inv.mou_id = inv_m.id)
                 WHERE cr.deleted_at IS NULL
                   AND (
-                      (cr.transaction_date < '2026-01-01' AND (cr.coa_id IS NULL OR cr.coa_id <> 180))
-                      OR cr.coa_id = 180
+                      (cr.transaction_date < '2025-01-01' AND (cr.coa_id IS NULL OR cr.coa_id <> 180))
+                      OR (cr.coa_id = 180 AND (cr.transaction_date < '2025-01-01' OR cr.transaction_date >= '2026-01-01'))
                   )
             ) as t_pay
             WHERE client_id IS NOT NULL
@@ -258,7 +258,7 @@ class PiutangLamaPerClient extends Page implements HasTable
             }
         }
 
-        // 2. Payments (< 2026 ATAU CoA 180 AO-103.5)
+        // 2. Payments (< 2025 ATAU CoA 180 AO-103.5 selain 2025)
         $cashReports = \App\Models\CashReport::query()
             ->where(function ($q) use ($client) {
                 $q->where('cash_reports.client_id', $client->id)
@@ -276,11 +276,17 @@ class PiutangLamaPerClient extends Page implements HasTable
             ->whereNull('deleted_at')
             ->where(function ($q) {
                 $q->where(function ($sub) {
-                    $sub->where('transaction_date', '<', '2026-01-01')
+                    $sub->where('transaction_date', '<', '2025-01-01')
                         ->where(function ($sub2) {
                             $sub2->whereNull('coa_id')->orWhere('coa_id', '<>', 180);
                         });
-                })->orWhere('coa_id', 180);
+                })->orWhere(function ($sub) {
+                    $sub->where('coa_id', 180)
+                        ->where(function ($sub2) {
+                            $sub2->where('transaction_date', '<', '2025-01-01')
+                                ->orWhere('transaction_date', '>=', '2026-01-01');
+                        });
+                });
             })
             ->with(['cashReference', 'invoice', 'coa'])
             ->get();

@@ -120,7 +120,7 @@
                         </h1>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Rincian mutasi piutang sebelum tahun 2026 & pelunasan kas bank (termasuk CoA AO-103.5).
+                        Rincian mutasi piutang sebelum tahun 2025 & pelunasan kas bank (termasuk CoA AO-103.5).
                     </p>
                 </div>
             </div>

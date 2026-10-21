@@ -34,7 +34,7 @@ class PiutangLamaPerClientExporter
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('0F172A'));
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $downloadInfo = 'Periode: Saldo Awal (2024) & Pelunasan (< 2026 / CoA 180) | Diunduh: ' . now()->format('d/m/Y H:i');
+        $downloadInfo = 'Periode: Saldo Awal (2024) & Pelunasan (< 2025 / CoA 180) | Diunduh: ' . now()->format('d/m/Y H:i');
         if (!empty($subtitle)) {
             $downloadInfo .= ' (' . $subtitle . ')';
         }
