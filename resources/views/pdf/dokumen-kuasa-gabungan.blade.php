@@ -289,8 +289,8 @@
                 <td>Pemberi kuasa,</td>
             </tr>
             <tr>
-                <td style="height: 65px;"></td>
-                <td style="height: 65px;"></td>
+                <td style="height: 85px;"></td>
+                <td style="height: 85px;"></td>
             </tr>
             <tr>
                 <td>
@@ -375,8 +375,8 @@
                 <td style="width: 50%;">Pemberi kuasa,</td>
             </tr>
             <tr>
-                <td style="height: 65px;"></td>
-                <td style="height: 65px;"></td>
+                <td style="height: 85px;"></td>
+                <td style="height: 85px;"></td>
             </tr>
             <tr>
                 <td style="width: 50%;"></td>
