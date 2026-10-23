@@ -11,18 +11,38 @@ class MouListStatsOverview extends BaseWidget
 {
     protected function getStats(): array
     {
-        $totalCostListMou = CostListMou::whereHas('mou', function ($query) {
-            $query->where('status', 'approved');
-        })->sum('total_amount');
+        $mouCondition = function ($query) {
+            $query->where('status', 'approved')
+                ->where(function ($q) {
+                    $q->where('mou_piutang_lama', false)
+                        ->orWhereNull('mou_piutang_lama');
+                });
+        };
+
+        $totalCostListMou = CostListMou::whereHas('mou', $mouCondition)->sum('total_amount');
+
         $totalCostListInvoiceUnpaid = CostListInvoice::whereHas('invoice', function ($query) {
-            $query->where('invoice_status', 'unpaid');
+            $query->where('invoice_status', 'unpaid')
+                ->whereHas('mou', function ($q) {
+                    $q->where('mou_piutang_lama', false)
+                        ->orWhereNull('mou_piutang_lama');
+                });
         })->sum('amount');
 
         $totalCostListInvoicePaid = CostListInvoice::whereHas('invoice', function ($query) {
-            $query->where('invoice_status', 'paid');
+            $query->where('invoice_status', 'paid')
+                ->whereHas('mou', function ($q) {
+                    $q->where('mou_piutang_lama', false)
+                        ->orWhereNull('mou_piutang_lama');
+                });
         })->sum('amount');
 
-        $totalDiscount = \App\Models\MoU::where('status', 'approved')->sum('discount_amount');
+        $totalDiscount = \App\Models\MoU::where('status', 'approved')
+            ->where(function ($q) {
+                $q->where('mou_piutang_lama', false)
+                    ->orWhereNull('mou_piutang_lama');
+            })
+            ->sum('discount_amount');
         
         $difference = $totalCostListMou - $totalCostListInvoicePaid - $totalDiscount;
 
