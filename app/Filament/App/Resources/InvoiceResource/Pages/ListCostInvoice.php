@@ -151,13 +151,29 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
     {
         $isPaid = $this->invoice->invoice_status === 'paid';
 
+        $isMemo = !empty($this->invoice->memo_id);
+
         return [
             Actions\Action::make('send_whatsapp')
                 ->label('Kirim Invoice')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->form([
-                    \Filament\Forms\Components\TextInput::make('phone_number')
+                ->form(function () use ($isMemo) {
+                    $formComponents = [];
+                    if ($isMemo) {
+                        $this->invoice->loadMissing('memo');
+                        $memo = $this->invoice->memo;
+                        $formComponents[] = \Filament\Forms\Components\Radio::make('recipient_type')
+                            ->label('Pilih Nama Kepada:')
+                            ->options([
+                                'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                            ])
+                            ->default('nama_klien')
+                            ->required();
+                    }
+
+                    $formComponents[] = \Filament\Forms\Components\TextInput::make('phone_number')
                         ->label('WhatsApp Number')
                         ->required()
                         ->default(function () {
@@ -166,10 +182,16 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             if ($mou && $mou->client) {
                                 return $mou->client->phone;
                             }
+                            $memo = $this->invoice->memo;
+                            if ($memo && !empty($memo->telepon_klien ?? null)) {
+                                return $memo->telepon_klien;
+                            }
                             return null;
                         })
-                        ->helperText('Format: 08123456789 or 628123456789'),
-                ])
+                        ->helperText('Format: 08123456789 or 628123456789');
+
+                    return $formComponents;
+                })
                 ->modalHeading('Kirim Invoice')
                 ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
                 ->modalSubmitActionLabel('Ya, Kirim')
@@ -195,8 +217,18 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                             $phone = '62' . $phone;
                         }
 
+                        $recipientName = null;
+                        if (!empty($this->invoice->memo_id)) {
+                            $recipientType = $data['recipient_type'] ?? 'nama_klien';
+                            $this->invoice->loadMissing('memo');
+                            $memo = $this->invoice->memo;
+                            $recipientName = ($recipientType === 'instansi_klien')
+                                ? ($memo?->instansi_klien ?: $memo?->nama_klien)
+                                : ($memo?->nama_klien ?: $memo?->instansi_klien);
+                        }
+
                         // Dispatch background job for fast URL-based delivery
-                        \App\Jobs\SendInvoiceWhatsapp::dispatch($this->invoice->id, $phone);
+                        \App\Jobs\SendInvoiceWhatsapp::dispatch($this->invoice->id, $phone, $recipientName);
 
                         \Filament\Notifications\Notification::make()
                             ->title('Pengiriman Dijadwalkan')
@@ -243,15 +275,69 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Preview PDF')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->url(fn(): string => route('invoices.preview', ['id' => $this->invoice->id]))
-                    ->openUrlInNewTab(true),
+                    ->url(fn(): ?string => $this->invoice->memo_id ? null : route('invoices.preview', ['id' => $this->invoice->id]))
+                    ->openUrlInNewTab(fn(): bool => !$this->invoice->memo_id)
+                    ->form(function () {
+                        if (!$this->invoice->memo_id) {
+                            return [];
+                        }
+                        $this->invoice->loadMissing('memo');
+                        $memo = $this->invoice->memo;
+                        return [
+                            \Filament\Forms\Components\Radio::make('recipient_type')
+                                ->label('Pilih Nama Kepada:')
+                                ->options([
+                                    'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                ])
+                                ->default('nama_klien')
+                                ->required(),
+                        ];
+                    })
+                    ->modalHeading('Preview PDF Invoice')
+                    ->modalSubmitActionLabel('Preview PDF')
+                    ->action(function (array $data) {
+                        $params = ['id' => $this->invoice->id];
+                        if ($this->invoice->memo_id) {
+                            $params['recipient'] = $data['recipient_type'] ?? 'nama_klien';
+                        }
+                        $url = route('invoices.preview', $params);
+                        $this->js("window.open('{$url}', '_blank');");
+                    }),
 
                 Actions\Action::make('download_jpg')
                     ->label('Download JPG')
                     ->icon('heroicon-o-photo')
                     ->color('secondary')
-                    ->url(fn(): string => route('invoices.jpg', ['id' => $this->invoice->id]))
-                    ->openUrlInNewTab(true),
+                    ->url(fn(): ?string => $this->invoice->memo_id ? null : route('invoices.jpg', ['id' => $this->invoice->id]))
+                    ->openUrlInNewTab(fn(): bool => !$this->invoice->memo_id)
+                    ->form(function () {
+                        if (!$this->invoice->memo_id) {
+                            return [];
+                        }
+                        $this->invoice->loadMissing('memo');
+                        $memo = $this->invoice->memo;
+                        return [
+                            \Filament\Forms\Components\Radio::make('recipient_type')
+                                ->label('Pilih Nama Kepada:')
+                                ->options([
+                                    'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                ])
+                                ->default('nama_klien')
+                                ->required(),
+                        ];
+                    })
+                    ->modalHeading('Download JPG Invoice')
+                    ->modalSubmitActionLabel('Download JPG')
+                    ->action(function (array $data) {
+                        $params = ['id' => $this->invoice->id];
+                        if ($this->invoice->memo_id) {
+                            $params['recipient'] = $data['recipient_type'] ?? 'nama_klien';
+                        }
+                        $url = route('invoices.jpg', $params);
+                        $this->js("window.open('{$url}', '_blank');");
+                    }),
 
                 Actions\Action::make('edit_invoice')
                     ->label('Edit Invoice')

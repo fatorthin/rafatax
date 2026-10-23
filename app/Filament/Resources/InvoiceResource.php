@@ -469,10 +469,37 @@ class InvoiceResource extends Resource
                 ->color('info'),
             Tables\Actions\Action::make('previewPdf')
                 ->label('Preview PDF')
-                ->url(fn ($record) => route('invoices.preview', $record->id))
                 ->icon('heroicon-o-document-text')
                 ->color('success')
-                ->openUrlInNewTab(),
+                ->url(fn (Invoice $record): ?string => $record->memo_id ? null : route('invoices.preview', $record->id))
+                ->openUrlInNewTab(fn (Invoice $record): bool => !$record->memo_id)
+                ->form(function (Invoice $record) {
+                    if (!$record->memo_id) {
+                        return [];
+                    }
+                    $record->loadMissing('memo');
+                    $memo = $record->memo;
+                    return [
+                        Forms\Components\Radio::make('recipient_type')
+                            ->label('Pilih Nama Kepada:')
+                            ->options([
+                                'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                            ])
+                            ->default('nama_klien')
+                            ->required(),
+                    ];
+                })
+                ->modalHeading('Preview PDF Invoice')
+                ->modalSubmitActionLabel('Preview PDF')
+                ->action(function (Invoice $record, array $data, Tables\Actions\Action $action) {
+                    $recipient = $data['recipient_type'] ?? 'nama_klien';
+                    $url = route('invoices.preview', [
+                        'id' => $record->id,
+                        'recipient' => $recipient,
+                    ]);
+                    $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                }),
             // Tables\Actions\Action::make('downloadJpg')
             //     ->label('Download JPG')
             //     ->url(fn($record) => route('invoices.jpg', $record->id))

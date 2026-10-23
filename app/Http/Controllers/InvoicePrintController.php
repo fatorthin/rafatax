@@ -11,7 +11,8 @@ class InvoicePrintController extends Controller
     public function download($id)
     {
         try {
-            list($pdf, $filename) = $this->preparePdf($id);
+            $recipient = request()->query('recipient') ?? request()->query('kepada') ?? request()->query('recipient_name');
+            list($pdf, $filename) = $this->preparePdf($id, $recipient);
             return $pdf->download($filename);
         } catch (\Throwable $e) {
             // Fallback: render the selected view in browser if PDF generation fails
@@ -25,7 +26,8 @@ class InvoicePrintController extends Controller
     public function preview($id)
     {
         try {
-            list($pdf, $filename) = $this->preparePdf($id);
+            $recipient = request()->query('recipient') ?? request()->query('kepada') ?? request()->query('recipient_name');
+            list($pdf, $filename) = $this->preparePdf($id, $recipient);
             return $pdf->stream($filename);
         } catch (\Throwable $e) {
             return response($e->getMessage(), 500);
@@ -43,9 +45,11 @@ class InvoicePrintController extends Controller
             $cleanFilename = $filename ? basename($filename) : '';
             $filePath = $cleanFilename ? $cacheDir . '/' . $cleanFilename : null;
 
+            $recipient = request()->query('recipient') ?? request()->query('kepada') ?? request()->query('recipient_name');
+
             // If file does not exist in cache or is empty, generate and save it
             if (!$filePath || !file_exists($filePath) || filesize($filePath) === 0) {
-                list($pdf, $actualFilename) = $this->preparePdf($id);
+                list($pdf, $actualFilename) = $this->preparePdf($id, $recipient);
                 $targetFilename = $cleanFilename ?: $actualFilename;
                 $filePath = $cacheDir . '/' . $targetFilename;
                 $cleanFilename = $targetFilename;
@@ -66,7 +70,7 @@ class InvoicePrintController extends Controller
         }
     }
 
-    public function preparePdf($id)
+    public function preparePdf($id, ?string $recipientName = null)
     {
         $invoice = Invoice::with(['mou.client', 'memo', 'client'])->findOrFail($id);
         $costLists = CostListInvoice::where('invoice_id', $id)->get();
@@ -108,7 +112,7 @@ class InvoicePrintController extends Controller
             $signatureImageBase64 = 'data:image/png;base64,' . base64_encode($signatureData);
         }
 
-        $clientName = $this->resolveClientName($invoice);
+        $clientName = $this->resolveClientName($invoice, $recipientName);
 
         $viewData = [
             'invoice' => $invoice,
@@ -171,7 +175,8 @@ class InvoicePrintController extends Controller
             $signatureImageBase64 = 'data:image/png;base64,' . base64_encode($signatureData);
         }
 
-        $clientName = $this->resolveClientName($invoice);
+        $recipient = request()->query('recipient') ?? request()->query('kepada') ?? request()->query('recipient_name');
+        $clientName = $this->resolveClientName($invoice, $recipient);
 
         $viewData = [
             'invoice' => $invoice,
@@ -187,8 +192,22 @@ class InvoicePrintController extends Controller
         return view('invoices.jpg-preview', $viewData);
     }
 
-    private function resolveClientName(Invoice $invoice): string
+    public function resolveClientName(Invoice $invoice, ?string $recipient = null): string
     {
+        $recipient = $recipient ?? request()->query('recipient') ?? request()->query('kepada') ?? request()->query('recipient_name');
+
+        if (!empty($recipient)) {
+            if ($invoice->memo) {
+                if ($recipient === 'instansi_klien' || $recipient === 'instansi') {
+                    return $invoice->memo->instansi_klien ?: ($invoice->memo->nama_klien ?? '');
+                }
+                if ($recipient === 'nama_klien' || $recipient === 'nama') {
+                    return $invoice->memo->nama_klien ?: ($invoice->memo->instansi_klien ?? '');
+                }
+            }
+            return $recipient;
+        }
+
         if ($invoice->memo_id && !$invoice->client_id) {
             return $invoice->memo?->nama_klien ?? '';
         }

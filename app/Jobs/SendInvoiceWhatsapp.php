@@ -36,7 +36,8 @@ class SendInvoiceWhatsapp implements ShouldQueue
      */
     public function __construct(
         public int $invoiceId,
-        public string $phone
+        public string $phone,
+        public ?string $recipientName = null
     ) {
         $this->onQueue('whatsapp');
     }
@@ -119,6 +120,9 @@ class SendInvoiceWhatsapp implements ShouldQueue
             }
 
             $documentUrl = "{$baseUrl}/invoices/{$invoice->id}/document/{$filename}";
+            if ($this->recipientName) {
+                $documentUrl .= '?recipient=' . urlencode($this->recipientName);
+            }
 
             // 1. Send greeting/intro caption text
             $msgResult = $whatsAppService->sendMessage($phone, $caption);
@@ -131,7 +135,7 @@ class SendInvoiceWhatsapp implements ShouldQueue
             // 2. Pre-generate and cache PDF so public route serves instantly
             try {
                 $controller = app(InvoicePrintController::class);
-                list($pdf, $actualFilename) = $controller->preparePdf($invoice->id);
+                list($pdf, $actualFilename) = $controller->preparePdf($invoice->id, $this->recipientName);
 
                 $cacheDir = storage_path('app/public/invoices');
                 if (!file_exists($cacheDir)) {
@@ -201,6 +205,18 @@ class SendInvoiceWhatsapp implements ShouldQueue
 
     private function resolveClientName(Invoice $invoice): string
     {
+        if (!empty($this->recipientName)) {
+            if ($invoice->memo) {
+                if ($this->recipientName === 'instansi_klien' || $this->recipientName === 'instansi') {
+                    return $invoice->memo->instansi_klien ?: ($invoice->memo->nama_klien ?? '');
+                }
+                if ($this->recipientName === 'nama_klien' || $this->recipientName === 'nama') {
+                    return $invoice->memo->nama_klien ?: ($invoice->memo->instansi_klien ?? '');
+                }
+            }
+            return $this->recipientName;
+        }
+
         if ($invoice->memo_id && !$invoice->client_id) {
             return $invoice->memo?->nama_klien ?? '';
         }

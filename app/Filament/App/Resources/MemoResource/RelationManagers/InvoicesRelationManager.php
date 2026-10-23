@@ -158,37 +158,91 @@ class InvoicesRelationManager extends RelationManager
                 Tables\Actions\Action::make('preview_pdf')
                     ->label('Preview PDF')
                     ->icon('heroicon-o-document-magnifying-glass')
-                    ->url(fn($record) => route('invoices.preview', $record->id))
-                    ->openUrlInNewTab()
-                    ->color('success'),
+                    ->color('success')
+                    ->form(function ($record) {
+                        $record->loadMissing('memo');
+                        $memo = $record->memo;
+                        return [
+                            Forms\Components\Radio::make('recipient_type')
+                                ->label('Pilih Nama Kepada:')
+                                ->options([
+                                    'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                ])
+                                ->default('nama_klien')
+                                ->required(),
+                        ];
+                    })
+                    ->modalHeading('Preview PDF Invoice')
+                    ->modalSubmitActionLabel('Preview PDF')
+                    ->action(function ($record, array $data, Tables\Actions\Action $action) {
+                        $recipient = $data['recipient_type'] ?? 'nama_klien';
+                        $url = route('invoices.preview', [
+                            'id' => $record->id,
+                            'recipient' => $recipient,
+                        ]);
+                        $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                    }),
                 Tables\Actions\Action::make('download_jpeg')
                     ->label('Download JPEG')
                     ->icon('heroicon-o-photo')
-                    ->url(fn($record) => route('invoices.jpg', $record->id))
-                    ->openUrlInNewTab()
-                    ->color('warning'),
+                    ->color('warning')
+                    ->form(function ($record) {
+                        $record->loadMissing('memo');
+                        $memo = $record->memo;
+                        return [
+                            Forms\Components\Radio::make('recipient_type')
+                                ->label('Pilih Nama Kepada:')
+                                ->options([
+                                    'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                ])
+                                ->default('nama_klien')
+                                ->required(),
+                        ];
+                    })
+                    ->modalHeading('Download JPEG Invoice')
+                    ->modalSubmitActionLabel('Download JPEG')
+                    ->action(function ($record, array $data, Tables\Actions\Action $action) {
+                        $recipient = $data['recipient_type'] ?? 'nama_klien';
+                        $url = route('invoices.jpg', [
+                            'id' => $record->id,
+                            'recipient' => $recipient,
+                        ]);
+                        $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                    }),
                 Tables\Actions\Action::make('send_whatsapp')
                     ->label('Kirim WA')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('success')
-                    ->form([
-                        Forms\Components\TextInput::make('phone_number')
-                            ->label('Nomor WhatsApp')
-                            ->required()
-                            ->default(function ($record) {
-                                if ($record->client && $record->client->phone) {
-                                    return $record->client->phone;
-                                }
-                                $memo = $record->memo;
-                                if ($memo && !empty($memo->telepon_klien ?? null)) {
-                                    return $memo->telepon_klien;
-                                }
-                                return null;
-                            })
-                            ->helperText('Format: 08123456789 atau 628123456789'),
-                    ])
+                    ->form(function ($record) {
+                        $record->loadMissing('memo');
+                        $memo = $record->memo;
+                        $defaultPhone = null;
+                        if ($record->client && $record->client->phone) {
+                            $defaultPhone = $record->client->phone;
+                        } elseif ($memo && !empty($memo->telepon_klien ?? null)) {
+                            $defaultPhone = $memo->telepon_klien;
+                        }
+
+                        return [
+                            Forms\Components\Radio::make('recipient_type')
+                                ->label('Pilih Nama Kepada:')
+                                ->options([
+                                    'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                ])
+                                ->default('nama_klien')
+                                ->required(),
+                            Forms\Components\TextInput::make('phone_number')
+                                ->label('Nomor WhatsApp')
+                                ->required()
+                                ->default($defaultPhone)
+                                ->helperText('Format: 08123456789 atau 628123456789'),
+                        ];
+                    })
                     ->modalHeading('Kirim Invoice via WhatsApp')
-                    ->modalDescription('Pastikan nomor WhatsApp sudah benar sebelum mengirim.')
+                    ->modalDescription('Pilih nama kepada dan pastikan nomor WhatsApp sudah benar sebelum mengirim.')
                     ->modalSubmitActionLabel('Ya, Kirim')
                     ->action(function ($record, array $data) {
                         try {
@@ -211,8 +265,15 @@ class InvoicesRelationManager extends RelationManager
                                 $phone = '62' . $phone;
                             }
 
+                            $recipientType = $data['recipient_type'] ?? 'nama_klien';
+                            $record->loadMissing('memo');
+                            $memo = $record->memo;
+                            $recipientName = ($recipientType === 'instansi_klien')
+                                ? ($memo?->instansi_klien ?: $memo?->nama_klien)
+                                : ($memo?->nama_klien ?: $memo?->instansi_klien);
+
                             // Dispatch background job for fast URL-based delivery
-                            \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone);
+                            \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone, $recipientName);
 
                             \Filament\Notifications\Notification::make()
                                 ->title('Pengiriman Dijadwalkan')

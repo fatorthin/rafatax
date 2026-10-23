@@ -98,14 +98,15 @@
                 </div>
                 <div>Kepada :</div>
                 @php
-                    $resolvedClientName = '';
-
-                    if (!empty($invoice->memo_id) && empty($invoice->client_id)) {
-                        $resolvedClientName = $client_name ?? '';
-                    } elseif (!empty($invoice->memo_id) && !empty($invoice->client_id)) {
-                        $resolvedClientName = optional($invoice->client)->company_name ?? '';
-                    } elseif (!empty($invoice->mou_id) && empty($invoice->memo_id) && empty($invoice->client_id)) {
-                        $resolvedClientName = optional($invoice->mou->client)->company_name ?? '';
+                    $resolvedClientName = $client_name ?? '';
+                    if (empty($resolvedClientName)) {
+                        if (!empty($invoice->memo_id) && empty($invoice->client_id)) {
+                            $resolvedClientName = optional($invoice->memo)->nama_klien ?? '';
+                        } elseif (!empty($invoice->memo_id) && !empty($invoice->client_id)) {
+                            $resolvedClientName = optional($invoice->client)->company_name ?? '';
+                        } elseif (!empty($invoice->mou_id) && empty($invoice->memo_id) && empty($invoice->client_id)) {
+                            $resolvedClientName = optional($invoice->mou->client)->company_name ?? '';
+                        }
                     }
                 @endphp
                 <div>
