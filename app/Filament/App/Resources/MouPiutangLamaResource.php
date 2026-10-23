@@ -20,6 +20,8 @@ class MouPiutangLamaResource extends Resource
     use HasPermissions;
     protected static ?string $model = MoU::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function getResourceName(): string
     {
         return 'mou';
@@ -30,7 +32,7 @@ class MouPiutangLamaResource extends Resource
      */
     public static function shouldRegisterNavigation(): bool
     {
-        return static::canAccess();
+        return false;
     }
 
     /**

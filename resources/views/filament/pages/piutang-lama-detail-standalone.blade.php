@@ -181,7 +181,7 @@
         </div>
 
         <!-- Summary Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Saldo Awal (2024) -->
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card relative">
                 <div class="flex items-center justify-between">
@@ -203,22 +203,6 @@
                 </div>
             </div>
 
-            <!-- Total Invoice -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Invoice (&lt; 2026)</span>
-                    <span class="p-2 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
-                        <i class="fa-solid fa-file-invoice-dollar"></i>
-                    </span>
-                </div>
-                <div class="mt-4">
-                    <span class="text-2xl font-bold text-slate-900 dark:text-white block">
-                        Rp {{ number_format($totalInvoice, 0, ',', '.') }}
-                    </span>
-                    <span class="text-xs text-slate-400 mt-1 block">Tagihan invoice lama</span>
-                </div>
-            </div>
-
             <!-- Total Pembayaran -->
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card">
                 <div class="flex items-center justify-between">
@@ -232,22 +216,6 @@
                         Rp {{ number_format($totalPembayaran, 0, ',', '.') }}
                     </span>
                     <span class="text-xs text-slate-400 mt-1 block">Kas bank & CoA AO-103.5</span>
-                </div>
-            </div>
-
-            <!-- Total Potongan MoU -->
-            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 print-card">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Potongan MoU</span>
-                    <span class="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400">
-                        <i class="fa-solid fa-tags"></i>
-                    </span>
-                </div>
-                <div class="mt-4">
-                    <span class="text-2xl font-bold text-slate-900 dark:text-white block">
-                        Rp {{ number_format($totalPotongan, 0, ',', '.') }}
-                    </span>
-                    <span class="text-xs text-slate-400 mt-1 block">Diskon & Cancel MoU</span>
                 </div>
             </div>
 
@@ -265,69 +233,6 @@
                     </span>
                     <span class="text-xs text-slate-400 mt-1 block">Sisa saldo piutang lama</span>
                 </div>
-            </div>
-        </div>
-
-        <!-- MoU Section -->
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-800 print-card">
-            <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-contract text-blue-600"></i> Data MoU Terkait (&lt; 2026)
-                </h3>
-                <span class="text-xs text-slate-400 font-medium">{{ $mous->count() }} MoU Ditemukan</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 print-table">
-                    <thead class="bg-slate-50/75 dark:bg-slate-900/50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">No. MoU</th>
-                            <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Periode / Tanggal</th>
-                            <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kategori</th>
-                            <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Nilai MoU</th>
-                            <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Invoice Dibuat</th>
-                            <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Diskon</th>
-                            <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cancel</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200 dark:bg-slate-900 dark:divide-slate-800">
-                        @forelse($mous as $mou)
-                            @php
-                                $totalCostList = $mou->cost_lists->sum('total_amount');
-                                $totalInvoiceNominal = $mou->invoices->flatMap->costListInvoices->sum('amount');
-                            @endphp
-                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white whitespace-nowrap">
-                                    {{ $mou->mou_number ?: 'MoU #' . $mou->id }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                                    {{ $mou->start_date ? \Carbon\Carbon::parse($mou->start_date)->translatedFormat('d-M-Y') : ($mou->created_at ? $mou->created_at->translatedFormat('d-M-Y') : '-') }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ $mou->categoryMou->name ?? '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-right text-slate-900 dark:text-white whitespace-nowrap font-semibold">
-                                    Rp {{ number_format($totalCostList, 0, ',', '.') }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-semibold">
-                                    {{ $totalInvoiceNominal > 0 ? 'Rp ' . number_format($totalInvoiceNominal, 0, ',', '.') : '-' }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-right text-amber-600 dark:text-amber-400 whitespace-nowrap font-semibold">
-                                    {{ $mou->discount_amount > 0 ? 'Rp ' . number_format($mou->discount_amount, 0, ',', '.') : '-' }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-right text-rose-600 dark:text-rose-400 whitespace-nowrap font-semibold">
-                                    {{ $mou->cancel_mou_amount > 0 ? 'Rp ' . number_format($mou->cancel_mou_amount, 0, ',', '.') : '-' }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-6 py-12 text-sm text-center text-slate-500 dark:text-slate-400">
-                                    <div class="flex flex-col items-center justify-center space-y-2">
-                                        <i class="fa-regular fa-folder-open text-3xl text-slate-300 dark:text-slate-700"></i>
-                                        <span>Tidak ada data MoU sebelum 2026 untuk client ini.</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
         </div>
 

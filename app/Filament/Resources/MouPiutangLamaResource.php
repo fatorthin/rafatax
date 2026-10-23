@@ -18,6 +18,13 @@ class MouPiutangLamaResource extends Resource
 {
     protected static ?string $model = MoU::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
     protected static ?string $navigationGroup = 'Bagian Keuangan';
