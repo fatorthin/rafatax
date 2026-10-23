@@ -203,19 +203,22 @@ $totalFeeFormatted = 'Rp.' . number_format($memo->total_fee, 0, ',', '.');
             </td>
         </tr>
         <tr>
-            <td style="width: 50%; border: none; padding-top: 10px;">
+            <td style="width: 50%; border: none; padding-top: 10px; vertical-align: top;">
                 <div class="font-bold underline" style="margin-bottom: 80px;">Pihak Kedua</div>
             </td>
-            <td style="width: 50%; border: none; padding-top: 10px;">
-                <div class="font-bold underline" style="margin-bottom: 80px;">Pihak Pertama</div>
+            <td style="width: 50%; border: none; padding-top: 10px; vertical-align: top;">
+                <div class="font-bold underline">Pihak Pertama</div>
+                <div style="height: 80px;">
+                    <img src="{{ public_path('images/ttd_antin.png') }}" alt="Tanda Tangan" style="height: 75px; margin-top: 2px;">
+                </div>
             </td>
         </tr>
         <tr>
-            <td style="width: 50%; border: none;">
+            <td style="width: 50%; border: none; vertical-align: top;">
                 <div class="font-bold underline">{{ strtoupper($memo->nama_klien) }}</div>
                 <div>{{ strtoupper($memo->instansi_klien) }}</div>
             </td>
-            <td style="width: 50%; border: none;">
+            <td style="width: 50%; border: none; vertical-align: top;">
                 <div class="font-bold underline">ANTIN OKFITASARI, S.E.,S.H.,M.Si., Ak., CA.AB., BKP.,CATr.,ACPA</div>
                 <div>OWNER KKP ANTIN OKFITASARI (RAFATAX)</div>
             </td>
