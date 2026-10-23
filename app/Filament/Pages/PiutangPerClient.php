@@ -208,6 +208,12 @@ class PiutangPerClient extends Page implements HasTable
                     ->label('Nama Client')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('type')
+                    ->label('Tipe')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => strtoupper($state ?? '-'))
+                    ->color(fn($state) => $state === 'pt' ? 'info' : 'warning')
+                    ->sortable(),
                 TextColumn::make('saldo_awal')
                     ->label('Saldo Awal (2025)')
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
@@ -232,6 +238,16 @@ class PiutangPerClient extends Page implements HasTable
                     ->color(fn($state) => $state > 0 ? 'amber' : 'success'),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tipe Klien')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                    ])
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $type) => $query->where('clients.type', $type)
+                    )),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif')
                     ->query(fn(Builder $query) => $query->having('total_piutang', '>', 0))

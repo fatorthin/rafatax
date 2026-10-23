@@ -171,6 +171,12 @@ class PiutangLamaPerClient extends Page implements HasTable
                     ->label('Nama Client')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('type')
+                    ->label('Tipe')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => strtoupper($state ?? '-'))
+                    ->color(fn($state) => $state === 'pt' ? 'info' : 'warning')
+                    ->sortable(),
                 TextColumn::make('saldo_awal')
                     ->label('Saldo Awal (2024)')
                     ->formatStateUsing(fn($state): string => 'Rp ' . number_format((float)$state, 0, ',', '.'))
@@ -191,9 +197,19 @@ class PiutangLamaPerClient extends Page implements HasTable
             ])
             ->filters([
                 Tables\Filters\Filter::make('has_saldo_awal')
-                    ->label('Hanya Memiliki Saldo Awal')
-                    ->query(fn(Builder $query) => $query->whereRaw('COALESCE(sa.saldo_awal, 0) > 0'))
-                    ->default(false),
+                    ->label('Saldo Awal != 0')
+                    ->query(fn(Builder $query) => $query->whereRaw('COALESCE(sa.saldo_awal, 0) <> 0'))
+                    ->default(true),
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tipe Klien')
+                    ->options([
+                        'pt' => 'PT',
+                        'kkp' => 'KKP',
+                    ])
+                    ->query(fn(Builder $query, array $data) => $query->when(
+                        $data['value'],
+                        fn(Builder $query, $type) => $query->where('clients.type', $type)
+                    )),
                 Tables\Filters\Filter::make('piutang_aktif')
                     ->label('Hanya Piutang Aktif (> 0)')
                     ->query(fn(Builder $query) => $query->whereRaw('(COALESCE(sa.saldo_awal, 0) - COALESCE(pay.total_pembayaran, 0)) > 0'))
