@@ -191,7 +191,9 @@ Route::post('/cash-reference/transaction/{transactionId}/link-client', [\App\Htt
     ->name('cash-reference.transaction.link-client')
     ->middleware('auth');
 
+Route::get('/memos/{id}/document/{filename?}', [App\Http\Controllers\MemoPrintController::class, 'streamPublicPdf'])->name('memos.pdf.document');
 Route::get('/memos/{id}/pdf', [App\Http\Controllers\MemoPrintController::class, 'previewPdf'])->name('memos.pdf')->middleware('auth');
+Route::get('/memos/{id}/pdf/download', [App\Http\Controllers\MemoPrintController::class, 'downloadPdf'])->name('memos.pdf.download')->middleware('auth');
 
 // Route khusus untuk menjalankan queue worker via HTTP (karena kendala cron job CLI)
 // Akses: https://domain.com/run-queue-worker?key=rafatax-secret-worker

@@ -9,11 +9,13 @@ use App\Models\Memo;
 use App\Traits\HasPermissions;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Jobs\SendMemoWhatsapp;
 
 class MemoResource extends Resource
 {
@@ -195,6 +197,71 @@ class MemoResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('send_whatsapp')
+                    ->label('Kirim WA')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->form(function (Memo $record) {
+                        return [
+                            Forms\Components\Radio::make('recipient_type')
+                                ->label('Pilih Nama Kepada:')
+                                ->options([
+                                    'nama_klien' => 'Nama Klien: ' . ($record->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: ' . ($record->instansi_klien ?: '-'),
+                                ])
+                                ->default('nama_klien')
+                                ->required(),
+                            Forms\Components\TextInput::make('phone_number')
+                                ->label('Nomor WhatsApp')
+                                ->placeholder('Contoh: 08123456789 atau 628123456789')
+                                ->required()
+                                ->tel()
+                                ->helperText('Format: 08123456789 atau 628123456789'),
+                        ];
+                    })
+                    ->modalHeading('Kirim Memo via WhatsApp')
+                    ->modalDescription('Pilih nama kepada dan masukkan nomor WhatsApp tujuan sebelum mengirim.')
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->action(function (Memo $record, array $data) {
+                        try {
+                            $phoneInput = $data['phone_number'] ?? '';
+
+                            if (empty($phoneInput)) {
+                                Notification::make()
+                                    ->title('Error')
+                                    ->body('Nomor WhatsApp wajib diisi!')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            $phone = preg_replace('/[^0-9]/', '', $phoneInput);
+                            if (substr($phone, 0, 1) === '0') {
+                                $phone = '62' . substr($phone, 1);
+                            } elseif (substr($phone, 0, 2) !== '62') {
+                                $phone = '62' . $phone;
+                            }
+
+                            $recipientType = $data['recipient_type'] ?? 'nama_klien';
+                            $recipientName = ($recipientType === 'instansi_klien')
+                                ? ($record->instansi_klien ?: $record->nama_klien)
+                                : ($record->nama_klien ?: $record->instansi_klien);
+
+                            SendMemoWhatsapp::dispatch($record->id, $phone, $recipientName);
+
+                            Notification::make()
+                                ->title('Pengiriman Dijadwalkan')
+                                ->body('Memo sedang diproses dan akan dikirim ke WhatsApp melalui antrean latar belakang.')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('Gagal Mengirim')
+                                ->body('Terjadi kesalahan: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\DeleteAction::make(),
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
