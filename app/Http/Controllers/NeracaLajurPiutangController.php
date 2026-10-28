@@ -195,7 +195,8 @@ class NeracaLajurPiutangController extends Controller
      */
     private function getBankDetailData($coaId, int $month, int $year, string $type): array
     {
-        $bankCashReferenceIds = [1, 2, 3, 4, 5];
+        // Exclude Bank Mandiri (cash_reference_id = 5)
+        $bankCashReferenceIds = [1, 2, 3, 4];
         $startDate = \Carbon\Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d');
         $endDate   = \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
 
@@ -273,12 +274,8 @@ class NeracaLajurPiutangController extends Controller
             } elseif ($coa->code === 'AO-102.5') {
                 $isBankDirectAccount = true;
                 $directCashReferenceId = 5;
-                $query->where('cash_reference_id', 5);
-                if ($type === 'debit') {
-                    $query->where('debit_amount', '>', 0);
-                } else {
-                    $query->where('credit_amount', '>', 0);
-                }
+                // Bank Mandiri (id 5) dikecualikan sehingga tidak menampilkan data
+                $query->whereRaw('1 = 0');
             } else {
                 // Akun umum (misal AO-103.6 s/d AO-103.12, pendapatan, biaya)
                 $query->where('coa_id', $coa->id)->whereIn('cash_reference_id', $bankCashReferenceIds);

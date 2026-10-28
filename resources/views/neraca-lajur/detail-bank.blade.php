@@ -126,6 +126,20 @@
         if (!$isAdminRoute && $from === 'app') {
             $backUrl = url('/app/neraca-lajur-piutang?month=' . $month . '&year=' . $year);
         }
+
+        // Filter data agar cash_reference dengan id 5 (MANDIRI) tidak ditampilkan
+        $transactions = collect($transactions)->reject(function ($trx) {
+            $refId = is_array($trx) ? ($trx['cash_reference_id'] ?? null) : ($trx->cash_reference_id ?? null);
+            return (int) $refId === 5;
+        })->values();
+
+        $summaryByBank = collect($summaryByBank)->reject(function ($bank, $key) {
+            $refId = is_array($bank) ? ($bank['id'] ?? $key) : ($bank->id ?? $key);
+            return (int) $refId === 5;
+        })->all();
+
+        $totalAmount = $transactions->sum('amount');
+        $totalCount = $transactions->count();
     @endphp
 
     <!-- Top Navigation Bar -->
@@ -212,7 +226,7 @@
                     <p class="text-sm text-blue-200/80 mt-1 flex items-center gap-2">
                         <span><i class="fa-regular fa-calendar-days mr-1"></i> Periode {{ $monthName }} {{ $year }}</span>
                         <span>•</span>
-                        <span><i class="fa-solid fa-building-columns mr-1"></i> Berasal dari Kas Bank (BCA PT, BCA 425, BCA 140, BCA 436, Mandiri)</span>
+                        <span><i class="fa-solid fa-building-columns mr-1"></i> Berasal dari Kas Bank (BCA PT, BCA 425, BCA 140, BCA 436)</span>
                     </p>
                 </div>
 
@@ -271,6 +285,9 @@
 
                 <!-- Individual Bank Cards -->
                 @foreach($summaryByBank as $bankId => $bankData)
+                    @if($bankId == 5 || (isset($bankData['id']) && $bankData['id'] == 5))
+                        @continue
+                    @endif
                     @php
                         $percent = $totalAmount > 0 ? round(($bankData['total_amount'] / $totalAmount) * 100, 1) : 0;
                         $isPt = strtoupper($bankData['status_kepemilikan'] ?? '') === 'PT';
@@ -368,6 +385,9 @@
                     </thead>
                     <tbody id="transactionTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-normal">
                         @forelse($transactions as $index => $trx)
+                            @if(($trx['cash_reference_id'] ?? null) == 5)
+                                @continue
+                            @endif
                             @php
                                 $bankId = $trx['cash_reference_id'];
                                 $searchData = strtolower(implode(' ', [
@@ -472,7 +492,7 @@
         <!-- Back to Neraca Lajur Footer link -->
         <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2">
             <div>
-                Data diperbarui secara real-time dari buku kas bank (ID 1 s/d 5) pada modul Keuangan Rafatax.
+                Data diperbarui secara real-time dari buku kas bank (ID 1 s/d 4) pada modul Keuangan Rafatax.
             </div>
             <a href="{{ $backUrl }}" class="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-medium">
                 <i class="fa-solid fa-arrow-left text-[10px]"></i>
