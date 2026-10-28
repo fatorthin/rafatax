@@ -781,6 +781,20 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
         $kreditCases .= ' ELSE 0 END';
 
+        $bankCashReferenceIds = [1, 2, 3, 4, 5];
+        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
+        if ($this->year >= 2026) {
+            $bankCashReferenceIds = array_values(array_diff($bankCashReferenceIds, [5]));
+        }
+        $bankIdsString = implode(',', $bankCashReferenceIds);
+        $mandiriIncluded = in_array(5, $bankCashReferenceIds);
+        $mandiriKreditSql = $mandiriIncluded
+            ? "(SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)"
+            : "0";
+        $mandiriDebitSql = $mandiriIncluded
+            ? "(SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)"
+            : "0";
+
         $query = Coa::query()
             ->select([
                 'coa.id',
@@ -898,41 +912,41 @@ class NeracaLajurPiutang extends Page implements HasTable
                             WHEN c.code = 'AO-1010' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78) AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=1 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.2' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=3 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.3' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=2 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.4' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=4 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
-                            WHEN c.code = 'AO-102.5' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
-                            ELSE (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN (1,2,3,4,5) AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriKreditSql}
+                            ELSE (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN ({$bankIdsString}) AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                         END as bank_kredit,
                         CASE
                             WHEN c.code = 'AO-1010' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162 AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78) AND cr.transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=1 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.2' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=3 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.3' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=2 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.4' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=4 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
-                            WHEN c.code = 'AO-102.5' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
-                            ELSE (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN (1,2,3,4,5) AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriDebitSql}
+                            ELSE (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN ({$bankIdsString}) AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)
                         END as bank_debit
                     FROM coa c
                 ) as bank_data"),
