@@ -26,13 +26,15 @@ class NeracaLajurController extends Controller
     public function saveCutOff(Request $request)
     {
         try {
-            $month = $request->get('month', 1);
-            $year = $request->get('year', now()->year);
+            $month = (int) $request->get('month', 1);
+            $year = (int) $request->get('year', now()->year);
+            $entity = strtolower($request->get('entity', 'all'));
+            $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
 
             DB::beginTransaction();
 
             // Get data for the current month
-            $data = $this->getDataForExport($month, $year);
+            $data = $this->getDataForExport($month, $year, $entity);
             // dd($data);
 
             // Get the last day of the current month for transaction date
@@ -75,10 +77,18 @@ class NeracaLajurController extends Controller
             $labaRugiBersih = abs($totalPendapatan) - abs($totalBeban);
 
             // Delete existing data for this month if any
-            JournalBookReport::query()->where('journal_book_id', '=', 3)
+            $deleteQuery = JournalBookReport::query()->where('journal_book_id', '=', 3)
                 ->whereYear('transaction_date', '=', $year)
-                ->whereMonth('transaction_date', '=', $month)
-                ->delete();
+                ->whereMonth('transaction_date', '=', $month);
+
+            if ($isSeparated && in_array($entity, ['pt', 'kkp'], true)) {
+                $targetEnt = strtoupper($entity);
+                $deleteQuery->whereRaw('UPPER(kepemilikan) = ?', [$targetEnt]);
+            }
+
+            $deleteQuery->delete();
+
+            $kepemilikanVal = ($isSeparated && in_array($entity, ['pt', 'kkp'], true)) ? strtoupper($entity) : null;
 
             // Insert new data
             foreach ($data as $item) {
@@ -89,14 +99,18 @@ class NeracaLajurController extends Controller
                     if ($item->code === 'AO-305' || $item->id == 118) {
                         // Jika laba (positif) → masuk kredit, jika rugi (negatif) → masuk debit (nilai absolut)
                         if ($labaRugiBersih != 0) {
-                            JournalBookReport::create([
+                            $createData = [
                                 'description' => $item->code . ' - ' . $item->name,
                                 'journal_book_id' => 3,
                                 'debit_amount' => max(0, -$labaRugiBersih),
                                 'credit_amount' => max(0, $labaRugiBersih),
                                 'coa_id' => $item->id,
                                 'transaction_date' => $transactionDate,
-                            ]);
+                            ];
+                            if ($kepemilikanVal) {
+                                $createData['kepemilikan'] = $kepemilikanVal;
+                            }
+                            JournalBookReport::create($createData);
                         }
                     } else {
                         // Calculate Neraca Setelah AJE for other accounts
@@ -115,14 +129,18 @@ class NeracaLajurController extends Controller
                         // Only save if there's a balance
                         // Nilai yang disimpan sudah termasuk AJE, sehingga akan menjadi Neraca Awal bulan berikutnya
                         if ($selisih != 0) {
-                            JournalBookReport::create([
+                            $createData = [
                                 'description' => $item->code . ' - ' . $item->name,
                                 'journal_book_id' => 3,
                                 'debit_amount' => max(0, $selisih),
                                 'credit_amount' => max(0, -$selisih),
                                 'coa_id' => $item->id,
                                 'transaction_date' => $transactionDate,
-                            ]);
+                            ];
+                            if ($kepemilikanVal) {
+                                $createData['kepemilikan'] = $kepemilikanVal;
+                            }
+                            JournalBookReport::create($createData);
                         }
                     }
                 }
@@ -307,7 +325,7 @@ class NeracaLajurController extends Controller
         exit;
     }
 
-    private function getDataForExport(int $month, int $year)
+    private function getDataForExport(int $month, int $year, string $entity = 'all')
     {
         // Start date of previous month
         $startOfPreviousMonth = Carbon::create($year, $month, 1)->subMonth()->startOfMonth();
@@ -317,10 +335,49 @@ class NeracaLajurController extends Controller
         $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($year, $month, 1)->endOfMonth();
 
-        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+        $ent = strtolower($entity);
+
+        $depresiasiQuery = \App\Models\DepresiasiAktivaTetap::query()
             ->whereRaw('YEAR(tanggal_penyusutan) = ?', [$year])
-            ->whereRaw('MONTH(tanggal_penyusutan) = ?', [$month])
-            ->sum('jumlah_penyusutan') ?? 0;
+            ->whereRaw('MONTH(tanggal_penyusutan) = ?', [$month]);
+
+        if ($isSeparated && $ent !== 'all') {
+            $depresiasiQuery->whereHas('daftarAktivaTetap', function ($q) use ($ent) {
+                $q->where('kepemilikan', strtoupper($ent));
+            });
+        }
+        $depresiasiTotal = $depresiasiQuery->sum('jumlah_penyusutan') ?? 0;
+
+        if ($isSeparated && $ent === 'pt') {
+            $bankCashReferenceIds = [1, 4];
+            $kasBesarCondition    = "cash_reference_id = 0";
+            $kasKecilCondition    = "cash_reference_id = 9";
+            $journalFilter        = "AND UPPER(kepemilikan) = 'PT'";
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $bankCashReferenceIds = [2];
+            $kasBesarCondition    = "cash_reference_id = 6";
+            $kasKecilCondition    = "cash_reference_id = 7";
+            $journalFilter        = "AND (kepemilikan IS NULL OR UPPER(kepemilikan) = 'KKP')";
+        } else {
+            if ($year == 2026 && $month < 4) {
+                $bankCashReferenceIds = [1, 2, 3, 4];
+            } elseif ($year < 2026) {
+                $bankCashReferenceIds = [1, 2, 3, 4, 5];
+            } else {
+                $bankCashReferenceIds = [1, 2, 4];
+            }
+            $kasBesarCondition = "cash_reference_id = 6";
+            $kasKecilCondition = "cash_reference_id IN (7, 9)";
+            $journalFilter     = "";
+        }
+        $bankIdsString = implode(',', $bankCashReferenceIds);
+        $mandiriDebitSql = in_array(5, $bankCashReferenceIds)
+            ? "(SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports WHERE cash_reference_id = 5 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)"
+            : "0";
+        $mandiriCreditSql = in_array(5, $bankCashReferenceIds)
+            ? "(SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports WHERE cash_reference_id = 5 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}' AND deleted_at IS NULL)"
+            : "0";
 
         $query = Coa::query()
             ->select([
@@ -353,6 +410,7 @@ class NeracaLajurController extends Controller
                     WHERE transaction_date BETWEEN '{$startOfPreviousMonth}' AND '{$endOfPreviousMonth}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as journal_data"),
                 'coa.id',
@@ -372,7 +430,7 @@ class NeracaLajurController extends Controller
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE {$kasBesarCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 76
@@ -386,7 +444,7 @@ class NeracaLajurController extends Controller
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE {$kasBesarCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -408,7 +466,7 @@ class NeracaLajurController extends Controller
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE {$kasKecilCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 77
@@ -422,7 +480,7 @@ class NeracaLajurController extends Controller
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE {$kasKecilCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -440,7 +498,7 @@ class NeracaLajurController extends Controller
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1, 2, 3, 4, 5)
+                                WHERE cref.id IN ({$bankIdsString})
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162
@@ -450,7 +508,7 @@ class NeracaLajurController extends Controller
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1, 2, 3, 4, 5)
+                                WHERE cref.id IN ({$bankIdsString})
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78)
@@ -484,18 +542,12 @@ class NeracaLajurController extends Controller
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.5' THEN (
-                                SELECT COALESCE(SUM(credit_amount), 0)
-                                FROM cash_reports
-                                WHERE cash_reference_id = 5
-                                AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
-                                AND deleted_at IS NULL
-                            )
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriCreditSql}
                             ELSE (
                                 SELECT COALESCE(SUM(debit_amount), 0)
                                 FROM cash_reports
                                 WHERE coa_id = c.id
-                                AND cash_reference_id IN (1,2,3,4,5)
+                                AND cash_reference_id IN ({$bankIdsString})
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
@@ -505,7 +557,7 @@ class NeracaLajurController extends Controller
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1, 2, 3, 4, 5)
+                                WHERE cref.id IN ({$bankIdsString})
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162
@@ -515,7 +567,7 @@ class NeracaLajurController extends Controller
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1, 2, 3, 4, 5)
+                                WHERE cref.id IN ({$bankIdsString})
                                 AND cr.deleted_at IS NULL
                                 AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78)
@@ -549,18 +601,12 @@ class NeracaLajurController extends Controller
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
-                            WHEN c.code = 'AO-102.5' THEN (
-                                SELECT COALESCE(SUM(debit_amount), 0)
-                                FROM cash_reports
-                                WHERE cash_reference_id = 5
-                                AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
-                                AND deleted_at IS NULL
-                            )
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriDebitSql}
                             ELSE (
                                 SELECT COALESCE(SUM(credit_amount), 0)
                                 FROM cash_reports
                                 WHERE coa_id = c.id
-                                AND cash_reference_id IN (1,2,3,4,5)
+                                AND cash_reference_id IN ({$bankIdsString})
                                 AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                                 AND deleted_at IS NULL
                             )
@@ -581,6 +627,7 @@ class NeracaLajurController extends Controller
                     WHERE journal_book_id = 4
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as jurnal_pendapatan_data"),
                 'coa.id',
@@ -597,6 +644,7 @@ class NeracaLajurController extends Controller
                     WHERE journal_book_id = 1
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as jurnal_umum_data"),
                 'coa.id',
@@ -613,6 +661,7 @@ class NeracaLajurController extends Controller
                     WHERE journal_book_id = 2
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as aje_data"),
                 'coa.id',

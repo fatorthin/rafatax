@@ -21,6 +21,39 @@
             </div>
         </div>
 
+        {{-- Entitas Switcher Bar --}}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pilihan Entitas:</span>
+                <div class="inline-flex rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-100 dark:bg-gray-900" role="group">
+                    <a href="{{ static::getResource()::getUrl('neraca-lajur-piutang', ['month' => $month, 'year' => $year, 'entity' => 'all']) }}"
+                        class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        Semua (Konsolidasi)
+                    </a>
+                    <a href="{{ static::getResource()::getUrl('neraca-lajur-piutang', ['month' => $month, 'year' => $year, 'entity' => 'kkp']) }}"
+                        class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'kkp' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        🏛️ KKP
+                    </a>
+                    <a href="{{ static::getResource()::getUrl('neraca-lajur-piutang', ['month' => $month, 'year' => $year, 'entity' => 'pt']) }}"
+                        class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'pt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
+                        🏢 PT
+                    </a>
+                </div>
+            </div>
+
+            @if (($year > 2026) || ($year == 2026 && $month >= 4))
+                <div class="text-xs text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Pemisahan Entitas Aktif (Cut-Off per April 2026)</span>
+                </div>
+            @else
+                <div class="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800">
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>Periode Historis Konsolidasi (&lt; April 2026)</span>
+                </div>
+            @endif
+        </div>
+
         {{-- Tabel Neraca Lajur --}}
         <div 
             x-data="{
@@ -395,7 +428,7 @@
                             </td>
                             <td class="number-cell text-right">
                                 @if ($totalBankDebit != 0)
-                                    <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin']) }}"
+                                    <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
                                        target="_blank"
                                        class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
                                        title="Klik untuk melihat seluruh transaksi bank (Debit)">
@@ -407,7 +440,7 @@
                             </td>
                             <td class="number-cell text-right">
                                 @if ($totalBankKredit != 0)
-                                    <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin']) }}"
+                                    <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
                                        target="_blank"
                                        class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
                                        title="Klik untuk melihat seluruh transaksi bank (Kredit)">
@@ -507,7 +540,7 @@
                                     {{ number_format($row->kas_kecil_kredit, 0, ',', '.') }}</td>
                                 <td class="number-cell text-right">
                                     @if ($row->bank_debit != 0)
-                                        <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin']) }}"
+                                        <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
                                            target="_blank"
                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
                                            title="Klik untuk melihat detail transaksi bank (Debit)">
@@ -519,7 +552,7 @@
                                 </td>
                                 <td class="number-cell text-right">
                                     @if ($row->bank_kredit != 0)
-                                        <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin']) }}"
+                                        <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
                                            target="_blank"
                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
                                            title="Klik untuk melihat detail transaksi bank (Kredit)">

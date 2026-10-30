@@ -24,6 +24,7 @@ class Neraca extends Page
 
     public $month;
     public $year;
+    public $entity = 'all';
 
     public static function canAccess(array $parameters = []): bool
     {
@@ -43,6 +44,7 @@ class Neraca extends Page
     {
         $this->month = request('month', now()->month);
         $this->year = request('year', now()->year);
+        $this->entity = request('entity', 'all');
     }
 
     protected function getHeaderActions(): array
@@ -82,11 +84,21 @@ class Neraca extends Page
                         })
                         ->default($this->year)
                         ->required(),
+                    Select::make('entity')
+                        ->label('Entitas')
+                        ->options([
+                            'all' => 'Semua (Konsolidasi)',
+                            'kkp' => 'KKP',
+                            'pt'  => 'PT',
+                        ])
+                        ->default($this->entity)
+                        ->required(),
                 ])
                 ->action(function (array $data): void {
                     $this->month = $data['month'];
                     $this->year = $data['year'];
-                    $this->redirect(route('filament.app.pages.neraca', ['month' => $this->month, 'year' => $this->year]));
+                    $this->entity = $data['entity'] ?? 'all';
+                    $this->redirect(route('filament.app.pages.neraca', ['month' => $this->month, 'year' => $this->year, 'entity' => $this->entity]));
                 }),
             Action::make('export')
                 ->label('Export Excel')
@@ -107,7 +119,7 @@ class Neraca extends Page
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
         // Get Laba Rugi data first for Sisa Dana calculation
-        return app(NeracaReportService::class)->getMonthlyReport((int) $this->month, (int) $this->year);
+        return app(NeracaReportService::class)->getMonthlyReport((int) $this->month, (int) $this->year, $this->entity);
     }
 
     public function exportToExcel()

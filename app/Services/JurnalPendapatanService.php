@@ -127,16 +127,23 @@ class JurnalPendapatanService
     /**
      * Sumber 1 — Invoices & cost_list_invoices (Invoice dibuat pada bulan berjalan).
      */
-    public static function getInvoicePiutangForJP(string $startOfMonth, string $endOfMonth): array
+    public static function getInvoicePiutangForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
-        $rows = DB::table('invoices as inv')
+        $query = DB::table('invoices as inv')
             ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->whereNull('inv.memo_id')
-            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
-            ->selectRaw('cli.coa_id, cli.amount')
-            ->get();
+            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth]);
+
+        $ent = strtolower($entity);
+        if ($ent === 'pt') {
+            $query->where('inv.invoice_type', 'pt');
+        } elseif ($ent === 'kkp') {
+            $query->where('inv.invoice_type', 'kkp');
+        }
+
+        $rows = $query->selectRaw('cli.coa_id, cli.amount')->get();
 
         $revenueToPiutangMap    = static::getRevenueToPiutangMap();
         $piutangToPendapatanMap = static::getPiutangToPendapatanMap();
@@ -173,13 +180,25 @@ class JurnalPendapatanService
     /**
      * Sumber 2 — cash_reports (CoA AO-103.x yang muncul di kolom kas/bank).
      */
-    public static function getCashReportPiutangForJP(string $startOfMonth, string $endOfMonth): array
+    public static function getCashReportPiutangForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
         $startDate = Carbon::parse($startOfMonth);
-        $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9]; // bank + kas besar + kas kecil
-        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
-        if ($startDate->year >= 2026) {
-            $cashReferenceIds = array_values(array_diff($cashReferenceIds, [5]));
+        $ent = strtolower($entity);
+
+        if ($ent === 'pt') {
+            $cashReferenceIds = [1, 4, 9]; // BCA PT, BCA 436, Kas Kecil PT
+        } elseif ($ent === 'kkp') {
+            $cashReferenceIds = [2, 6, 7]; // BCA 425, Kas Besar, Kas Kecil KKP
+        } else {
+            // all / konsolidasi
+            if ($startDate->year == 2026 && $startDate->month < 4) {
+                // Sebelum cut-off April 2026: BCA 140 (3) masih aktif menerima kas/piutang, Mandiri (5) diexclude
+                $cashReferenceIds = [1, 2, 3, 4, 6, 7, 9];
+            } elseif ($startDate->year < 2026) {
+                $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
+            } else {
+                $cashReferenceIds = [1, 2, 4, 6, 7, 9];
+            }
         }
 
         $map  = static::getPiutangToPendapatanMap();
@@ -217,16 +236,29 @@ class JurnalPendapatanService
     /**
      * Sumber 3 — Invoices (is_include_pph23 = true, dibuat pada bulan berjalan).
      */
-    public static function getInvoicePph23ForJP(string $startOfMonth, string $endOfMonth): array
+    public static function getInvoicePph23ForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
-        $rows = DB::table('invoices as inv')
+        $ent = strtolower($entity);
+        if ($ent === 'kkp') {
+            return [
+                'by_piutang_coa'        => [],
+                'by_belum_diterima_coa' => [],
+                'total'                 => 0,
+            ];
+        }
+
+        $query = DB::table('invoices as inv')
             ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('inv.is_include_pph23', true)
-            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
-            ->selectRaw('cli.coa_id, cli.amount')
-            ->get();
+            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth]);
+
+        if ($ent === 'pt') {
+            $query->where('inv.invoice_type', 'pt');
+        }
+
+        $rows = $query->selectRaw('cli.coa_id, cli.amount')->get();
 
         $byPiutangCoa       = [];
         $byBelumDiterimaCoa = [];
@@ -265,16 +297,30 @@ class JurnalPendapatanService
     /**
      * Sumber 4 — Invoices (is_pph23_checked = true, dibuat pada bulan berjalan).
      */
-    public static function getInvoicePphCheckedForJP(string $startOfMonth, string $endOfMonth): array
+    public static function getInvoicePphCheckedForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
-        $rows = DB::table('invoices as inv')
+        $ent = strtolower($entity);
+        if ($ent === 'kkp') {
+            return [
+                'by_piutang_coa'        => [],
+                'by_pendapatan_coa'    => [],
+                'by_belum_diterima_coa' => [],
+                'total'                 => 0,
+            ];
+        }
+
+        $query = DB::table('invoices as inv')
             ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('inv.is_pph23_checked', true)
-            ->whereBetween('inv.tanggal_bukti_potong_pph23', [$startOfMonth, $endOfMonth])
-            ->selectRaw('inv.id as invoice_id, cli.coa_id, cli.amount as item_amount, inv.nominal_bukti_potong_pph23')
-            ->get();
+            ->whereBetween('inv.tanggal_bukti_potong_pph23', [$startOfMonth, $endOfMonth]);
+
+        if ($ent === 'pt') {
+            $query->where('inv.invoice_type', 'pt');
+        }
+
+        $rows = $query->selectRaw('inv.id as invoice_id, cli.coa_id, cli.amount as item_amount, inv.nominal_bukti_potong_pph23')->get();
 
         $invoiceTotals = [];
         foreach ($rows as $row) {
@@ -331,15 +377,23 @@ class JurnalPendapatanService
     /**
      * Sumber 5 — MoU discounts (discount_amount > 0 && tgl_discount jatuh pada bulan berjalan).
      */
-    public static function getMouDiscountForJP(string $startOfMonth, string $endOfMonth): array
+    public static function getMouDiscountForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
-        $mous = DB::table('mous as m')
+        $query = DB::table('mous as m')
             ->whereNull('m.deleted_at')
             ->where('m.status', 'approved')
             ->where('m.discount_amount', '>', 0)
             ->whereNotNull('m.tgl_discount')
-            ->whereBetween('m.tgl_discount', [$startOfMonth, $endOfMonth])
-            ->select([
+            ->whereBetween('m.tgl_discount', [$startOfMonth, $endOfMonth]);
+
+        $ent = strtolower($entity);
+        if ($ent === 'pt') {
+            $query->where('m.type', 'pt');
+        } elseif ($ent === 'kkp') {
+            $query->where('m.type', 'kkp');
+        }
+
+        $mous = $query->select([
                 'm.id',
                 'm.discount_amount',
                 'm.category_mou_id'
@@ -398,15 +452,23 @@ class JurnalPendapatanService
     /**
      * Sumber 6 — MoU cancellations (cancel_mou_amount > 0 && tgl_cancel_mou jatuh pada bulan berjalan).
      */
-    public static function getMouCancellationForJP(string $startOfMonth, string $endOfMonth): array
+    public static function getMouCancellationForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
-        $mous = DB::table('mous as m')
+        $query = DB::table('mous as m')
             ->whereNull('m.deleted_at')
             ->where('m.status', 'approved')
             ->where('cancel_mou_amount', '>', 0)
             ->whereNotNull('m.tgl_cancel_mou')
-            ->whereBetween('m.tgl_cancel_mou', [$startOfMonth, $endOfMonth])
-            ->select([
+            ->whereBetween('m.tgl_cancel_mou', [$startOfMonth, $endOfMonth]);
+
+        $ent = strtolower($entity);
+        if ($ent === 'pt') {
+            $query->where('m.type', 'pt');
+        } elseif ($ent === 'kkp') {
+            $query->where('m.type', 'kkp');
+        }
+
+        $mous = $query->select([
                 'm.id',
                 'm.cancel_mou_amount',
                 'm.category_mou_id'
@@ -461,8 +523,19 @@ class JurnalPendapatanService
      * Generate baris entri jurnal pendapatan ringkasan per kategori & CoA untuk bulan tertentu (Opsi 1).
      * Sesuai dengan Sheet 1 (Ringkasan JP) pada Neraca Lajur Piutang.
      */
-    public static function generateJournalEntriesForMonth(int $year, int $month): array
+    public static function generateJournalEntriesForMonth(int $year, int $month, string $entity = 'all'): array
     {
+        $ent = strtolower($entity);
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+
+        if ($isSeparated && $ent === 'all') {
+            $ptEntries  = static::generateJournalEntriesForMonth($year, $month, 'pt');
+            $kkpEntries = static::generateJournalEntriesForMonth($year, $month, 'kkp');
+            return array_merge($ptEntries, $kkpEntries);
+        }
+
+        $targetKepemilikan = ($isSeparated && $ent === 'pt') ? 'PT' : 'KKP';
+
         $startOfMonth     = Carbon::create($year, $month, 1)->startOfMonth()->toDateTimeString();
         $endOfMonth       = Carbon::create($year, $month, 1)->endOfMonth()->toDateTimeString();
         $transactionDate  = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
@@ -472,7 +545,7 @@ class JurnalPendapatanService
 
         $entries = [];
 
-        $addEntry = function (int $coaId, string $description, float $debit, float $credit) use (&$entries, $transactionDate, $journalBookId) {
+        $addEntry = function (int $coaId, string $description, float $debit, float $credit) use (&$entries, $transactionDate, $journalBookId, $targetKepemilikan) {
             if ($debit <= 0 && $credit <= 0) {
                 return;
             }
@@ -482,7 +555,7 @@ class JurnalPendapatanService
                 'journal_book_id'  => $journalBookId,
                 'coa_id'           => $coaId,
                 'description'      => $description,
-                'kepemilikan'      => 'KKP',
+                'kepemilikan'      => $targetKepemilikan,
                 'debit_amount'     => round($debit, 2),
                 'credit_amount'    => round($credit, 2),
                 'created_at'       => now(),
@@ -491,7 +564,7 @@ class JurnalPendapatanService
         };
 
         // ── Bagian 1: Invoice Dibuat (Pengakuan Piutang) ──
-        $invoiceJP = static::getInvoicePiutangForJP($startOfMonth, $endOfMonth);
+        $invoiceJP = static::getInvoicePiutangForJP($startOfMonth, $endOfMonth, $entity);
         foreach ($invoiceJP['by_piutang_coa'] as $coaId => $amount) {
             if ($amount > 0) {
                 $coa = $coas->get($coaId);
@@ -508,7 +581,7 @@ class JurnalPendapatanService
         }
 
         // ── Bagian 2: Penerimaan Kas (Pengakuan Pendapatan) ──
-        $cashJP = static::getCashReportPiutangForJP($startOfMonth, $endOfMonth);
+        $cashJP = static::getCashReportPiutangForJP($startOfMonth, $endOfMonth, $entity);
         foreach ($cashJP['by_belum_diterima_coa'] as $coaId => $amount) {
             if ($amount > 0) {
                 $coa = $coas->get($coaId);
@@ -525,7 +598,7 @@ class JurnalPendapatanService
         }
 
         // ── Bagian 3: PPh 23 Invoice (Pengakuan PPh 23) ──
-        $pph23JP = static::getInvoicePph23ForJP($startOfMonth, $endOfMonth);
+        $pph23JP = static::getInvoicePph23ForJP($startOfMonth, $endOfMonth, $entity);
         foreach ($pph23JP['by_piutang_coa'] as $coaId => $amount) {
             if ($amount > 0) {
                 $coa = $coas->get($coaId);
@@ -542,7 +615,7 @@ class JurnalPendapatanService
         }
 
         // ── Bagian 4: PPh 23 Checklist (Biaya PPh 23) ──
-        $pphCheckedJP = static::getInvoicePphCheckedForJP($startOfMonth, $endOfMonth);
+        $pphCheckedJP = static::getInvoicePphCheckedForJP($startOfMonth, $endOfMonth, $entity);
         foreach ($pphCheckedJP['by_belum_diterima_coa'] as $coaId => $amount) {
             if ($amount > 0) {
                 $coa = $coas->get($coaId);
@@ -569,7 +642,7 @@ class JurnalPendapatanService
         }
 
         // ── Bagian 5: Diskon dari MoU ──
-        $mouDiscountJP = static::getMouDiscountForJP($startOfMonth, $endOfMonth);
+        $mouDiscountJP = static::getMouDiscountForJP($startOfMonth, $endOfMonth, $entity);
         foreach ($mouDiscountJP['debits'] as $coaId => $amount) {
             if ($amount > 0) {
                 $coa = $coas->get($coaId);
@@ -586,7 +659,7 @@ class JurnalPendapatanService
         }
 
         // ── Bagian 6: Pembatalan MoU ──
-        $mouCancelJP = static::getMouCancellationForJP($startOfMonth, $endOfMonth);
+        $mouCancelJP = static::getMouCancellationForJP($startOfMonth, $endOfMonth, $entity);
         foreach ($mouCancelJP['debits'] as $coaId => $amount) {
             if ($amount > 0) {
                 $coa = $coas->get($coaId);
@@ -608,39 +681,27 @@ class JurnalPendapatanService
     /**
      * Sinkronkan data jurnal pendapatan untuk bulan dan tahun tertentu ke tabel journal_book_reports.
      */
-    public static function syncMonth(int $year, int $month): int
+    public static function syncMonth(int $year, int $month, string $entity = 'all'): int
     {
         $journalBookId = static::getJurnalPendapatanId();
-        $entries       = static::generateJournalEntriesForMonth($year, $month);
+        $entries       = static::generateJournalEntriesForMonth($year, $month, $entity);
+        $ent           = strtolower($entity);
+        $isSeparated   = ($year > 2026) || ($year == 2026 && $month >= 4);
 
         static::$isSyncing = true;
         try {
-            DB::transaction(function () use ($journalBookId, $year, $month, $entries) {
-                // Ambil pilihan kepemilikan yang sudah diset oleh user (keyed by coa_id and description)
-                $existingKepemilikan = JournalBookReport::where('journal_book_id', $journalBookId)
+            DB::transaction(function () use ($journalBookId, $year, $month, $entries, $ent, $isSeparated) {
+                $deleteQuery = JournalBookReport::where('journal_book_id', $journalBookId)
                     ->whereYear('transaction_date', $year)
-                    ->whereMonth('transaction_date', $month)
-                    ->get()
-                    ->groupBy('coa_id')
-                    ->map(fn($group) => $group->pluck('kepemilikan', 'description')->toArray())
-                    ->toArray();
+                    ->whereMonth('transaction_date', $month);
 
-                JournalBookReport::where('journal_book_id', $journalBookId)
-                    ->whereYear('transaction_date', $year)
-                    ->whereMonth('transaction_date', $month)
-                    ->forceDelete();
+                if ($isSeparated && in_array($ent, ['pt', 'kkp'], true)) {
+                    $deleteQuery->whereRaw('UPPER(kepemilikan) = ?', [strtoupper($ent)]);
+                }
+
+                $deleteQuery->forceDelete();
 
                 if (!empty($entries)) {
-                    // Jika sebelumnya user sudah mengubah kepemilikan menjadi PT, pertahankan nilainya
-                    foreach ($entries as &$entry) {
-                        $cId  = $entry['coa_id'] ?? null;
-                        $desc = $entry['description'] ?? '';
-                        if (isset($existingKepemilikan[$cId][$desc])) {
-                            $entry['kepemilikan'] = $existingKepemilikan[$cId][$desc];
-                        }
-                    }
-                    unset($entry);
-
                     JournalBookReport::insert($entries);
                 }
             });

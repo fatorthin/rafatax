@@ -353,6 +353,7 @@ class CashReportResource extends Resource
             'neraca'               => Pages\Neraca::route('/neraca'),
             'laba-rugi-bulanan'    => Pages\LabaRugiBulanan::route('/laba-rugi-bulanan'),
             'general-ledger'       => Pages\GeneralLedger::route('/general-ledger'),
+            'kelola-saldo-awal'    => Pages\KelolaSaldoAwalEntitas::route('/kelola-saldo-awal'),
         ];
     }
 

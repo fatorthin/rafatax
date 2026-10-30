@@ -20,6 +20,7 @@ class LabaRugi extends Page
 
     public $month;
     public $year;
+    public $entity = 'all';
 
     public static function canAccess(array $parameters = []): bool
     {
@@ -38,6 +39,7 @@ class LabaRugi extends Page
     {
         $this->month = request('month', now()->month);
         $this->year = request('year', now()->year);
+        $this->entity = request('entity', 'all');
     }
 
     protected function getHeaderActions(): array
@@ -77,11 +79,21 @@ class LabaRugi extends Page
                         })
                         ->default($this->year)
                         ->required(),
+                    Select::make('entity')
+                        ->label('Entitas')
+                        ->options([
+                            'all' => 'Semua (Konsolidasi)',
+                            'kkp' => 'KKP',
+                            'pt'  => 'PT',
+                        ])
+                        ->default($this->entity)
+                        ->required(),
                 ])
                 ->action(function (array $data): void {
                     $this->month = $data['month'];
                     $this->year = $data['year'];
-                    $this->redirect(route('filament.app.pages.laba-rugi', ['month' => $this->month, 'year' => $this->year]));
+                    $this->entity = $data['entity'] ?? 'all';
+                    $this->redirect(route('filament.app.pages.laba-rugi', ['month' => $this->month, 'year' => $this->year, 'entity' => $this->entity]));
                 }),
             Action::make('export')
                 ->label('Export Excel')
@@ -98,7 +110,7 @@ class LabaRugi extends Page
 
     public function getLabaRugiData()
     {
-        return app(LabaRugiReportService::class)->getMonthlyReport((int) $this->month, (int) $this->year);
+        return app(LabaRugiReportService::class)->getMonthlyReport((int) $this->month, (int) $this->year, $this->entity);
     }
 
     public function exportToExcel()

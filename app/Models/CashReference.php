@@ -30,6 +30,54 @@ class CashReference extends Model implements Sortable
         return $this->status_kepemilikan;
     }
 
+    /**
+     * Rekening Bank aktif milik PT.
+     */
+    public static function getPtBankIds(): array
+    {
+        return [1, 4]; // BCA PT, BCA 436
+    }
+
+    /**
+     * Rekening Bank aktif milik KKP.
+     */
+    public static function getKkpBankIds(): array
+    {
+        return [2]; // BCA 425 (BCA 140 non-aktif)
+    }
+
+    /**
+     * Seluruh Rekening Bank aktif.
+     */
+    public static function getAllBankIds(int $year = 2026): array
+    {
+        return $year >= 2026 ? [1, 2, 4] : [1, 2, 3, 4];
+    }
+
+    /**
+     * ID Kas Kecil PT.
+     */
+    public static function getPtCashLittleId(): int
+    {
+        return 9; // KAS KECIL PT
+    }
+
+    /**
+     * ID Kas Kecil KKP.
+     */
+    public static function getKkpCashLittleId(): int
+    {
+        return 7; // KAS KECIL KKP
+    }
+
+    /**
+     * ID Kas Besar KKP.
+     */
+    public static function getKkpCashBigId(): int
+    {
+        return 6; // KAS BESAR
+    }
+
     public function cashReports()
     {
         return $this->hasMany(CashReport::class);

@@ -24,11 +24,13 @@ class Neraca extends Page
 
     public ?int $month = null;
     public ?int $year = null;
+    public ?string $entity = 'all';
 
     public function mount(): void
     {
         $this->month = (int) request('month', now()->month);
         $this->year = (int) request('year', now()->year);
+        $this->entity = request('entity', 'all');
     }
 
     protected function getHeaderActions(): array
@@ -68,15 +70,26 @@ class Neraca extends Page
                         })
                         ->default($this->year)
                         ->required(),
+                    Select::make('entity')
+                        ->label('Entitas')
+                        ->options([
+                            'all' => 'Semua (Konsolidasi)',
+                            'kkp' => 'KKP',
+                            'pt'  => 'PT',
+                        ])
+                        ->default($this->entity)
+                        ->required(),
                 ])
                 ->action(function (array $data): void {
                     $this->month = $data['month'];
                     $this->year = $data['year'];
+                    $this->entity = $data['entity'] ?? 'all';
 
                     // Redirect dengan query parameter untuk mempertahankan filter
                     $this->redirect(static::getUrl([
                         'month' => $this->month,
-                        'year' => $this->year
+                        'year' => $this->year,
+                        'entity' => $this->entity
                     ]));
                 }),
             Action::make('export')
@@ -93,7 +106,7 @@ class Neraca extends Page
 
     public function getNeracaData()
     {
-        return app(NeracaReportService::class)->getMonthlyReport((int) $this->month, (int) $this->year);
+        return app(NeracaReportService::class)->getMonthlyReport((int) $this->month, (int) $this->year, $this->entity);
     }
 
     public function exportToExcel()

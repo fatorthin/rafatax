@@ -122,9 +122,10 @@
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
     @php
         $isAdminRoute = request()->is('admin/*') || $from === 'admin';
-        $backUrl = url('/admin/cash-reports/neraca-lajur-piutang?month=' . $month . '&year=' . $year);
+        $entityParam = (!empty($entity) && $entity !== 'all') ? '&entity=' . $entity : '';
+        $backUrl = url('/admin/cash-reports/neraca-lajur-piutang?month=' . $month . '&year=' . $year . $entityParam);
         if (!$isAdminRoute && $from === 'app') {
-            $backUrl = url('/app/neraca-lajur-piutang?month=' . $month . '&year=' . $year);
+            $backUrl = url('/app/neraca-lajur-piutang?month=' . $month . '&year=' . $year . $entityParam);
         }
 
         // Filter data agar cash_reference dengan id 5 (MANDIRI) tidak ditampilkan
@@ -158,6 +159,11 @@
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold {{ $type === 'kredit' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' }}">
                                 Kolom Bank {{ strtoupper($type) }}
                             </span>
+                            @if(!empty($entity) && $entity !== 'all')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold {{ $entity === 'pt' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' }}">
+                                    Entitas: {{ strtoupper($entity) }}
+                                </span>
+                            @endif
                             <span class="text-xs text-slate-400 dark:text-slate-500">•</span>
                             <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
                                 {{ $monthName }} {{ $year }}

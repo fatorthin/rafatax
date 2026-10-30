@@ -31,14 +31,18 @@ class GeneralLedger extends Page
     #[\Livewire\Attributes\Url]
     public ?string $jurnal = null;
 
+    #[\Livewire\Attributes\Url]
+    public ?string $entity = 'all';
+
     public function mount(): void
     {
         $this->form->fill([
-            'bulan' => $this->bulan ?? (string) now()->month,
-            'tahun' => $this->tahun ?? (string) now()->year,
+            'bulan'             => $this->bulan ?? (string) now()->month,
+            'tahun'             => $this->tahun ?? (string) now()->year,
             'cash_reference_id' => $this->cash_reference_id,
-            'coa_id' => $this->coa_id,
-            'jurnal' => $this->jurnal,
+            'coa_id'            => $this->coa_id,
+            'jurnal'            => $this->jurnal,
+            'entity'            => $this->entity ?? 'all',
         ]);
     }
 
@@ -86,6 +90,16 @@ class GeneralLedger extends Page
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn ($state) => $this->tahun = $state),
+                        \Filament\Forms\Components\Select::make('entity')
+                            ->label('Entitas')
+                            ->options([
+                                'all' => 'Semua (Konsolidasi)',
+                                'kkp' => 'KKP',
+                                'pt'  => 'PT',
+                            ])
+                            ->default('all')
+                            ->live()
+                            ->afterStateUpdated(fn ($state) => $this->entity = $state),
                         \Filament\Forms\Components\Select::make('coa_id')
                             ->label('CoA')
                             ->options(function () {
@@ -121,7 +135,7 @@ class GeneralLedger extends Page
                             ->live()
                             ->afterStateUpdated(fn ($state) => $this->cash_reference_id = $state),
                     ])
-                    ->columns(['sm' => 1, 'md' => 2, 'lg' => 5])
+                    ->columns(['sm' => 1, 'md' => 2, 'lg' => 6])
             ]);
     }
 
@@ -167,6 +181,14 @@ class GeneralLedger extends Page
                             return $years;
                         })
                         ->required(),
+                    \Filament\Forms\Components\Select::make('entity')
+                        ->label('Entitas')
+                        ->options([
+                            'all' => 'Semua (Konsolidasi)',
+                            'kkp' => 'KKP',
+                            'pt'  => 'PT',
+                        ])
+                        ->default('all'),
                     \Filament\Forms\Components\Select::make('coa_id')
                         ->label('CoA')
                         ->options(function () {
@@ -199,6 +221,7 @@ class GeneralLedger extends Page
                 ->fillForm(fn () => [
                     'bulan'             => $this->bulan ?? (string) now()->month,
                     'tahun'             => $this->tahun ?? (string) now()->year,
+                    'entity'            => $this->entity ?? 'all',
                     'coa_id'            => $this->coa_id,
                     'jurnal'            => $this->jurnal,
                     'cash_reference_id' => $this->cash_reference_id,
@@ -320,20 +343,22 @@ class GeneralLedger extends Page
 
     public function getReports(?array $filters = null)
     {
-        $bulan = $filters['bulan'] ?? $this->bulan ?? now()->month;
-        $tahun = $filters['tahun'] ?? $this->tahun ?? now()->year;
+        $bulan  = $filters['bulan'] ?? $this->bulan ?? now()->month;
+        $tahun  = $filters['tahun'] ?? $this->tahun ?? now()->year;
+        $entity = strtolower($filters['entity'] ?? $this->entity ?? 'all');
+        $isSeparated = ($tahun > 2026) || ($tahun == 2026 && $bulan >= 4);
 
         $startDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->format('Y-m-d');
-        $endDate = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
+        $endDate   = \Carbon\Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->format('Y-m-d');
 
         $cashReferenceId = $filters !== null ? ($filters['cash_reference_id'] ?? null) : $this->cash_reference_id;
-        $coaId = $filters !== null ? ($filters['coa_id'] ?? null) : $this->coa_id;
-        $jurnal = $filters !== null ? ($filters['jurnal'] ?? null) : $this->jurnal;
+        $coaId           = $filters !== null ? ($filters['coa_id'] ?? null) : $this->coa_id;
+        $jurnal          = $filters !== null ? ($filters['jurnal'] ?? null) : $this->jurnal;
 
-        $cashTransactions = collect();
-        $journalTransactions = collect();
+        $cashTransactions       = collect();
+        $journalTransactions    = collect();
         $neracaAwalTransactions = collect();
-        $dynamicJPActions = collect();
+        $dynamicJPActions       = collect();
 
         // ── 1. Cash Reports (Kas Besar, Kas Kecil, Bank) ────────────────────
         if (!$jurnal || $jurnal === 'kas_bank') {
@@ -345,6 +370,18 @@ class GeneralLedger extends Page
 
             if ($cashReferenceId) {
                 $cashQuery->where('cash_reports.cash_reference_id', $cashReferenceId);
+            } else {
+                if ($isSeparated && $entity === 'pt') {
+                    $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 4, 9]);
+                } elseif ($isSeparated && $entity === 'kkp') {
+                    $cashQuery->whereIn('cash_reports.cash_reference_id', [2, 6, 7]);
+                } else {
+                    if ($tahun == 2026 && $bulan < 4) {
+                        $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 2, 3, 4, 6, 7, 9]);
+                    } elseif ($tahun >= 2026) {
+                        $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 2, 4, 6, 7, 9]);
+                    }
+                }
             }
 
             if ($coaId) {
@@ -390,6 +427,12 @@ class GeneralLedger extends Page
                 ->whereIn('journal_book_id', $allowedJournalBookIds)
                 ->whereBetween('transaction_date', [$startDate, $endDate]);
 
+            if ($isSeparated && $entity === 'pt') {
+                $journalQuery->whereRaw('UPPER(kepemilikan) = ?', ['PT']);
+            } elseif ($isSeparated && $entity === 'kkp') {
+                $journalQuery->whereRaw('(kepemilikan IS NULL OR UPPER(kepemilikan) = ?)', ['KKP']);
+            }
+
             if ($coaId) {
                 $journalQuery->where('coa_id', $coaId);
             }
@@ -413,6 +456,12 @@ class GeneralLedger extends Page
                 ->where('journal_book_id', 3)
                 ->whereBetween('transaction_date', [$prevMonthStart, $prevMonthEnd]);
 
+            if ($isSeparated && $entity === 'pt') {
+                $neracaAwalQuery->whereRaw('UPPER(kepemilikan) = ?', ['PT']);
+            } elseif ($isSeparated && $entity === 'kkp') {
+                $neracaAwalQuery->whereRaw('(kepemilikan IS NULL OR UPPER(kepemilikan) = ?)', ['KKP']);
+            }
+
             if ($coaId) {
                 $neracaAwalQuery->where('coa_id', $coaId);
             }
@@ -428,7 +477,7 @@ class GeneralLedger extends Page
 
         // ── 4. Dynamic Jurnal Pendapatan ────────────────────────────────────
         if ((!$jurnal && !$cashReferenceId) || $jurnal === 'jurnal_pendapatan') {
-            $dynamicJPActions = $this->getDynamicJurnalPendapatan($startDate, $endDate);
+            $dynamicJPActions = $this->getDynamicJurnalPendapatan($startDate, $endDate, $entity);
             if ($coaId) {
                 $dynamicJPActions = $dynamicJPActions->where('coa_id', (int) $coaId);
             }
@@ -513,12 +562,16 @@ class GeneralLedger extends Page
         return 175;
     }
 
-    private function getDynamicJurnalPendapatan(string $startDate, string $endDate): \Illuminate\Support\Collection
+    private function getDynamicJurnalPendapatan(string $startDate, string $endDate, string $entity = 'all'): \Illuminate\Support\Collection
     {
         $transactions = collect();
         $coas = \App\Models\Coa::all()->keyBy('id');
         $map = $this->getPiutangToPendapatanMap();
         $biayaPph23Id = 91; // AO-108.1 PPh 23
+
+        $startCarbon = \Carbon\Carbon::parse($startDate);
+        $isSeparated = ($startCarbon->year > 2026) || ($startCarbon->year == 2026 && $startCarbon->month >= 4);
+        $ent = strtolower($entity);
 
         $revenueToPiutangMap = [
             119 => 188, // Fee Bulanan
@@ -531,7 +584,7 @@ class GeneralLedger extends Page
         ];
 
         // ── 1. Dari Invoice dibuat (cost_list_invoices) ──
-        $invoiceRows = \Illuminate\Support\Facades\DB::table('invoices as inv')
+        $invoiceQuery = \Illuminate\Support\Facades\DB::table('invoices as inv')
             ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
             ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
             ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
@@ -540,10 +593,17 @@ class GeneralLedger extends Page
             ->whereNull('cli.deleted_at')
             ->whereNull('inv.memo_id')
             ->whereBetween('inv.invoice_date', [
-                \Carbon\Carbon::parse($startDate)->startOfDay()->toDateString(),
+                $startCarbon->startOfDay()->toDateString(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()->toDateString()
-            ])
-            ->select([
+            ]);
+
+        if ($isSeparated && $ent === 'pt') {
+            $invoiceQuery->where('inv.invoice_type', 'pt');
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $invoiceQuery->where('inv.invoice_type', 'kkp');
+        }
+
+        $invoiceRows = $invoiceQuery->select([
                 'cli.coa_id',
                 'cli.amount',
                 'inv.invoice_date',
@@ -589,11 +649,17 @@ class GeneralLedger extends Page
         }
 
         // ── 2. Dari cash_reports ──
-        $startCarbon = \Carbon\Carbon::parse($startDate);
-        $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
-        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
-        if ($startCarbon->year >= 2026) {
-            $cashReferenceIds = array_values(array_diff($cashReferenceIds, [5]));
+        if ($isSeparated && $ent === 'pt') {
+            $cashReferenceIds = [1, 4, 9];
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $cashReferenceIds = [2, 6, 7];
+        } else {
+            $cashReferenceIds = [1, 2, 4, 6, 7, 9];
+            if ($startCarbon->year == 2026 && $startCarbon->month < 4) {
+                $cashReferenceIds = [1, 2, 3, 4, 6, 7, 9];
+            } elseif ($startCarbon->year < 2026) {
+                $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
+            }
         }
 
         $cashRows = \Illuminate\Support\Facades\DB::table('cash_reports')
@@ -635,144 +701,165 @@ class GeneralLedger extends Page
             $transactions->push($tCredit);
         }
 
-        // ── 3. Dari PPh23 Include ──
-        $includeRows = \Illuminate\Support\Facades\DB::table('invoices as inv')
-            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
-            ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
-            ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
-            ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
-            ->leftJoin('memos as mem', 'mem.id', '=', 'inv.memo_id')
-            ->whereNull('inv.deleted_at')
-            ->whereNull('cli.deleted_at')
-            ->where('inv.is_include_pph23', true)
-            ->whereBetween('inv.invoice_date', [\Carbon\Carbon::parse($startDate)->startOfDay(), \Carbon\Carbon::parse($endDate)->endOfDay()])
-            ->select(['inv.invoice_number', 'inv.invoice_date', 'cli.coa_id', 'cli.amount', 'c_inv.company_name as client_name_inv', 'c_mou.company_name as client_name_mou', 'mem.nama_klien as memo_nama', 'mem.instansi_klien as memo_instansi'])
-            ->get();
+        // ── 3. Dari PPh23 Include (PT only jika terpisah) ──
+        if (!($isSeparated && $ent === 'kkp')) {
+            $includeQuery = \Illuminate\Support\Facades\DB::table('invoices as inv')
+                ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+                ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
+                ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
+                ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
+                ->leftJoin('memos as mem', 'mem.id', '=', 'inv.memo_id')
+                ->whereNull('inv.deleted_at')
+                ->whereNull('cli.deleted_at')
+                ->where('inv.is_include_pph23', true)
+                ->whereBetween('inv.invoice_date', [$startCarbon->startOfDay(), \Carbon\Carbon::parse($endDate)->endOfDay()]);
 
-        foreach ($includeRows as $row) {
-            $cName = $row->client_name_inv ?? $row->client_name_mou ?? $row->memo_nama ?? $row->memo_instansi ?? '';
-            $desc = "PPh23 Invoice No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
-            $coaId = isset($revenueToPiutangMap[$row->coa_id]) ? $revenueToPiutangMap[$row->coa_id] : $row->coa_id;
-            if ($coaId == 188 || $coaId == 182) $coaId = 188;
-            $pph23Amount = ($row->amount / 98) * 2;
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($coaId);
-
-            $tDebit = new \stdClass();
-            $tDebit->coa_id = $coaId;
-            $tDebit->transaction_date = $row->invoice_date;
-            $tDebit->description = $desc;
-            $tDebit->source = 'Jurnal Pendapatan';
-            $tDebit->display_debit = $pph23Amount;
-            $tDebit->display_credit = 0;
-            $tDebit->coa = $coas[$coaId] ?? null;
-            $transactions->push($tDebit);
-
-            $tCredit = new \stdClass();
-            $tCredit->coa_id = $belumDiterimaCoaId;
-            $tCredit->transaction_date = $row->invoice_date;
-            $tCredit->description = $desc;
-            $tCredit->source = 'Jurnal Pendapatan';
-            $tCredit->display_debit = 0;
-            $tCredit->display_credit = $pph23Amount;
-            $tCredit->coa = $coas[$belumDiterimaCoaId] ?? null;
-            $transactions->push($tCredit);
-        }
-
-        // ── 4. Dari PPh23 Checked ──
-        $checkedRows = \Illuminate\Support\Facades\DB::table('invoices as inv')
-            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
-            ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
-            ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
-            ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
-            ->leftJoin('memos as mem', 'mem.id', '=', 'inv.memo_id')
-            ->whereNull('inv.deleted_at')
-            ->whereNull('cli.deleted_at')
-            ->where('inv.is_pph23_checked', true)
-            ->whereBetween('inv.tanggal_bukti_potong_pph23', [\Carbon\Carbon::parse($startDate)->startOfDay(), \Carbon\Carbon::parse($endDate)->endOfDay()])
-            ->select(['inv.id as invoice_id', 'inv.invoice_number', 'inv.tanggal_bukti_potong_pph23', 'inv.nominal_bukti_potong_pph23', 'cli.coa_id', 'cli.amount as item_amount', 'c_inv.company_name as client_name_inv', 'c_mou.company_name as client_name_mou', 'mem.nama_klien as memo_nama', 'mem.instansi_klien as memo_instansi'])
-            ->get();
-
-        $checkedInvoiceTotals = [];
-        foreach ($checkedRows as $row) {
-            $checkedInvoiceTotals[$row->invoice_id] = ($checkedInvoiceTotals[$row->invoice_id] ?? 0) + $row->item_amount;
-        }
-
-        foreach ($checkedRows as $row) {
-            $cName = $row->client_name_inv ?? $row->client_name_mou ?? $row->memo_nama ?? $row->memo_instansi ?? '';
-            $desc = "PPh23 Checklist No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
-            $coaId = $row->coa_id;
-            if (isset($revenueToPiutangMap[$coaId])) {
-                $pendapatanCoaId = $coaId;
-                $piutangCoaId = $revenueToPiutangMap[$coaId];
-            } elseif (isset($map[$coaId])) {
-                $piutangCoaId = $coaId;
-                $pendapatanCoaId = $map[$coaId];
-            } else {
-                $piutangCoaId = $coaId;
-                $pendapatanCoaId = $coaId;
-            }
-            if ($piutangCoaId == 188 || $piutangCoaId == 182) {
-                $piutangCoaId = 188;
-                $pendapatanCoaId = 119;
+            if ($isSeparated && $ent === 'pt') {
+                $includeQuery->where('inv.invoice_type', 'pt');
             }
 
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
-            $invoiceTotal = $checkedInvoiceTotals[$row->invoice_id] ?? 0;
-            $pph23Amount = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
+            $includeRows = $includeQuery->select(['inv.invoice_number', 'inv.invoice_date', 'cli.coa_id', 'cli.amount', 'c_inv.company_name as client_name_inv', 'c_mou.company_name as client_name_mou', 'mem.nama_klien as memo_nama', 'mem.instansi_klien as memo_instansi'])
+                ->get();
 
-            $tDebit208 = new \stdClass();
-            $tDebit208->coa_id = $belumDiterimaCoaId;
-            $tDebit208->transaction_date = $row->tanggal_bukti_potong_pph23;
-            $tDebit208->description = $desc;
-            $tDebit208->source = 'Jurnal Pendapatan';
-            $tDebit208->display_debit = $pph23Amount;
-            $tDebit208->display_credit = 0;
-            $tDebit208->coa = $coas[$belumDiterimaCoaId] ?? null;
-            $transactions->push($tDebit208);
+            foreach ($includeRows as $row) {
+                $cName = $row->client_name_inv ?? $row->client_name_mou ?? $row->memo_nama ?? $row->memo_instansi ?? '';
+                $desc = "PPh23 Invoice No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
+                $coaId = isset($revenueToPiutangMap[$row->coa_id]) ? $revenueToPiutangMap[$row->coa_id] : $row->coa_id;
+                if ($coaId == 188 || $coaId == 182) $coaId = 188;
+                $pph23Amount = ($row->amount / 98) * 2;
+                $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($coaId);
 
-            $tDebit518 = new \stdClass();
-            $tDebit518->coa_id = $biayaPph23Id;
-            $tDebit518->transaction_date = $row->tanggal_bukti_potong_pph23;
-            $tDebit518->description = $desc;
-            $tDebit518->source = 'Jurnal Pendapatan';
-            $tDebit518->display_debit = $pph23Amount;
-            $tDebit518->display_credit = 0;
-            $tDebit518->coa = $coas[$biayaPph23Id] ?? null;
-            $transactions->push($tDebit518);
+                $tDebit = new \stdClass();
+                $tDebit->coa_id = $coaId;
+                $tDebit->transaction_date = $row->invoice_date;
+                $tDebit->description = $desc;
+                $tDebit->source = 'Jurnal Pendapatan';
+                $tDebit->display_debit = $pph23Amount;
+                $tDebit->display_credit = 0;
+                $tDebit->coa = $coas[$coaId] ?? null;
+                $transactions->push($tDebit);
 
-            $tCredit401 = new \stdClass();
-            $tCredit401->coa_id = $pendapatanCoaId;
-            $tCredit401->transaction_date = $row->tanggal_bukti_potong_pph23;
-            $tCredit401->description = $desc;
-            $tCredit401->source = 'Jurnal Pendapatan';
-            $tCredit401->display_debit = 0;
-            $tCredit401->display_credit = $pph23Amount;
-            $tCredit401->coa = $coas[$pendapatanCoaId] ?? null;
-            $transactions->push($tCredit401);
+                $tCredit = new \stdClass();
+                $tCredit->coa_id = $belumDiterimaCoaId;
+                $tCredit->transaction_date = $row->invoice_date;
+                $tCredit->description = $desc;
+                $tCredit->source = 'Jurnal Pendapatan';
+                $tCredit->display_debit = 0;
+                $tCredit->display_credit = $pph23Amount;
+                $tCredit->coa = $coas[$belumDiterimaCoaId] ?? null;
+                $transactions->push($tCredit);
+            }
+        }
 
-            $tCredit103 = new \stdClass();
-            $tCredit103->coa_id = $piutangCoaId;
-            $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23;
-            $tCredit103->description = $desc;
-            $tCredit103->source = 'Jurnal Pendapatan';
-            $tCredit103->display_debit = 0;
-            $tCredit103->display_credit = $pph23Amount;
-            $tCredit103->coa = $coas[$piutangCoaId] ?? null;
-            $transactions->push($tCredit103);
+        // ── 4. Dari PPh23 Checked (PT only jika terpisah) ──
+        if (!($isSeparated && $ent === 'kkp')) {
+            $checkedQuery = \Illuminate\Support\Facades\DB::table('invoices as inv')
+                ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
+                ->leftJoin('mous as m', 'm.id', '=', 'inv.mou_id')
+                ->leftJoin('clients as c_inv', 'c_inv.id', '=', 'inv.client_id')
+                ->leftJoin('clients as c_mou', 'c_mou.id', '=', 'm.client_id')
+                ->leftJoin('memos as mem', 'mem.id', '=', 'inv.memo_id')
+                ->whereNull('inv.deleted_at')
+                ->whereNull('cli.deleted_at')
+                ->where('inv.is_pph23_checked', true)
+                ->whereBetween('inv.tanggal_bukti_potong_pph23', [$startCarbon->startOfDay(), \Carbon\Carbon::parse($endDate)->endOfDay()]);
+
+            if ($isSeparated && $ent === 'pt') {
+                $checkedQuery->where('inv.invoice_type', 'pt');
+            }
+
+            $checkedRows = $checkedQuery->select(['inv.id as invoice_id', 'inv.invoice_number', 'inv.tanggal_bukti_potong_pph23', 'inv.nominal_bukti_potong_pph23', 'cli.coa_id', 'cli.amount as item_amount', 'c_inv.company_name as client_name_inv', 'c_mou.company_name as client_name_mou', 'mem.nama_klien as memo_nama', 'mem.instansi_klien as memo_instansi'])
+                ->get();
+
+            $checkedInvoiceTotals = [];
+            foreach ($checkedRows as $row) {
+                $checkedInvoiceTotals[$row->invoice_id] = ($checkedInvoiceTotals[$row->invoice_id] ?? 0) + $row->item_amount;
+            }
+
+            foreach ($checkedRows as $row) {
+                $cName = $row->client_name_inv ?? $row->client_name_mou ?? $row->memo_nama ?? $row->memo_instansi ?? '';
+                $desc = "PPh23 Checklist No. " . $row->invoice_number . ($cName ? " - " . $cName : "");
+                $coaId = $row->coa_id;
+                if (isset($revenueToPiutangMap[$coaId])) {
+                    $pendapatanCoaId = $coaId;
+                    $piutangCoaId = $revenueToPiutangMap[$coaId];
+                } elseif (isset($map[$coaId])) {
+                    $piutangCoaId = $coaId;
+                    $pendapatanCoaId = $map[$coaId];
+                } else {
+                    $piutangCoaId = $coaId;
+                    $pendapatanCoaId = $coaId;
+                }
+                if ($piutangCoaId == 188 || $piutangCoaId == 182) {
+                    $piutangCoaId = 188;
+                    $pendapatanCoaId = 119;
+                }
+
+                $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
+                $invoiceTotal = $checkedInvoiceTotals[$row->invoice_id] ?? 0;
+                $pph23Amount = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
+
+                $tDebit208 = new \stdClass();
+                $tDebit208->coa_id = $belumDiterimaCoaId;
+                $tDebit208->transaction_date = $row->tanggal_bukti_potong_pph23;
+                $tDebit208->description = $desc;
+                $tDebit208->source = 'Jurnal Pendapatan';
+                $tDebit208->display_debit = $pph23Amount;
+                $tDebit208->display_credit = 0;
+                $tDebit208->coa = $coas[$belumDiterimaCoaId] ?? null;
+                $transactions->push($tDebit208);
+
+                $tDebit518 = new \stdClass();
+                $tDebit518->coa_id = $biayaPph23Id;
+                $tDebit518->transaction_date = $row->tanggal_bukti_potong_pph23;
+                $tDebit518->description = $desc;
+                $tDebit518->source = 'Jurnal Pendapatan';
+                $tDebit518->display_debit = $pph23Amount;
+                $tDebit518->display_credit = 0;
+                $tDebit518->coa = $coas[$biayaPph23Id] ?? null;
+                $transactions->push($tDebit518);
+
+                $tCredit401 = new \stdClass();
+                $tCredit401->coa_id = $pendapatanCoaId;
+                $tCredit401->transaction_date = $row->tanggal_bukti_potong_pph23;
+                $tCredit401->description = $desc;
+                $tCredit401->source = 'Jurnal Pendapatan';
+                $tCredit401->display_debit = 0;
+                $tCredit401->display_credit = $pph23Amount;
+                $tCredit401->coa = $coas[$pendapatanCoaId] ?? null;
+                $transactions->push($tCredit401);
+
+                $tCredit103 = new \stdClass();
+                $tCredit103->coa_id = $piutangCoaId;
+                $tCredit103->transaction_date = $row->tanggal_bukti_potong_pph23;
+                $tCredit103->description = $desc;
+                $tCredit103->source = 'Jurnal Pendapatan';
+                $tCredit103->display_debit = 0;
+                $tCredit103->display_credit = $pph23Amount;
+                $tCredit103->coa = $coas[$piutangCoaId] ?? null;
+                $transactions->push($tCredit103);
+            }
         }
 
         // ── 5. Dari MoU Discount ──
-        $mouDiscountRows = \Illuminate\Support\Facades\DB::table('mous as m')
+        $mouDiscountQuery = \Illuminate\Support\Facades\DB::table('mous as m')
             ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
             ->whereNull('m.deleted_at')
             ->where('m.status', 'approved')
             ->where('m.discount_amount', '>', 0)
             ->whereNotNull('m.tgl_discount')
             ->whereBetween('m.tgl_discount', [
-                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                $startCarbon->startOfDay(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()
-            ])
-            ->select([
+            ]);
+
+        if ($isSeparated && $ent === 'pt') {
+            $mouDiscountQuery->where('m.type', 'pt');
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $mouDiscountQuery->where('m.type', 'kkp');
+        }
+
+        $mouDiscountRows = $mouDiscountQuery->select([
                 'm.id',
                 'm.mou_number',
                 'm.discount_amount',
@@ -854,17 +941,24 @@ class GeneralLedger extends Page
         }
 
         // ── 6. Dari MoU Cancellations ──
-        $mouCancelRows = \Illuminate\Support\Facades\DB::table('mous as m')
+        $mouCancelQuery = \Illuminate\Support\Facades\DB::table('mous as m')
             ->leftJoin('clients as c', 'c.id', '=', 'm.client_id')
             ->whereNull('m.deleted_at')
             ->where('m.status', 'approved')
             ->where('m.cancel_mou_amount', '>', 0)
             ->whereNotNull('m.tgl_cancel_mou')
             ->whereBetween('m.tgl_cancel_mou', [
-                \Carbon\Carbon::parse($startDate)->startOfDay(),
+                $startCarbon->startOfDay(),
                 \Carbon\Carbon::parse($endDate)->endOfDay()
-            ])
-            ->select([
+            ]);
+
+        if ($isSeparated && $ent === 'pt') {
+            $mouCancelQuery->where('m.type', 'pt');
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $mouCancelQuery->where('m.type', 'kkp');
+        }
+
+        $mouCancelRows = $mouCancelQuery->select([
                 'm.id',
                 'm.mou_number',
                 'm.cancel_mou_amount',

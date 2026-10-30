@@ -8,31 +8,35 @@ class NeracaLajurPiutangController extends Controller
 {
     public function exportDetailJP(Request $request)
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $month  = (int) $request->get('month', now()->month);
+        $year   = (int) $request->get('year', now()->year);
+        $entity = strtolower($request->get('entity', 'all'));
 
         ini_set('memory_limit', '1024M');
         set_time_limit(600);
 
         // Delegate to the existing Livewire page class export method for detail JP
         $page = new \App\Filament\Resources\CashReportResource\Pages\NeracaLajurPiutang();
-        $page->month = $month;
-        $page->year  = $year;
+        $page->month  = $month;
+        $page->year   = $year;
+        $page->entity = $entity;
         $page->exportDetailJurnalPendapatan();
     }
 
     public function exportNeraca(Request $request)
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $month  = (int) $request->get('month', now()->month);
+        $year   = (int) $request->get('year', now()->year);
+        $entity = strtolower($request->get('entity', 'all'));
 
         ini_set('memory_limit', '1024M');
         set_time_limit(600);
 
         // Delegate to the existing Livewire page class export method for Neraca Lajur
         $page = new \App\Filament\Resources\CashReportResource\Pages\NeracaLajurPiutang();
-        $page->month = $month;
-        $page->year  = $year;
+        $page->month  = $month;
+        $page->year   = $year;
+        $page->entity = $entity;
         $page->exportToExcel();
     }
 
@@ -41,14 +45,16 @@ class NeracaLajurPiutangController extends Controller
      */
     public function detailBank(Request $request)
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
-        $coaId = $request->get('coa_id');
-        $type  = strtolower($request->get('type', 'kredit'));
-        $from  = $request->get('from', 'admin');
+        $month  = (int) $request->get('month', now()->month);
+        $year   = (int) $request->get('year', now()->year);
+        $coaId  = $request->get('coa_id');
+        $type   = strtolower($request->get('type', 'kredit'));
+        $from   = $request->get('from', 'admin');
+        $entity = strtolower($request->get('entity', 'all'));
 
-        $data = $this->getBankDetailData($coaId, $month, $year, $type);
-        $data['from'] = $from;
+        $data = $this->getBankDetailData($coaId, $month, $year, $type, $entity);
+        $data['from']   = $from;
+        $data['entity'] = $entity;
 
         return view('neraca-lajur.detail-bank', $data);
     }
@@ -58,12 +64,13 @@ class NeracaLajurPiutangController extends Controller
      */
     public function exportDetailBank(Request $request)
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
-        $coaId = $request->get('coa_id');
-        $type  = strtolower($request->get('type', 'kredit'));
+        $month  = (int) $request->get('month', now()->month);
+        $year   = (int) $request->get('year', now()->year);
+        $coaId  = $request->get('coa_id');
+        $type   = strtolower($request->get('type', 'kredit'));
+        $entity = strtolower($request->get('entity', 'all'));
 
-        $data = $this->getBankDetailData($coaId, $month, $year, $type);
+        $data = $this->getBankDetailData($coaId, $month, $year, $type, $entity);
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -193,10 +200,26 @@ class NeracaLajurPiutangController extends Controller
     /**
      * Helper untuk mengambil data detail transaksi bank dan ringkasannya.
      */
-    private function getBankDetailData($coaId, int $month, int $year, string $type): array
+    private function getBankDetailData($coaId, int $month, int $year, string $type, string $entity = 'all'): array
     {
-        // Exclude Bank Mandiri (cash_reference_id = 5)
-        $bankCashReferenceIds = [1, 2, 3, 4];
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+
+        if ($isSeparated && $entity === 'pt') {
+            $bankCashReferenceIds = [1, 4]; // BCA PT, BCA 436
+        } elseif ($isSeparated && $entity === 'kkp') {
+            $bankCashReferenceIds = [2]; // BCA 425
+        } else {
+            if ($year == 2026 && $month < 4) {
+                // Sebelum cut-off April 2026: BCA 140 (3) masih ada transaksi, Mandiri (5) diexclude
+                $bankCashReferenceIds = [1, 2, 3, 4];
+            } elseif ($year < 2026) {
+                $bankCashReferenceIds = [1, 2, 3, 4, 5];
+            } else {
+                // Mulai April 2026 konsolidasi: BCA 140 (3) dan Mandiri (5) sudah non-aktif
+                $bankCashReferenceIds = [1, 2, 4];
+            }
+        }
+
         $startDate = \Carbon\Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d');
         $endDate   = \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
 
@@ -238,44 +261,68 @@ class NeracaLajurPiutangController extends Controller
             } elseif ($coa->code === 'AO-102.1') {
                 $isBankDirectAccount = true;
                 $directCashReferenceId = 1;
-                $query->where('cash_reference_id', 1);
-                if ($type === 'debit') {
-                    $query->where('debit_amount', '>', 0);
+                if (!in_array(1, $bankCashReferenceIds)) {
+                    $query->whereRaw('1 = 0');
                 } else {
-                    $query->where('credit_amount', '>', 0);
+                    $query->where('cash_reference_id', 1);
+                    if ($type === 'debit') {
+                        $query->where('debit_amount', '>', 0);
+                    } else {
+                        $query->where('credit_amount', '>', 0);
+                    }
                 }
             } elseif ($coa->code === 'AO-102.2') {
                 $isBankDirectAccount = true;
                 $directCashReferenceId = 3;
-                $query->where('cash_reference_id', 3);
-                if ($type === 'debit') {
-                    $query->where('debit_amount', '>', 0);
+                if (!in_array(3, $bankCashReferenceIds)) {
+                    $query->whereRaw('1 = 0');
                 } else {
-                    $query->where('credit_amount', '>', 0);
+                    $query->where('cash_reference_id', 3);
+                    if ($type === 'debit') {
+                        $query->where('debit_amount', '>', 0);
+                    } else {
+                        $query->where('credit_amount', '>', 0);
+                    }
                 }
             } elseif ($coa->code === 'AO-102.3') {
                 $isBankDirectAccount = true;
                 $directCashReferenceId = 2;
-                $query->where('cash_reference_id', 2);
-                if ($type === 'debit') {
-                    $query->where('debit_amount', '>', 0);
+                if (!in_array(2, $bankCashReferenceIds)) {
+                    $query->whereRaw('1 = 0');
                 } else {
-                    $query->where('credit_amount', '>', 0);
+                    $query->where('cash_reference_id', 2);
+                    if ($type === 'debit') {
+                        $query->where('debit_amount', '>', 0);
+                    } else {
+                        $query->where('credit_amount', '>', 0);
+                    }
                 }
             } elseif ($coa->code === 'AO-102.4') {
                 $isBankDirectAccount = true;
                 $directCashReferenceId = 4;
-                $query->where('cash_reference_id', 4);
-                if ($type === 'debit') {
-                    $query->where('debit_amount', '>', 0);
+                if (!in_array(4, $bankCashReferenceIds)) {
+                    $query->whereRaw('1 = 0');
                 } else {
-                    $query->where('credit_amount', '>', 0);
+                    $query->where('cash_reference_id', 4);
+                    if ($type === 'debit') {
+                        $query->where('debit_amount', '>', 0);
+                    } else {
+                        $query->where('credit_amount', '>', 0);
+                    }
                 }
             } elseif ($coa->code === 'AO-102.5') {
                 $isBankDirectAccount = true;
                 $directCashReferenceId = 5;
-                // Bank Mandiri (id 5) dikecualikan sehingga tidak menampilkan data
-                $query->whereRaw('1 = 0');
+                if (!in_array(5, $bankCashReferenceIds)) {
+                    $query->whereRaw('1 = 0');
+                } else {
+                    $query->where('cash_reference_id', 5);
+                    if ($type === 'debit') {
+                        $query->where('debit_amount', '>', 0);
+                    } else {
+                        $query->where('credit_amount', '>', 0);
+                    }
+                }
             } else {
                 // Akun umum (misal AO-103.6 s/d AO-103.12, pendapatan, biaya)
                 $query->where('coa_id', $coa->id)->whereIn('cash_reference_id', $bankCashReferenceIds);
@@ -291,6 +338,9 @@ class NeracaLajurPiutangController extends Controller
             if ($type === 'debit') {
                 $query->where('credit_amount', '>', 0);
             } else {
+                $query->where('debit_amount', '>', 0);
+            }
+        }
                 $query->where('debit_amount', '>', 0);
             }
         }

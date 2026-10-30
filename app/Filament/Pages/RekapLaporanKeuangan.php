@@ -28,6 +28,7 @@ class RekapLaporanKeuangan extends Page
     protected static ?string $title = 'Rekap Laporan Keuangan';
 
     public int $year;
+    public string $entity = 'all';
 
     public static function canAccess(array $parameters = []): bool
     {
@@ -45,13 +46,14 @@ class RekapLaporanKeuangan extends Page
     public function mount(): void
     {
         $this->year = (int) request('year', now()->year);
+        $this->entity = request('entity', 'all');
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('filter')
-                ->label('Filter Tahun')
+                ->label('Filter Periode & Entitas')
                 ->icon('heroicon-o-funnel')
                 ->form([
                     Select::make('year')
@@ -66,10 +68,20 @@ class RekapLaporanKeuangan extends Page
                         })
                         ->default($this->year)
                         ->required(),
+                    Select::make('entity')
+                        ->label('Entitas')
+                        ->options([
+                            'all' => 'Semua (Konsolidasi)',
+                            'kkp' => 'KKP',
+                            'pt'  => 'PT',
+                        ])
+                        ->default($this->entity)
+                        ->required(),
                 ])
                 ->action(function (array $data): void {
                     $this->year = (int) $data['year'];
-                    $this->redirect(static::getUrl(['year' => $this->year]));
+                    $this->entity = $data['entity'] ?? 'all';
+                    $this->redirect(static::getUrl(['year' => $this->year, 'entity' => $this->entity]));
                 }),
             Action::make('export_laba_rugi')
                 ->label('Export Laba Rugi')
@@ -119,9 +131,9 @@ class RekapLaporanKeuangan extends Page
         
         for ($m = 1; $m <= 12; $m++) {
             if ($this->year === 2026) {
-                $report = $this->getLabaRugiReportFor2026($m);
+                $report = $this->getLabaRugiReportFor2026($m, $this->entity);
             } else {
-                $report = $labaRugiService->getMonthlyReport($m, $this->year);
+                $report = $labaRugiService->getMonthlyReport($m, $this->year, $this->entity);
             }
             
             $labaKotor = 0;
@@ -213,9 +225,9 @@ class RekapLaporanKeuangan extends Page
         
         for ($m = 1; $m <= 12; $m++) {
             if ($this->year === 2026) {
-                $report = $this->getNeracaReportFor2026($m);
+                $report = $this->getNeracaReportFor2026($m, $this->entity);
             } else {
-                $report = $neracaService->getMonthlyReport($m, $this->year);
+                $report = $neracaService->getMonthlyReport($m, $this->year, $this->entity);
             }
             
             foreach ($report['aktiva'] as $item) {
@@ -589,7 +601,7 @@ class RekapLaporanKeuangan extends Page
         ]);
     }
 
-    private function getLabaRugiReportFor2026(int $month): array
+    private function getLabaRugiReportFor2026(int $month, string $entity = 'all'): array
     {
         $year = 2026;
         $startOfPreviousMonth = Carbon::create($year, $month, 1)->subMonth()->startOfMonth();
@@ -601,6 +613,53 @@ class RekapLaporanKeuangan extends Page
         $endOfPreviousMonthString   = $endOfPreviousMonth->toDateTimeString();
         $startOfCurrentMonthString  = $startOfCurrentMonth->toDateTimeString();
         $endOfCurrentMonthString    = $endOfCurrentMonth->toDateTimeString();
+
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+        $ent = strtolower($entity);
+        $targetEnt = strtoupper($entity);
+
+        $depresiasiQuery = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', '=', $year)
+            ->whereMonth('tanggal_penyusutan', '=', $month);
+
+        if ($isSeparated && $ent !== 'all') {
+            $depresiasiQuery->whereHas('daftarAktivaTetap', function ($q) use ($ent) {
+                $q->where('kepemilikan', strtoupper($ent));
+            });
+        }
+        $depresiasiTotal = $depresiasiQuery->sum('jumlah_penyusutan') ?? 0;
+
+        if ($isSeparated && $ent === 'pt') {
+            $bankCashReferenceIds = [1, 4];
+            $jpCashRefIds         = [1, 4, 9];
+            $kasBesarCondition    = "cash_reference_id = 0";
+            $kasKecilCondition    = "cash_reference_id = 9";
+            $journalFilter        = "AND UPPER(kepemilikan) = 'PT'";
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $bankCashReferenceIds = [2];
+            $jpCashRefIds         = [2, 6, 7];
+            $kasBesarCondition    = "cash_reference_id = 6";
+            $kasKecilCondition    = "cash_reference_id = 7";
+            $journalFilter        = "AND (kepemilikan IS NULL OR UPPER(kepemilikan) = 'KKP')";
+        } else {
+            if ($month < 4) {
+                $bankCashReferenceIds = [1, 2, 3, 4];
+                $jpCashRefIds         = [1, 2, 3, 4, 6, 7, 9];
+            } else {
+                $bankCashReferenceIds = [1, 2, 4];
+                $jpCashRefIds         = [1, 2, 4, 6, 7, 9];
+            }
+            $kasBesarCondition = "cash_reference_id = 6";
+            $kasKecilCondition = "cash_reference_id IN (7, 9)";
+            $journalFilter     = "";
+        }
+        $bankIdsString = implode(',', $bankCashReferenceIds);
+        $mandiriDebitSql = in_array(5, $bankCashReferenceIds)
+            ? "(SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)"
+            : "0";
+        $mandiriCreditSql = in_array(5, $bankCashReferenceIds)
+            ? "(SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)"
+            : "0";
 
         $map = [
             188 => 119, // AO-103.6  -> AO-401   (Fee Bulanan)
@@ -622,14 +681,18 @@ class RekapLaporanKeuangan extends Page
             125 => 187, // Fee Pemeriksaan
         ];
 
-        $rowsInvoice = DB::table('invoices as inv')
+        $invoiceQuery = DB::table('invoices as inv')
             ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->whereNull('inv.memo_id')
-            ->whereBetween('inv.invoice_date', [$startOfCurrentMonth->toDateString(), $endOfCurrentMonth->toDateString()])
-            ->selectRaw('cli.coa_id, cli.amount')
-            ->get();
+            ->whereBetween('inv.invoice_date', [$startOfCurrentMonth->toDateString(), $endOfCurrentMonth->toDateString()]);
+
+        if ($isSeparated && in_array($ent, ['pt', 'kkp'], true)) {
+            $invoiceQuery->where('inv.invoice_type', $targetEnt);
+        }
+
+        $rowsInvoice = $invoiceQuery->selectRaw('cli.coa_id, cli.amount')->get();
 
         $byPiutangCoa = [];
         $mouTotal     = 0;
@@ -650,7 +713,7 @@ class RekapLaporanKeuangan extends Page
         $rowsCash = DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
+            ->whereIn('cash_reference_id', $jpCashRefIds)
             ->whereBetween('transaction_date', [$startOfCurrentMonthString, $endOfCurrentMonthString])
             ->groupBy('coa_id')
             ->selectRaw('coa_id, SUM(debit_amount) as total')
@@ -699,8 +762,8 @@ class RekapLaporanKeuangan extends Page
                 DB::raw("({$kreditCases}) as jurnal_pendapatan_kredit"),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
-                DB::raw('COALESCE(aje_data.aje_debit, 0) as aje_debit'),
-                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit'),
+                DB::raw("COALESCE(aje_data.aje_debit, 0) + (CASE WHEN coa.code = 'AO-509' THEN {$depresiasiTotal} ELSE 0 END) as aje_debit"),
+                DB::raw("COALESCE(aje_data.aje_kredit, 0) + (CASE WHEN coa.code = 'AO-127' THEN {$depresiasiTotal} ELSE 0 END) as aje_kredit"),
             ])
             ->leftJoin(
                 DB::raw("(
@@ -712,6 +775,7 @@ class RekapLaporanKeuangan extends Page
                     WHERE transaction_date BETWEEN '{$startOfPreviousMonthString}' AND '{$endOfPreviousMonthString}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as journal_data"),
                 'coa.id',
@@ -730,7 +794,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE {$kasBesarCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                         AND coa_id != 76
@@ -743,7 +807,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE {$kasBesarCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -764,7 +828,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE {$kasKecilCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                         AND coa_id != 77
@@ -777,7 +841,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE {$kasKecilCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -794,41 +858,41 @@ class RekapLaporanKeuangan extends Page
                             WHEN c.code = 'AO-1010' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162 AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78) AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=1 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.2' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=3 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.3' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=2 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.4' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=4 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            WHEN c.code = 'AO-102.5' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            ELSE (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN (1,2,3,4,5) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriCreditSql}
+                            ELSE (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN ({$bankIdsString}) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                         END as bank_kredit,
                         CASE
                             WHEN c.code = 'AO-1010' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162 AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78) AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=1 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.2' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=3 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.3' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=2 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.4' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=4 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            WHEN c.code = 'AO-102.5' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            ELSE (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN (1,2,3,4,5) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriDebitSql}
+                            ELSE (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN ({$bankIdsString}) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                         END as bank_debit
                     FROM coa c
                 ) as bank_data"),
@@ -846,6 +910,7 @@ class RekapLaporanKeuangan extends Page
                     WHERE journal_book_id = 1
                     AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as jurnal_umum_data"),
                 'coa.id',
@@ -862,6 +927,7 @@ class RekapLaporanKeuangan extends Page
                     WHERE journal_book_id = 2
                     AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as aje_data"),
                 'coa.id',
@@ -908,21 +974,22 @@ class RekapLaporanKeuangan extends Page
             $items[] = [
                 'code' => $row->code,
                 'name' => $row->name,
-                'category' => $category,
                 'amount' => $amount,
-                'is_negative' => $amount < 0,
+                'category' => $category,
             ];
         }
 
+        $labaRugiBersih = $totalPendapatan - $totalBeban;
+
         return [
-            'items' => collect($items)->sortBy('code')->values(),
-            'totalPendapatan' => abs($totalPendapatan),
-            'totalBeban' => abs($totalBeban),
-            'labaRugiBersih' => $totalPendapatan - $totalBeban,
+            'totalPendapatan' => $totalPendapatan,
+            'totalBeban' => $totalBeban,
+            'labaRugiBersih' => $labaRugiBersih,
+            'items' => $items,
         ];
     }
 
-    private function getNeracaReportFor2026(int $month): array
+    private function getNeracaReportFor2026(int $month, string $entity = 'all'): array
     {
         $year = 2026;
         $startOfPreviousMonth = Carbon::create($year, $month, 1)->subMonth()->startOfMonth();
@@ -934,6 +1001,53 @@ class RekapLaporanKeuangan extends Page
         $endOfPreviousMonthString   = $endOfPreviousMonth->toDateTimeString();
         $startOfCurrentMonthString  = $startOfCurrentMonth->toDateTimeString();
         $endOfCurrentMonthString    = $endOfCurrentMonth->toDateTimeString();
+
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+        $ent = strtolower($entity);
+        $targetEnt = strtoupper($entity);
+
+        $depresiasiQuery = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', '=', $year)
+            ->whereMonth('tanggal_penyusutan', '=', $month);
+
+        if ($isSeparated && $ent !== 'all') {
+            $depresiasiQuery->whereHas('daftarAktivaTetap', function ($q) use ($ent) {
+                $q->where('kepemilikan', strtoupper($ent));
+            });
+        }
+        $depresiasiTotal = $depresiasiQuery->sum('jumlah_penyusutan') ?? 0;
+
+        if ($isSeparated && $ent === 'pt') {
+            $bankCashReferenceIds = [1, 4];
+            $jpCashRefIds         = [1, 4, 9];
+            $kasBesarCondition    = "cash_reference_id = 0";
+            $kasKecilCondition    = "cash_reference_id = 9";
+            $journalFilter        = "AND UPPER(kepemilikan) = 'PT'";
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $bankCashReferenceIds = [2];
+            $jpCashRefIds         = [2, 6, 7];
+            $kasBesarCondition    = "cash_reference_id = 6";
+            $kasKecilCondition    = "cash_reference_id = 7";
+            $journalFilter        = "AND (kepemilikan IS NULL OR UPPER(kepemilikan) = 'KKP')";
+        } else {
+            if ($month < 4) {
+                $bankCashReferenceIds = [1, 2, 3, 4];
+                $jpCashRefIds         = [1, 2, 3, 4, 6, 7, 9];
+            } else {
+                $bankCashReferenceIds = [1, 2, 4];
+                $jpCashRefIds         = [1, 2, 4, 6, 7, 9];
+            }
+            $kasBesarCondition = "cash_reference_id = 6";
+            $kasKecilCondition = "cash_reference_id IN (7, 9)";
+            $journalFilter     = "";
+        }
+        $bankIdsString = implode(',', $bankCashReferenceIds);
+        $mandiriDebitSql = in_array(5, $bankCashReferenceIds)
+            ? "(SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)"
+            : "0";
+        $mandiriCreditSql = in_array(5, $bankCashReferenceIds)
+            ? "(SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)"
+            : "0";
 
         $map = [
             188 => 119, // AO-103.6  -> AO-401   (Fee Bulanan)
@@ -955,14 +1069,18 @@ class RekapLaporanKeuangan extends Page
             125 => 187, // Fee Pemeriksaan
         ];
 
-        $rowsInvoice = DB::table('invoices as inv')
+        $invoiceQuery = DB::table('invoices as inv')
             ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->whereNull('inv.memo_id')
-            ->whereBetween('inv.invoice_date', [$startOfCurrentMonth->toDateString(), $endOfCurrentMonth->toDateString()])
-            ->selectRaw('cli.coa_id, cli.amount')
-            ->get();
+            ->whereBetween('inv.invoice_date', [$startOfCurrentMonth->toDateString(), $endOfCurrentMonth->toDateString()]);
+
+        if ($isSeparated && in_array($ent, ['pt', 'kkp'], true)) {
+            $invoiceQuery->where('inv.invoice_type', $targetEnt);
+        }
+
+        $rowsInvoice = $invoiceQuery->selectRaw('cli.coa_id, cli.amount')->get();
 
         $byPiutangCoa = [];
         $mouTotal     = 0;
@@ -983,7 +1101,7 @@ class RekapLaporanKeuangan extends Page
         $rowsCash = DB::table('cash_reports')
             ->whereNull('deleted_at')
             ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', [1, 2, 3, 4, 5, 6, 7, 9])
+            ->whereIn('cash_reference_id', $jpCashRefIds)
             ->whereBetween('transaction_date', [$startOfCurrentMonthString, $endOfCurrentMonthString])
             ->groupBy('coa_id')
             ->selectRaw('coa_id, SUM(debit_amount) as total')
@@ -1013,7 +1131,7 @@ class RekapLaporanKeuangan extends Page
         }
         $kreditCases .= ' ELSE 0 END';
 
-        $labaRugiReport = $this->getLabaRugiReportFor2026($month);
+        $labaRugiReport = $this->getLabaRugiReportFor2026($month, $entity);
         $sisaDanaTahunBerjalan = $labaRugiReport['labaRugiBersih'];
 
         $data = \App\Models\Coa::query()
@@ -1036,8 +1154,8 @@ class RekapLaporanKeuangan extends Page
                 DB::raw("({$kreditCases}) as jurnal_pendapatan_kredit"),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_debit, 0) as jurnal_umum_debit'),
                 DB::raw('COALESCE(jurnal_umum_data.jurnal_umum_kredit, 0) as jurnal_umum_kredit'),
-                DB::raw('COALESCE(aje_data.aje_debit, 0) as aje_debit'),
-                DB::raw('COALESCE(aje_data.aje_kredit, 0) as aje_kredit'),
+                DB::raw("COALESCE(aje_data.aje_debit, 0) + (CASE WHEN coa.code = 'AO-509' THEN {$depresiasiTotal} ELSE 0 END) as aje_debit"),
+                DB::raw("COALESCE(aje_data.aje_kredit, 0) + (CASE WHEN coa.code = 'AO-127' THEN {$depresiasiTotal} ELSE 0 END) as aje_kredit"),
             ])
             ->leftJoin('group_coas', 'coa.group_coa_id', '=', 'group_coas.id')
             ->leftJoin(
@@ -1050,6 +1168,7 @@ class RekapLaporanKeuangan extends Page
                     WHERE transaction_date BETWEEN '{$startOfPreviousMonthString}' AND '{$endOfPreviousMonthString}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as journal_data"),
                 'coa.id',
@@ -1068,7 +1187,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE {$kasBesarCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                         AND coa_id != 76
@@ -1081,7 +1200,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE {$kasBesarCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -1102,7 +1221,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE {$kasKecilCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                         AND coa_id != 77
@@ -1115,7 +1234,7 @@ class RekapLaporanKeuangan extends Page
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 7
+                        WHERE {$kasKecilCondition}
                         AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -1132,41 +1251,41 @@ class RekapLaporanKeuangan extends Page
                             WHEN c.code = 'AO-1010' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162 AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(debit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78) AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=1 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.2' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=3 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.3' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=2 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.4' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=4 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            WHEN c.code = 'AO-102.5' THEN (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            ELSE (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN (1,2,3,4,5) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriCreditSql}
+                            ELSE (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN ({$bankIdsString}) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                         END as bank_kredit,
                         CASE
                             WHEN c.code = 'AO-1010' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id = 162 AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-101.2' THEN (
                                 SELECT COALESCE(SUM(credit_amount), 0) FROM cash_reports cr
                                 INNER JOIN cash_references cref ON cr.cash_reference_id = cref.id
-                                WHERE cref.id IN (1,2,3,4,5) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
+                                WHERE cref.id IN ({$bankIdsString}) AND cr.deleted_at IS NULL AND cref.deleted_at IS NULL
                                 AND cr.coa_id IN (78) AND cr.transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                             )
                             WHEN c.code = 'AO-102.1' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=1 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.2' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=3 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.3' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=2 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                             WHEN c.code = 'AO-102.4' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=4 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            WHEN c.code = 'AO-102.5' THEN (SELECT COALESCE(SUM(debit_amount),0) FROM cash_reports WHERE cash_reference_id=5 AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
-                            ELSE (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN (1,2,3,4,5) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
+                            WHEN c.code = 'AO-102.5' THEN {$mandiriDebitSql}
+                            ELSE (SELECT COALESCE(SUM(credit_amount),0) FROM cash_reports WHERE coa_id=c.id AND cash_reference_id IN ({$bankIdsString}) AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}' AND deleted_at IS NULL)
                         END as bank_debit
                     FROM coa c
                 ) as bank_data"),
@@ -1184,6 +1303,7 @@ class RekapLaporanKeuangan extends Page
                     WHERE journal_book_id = 1
                     AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as jurnal_umum_data"),
                 'coa.id',
@@ -1200,6 +1320,7 @@ class RekapLaporanKeuangan extends Page
                     WHERE journal_book_id = 2
                     AND transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                     AND deleted_at IS NULL
+                    {$journalFilter}
                     GROUP BY coa_id
                 ) as aje_data"),
                 'coa.id',
@@ -1208,29 +1329,9 @@ class RekapLaporanKeuangan extends Page
             )
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
-            ->whereNotIn('coa.id', [78, 118])
-            ->whereIn('coa.group_coa_id', [10, 11, 12, 20, 21, 30])
-            ->orderBy('group_coas.id')
+            ->orderBy('coa.group_coa_id')
             ->orderBy('coa.code')
             ->get();
-
-        // Specific sum calculation for AO-103 for the 2026 reporting data source
-        $targetCodes = ['AO-103.5', 'AO-103.6', 'AO-103.7', 'AO-103.8', 'AO-103.9', 'AO-103.10', 'AO-103.11', 'AO-103.12'];
-        $subRows = $data->filter(fn($row) => in_array($row->code, $targetCodes));
-        $mainRow = $data->first(fn($row) => $row->code === 'AO-103');
-        if ($mainRow && $subRows->isNotEmpty()) {
-            $columnsToSum = [
-                'kas_besar_debit', 'kas_besar_kredit',
-                'kas_kecil_debit', 'kas_kecil_kredit',
-                'bank_debit', 'bank_kredit',
-                'jurnal_pendapatan_debit', 'jurnal_pendapatan_kredit',
-                'jurnal_umum_debit', 'jurnal_umum_kredit',
-                'aje_debit', 'aje_kredit'
-            ];
-            foreach ($columnsToSum as $col) {
-                $mainRow->$col = $subRows->sum($col);
-            }
-        }
 
         $neracaData = [
             'aktiva' => [],
@@ -1239,14 +1340,9 @@ class RekapLaporanKeuangan extends Page
             'totalPasiva' => 0,
         ];
 
-        $currentGroup = null;
-        $currentGroupName = '';
-        $currentGroupTotal = 0;
-        $currentGroupSide = null;
-
         $defaultItemStructure = [
-            'code' => '',
-            'name' => '',
+            'code' => null,
+            'name' => null,
             'amount' => 0,
             'is_negative' => false,
             'is_group_header' => false,
@@ -1254,9 +1350,20 @@ class RekapLaporanKeuangan extends Page
             'is_sisa_dana' => false,
         ];
 
-        $AKTIVA_GROUP_IDS = [10, 11, 12];
+        $aktivaGroupIds = [10, 11, 12];
+        $pasivaGroupIds = [20, 21, 30];
+
+        $currentGroup = null;
+        $currentGroupName = null;
+        $currentGroupTotal = 0;
+        $currentGroupSide = null;
 
         foreach ($data as $row) {
+            $isAktiva = in_array($row->group_coa_id, $aktivaGroupIds);
+            $isPasiva = in_array($row->group_coa_id, $pasivaGroupIds);
+
+            if (!$isAktiva && !$isPasiva) continue;
+
             $totalDebit = $row->neraca_awal_debit + $row->kas_besar_debit +
                 $row->kas_kecil_debit + $row->bank_debit +
                 $row->jurnal_umum_debit + $row->jurnal_pendapatan_debit + $row->aje_debit;
@@ -1265,17 +1372,19 @@ class RekapLaporanKeuangan extends Page
                 $row->kas_kecil_kredit + $row->bank_kredit +
                 $row->jurnal_umum_kredit + $row->jurnal_pendapatan_kredit + $row->aje_kredit;
 
-            $isAktiva = in_array($row->group_coa_id, $AKTIVA_GROUP_IDS, true);
-            $amount = $isAktiva
-                ? $totalDebit - $totalKredit
-                : $totalKredit - $totalDebit;
+            $selisih = $totalDebit - $totalKredit;
 
-            $target = $isAktiva ? 'aktiva' : 'pasiva';
+            if ($isAktiva) {
+                $amount = $selisih;
+                $target = 'aktiva';
+            } else {
+                $amount = -$selisih;
+                $target = 'pasiva';
+            }
 
             if ($currentGroup !== $row->group_coa_id) {
-                if ($currentGroup !== null) {
-                    $previousTarget = $currentGroupSide ?? $target;
-                    $neracaData[$previousTarget][] = array_merge($defaultItemStructure, [
+                if ($currentGroup !== null && $currentGroupSide !== null) {
+                    $neracaData[$currentGroupSide][] = array_merge($defaultItemStructure, [
                         'name' => 'Total ' . $currentGroupName,
                         'amount' => abs($currentGroupTotal),
                         'is_negative' => $currentGroupTotal < 0,
@@ -1284,7 +1393,7 @@ class RekapLaporanKeuangan extends Page
                 }
 
                 $currentGroup = $row->group_coa_id;
-                $currentGroupName = $row->group_name ?? 'Lainnya';
+                $currentGroupName = $row->group_name;
                 $currentGroupTotal = 0;
                 $currentGroupSide = $target;
 

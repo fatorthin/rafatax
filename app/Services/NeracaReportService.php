@@ -13,7 +13,7 @@ class NeracaReportService
     private const LABA_RUGI_GROUP_IDS = [40, 50, 60, 70];
     private const PENDAPATAN_GROUP_IDS = [40, 60];
 
-    public function getMonthlyReport(int $month, int $year): array
+    public function getMonthlyReport(int $month, int $year, string $entity = 'all'): array
     {
         $startOfCurrentMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($year, $month, 1)->endOfMonth();
@@ -21,7 +21,17 @@ class NeracaReportService
         $startOfCurrentMonthString = $startOfCurrentMonth->toDateTimeString();
         $endOfCurrentMonthString = $endOfCurrentMonth->toDateTimeString();
 
-        $labaRugiData = $this->getLabaRugiCalculation($startOfCurrentMonthString, $endOfCurrentMonthString, $year, $month);
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+        $ent = strtolower($entity);
+
+        $journalEntityFilter = "";
+        if ($isSeparated && $ent === 'pt') {
+            $journalEntityFilter = "AND UPPER(kepemilikan) = 'PT'";
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $journalEntityFilter = "AND (kepemilikan IS NULL OR UPPER(kepemilikan) = 'KKP')";
+        }
+
+        $labaRugiData = $this->getLabaRugiCalculation($startOfCurrentMonthString, $endOfCurrentMonthString, $year, $month, $entity);
         $sisaDanaTahunBerjalan = $labaRugiData['labaRugiBersih'];
 
         $data = Coa::query()
@@ -46,6 +56,7 @@ class NeracaReportService
                     WHERE transaction_date BETWEEN '{$startOfCurrentMonthString}' AND '{$endOfCurrentMonthString}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    {$journalEntityFilter}
                     GROUP BY coa_id
                 ) as neraca_data"),
                 'coa.id',
@@ -147,12 +158,50 @@ class NeracaReportService
         return $neracaData;
     }
 
-    private function getLabaRugiCalculation(string $startOfCurrentMonth, string $endOfCurrentMonth, int $year, int $month): array
+    private function getLabaRugiCalculation(string $startOfCurrentMonth, string $endOfCurrentMonth, int $year, int $month, string $entity = 'all'): array
     {
-        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', '=', $year, 'and')
-            ->whereMonth('tanggal_penyusutan', '=', $month, 'and')
-            ->sum('jumlah_penyusutan') ?? 0;
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+        $ent = strtolower($entity);
+
+        $depresiasiQuery = \App\Models\DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', '=', $year)
+            ->whereMonth('tanggal_penyusutan', '=', $month);
+
+        if ($isSeparated && $ent !== 'all') {
+            $depresiasiQuery->whereHas('daftarAktivaTetap', function ($q) use ($ent) {
+                $q->where('kepemilikan', strtoupper($ent));
+            });
+        }
+
+        $depresiasiTotal = $depresiasiQuery->sum('jumlah_penyusutan') ?? 0;
+
+        // Tentukan kondisi rekening Kas / Bank berdasarkan pemisahan entitas
+        if ($isSeparated && $ent === 'pt') {
+            $kasBesarCondition = "cash_reference_id = 0";
+            $kasKecilCondition = "cash_reference_id = 9";
+            $bankCondition     = "cash_reference_id IN (1, 4)";
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $kasBesarCondition = "cash_reference_id = 6";
+            $kasKecilCondition = "cash_reference_id = 7";
+            $bankCondition     = "cash_reference_id IN (2)";
+        } else {
+            $kasBesarCondition = "cash_reference_id = 6";
+            $kasKecilCondition = "cash_reference_id IN (7, 9)";
+            if ($year == 2026 && $month < 4) {
+                $bankCondition = "cash_reference_id IN (1, 2, 3, 4)";
+            } elseif ($year < 2026) {
+                $bankCondition = "cash_reference_id IN (1, 2, 3, 4, 5)";
+            } else {
+                $bankCondition = "cash_reference_id IN (1, 2, 4)";
+            }
+        }
+
+        $journalEntityFilter = "";
+        if ($isSeparated && $ent === 'pt') {
+            $journalEntityFilter = "AND UPPER(kepemilikan) = 'PT'";
+        } elseif ($isSeparated && $ent === 'kkp') {
+            $journalEntityFilter = "AND (kepemilikan IS NULL OR UPPER(kepemilikan) = 'KKP')";
+        }
 
         $data = Coa::query()
             ->select([
@@ -186,6 +235,7 @@ class NeracaReportService
                     WHERE transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    {$journalEntityFilter}
                     GROUP BY coa_id
                 ) as journal_data"),
                 'coa.id',
@@ -199,7 +249,7 @@ class NeracaReportService
                         SUM(credit_amount) as kas_besar_debit,
                         SUM(debit_amount) as kas_besar_kredit
                     FROM cash_reports
-                    WHERE cash_reference_id = 6
+                    WHERE {$kasBesarCondition}
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
                     GROUP BY coa_id
@@ -215,7 +265,7 @@ class NeracaReportService
                         SUM(credit_amount) as kas_kecil_debit,
                         SUM(debit_amount) as kas_kecil_kredit
                     FROM cash_reports
-                    WHERE cash_reference_id = 7
+                    WHERE {$kasKecilCondition}
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
                     GROUP BY coa_id
@@ -231,7 +281,7 @@ class NeracaReportService
                         SUM(credit_amount) as bank_debit,
                         SUM(debit_amount) as bank_kredit
                     FROM cash_reports
-                    WHERE cash_reference_id IN (1,2,3,4,5)
+                    WHERE {$bankCondition}
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
                     GROUP BY coa_id
@@ -250,6 +300,7 @@ class NeracaReportService
                     WHERE journal_book_id = 1
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    {$journalEntityFilter}
                     GROUP BY coa_id
                 ) as jurnal_umum_data"),
                 'coa.id',
@@ -266,6 +317,7 @@ class NeracaReportService
                     WHERE journal_book_id = 2
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    {$journalEntityFilter}
                     GROUP BY coa_id
                 ) as aje_data"),
                 'coa.id',
@@ -282,6 +334,7 @@ class NeracaReportService
                     WHERE journal_book_id = 4
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    {$journalEntityFilter}
                     GROUP BY coa_id
                 ) as jurnal_pendapatan_data"),
                 'coa.id',

@@ -52,21 +52,26 @@ class NeracaLajurPiutang extends Page implements HasTable
 
     public ?int $month = null;
     public ?int $year = null;
+    public string $entity = 'all';
 
     public function mount(): void
     {
-        $this->month = (int) request('month', now()->month);
-        $this->year  = (int) request('year', now()->year);
+        $this->month  = (int) request('month', now()->month);
+        $this->year   = (int) request('year', now()->year);
+        $this->entity = strtolower(request('entity', 'all'));
+        if (!in_array($this->entity, ['all', 'kkp', 'pt'], true)) {
+            $this->entity = 'all';
+        }
 
         // Pastikan Jurnal Pendapatan di journal_book_reports tersinkronisasi untuk bulan ini
-        \App\Services\JurnalPendapatanService::syncMonth($this->year, $this->month);
+        \App\Services\JurnalPendapatanService::syncMonth($this->year, $this->month, $this->entity);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('filter')
-                ->label('Filter Periode')
+                ->label('Filter Periode & Entitas')
                 ->icon('heroicon-o-funnel')
                 ->form([
                     Select::make('period')
@@ -87,16 +92,36 @@ class NeracaLajurPiutang extends Page implements HasTable
                         ])
                         ->default($this->year . '-' . $this->month)
                         ->required(),
+                    Select::make('entity')
+                        ->label('Entitas')
+                        ->options([
+                            'all' => 'Semua (Konsolidasi)',
+                            'kkp' => 'KKP',
+                            'pt'  => 'PT',
+                        ])
+                        ->default($this->entity)
+                        ->required(),
                 ])
                 ->action(function (array $data): void {
                     $parts = explode('-', $data['period']);
-                    $this->year  = (int) $parts[0];
-                    $this->month = (int) $parts[1];
+                    $this->year   = (int) $parts[0];
+                    $this->month  = (int) $parts[1];
+                    $this->entity = $data['entity'] ?? 'all';
                     $this->redirect(static::getResource()::getUrl('neraca-lajur-piutang', [
-                        'month' => $this->month,
-                        'year'  => $this->year,
+                        'month'  => $this->month,
+                        'year'   => $this->year,
+                        'entity' => $this->entity,
                     ]));
                 }),
+            Action::make('kelolaSaldoAwal')
+                ->label('Kelola Saldo Awal Entitas')
+                ->icon('heroicon-o-scale')
+                ->color('warning')
+                ->url(fn() => static::getResource()::getUrl('kelola-saldo-awal', [
+                    'year'   => $this->year,
+                    'month'  => $this->month,
+                    'entity' => in_array($this->entity, ['pt', 'kkp'], true) ? $this->entity : 'pt',
+                ])),
             Action::make('viewOld')
                 ->label('Lihat Neraca Lajur (Lama)')
                 ->icon('heroicon-o-arrow-left-circle')
@@ -109,13 +134,13 @@ class NeracaLajurPiutang extends Page implements HasTable
                 ->label('Export Detail Jurnal Pendapatan')
                 ->icon('heroicon-o-document-magnifying-glass')
                 ->color('info')
-                ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year))
+                ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
                 ->openUrlInNewTab(false),
             Action::make('export')
                 ->label('Export Neraca Lajur')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year))
+                ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
                 ->openUrlInNewTab(false),
             Action::make('back')
                 ->label('Kembali')
@@ -229,45 +254,9 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getInvoicePiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $rows = DB::table('invoices as inv')
-            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
-            ->whereNull('inv.deleted_at')
-            ->whereNull('cli.deleted_at')
-            ->whereNull('inv.memo_id')
-            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
-            ->selectRaw('cli.coa_id, cli.amount')
-            ->get();
-
-        $revenueToPiutangMap    = $this->getRevenueToPiutangMap();
-        $piutangToPendapatanMap = $this->getPiutangToPendapatanMap();
-
-        $byPiutangCoa       = [];
-        $byBelumDiterimaCoa = [];
-        $grandTotal         = 0;
-
-        foreach ($rows as $row) {
-            $coaId = $row->coa_id;
-
-            if (isset($revenueToPiutangMap[$coaId])) {
-                $piutangCoaId = $revenueToPiutangMap[$coaId];
-            } elseif (isset($piutangToPendapatanMap[$coaId])) {
-                $piutangCoaId = $coaId;
-            } else {
-                continue;
-            }
-
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
-
-            $byPiutangCoa[$piutangCoaId]             = ($byPiutangCoa[$piutangCoaId] ?? 0) + $row->amount;
-            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $row->amount;
-            $grandTotal                              += $row->amount;
-        }
-
-        return [
-            'by_piutang_coa'        => $byPiutangCoa,
-            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
-            'total'                 => $grandTotal,
-        ];
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $entity = $isSeparated ? $this->entity : 'all';
+        return \App\Services\JurnalPendapatanService::getInvoicePiutangForJP($startOfMonth, $endOfMonth, $entity);
     }
 
     /**
@@ -292,42 +281,9 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getCashReportPiutangForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9]; // bank + kas besar + kas kecil
-        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
-        if ($this->year >= 2026) {
-            $cashReferenceIds = array_values(array_diff($cashReferenceIds, [5]));
-        }
-
-        $map  = $this->getPiutangToPendapatanMap();
-        $rows = DB::table('cash_reports')
-            ->whereNull('deleted_at')
-            ->whereIn('coa_id', array_keys($map))
-            ->whereIn('cash_reference_id', $cashReferenceIds)
-            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-            ->groupBy('coa_id')
-            ->selectRaw('coa_id, SUM(debit_amount) as total')
-            ->get();
-
-        $byPendapatanCoa    = [];
-        $byBelumDiterimaCoa = [];
-        $grandTotal         = 0;
-
-        foreach ($rows as $row) {
-            $pendapatanCoaId    = $map[$row->coa_id] ?? null;
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($row->coa_id);
-
-            if ($pendapatanCoaId) {
-                $byPendapatanCoa[$pendapatanCoaId]       = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $row->total;
-                $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $row->total;
-                $grandTotal                              += $row->total;
-            }
-        }
-
-        return [
-            'by_pendapatan_coa'    => $byPendapatanCoa,
-            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
-            'total'                => $grandTotal,
-        ];
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $entity = $isSeparated ? $this->entity : 'all';
+        return \App\Services\JurnalPendapatanService::getCashReportPiutangForJP($startOfMonth, $endOfMonth, $entity);
     }
 
     /**
@@ -344,55 +300,9 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getInvoicePph23ForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $rows = DB::table('invoices as inv')
-            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
-            ->whereNull('inv.deleted_at')
-            ->whereNull('cli.deleted_at')
-            ->where('inv.is_include_pph23', true)
-            ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
-            ->selectRaw('cli.coa_id, cli.amount')
-            ->get();
-
-        $byPiutangCoa       = [];
-        $byBelumDiterimaCoa = [];
-        $grandTotal         = 0;
-
-        $revenueToPiutangMap = [
-            119 => 188, // Fee Bulanan
-            120 => 182, // Fee SPT
-            121 => 183, // Fee SP2DK
-            122 => 184, // Fee Pembetulan
-            123 => 185, // Fee Internal
-            124 => 186, // Fee Restitusi
-            125 => 187, // Fee Pemeriksaan
-        ];
-
-        foreach ($rows as $row) {
-            $coaId = $row->coa_id;
-
-            // Map revenue CoA to piutang CoA
-            if (isset($revenueToPiutangMap[$coaId])) {
-                $coaId = $revenueToPiutangMap[$coaId];
-            }
-
-            // Override Bulanan (188) and Tahunan/SPT (182) to Bulanan (188 / AO-103.6)
-            if ($coaId == 188 || $coaId == 182) {
-                $coaId = 188;
-            }
-
-            $pph23Amount        = ($row->amount / 98) * 2;
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($coaId);
-
-            $byPiutangCoa[$coaId]                    = ($byPiutangCoa[$coaId] ?? 0) + $pph23Amount;
-            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $pph23Amount;
-            $grandTotal                              += $pph23Amount;
-        }
-
-        return [
-            'by_piutang_coa'        => $byPiutangCoa,
-            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
-            'total'                 => $grandTotal,
-        ];
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $entity = $isSeparated ? $this->entity : 'all';
+        return \App\Services\JurnalPendapatanService::getInvoicePph23ForJP($startOfMonth, $endOfMonth, $entity);
     }
 
     /**
@@ -406,82 +316,9 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getInvoicePphCheckedForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $rows = DB::table('invoices as inv')
-            ->join('cost_list_invoices as cli', 'cli.invoice_id', '=', 'inv.id')
-            ->whereNull('inv.deleted_at')
-            ->whereNull('cli.deleted_at')
-            ->where('inv.is_pph23_checked', true)
-            ->whereBetween('inv.tanggal_bukti_potong_pph23', [$startOfMonth, $endOfMonth])
-            ->selectRaw('inv.id as invoice_id, cli.coa_id, cli.amount as item_amount, inv.nominal_bukti_potong_pph23')
-            ->get();
-
-        $invoiceTotals = [];
-        foreach ($rows as $row) {
-            $invoiceTotals[$row->invoice_id] = ($invoiceTotals[$row->invoice_id] ?? 0) + $row->item_amount;
-        }
-
-        $byPiutangCoa       = [];
-        $byPendapatanCoa    = [];
-        $byBelumDiterimaCoa = [];
-        $grandTotal         = 0;
-
-        $revenueToPiutangMap = [
-            119 => 188, // Fee Bulanan
-            120 => 182, // Fee SPT
-            121 => 183, // Fee SP2DK
-            122 => 184, // Fee Pembetulan
-            123 => 185, // Fee Internal
-            124 => 186, // Fee Restitusi
-            125 => 187, // Fee Pemeriksaan
-        ];
-
-        $piutangToPendapatanMap = [
-            188 => 119, // AO-103.6  -> AO-401   (Fee Bulanan)
-            182 => 120, // AO-103.7  -> AO-401.1 (Fee SPT)
-            183 => 121, // AO-103.8  -> AO-401.2 (Fee SP2DK)
-            184 => 122, // AO-103.9  -> AO-401.3 (Fee Pembetulan)
-            185 => 123, // AO-103.10 -> AO-401.4 (Fee Internal)
-            186 => 124, // AO-103.11 -> AO-401.5 (Fee Restitusi)
-            187 => 125, // AO-103.12 -> AO-401.6 (Fee Pemeriksaan)
-        ];
-
-        foreach ($rows as $row) {
-            $coaId = $row->coa_id;
-
-            if (isset($revenueToPiutangMap[$coaId])) {
-                $pendapatanCoaId = $coaId;
-                $piutangCoaId    = $revenueToPiutangMap[$coaId];
-            } elseif (isset($piutangToPendapatanMap[$coaId])) {
-                $piutangCoaId    = $coaId;
-                $pendapatanCoaId = $piutangToPendapatanMap[$coaId];
-            } else {
-                $piutangCoaId    = $coaId;
-                $pendapatanCoaId = $coaId;
-            }
-
-            // Override Bulanan/Tahunan to Bulanan (AO-103.6 / AO-401)
-            if ($piutangCoaId == 188 || $piutangCoaId == 182) {
-                $piutangCoaId    = 188;
-                $pendapatanCoaId = 119;
-            }
-
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
-
-            $invoiceTotal = $invoiceTotals[$row->invoice_id] ?? 0;
-            $pph23Amount  = ($invoiceTotal > 0) ? ($row->item_amount / $invoiceTotal) * $row->nominal_bukti_potong_pph23 : 0;
-
-            $byPiutangCoa[$piutangCoaId]             = ($byPiutangCoa[$piutangCoaId] ?? 0) + $pph23Amount;
-            $byPendapatanCoa[$pendapatanCoaId]       = ($byPendapatanCoa[$pendapatanCoaId] ?? 0) + $pph23Amount;
-            $byBelumDiterimaCoa[$belumDiterimaCoaId] = ($byBelumDiterimaCoa[$belumDiterimaCoaId] ?? 0) + $pph23Amount;
-            $grandTotal                              += $pph23Amount;
-        }
-
-        return [
-            'by_piutang_coa'        => $byPiutangCoa,
-            'by_pendapatan_coa'    => $byPendapatanCoa,
-            'by_belum_diterima_coa' => $byBelumDiterimaCoa,
-            'total'                 => $grandTotal,
-        ];
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $entity = $isSeparated ? $this->entity : 'all';
+        return \App\Services\JurnalPendapatanService::getInvoicePphCheckedForJP($startOfMonth, $endOfMonth, $entity);
     }
 
     /**
@@ -489,66 +326,9 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getMouDiscountForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $mous = DB::table('mous as m')
-            ->whereNull('m.deleted_at')
-            ->where('m.status', 'approved')
-            ->where('m.discount_amount', '>', 0)
-            ->whereNotNull('m.tgl_discount')
-            ->whereBetween('m.tgl_discount', [$startOfMonth, $endOfMonth])
-            ->select([
-                'm.id',
-                'm.discount_amount',
-                'm.category_mou_id'
-            ])
-            ->get();
-
-        $map = $this->getPiutangToPendapatanMap();
-
-        $debits  = [];
-        $kredits = [];
-
-        foreach ($mous as $mou) {
-            $clCoa = DB::table('cost_list_mous')
-                ->where('mou_id', $mou->id)
-                ->whereNull('deleted_at')
-                ->whereIn('coa_id', array_keys($map))
-                ->value('coa_id');
-
-            if ($clCoa) {
-                $piutangCoaId = $clCoa;
-            } else {
-                $piutangCoaId = match ($mou->category_mou_id) {
-                    1, 2 => 182,
-                    3, 4 => 188,
-                    5 => 183,
-                    6 => 184,
-                    7 => 187,
-                    8 => 186,
-                    default => 188,
-                };
-            }
-
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
-            $pendapatanCoaId    = $map[$piutangCoaId] ?? 119;
-            $discountAmount     = (float) $mou->discount_amount;
-
-            // Debits:
-            // 1. AO-420 (Potongan Pendapatan: 190)
-            $debits[190] = ($debits[190] ?? 0) + $discountAmount;
-            // 2. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
-            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $discountAmount;
-
-            // Kredits:
-            // 1. AO-103.x (Piutang: $piutangCoaId)
-            $kredits[$piutangCoaId] = ($kredits[$piutangCoaId] ?? 0) + $discountAmount;
-            // 2. AO-401.x (Pendapatan: $pendapatanCoaId)
-            $kredits[$pendapatanCoaId] = ($kredits[$pendapatanCoaId] ?? 0) + $discountAmount;
-        }
-
-        return [
-            'debits'  => $debits,
-            'kredits' => $kredits
-        ];
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $entity = $isSeparated ? $this->entity : 'all';
+        return \App\Services\JurnalPendapatanService::getMouDiscountForJP($startOfMonth, $endOfMonth, $entity);
     }
 
     /**
@@ -556,61 +336,9 @@ class NeracaLajurPiutang extends Page implements HasTable
      */
     private function getMouCancellationForJP(string $startOfMonth, string $endOfMonth): array
     {
-        $mous = DB::table('mous as m')
-            ->whereNull('m.deleted_at')
-            ->where('m.status', 'approved')
-            ->where('m.cancel_mou_amount', '>', 0)
-            ->whereNotNull('m.tgl_cancel_mou')
-            ->whereBetween('m.tgl_cancel_mou', [$startOfMonth, $endOfMonth])
-            ->select([
-                'm.id',
-                'm.cancel_mou_amount',
-                'm.category_mou_id'
-            ])
-            ->get();
-
-        $map = $this->getPiutangToPendapatanMap();
-
-        $debits  = [];
-        $kredits = [];
-
-        foreach ($mous as $mou) {
-            $clCoa = DB::table('cost_list_mous')
-                ->where('mou_id', $mou->id)
-                ->whereNull('deleted_at')
-                ->whereIn('coa_id', array_keys($map))
-                ->value('coa_id');
-
-            if ($clCoa) {
-                $piutangCoaId = $clCoa;
-            } else {
-                $piutangCoaId = match ($mou->category_mou_id) {
-                    1, 2 => 182,
-                    3, 4 => 188,
-                    5 => 183,
-                    6 => 184,
-                    7 => 187,
-                    8 => 186,
-                    default => 188,
-                };
-            }
-
-            $belumDiterimaCoaId = $this->getBelumDiterimaCoaId($piutangCoaId);
-            $cancelAmount       = (float) $mou->cancel_mou_amount;
-
-            // Debits:
-            // 1. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
-            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $cancelAmount;
-
-            // Kredits:
-            // 1. AO-103.x (Piutang: $piutangCoaId)
-            $kredits[$piutangCoaId] = ($kredits[$piutangCoaId] ?? 0) + $cancelAmount;
-        }
-
-        return [
-            'debits'  => $debits,
-            'kredits' => $kredits
-        ];
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $entity = $isSeparated ? $this->entity : 'all';
+        return \App\Services\JurnalPendapatanService::getMouCancellationForJP($startOfMonth, $endOfMonth, $entity);
     }
 
 
@@ -781,10 +509,23 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
         $kreditCases .= ' ELSE 0 END';
 
-        $bankCashReferenceIds = [1, 2, 3, 4, 5];
-        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
-        if ($this->year >= 2026) {
-            $bankCashReferenceIds = array_values(array_diff($bankCashReferenceIds, [5]));
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        $targetEnt = strtoupper($this->entity);
+
+        if ($isSeparated && $this->entity === 'pt') {
+            $bankCashReferenceIds = [1, 4]; // BCA PT, BCA 436
+        } elseif ($isSeparated && $this->entity === 'kkp') {
+            $bankCashReferenceIds = [2]; // BCA 425
+        } else {
+            if ($this->year == 2026 && $this->month < 4) {
+                // Sebelum cut-off April 2026: BCA 140 (3) masih aktif & ada transaksi, Mandiri (5) sudah diexclude
+                $bankCashReferenceIds = [1, 2, 3, 4];
+            } elseif ($this->year < 2026) {
+                $bankCashReferenceIds = [1, 2, 3, 4, 5];
+            } else {
+                // Mulai April 2026 konsolidasi: BCA 140 (3) dan Mandiri (5) sudah non-aktif
+                $bankCashReferenceIds = [1, 2, 4];
+            }
         }
         $bankIdsString = implode(',', $bankCashReferenceIds);
         $mandiriIncluded = in_array(5, $bankCashReferenceIds);
@@ -830,6 +571,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                     WHERE transaction_date BETWEEN '{$startOfPreviousMonth}' AND '{$endOfPreviousMonth}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    " . ($isSeparated && in_array($this->entity, ['pt', 'kkp'], true) ? "AND UPPER(kepemilikan) = '{$targetEnt}'" : "") . "
                     GROUP BY coa_id
                 ) as journal_data"),
                 'coa.id',
@@ -848,7 +590,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE cash_reference_id = " . ($isSeparated && $this->entity === 'pt' ? "0" : "6") . "
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 76
@@ -861,7 +603,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = 6
+                        WHERE cash_reference_id = " . ($isSeparated && $this->entity === 'pt' ? "0" : "6") . "
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -882,7 +624,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id IN (7, 9)
+                        WHERE cash_reference_id IN (" . ($isSeparated && $this->entity === 'pt' ? "9" : ($isSeparated && $this->entity === 'kkp' ? "7" : "7, 9")) . ")
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 77
@@ -895,7 +637,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id IN (7, 9)
+                        WHERE cash_reference_id IN (" . ($isSeparated && $this->entity === 'pt' ? "9" : ($isSeparated && $this->entity === 'kkp' ? "7" : "7, 9")) . ")
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -964,6 +706,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                     WHERE journal_book_id = 1
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    " . ($isSeparated && in_array($this->entity, ['pt', 'kkp'], true) ? "AND UPPER(kepemilikan) = '{$targetEnt}'" : "") . "
                     GROUP BY coa_id
                 ) as jurnal_umum_data"),
                 'coa.id',
@@ -980,6 +723,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                     WHERE journal_book_id = 2
                     AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
+                    " . ($isSeparated && in_array($this->entity, ['pt', 'kkp'], true) ? "AND UPPER(kepemilikan) = '{$targetEnt}'" : "") . "
                     GROUP BY coa_id
                 ) as aje_data"),
                 'coa.id',
@@ -996,6 +740,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                     WHERE transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                     AND deleted_at IS NULL
                     AND journal_book_id = 3
+                    " . ($isSeparated && in_array($this->entity, ['pt', 'kkp'], true) ? "AND UPPER(kepemilikan) = '{$targetEnt}'" : "") . "
                     GROUP BY coa_id
                 ) as neraca_awal_bulan_depan"),
                 'coa.id',
@@ -1481,10 +1226,19 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
         $sheetDetail->getStyle('A3:I3')->applyFromArray($headerStyle);
 
-        $detailCashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
-        // Per tahun 2026 dan seterusnya, exclude transaksi dari Bank Mandiri (cash_reference_id = 5)
-        if ($this->year >= 2026) {
-            $detailCashReferenceIds = array_values(array_diff($detailCashReferenceIds, [5]));
+        $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+        if ($isSeparated && $this->entity === 'pt') {
+            $detailCashReferenceIds = [1, 4, 9];
+        } elseif ($isSeparated && $this->entity === 'kkp') {
+            $detailCashReferenceIds = [2, 6, 7];
+        } else {
+            if ($this->year == 2026 && $this->month < 4) {
+                $detailCashReferenceIds = [1, 2, 3, 4, 6, 7, 9];
+            } elseif ($this->year < 2026) {
+                $detailCashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
+            } else {
+                $detailCashReferenceIds = [1, 2, 4, 6, 7, 9];
+            }
         }
 
         $detailRows = DB::table('cash_reports as cr')
