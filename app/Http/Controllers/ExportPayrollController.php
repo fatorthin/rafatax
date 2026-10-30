@@ -46,6 +46,7 @@ class ExportPayrollController extends Controller
         }
 
         $headers[] = 'T. Transport';
+        $headers[] = 'Bonus Pulsa';
         $headers[] = 'Bonus Lembur';
 
         if ($hasVisitSolo) {
@@ -84,7 +85,7 @@ class ExportPayrollController extends Controller
             $cutIjin = $d->leave_count * $d->salary / 25;
             $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain;
             $totalPot = $d->cut_bpjs_kesehatan + $d->cut_bpjs_ketenagakerjaan + $d->cut_lain + $d->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-            $totalGaji = $d->salary + $d->bonus_position + $d->bonus_competency + $d->bonus_transport + $totalBonus - $totalPot;
+            $totalGaji = $d->salary + $d->bonus_position + $d->bonus_competency + $d->bonus_transport + $d->bonus_pulsa + $totalBonus - $totalPot;
 
             $values = [
                 $idx + 1,
@@ -106,6 +107,7 @@ class ExportPayrollController extends Controller
             }
 
             $values[] = $d->bonus_transport;
+            $values[] = $d->bonus_pulsa;
             $values[] = $bonusLembur;
 
             if ($hasVisitSolo) {
@@ -167,7 +169,7 @@ class ExportPayrollController extends Controller
         $cutIjin = $detail->leave_count * $detail->salary / 25;
         $totalBonus = $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $detail->bonus_lain;
         $totalPot = $detail->cut_bpjs_kesehatan + $detail->cut_bpjs_ketenagakerjaan + $detail->cut_lain + $detail->cut_hutang + $cutSakit + $cutHalfday + $cutIjin;
-        $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $detail->bonus_transport + $totalBonus - $totalPot;
+        $totalGaji = $detail->salary + $detail->bonus_position + $detail->bonus_competency + $detail->bonus_transport + $detail->bonus_pulsa + $totalBonus - $totalPot;
 
         $pdf = PDF::loadView('pdf.payslip', [
             'detail' => $detail,

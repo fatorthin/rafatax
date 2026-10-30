@@ -32,6 +32,7 @@ class PayrollDetail extends Model
         'overtime_multiplier',
         'nama_non_staff',
         'bonus_transport',
+        'bonus_pulsa',
     ];
 
     public function payroll()

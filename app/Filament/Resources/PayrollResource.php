@@ -111,7 +111,7 @@ class PayrollResource extends Resource
                             $cutHalfday = $d->halfday_count * 0.5 * $d->salary / 25;
                             $cutIjin = $d->leave_count * $d->salary / 25;
 
-                            return $d->salary + $d->bonus_position + $d->bonus_competency + $d->bonus_transport + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain - $d->cut_bpjs_kesehatan - $d->cut_bpjs_ketenagakerjaan - $d->cut_lain - $d->cut_hutang - $cutSakit - $cutHalfday - $cutIjin;
+                            return $d->salary + $d->bonus_position + $d->bonus_competency + $d->bonus_transport + $d->bonus_pulsa + $bonusLembur + $bonusVisitSolo + $bonusVisitLuar + $d->bonus_lain - $d->cut_bpjs_kesehatan - $d->cut_bpjs_ketenagakerjaan - $d->cut_lain - $d->cut_hutang - $cutSakit - $cutHalfday - $cutIjin;
                         });
 
                         return $total;

@@ -61,6 +61,8 @@ class ManagePayrolls extends ManageRecords
                             'cut_bpjs_ketenagakerjaan' => 0,
                             'cut_lain' => 0,
                             'cut_hutang' => 0,
+                            'bonus_transport' => 0,
+                            'bonus_pulsa' => 0,
                             'bonus_lain' => 0,
                             'overtime_multiplier' => 0,
                         ]);

@@ -29,6 +29,8 @@
                                     <th class="px-4 py-3 text-right font-medium">Salary</th>
                                     <th class="px-4 py-3 text-right font-medium">Bonus Position</th>
                                     <th class="px-4 py-3 text-right font-medium">Bonus Competency</th>
+                                    <th class="px-4 py-3 text-right font-medium">Bonus Transport</th>
+                                    <th class="px-4 py-3 text-right font-medium">Bonus Pulsa</th>
                                     <th class="px-4 py-3 text-right font-medium">Bonus Lain</th>
                                     <th class="px-4 py-3 text-right font-medium">Total Bonus</th>
                                     <th class="px-4 py-3 text-right font-medium">BPJS Kesehatan</th>
@@ -45,6 +47,8 @@
                                     $totalSalary = 0;
                                     $totalBonusPosition = 0;
                                     $totalBonusCompetency = 0;
+                                    $totalBonusTransport = 0;
+                                    $totalBonusPulsa = 0;
                                     $totalBonusLain = 0;
                                     $totalCutBPJSKesehatan = 0;
                                     $totalCutBPJSKetenagakerjaan = 0;
@@ -57,6 +61,11 @@
                                     @php
                                         $totalBonus =
                                             $detail->bonus_position + $detail->bonus_competency + $detail->bonus_lain;
+                                            $detail->bonus_position +
+                                            $detail->bonus_competency +
+                                            $detail->bonus_transport +
+                                            $detail->bonus_pulsa +
+                                            $detail->bonus_lain;
                                         $totalCut =
                                             $detail->cut_bpjs_kesehatan +
                                             $detail->cut_bpjs_ketenagakerjaan +
@@ -67,6 +76,8 @@
                                         $totalSalary += $detail->salary;
                                         $totalBonusPosition += $detail->bonus_position;
                                         $totalBonusCompetency += $detail->bonus_competency;
+                                        $totalBonusTransport += $detail->bonus_transport;
+                                        $totalBonusPulsa += $detail->bonus_pulsa;
                                         $totalBonusLain += $detail->bonus_lain;
                                         $totalCutBPJSKesehatan += $detail->cut_bpjs_kesehatan;
                                         $totalCutBPJSKetenagakerjaan += $detail->cut_bpjs_ketenagakerjaan;
@@ -82,6 +93,10 @@
                                             {{ number_format($detail->bonus_position, 0, ',', '.') }}</td>
                                         <td class="px-4 py-3 text-right">
                                             {{ number_format($detail->bonus_competency, 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            {{ number_format($detail->bonus_transport, 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            {{ number_format($detail->bonus_pulsa, 0, ',', '.') }}</td>
                                         <td class="px-4 py-3 text-right">
                                             {{ number_format($detail->bonus_lain, 0, ',', '.') }}</td>
                                         <td class="px-4 py-3 text-right font-semibold">
@@ -149,10 +164,15 @@
                                         {{ number_format($totalBonusPosition, 0, ',', '.') }}</td>
                                     <td class="px-4 py-3 text-right">
                                         {{ number_format($totalBonusCompetency, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        {{ number_format($totalBonusTransport, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        {{ number_format($totalBonusPulsa, 0, ',', '.') }}</td>
                                     <td class="px-4 py-3 text-right">{{ number_format($totalBonusLain, 0, ',', '.') }}
                                     </td>
                                     <td class="px-4 py-3 text-right">
                                         {{ number_format($totalBonusPosition + $totalBonusCompetency + $totalBonusLain, 0, ',', '.') }}
+                                        {{ number_format($totalBonusPosition + $totalBonusCompetency + $totalBonusTransport + $totalBonusPulsa + $totalBonusLain, 0, ',', '.') }}
                                     </td>
                                     <td class="px-4 py-3 text-right text-red-600">
                                         {{ number_format($totalCutBPJSKesehatan, 0, ',', '.') }}</td>

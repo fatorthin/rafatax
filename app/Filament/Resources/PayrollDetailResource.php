@@ -69,6 +69,26 @@ class PayrollDetailResource extends Resource
                     })
                     ->default(0)
                     ->required(),
+                Forms\Components\TextInput::make('bonus_transport')
+                    ->label('Bonus Transport')
+                    ->prefix('Rp')
+                    ->numeric()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
+                    ->default(0)
+                    ->required(),
+                Forms\Components\TextInput::make('bonus_pulsa')
+                    ->label('Bonus Pulsa')
+                    ->prefix('Rp')
+                    ->numeric()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Set $set, Get $get) {
+                        $set('total_salary_display', self::formatCurrency((int) round(self::computeTotalSalary($get))));
+                    })
+                    ->default(0)
+                    ->required(),
                 Forms\Components\TextInput::make('overtime_count')
                     ->label('Overtime Count')
                     ->numeric()
@@ -205,6 +225,8 @@ class PayrollDetailResource extends Resource
         $salary = (int) ($get('salary') ?? 0);
         $bonusPosition = (int) ($get('bonus_position') ?? 0);
         $bonusCompetency = (int) ($get('bonus_competency') ?? 0);
+        $bonusTransport = (int) ($get('bonus_transport') ?? 0);
+        $bonusPulsa = (int) ($get('bonus_pulsa') ?? 0);
         $overtimeCount = (int) ($get('overtime_count') ?? 0);
         $visitSoloCount = (int) ($get('visit_solo_count') ?? 0);
         $visitLuarSoloCount = (int) ($get('visit_luar_solo_count') ?? 0);
@@ -229,6 +251,8 @@ class PayrollDetailResource extends Resource
         $total = $salary
             + $bonusPosition
             + $bonusCompetency
+            + $bonusTransport
+            + $bonusPulsa
             + $bonusOvertime
             + $bonusVisitSolo
             + $bonusVisitLuarSolo
@@ -328,6 +352,20 @@ class PayrollDetailResource extends Resource
                     })
                     ->alignEnd()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('bonus_transport')
+                    ->label('Bonus Transport')
+                    ->formatStateUsing(function ($state) {
+                        return number_format($state, 0, ',', '.');
+                    })
+                    ->alignEnd()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('bonus_pulsa')
+                    ->label('Bonus Pulsa')
+                    ->formatStateUsing(function ($state) {
+                        return number_format($state, 0, ',', '.');
+                    })
+                    ->alignEnd()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('bonus_lain')
                     ->label('Bonus Lain')
                     ->formatStateUsing(function ($state) {
@@ -396,7 +434,7 @@ class PayrollDetailResource extends Resource
                 Tables\Columns\TextColumn::make('total_bonus')
                     ->label('Total Bonus')
                     ->getStateUsing(function ($record) {
-                        return ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain;
+                        return ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_transport + $record->bonus_pulsa + $record->bonus_lain;
                     })
                     ->formatStateUsing(function ($state) {
                         return number_format($state, 0, ',', '.');
@@ -416,7 +454,7 @@ class PayrollDetailResource extends Resource
                 Tables\Columns\TextColumn::make('total_salary')
                     ->label('Total Salary')
                     ->getStateUsing(function ($record) {
-                        return $record->salary + $record->bonus_position + $record->bonus_competency + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
+                        return $record->salary + $record->bonus_position + $record->bonus_competency + $record->bonus_transport + $record->bonus_pulsa + ($record->overtime_count * $record->overtime_multiplier) + ($record->visit_solo_count * 10000) + ($record->visit_luar_solo_count * 15000) + $record->bonus_lain - $record->cut_bpjs_kesehatan - $record->cut_bpjs_ketenagakerjaan - $record->cut_lain - $record->cut_hutang - ($record->sick_leave_count * 0.5 * $record->salary / 25) - ($record->halfday_count * 0.5 * $record->salary / 25) - ($record->leave_count * $record->salary / 25);
                     })
                     ->formatStateUsing(function ($state) {
                         return number_format($state, 0, ',', '.');
