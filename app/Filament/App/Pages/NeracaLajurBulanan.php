@@ -27,9 +27,9 @@ class NeracaLajurBulanan extends Page implements HasTable
 
     protected static string $view = 'filament.resources.cash-report-resource.pages.neraca-lajur-bulanan';
     protected static ?string $title = 'Neraca Lajur Bulanan (KKP)';
-    protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
-    protected static ?string $navigationLabel = 'Neraca Lajur Bulanan';
-    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?string $navigationIcon = 'heroicon-o-table-cells';
+    protected static ?string $navigationLabel = 'Neraca Lajur (Lama)';
+    protected static ?string $navigationGroup = 'Histori Data';
 
     public ?int $month = null;
     public ?int $year = null;

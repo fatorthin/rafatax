@@ -350,6 +350,7 @@ class CashReportResource extends Resource
             'index'                => Pages\ListCashReports::route('/'),
             'neraca-lajur'         => Pages\NeracaLajurBulanan::route('/neraca-lajur'),
             'neraca-lajur-piutang' => Pages\NeracaLajurPiutang::route('/neraca-lajur-piutang'),
+            'laba-rugi'            => Pages\LabaRugi::route('/laba-rugi'),
             'neraca'               => Pages\Neraca::route('/neraca'),
             'laba-rugi-bulanan'    => Pages\LabaRugiBulanan::route('/laba-rugi-bulanan'),
             'general-ledger'       => Pages\GeneralLedger::route('/general-ledger'),
@@ -361,21 +362,103 @@ class CashReportResource extends Resource
     {
         return [
             ...parent::getNavigationItems(),
-            \Filament\Navigation\NavigationItem::make('Neraca Lajur Bulanan')
-                ->icon('heroicon-o-table-cells')
-                ->group('Bagian Keuangan')
-                ->url(static::getUrl('neraca-lajur'))
-                ->sort(2),
-            \Filament\Navigation\NavigationItem::make('Neraca Lajur (Piutang)')
+
+            // ==================== LAPORAN KEUANGAN PT ====================
+            \Filament\Navigation\NavigationItem::make('Neraca Lajur (PT)')
+                ->group('Laporan Keuangan PT')
                 ->icon('heroicon-o-clipboard-document-check')
-                ->group('Bagian Keuangan')
-                ->url(static::getUrl('neraca-lajur-piutang'))
+                ->url(static::getUrl('neraca-lajur-piutang', ['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.neraca-lajur-piutang') && strtolower(request('entity', 'all')) === 'pt')
+                ->sort(1),
+            \Filament\Navigation\NavigationItem::make('Laba Rugi (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-document-chart-bar')
+                ->url(static::getUrl('laba-rugi', ['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.laba-rugi') && strtolower(request('entity', 'all')) === 'pt')
+                ->sort(2),
+            \Filament\Navigation\NavigationItem::make('Neraca (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-scale')
+                ->url(static::getUrl('neraca', ['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.neraca') && strtolower(request('entity', 'all')) === 'pt')
                 ->sort(3),
-            \Filament\Navigation\NavigationItem::make('Buku Besar')
-                ->icon('heroicon-o-clipboard-document-list')
-                ->group('Bagian Keuangan')
-                ->url(static::getUrl('general-ledger'))
+            \Filament\Navigation\NavigationItem::make('Buku Besar (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-book-open')
+                ->url(static::getUrl('general-ledger', ['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.general-ledger') && strtolower(request('entity', 'all')) === 'pt')
                 ->sort(4),
+            \Filament\Navigation\NavigationItem::make('Saldo Awal (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-adjustments-horizontal')
+                ->url(static::getUrl('kelola-saldo-awal', ['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.kelola-saldo-awal') && strtolower(request('entity', 'pt')) === 'pt')
+                ->sort(5),
+
+            // ==================== LAPORAN KEUANGAN KKP ====================
+            \Filament\Navigation\NavigationItem::make('Neraca Lajur (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->url(static::getUrl('neraca-lajur-piutang', ['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.neraca-lajur-piutang') && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(1),
+            \Filament\Navigation\NavigationItem::make('Laba Rugi (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-document-chart-bar')
+                ->url(static::getUrl('laba-rugi', ['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.laba-rugi') && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(2),
+            \Filament\Navigation\NavigationItem::make('Neraca (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-scale')
+                ->url(static::getUrl('neraca', ['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.neraca') && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(3),
+            \Filament\Navigation\NavigationItem::make('Buku Besar (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-book-open')
+                ->url(static::getUrl('general-ledger', ['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.general-ledger') && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(4),
+            \Filament\Navigation\NavigationItem::make('Saldo Awal (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-adjustments-horizontal')
+                ->url(static::getUrl('kelola-saldo-awal', ['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.kelola-saldo-awal') && strtolower(request('entity')) === 'kkp')
+                ->sort(5),
+
+            // ==================== LAPORAN KONSOLIDASI ====================
+            \Filament\Navigation\NavigationItem::make('Neraca Lajur Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->url(static::getUrl('neraca-lajur-piutang', ['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.neraca-lajur-piutang') && strtolower(request('entity', 'all')) === 'all')
+                ->sort(1),
+            \Filament\Navigation\NavigationItem::make('Laba Rugi Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-document-chart-bar')
+                ->url(static::getUrl('laba-rugi', ['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.laba-rugi') && strtolower(request('entity', 'all')) === 'all')
+                ->sort(2),
+            \Filament\Navigation\NavigationItem::make('Neraca Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-scale')
+                ->url(static::getUrl('neraca', ['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.neraca') && strtolower(request('entity', 'all')) === 'all')
+                ->sort(3),
+            \Filament\Navigation\NavigationItem::make('Buku Besar Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-book-open')
+                ->url(static::getUrl('general-ledger', ['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs('*.general-ledger') && strtolower(request('entity', 'all')) === 'all')
+                ->sort(4),
+
+            // Histori Data: Neraca Lajur Lama
+            \Filament\Navigation\NavigationItem::make('Neraca Lajur (Lama)')
+                ->group('Histori Data')
+                ->icon('heroicon-o-table-cells')
+                ->url(static::getUrl('neraca-lajur'))
+                ->sort(10),
         ];
     }
 

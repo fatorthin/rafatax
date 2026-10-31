@@ -77,6 +77,18 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('Laporan Keuangan PT')
+                    ->icon('heroicon-o-building-office-2')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Laporan Keuangan KKP')
+                    ->icon('heroicon-o-building-library')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Laporan Konsolidasi')
+                    ->icon('heroicon-o-chart-bar-square')
+                    ->collapsed(),
+                NavigationGroup::make()
                     ->label('Bagian Keuangan')
                     ->icon('heroicon-o-currency-dollar')
                     ->collapsed(),

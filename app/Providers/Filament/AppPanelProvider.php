@@ -67,6 +67,28 @@ class AppPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->navigationGroups([
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Laporan Keuangan PT')
+                    ->icon('heroicon-o-building-office-2')
+                    ->collapsed(),
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Laporan Keuangan KKP')
+                    ->icon('heroicon-o-building-library')
+                    ->collapsed(),
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Laporan Konsolidasi')
+                    ->icon('heroicon-o-chart-bar-square')
+                    ->collapsed(),
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Keuangan')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->collapsed(),
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('HRD')
+                    ->icon('heroicon-o-users')
+                    ->collapsed(),
+            ])
             ->emailVerification()
             ->sidebarCollapsibleOnDesktop()
             ->renderHook(

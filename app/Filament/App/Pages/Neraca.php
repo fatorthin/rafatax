@@ -7,6 +7,7 @@ use Filament\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use App\Services\NeracaReportService;
+use Filament\Navigation\NavigationItem;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -19,8 +20,32 @@ class Neraca extends Page
 {
     protected static string $view = 'filament.app.pages.neraca';
     protected static ?string $title = 'Laporan Neraca';
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
-    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?string $navigationIcon = 'heroicon-o-scale';
+    protected static ?string $navigationGroup = 'Laporan Konsolidasi';
+
+    public static function getNavigationItems(array $urlParameters = []): array
+    {
+        return [
+            NavigationItem::make('Neraca (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-scale')
+                ->url(static::getUrl(['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'pt')
+                ->sort(3),
+            NavigationItem::make('Neraca (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-scale')
+                ->url(static::getUrl(['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(3),
+            NavigationItem::make('Neraca Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-scale')
+                ->url(static::getUrl(['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'all')
+                ->sort(3),
+        ];
+    }
 
     public $month;
     public $year;

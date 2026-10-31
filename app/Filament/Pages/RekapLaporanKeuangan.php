@@ -21,9 +21,11 @@ class RekapLaporanKeuangan extends Page
 
     protected static ?string $slug = 'rekap-laporan-keuangan';
 
-    protected static ?string $navigationGroup = 'Bagian Keuangan';
+    protected static ?string $navigationGroup = 'Laporan Konsolidasi';
 
-    protected static ?string $navigationLabel = 'Rekap Laporan Keuangan';
+    protected static ?string $navigationLabel = 'Rekap Tahunan (Konsolidasi)';
+
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $title = 'Rekap Laporan Keuangan';
 

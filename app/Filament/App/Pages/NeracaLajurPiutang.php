@@ -63,16 +63,24 @@ class NeracaLajurPiutang extends BaseNeracaLajurPiutang
     public static function getNavigationItems(array $urlParameters = []): array
     {
         return [
-            NavigationItem::make(static::getNavigationLabel())
-                ->group(static::getNavigationGroup())
-                ->parentItem(static::getNavigationParentItem())
-                ->icon(static::getNavigationIcon())
-                ->activeIcon(static::getActiveNavigationIcon())
-                ->isActiveWhen(fn (): bool => request()->routeIs(static::getNavigationItemActiveRoutePattern()))
-                ->sort(static::getNavigationSort())
-                ->badge(static::getNavigationBadge(), color: static::getNavigationBadgeColor())
-                ->badgeTooltip(static::getNavigationBadgeTooltip())
-                ->url(static::getUrl($urlParameters)),
+            NavigationItem::make('Neraca Lajur (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->url(static::getUrl(['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'pt')
+                ->sort(1),
+            NavigationItem::make('Neraca Lajur (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->url(static::getUrl(['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(1),
+            NavigationItem::make('Neraca Lajur Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->url(static::getUrl(['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'all')
+                ->sort(1),
         ];
     }
 

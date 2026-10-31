@@ -6,6 +6,7 @@ use App\Services\LabaRugiReportService;
 use Filament\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
+use Filament\Navigation\NavigationItem;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -15,8 +16,32 @@ class LabaRugi extends Page
 {
     protected static string $view = 'filament.app.pages.laba-rugi';
     protected static ?string $title = 'Laporan Laba Rugi';
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
+    protected static ?string $navigationGroup = 'Laporan Konsolidasi';
+
+    public static function getNavigationItems(array $urlParameters = []): array
+    {
+        return [
+            NavigationItem::make('Laba Rugi (PT)')
+                ->group('Laporan Keuangan PT')
+                ->icon('heroicon-o-document-chart-bar')
+                ->url(static::getUrl(['entity' => 'pt']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'pt')
+                ->sort(2),
+            NavigationItem::make('Laba Rugi (KKP)')
+                ->group('Laporan Keuangan KKP')
+                ->icon('heroicon-o-document-chart-bar')
+                ->url(static::getUrl(['entity' => 'kkp']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'kkp')
+                ->sort(2),
+            NavigationItem::make('Laba Rugi Konsolidasi')
+                ->group('Laporan Konsolidasi')
+                ->icon('heroicon-o-document-chart-bar')
+                ->url(static::getUrl(['entity' => 'all']))
+                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteName()) && strtolower(request('entity', 'all')) === 'all')
+                ->sort(2),
+        ];
+    }
 
     public $month;
     public $year;
