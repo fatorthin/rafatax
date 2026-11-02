@@ -27,6 +27,18 @@ class StaffAttendance extends Model
         'keterangan',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function ($attendance) {
+            if ($attendance->status === 'sakit') {
+                $attendance->jam_masuk = null;
+                $attendance->jam_pulang = null;
+                $attendance->durasi_lembur = 0;
+                $attendance->is_late = false;
+            }
+        });
+    }
+
     public function staff()
     {
         return $this->belongsTo(Staff::class);

@@ -81,22 +81,47 @@ class StaffAttendanceResource extends Resource
                         },
                     ]),
 
+                Forms\Components\Select::make('status')
+                    ->label('Status Kehadiran')
+                    ->options([
+                        'masuk' => 'Masuk',
+                        'sakit' => 'Sakit',
+                        'izin' => 'Izin',
+                        'cuti' => 'Cuti',
+                        'alfa' => 'Alfa',
+                        'halfday' => 'Tengah Hari',
+                    ])
+                    ->default('masuk')
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        if ($state === 'sakit') {
+                            $set('jam_masuk', null);
+                            $set('jam_pulang', null);
+                            $set('durasi_lembur', 0);
+                            $set('is_late', false);
+                        }
+                    })
+                    ->required(),
                 Forms\Components\TimePicker::make('jam_masuk')
                     ->label('Jam Masuk')
-                    ->required()
+                    ->required(fn (Get $get): bool => $get('status') !== 'sakit')
+                    ->hidden(fn (Get $get): bool => $get('status') === 'sakit')
+                    ->dehydrated()
                     ->seconds(false)
                     ->format('H:i')
                     ->displayFormat('H:i')
                     ->native(false)
-                    ->default('00:00'),
+                    ->default(fn (Get $get) => $get('status') === 'sakit' ? null : '00:00'),
                 Forms\Components\TimePicker::make('jam_pulang')
                     ->label('Jam Pulang')
                     ->format('H:i')
                     ->displayFormat('H:i')
                     ->seconds(false)
                     ->native(false)
-                    ->required()
-                    ->default('00:00')
+                    ->required(fn (Get $get): bool => $get('status') !== 'sakit')
+                    ->hidden(fn (Get $get): bool => $get('status') === 'sakit')
+                    ->dehydrated()
+                    ->default(fn (Get $get) => $get('status') === 'sakit' ? null : '00:00')
                     ->live()
                     ->afterStateUpdated(function ($state, Forms\Set $set) {
                         if (empty($state)) {
@@ -124,17 +149,6 @@ class StaffAttendanceResource extends Resource
                             $set('durasi_lembur', 0);
                         }
                     }),
-                Forms\Components\Select::make('status')
-                    ->label('Status Kehadiran')
-                    ->options([
-                        'masuk' => 'Masuk',
-                        'sakit' => 'Sakit',
-                        'izin' => 'Izin',
-                        'cuti' => 'Cuti',
-                        'alfa' => 'Alfa',
-                        'halfday' => 'Tengah Hari',
-                    ])
-                    ->required(),
                 Forms\Components\TextInput::make('durasi_lembur')
                     ->label('Durasi Lembur')
                     ->suffix('Jam')
@@ -178,11 +192,13 @@ class StaffAttendanceResource extends Resource
                 Tables\Columns\TextColumn::make('jam_masuk')
                     ->label('Jam Masuk')
                     ->dateTime('H:i')
+                    ->placeholder('-')
                     ->alignCenter()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('jam_pulang')
                     ->label('Jam Pulang')
                     ->dateTime('H:i')
+                    ->placeholder('-')
                     ->alignCenter()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('durasi_lembur')

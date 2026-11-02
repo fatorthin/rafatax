@@ -67,16 +67,30 @@ class StaffAttendanceResource extends Resource
 						'alfa' => 'Alfa',
 						'halfday' => 'Tengah Hari',
 					])
+					->default('masuk')
+					->live()
+					->afterStateUpdated(function ($state, Forms\Set $set) {
+						if ($state === 'sakit') {
+							$set('jam_masuk', null);
+							$set('jam_pulang', null);
+							$set('durasi_lembur', 0);
+							$set('is_late', false);
+						}
+					})
 					->required(),
 				Forms\Components\TimePicker::make('jam_masuk')
 					->label('Jam Masuk')
-					->required()
-					->default('00:00'),
+					->required(fn (Get $get): bool => $get('status') !== 'sakit')
+					->hidden(fn (Get $get): bool => $get('status') === 'sakit')
+					->dehydrated()
+					->default(fn (Get $get) => $get('status') === 'sakit' ? null : '00:00'),
 				Forms\Components\TimePicker::make('jam_pulang')
 					->label('Jam Pulang')
 					->format('H:i')
-					->required()
-					->default('00:00')
+					->required(fn (Get $get): bool => $get('status') !== 'sakit')
+					->hidden(fn (Get $get): bool => $get('status') === 'sakit')
+					->dehydrated()
+					->default(fn (Get $get) => $get('status') === 'sakit' ? null : '00:00')
 					->live()
 					->afterStateUpdated(function ($state, Forms\Set $set) {
 						if (empty($state)) {
@@ -142,11 +156,13 @@ class StaffAttendanceResource extends Resource
 				Tables\Columns\TextColumn::make('jam_masuk')
 					->label('Jam Masuk')
 					->dateTime('H:i')
+					->placeholder('-')
 					->alignCenter()
 					->sortable(),
 				Tables\Columns\TextColumn::make('jam_pulang')
 					->label('Jam Pulang')
 					->dateTime('H:i')
+					->placeholder('-')
 					->alignCenter()
 					->sortable(),
 				Tables\Columns\TextColumn::make('durasi_lembur')

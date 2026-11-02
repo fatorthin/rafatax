@@ -341,9 +341,6 @@ class NeracaLajurPiutangController extends Controller
                 $query->where('debit_amount', '>', 0);
             }
         }
-                $query->where('debit_amount', '>', 0);
-            }
-        }
 
         $reports = $query->orderBy('transaction_date', 'asc')
             ->orderBy('id', 'asc')
