@@ -10,8 +10,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\LogsActivity;
+use Filament\Models\Contracts\HasAvatar;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail, HasAvatar
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -107,5 +108,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->pluck('permissions')
             ->flatten()
             ->unique('id');
+    }
+
+    /**
+     * Get user avatar for Filament panel
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return asset('images/favicon.png');
     }
 }
