@@ -82,6 +82,7 @@ class PiutangPerCategoryMou extends Page implements HasTable
               AND i.deleted_at IS NULL
               AND m.deleted_at IS NULL
               AND i.memo_id IS NULL
+              AND (m.mou_piutang_lama = 0 OR m.mou_piutang_lama IS NULL)
               {$yearCondition}
               {$entityCondition}
             GROUP BY m.category_mou_id
@@ -93,6 +94,7 @@ class PiutangPerCategoryMou extends Page implements HasTable
                 COUNT(DISTINCT id) as jumlah_mou
             FROM mous
             WHERE deleted_at IS NULL
+              AND (mou_piutang_lama = 0 OR mou_piutang_lama IS NULL)
               {$mouYearCondition}
               {$mouEntityCondition}
             GROUP BY category_mou_id

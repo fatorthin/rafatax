@@ -341,7 +341,7 @@ class MouResource extends Resource
                     ->label('Total Invoice Unpaid')
                     ->numeric(locale: 'id')
                     ->getStateUsing(function ($record) {
-                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->where('invoice_status', 'unpaid'))
+                        return CostListInvoice::whereHas('invoice', fn($q) => $q->where('mou_id', $record->id)->whereIn('invoice_status', ['unpaid', 'overdue']))
                             ->sum('amount');
                     })->alignEnd(),
                 Tables\Columns\TextColumn::make('total_invoice_paid')

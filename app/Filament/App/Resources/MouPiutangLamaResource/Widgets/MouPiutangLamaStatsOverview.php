@@ -27,7 +27,7 @@ class MouPiutangLamaStatsOverview extends BaseWidget
 
         $totalInvoiceUnpaid = CostListInvoice::whereHas('invoice', function ($query) use ($mouIds) {
             $query->whereIn('mou_id', $mouIds)
-                ->where('invoice_status', 'unpaid');
+                ->whereIn('invoice_status', ['unpaid', 'overdue']);
         })->sum('amount');
 
         $selisih = $totalNominalMou - $totalInvoicePaid - $totalInvoiceUnpaid;
@@ -39,7 +39,7 @@ class MouPiutangLamaStatsOverview extends BaseWidget
                 ->color('info'),
 
             Stat::make('Total Invoice Unpaid', 'Rp ' . number_format($totalInvoiceUnpaid, 0, ',', '.'))
-                ->description('Total tagihan yang belum dibayar')
+                ->description('Total tagihan belum dibayar (Unpaid & Overdue)')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 

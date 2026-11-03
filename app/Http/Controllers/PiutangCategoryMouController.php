@@ -88,7 +88,10 @@ class PiutangCategoryMouController extends Controller
             ->whereNull('invoices.deleted_at')
             ->whereNull('invoices.memo_id')
             ->whereHas('mou', function ($q) use ($category, $entity) {
-                $q->where('category_mou_id', $category->id);
+                $q->where('category_mou_id', $category->id)
+                    ->where(function ($sub) {
+                        $sub->where('mou_piutang_lama', false)->orWhereNull('mou_piutang_lama');
+                    });
                 if ($entity === 'pt' || $entity === 'kkp') {
                     $q->where('type', $entity);
                 }
@@ -169,6 +172,9 @@ class PiutangCategoryMouController extends Controller
 
         // 3. Breakdown per MoU
         $mouQuery = MoU::where('category_mou_id', $category->id)
+            ->where(function ($sub) {
+                $sub->where('mou_piutang_lama', false)->orWhereNull('mou_piutang_lama');
+            })
             ->when($entity !== 'all', fn ($q) => $q->where('type', $entity))
             ->with([
                 'client',
@@ -227,6 +233,9 @@ class PiutangCategoryMouController extends Controller
 
         return $categories->map(function ($cat) use ($year, $entity) {
             $mouQuery = MoU::where('category_mou_id', $cat->id)
+                ->where(function ($sub) {
+                    $sub->where('mou_piutang_lama', false)->orWhereNull('mou_piutang_lama');
+                })
                 ->when($entity !== 'all', fn ($q) => $q->where('type', $entity));
 
             $mouCount = (clone $mouQuery)
@@ -242,7 +251,10 @@ class PiutangCategoryMouController extends Controller
             $invTotal = (float) \App\Models\CostListInvoice::whereHas('invoice', function ($q) use ($cat, $year, $entity) {
                 $q->whereNull('memo_id')
                     ->whereHas('mou', function ($m) use ($cat, $entity) {
-                        $m->where('category_mou_id', $cat->id);
+                        $m->where('category_mou_id', $cat->id)
+                            ->where(function ($sub) {
+                                $sub->where('mou_piutang_lama', false)->orWhereNull('mou_piutang_lama');
+                            });
                         if ($entity !== 'all') {
                             $m->where('type', $entity);
                         }
@@ -257,7 +269,10 @@ class PiutangCategoryMouController extends Controller
                 $q->whereNull('memo_id')
                     ->where('invoice_status', 'paid')
                     ->whereHas('mou', function ($m) use ($cat, $entity) {
-                        $m->where('category_mou_id', $cat->id);
+                        $m->where('category_mou_id', $cat->id)
+                            ->where(function ($sub) {
+                                $sub->where('mou_piutang_lama', false)->orWhereNull('mou_piutang_lama');
+                            });
                         if ($entity !== 'all') {
                             $m->where('type', $entity);
                         }

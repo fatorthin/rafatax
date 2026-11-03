@@ -20,7 +20,7 @@ class MouStatsOverview extends BaseWidget
         $totalCostListInvoiceUnpaid = CostListInvoice::where('mou_id', $this->mouId)
             ->whereNotNull('invoice_id')
             ->whereHas('invoice', function ($query) {
-                $query->where('invoice_status', 'unpaid')
+                $query->whereIn('invoice_status', ['unpaid', 'overdue'])
                     ->where('mou_id', $this->mouId);
             })
             ->sum('amount');
@@ -46,7 +46,7 @@ class MouStatsOverview extends BaseWidget
                 ->color('info'),
 
             Stat::make('Total Invoice Unpaid', 'Rp ' . number_format($totalCostListInvoiceUnpaid, 0, ',', '.'))
-                ->description('Total tagihan yang belum dibayar')
+                ->description('Total tagihan belum dibayar (Unpaid & Overdue)')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
