@@ -6,7 +6,7 @@
     $stats = $this->getCachedStats();
     // Baris 1: Total MoUs, MoU 2026, MoU 2025 (3 item)
     $row1 = array_slice($stats, 0, 3);
-    // Baris 2: Approved MoUs, Unapproved MoUs (2 item)
+    // Baris 2: Approved MoUs, Unapproved MoUs, Cancelled MoUs (3 item)
     $row2 = array_slice($stats, 3);
 @endphp
 
@@ -40,9 +40,9 @@
             @endforeach
         </div>
 
-        {{-- Baris 2: Approved MoUs, Unapproved MoUs (2 Kolom) --}}
+        {{-- Baris 2: Approved MoUs, Unapproved MoUs, Cancelled MoUs (3 Kolom) --}}
         @if (!empty($row2))
-            <div class="fi-wi-stats-overview-stats-ctn grid gap-6 md:grid-cols-2">
+            <div class="fi-wi-stats-overview-stats-ctn grid gap-6 md:grid-cols-3">
                 @foreach ($row2 as $stat)
                     {{ $stat }}
                 @endforeach

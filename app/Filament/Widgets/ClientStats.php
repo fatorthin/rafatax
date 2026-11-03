@@ -15,7 +15,7 @@ class ClientStats extends BaseWidget
                 ->description('Total semua client')
                 ->icon('heroicon-o-users')
                 ->color('primary'),
-            Stat::make('New Clients', Client::whereMonth('created_at', now()->month)->count())
+            Stat::make('New Clients', Client::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count())
                 ->description('Client baru bulan ini')
                 ->icon('heroicon-o-user-plus')
                 ->color('info'),

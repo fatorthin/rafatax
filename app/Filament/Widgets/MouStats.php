@@ -24,7 +24,7 @@ class MouStats extends BaseWidget
 
     protected function getColumns(): int
     {
-        return 5;
+        return 3;
     }
 
     public function mount(): void
@@ -116,6 +116,7 @@ class MouStats extends BaseWidget
             $totalQuery = clone $query;
             $approvedQuery = clone $query;
             $unapprovedQuery = clone $query;
+            $cancelledQuery = clone $query;
 
             // Get total MoUs count
             $totalMous = $totalQuery->count('*');
@@ -130,6 +131,9 @@ class MouStats extends BaseWidget
 
             // Get unapproved MoUs count
             $unapprovedMous = $unapprovedQuery->where('status', 'unapproved')->count();
+
+            // Get cancelled MoUs count
+            $cancelledMous = $cancelledQuery->where('status', 'cancel')->count();
 
             // Show icon for filtered data
             $icon = ! empty($this->tableFilters) ? 'heroicon-o-funnel' : null;
@@ -152,6 +156,10 @@ class MouStats extends BaseWidget
                     ->color('success')
                     ->description($description),
                 Stat::make('Unapproved MoUs', $unapprovedMous)
+                    ->icon('heroicon-o-clock')
+                    ->color('warning')
+                    ->description($description),
+                Stat::make('Cancelled MoUs', $cancelledMous)
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->description($description),
@@ -169,6 +177,8 @@ class MouStats extends BaseWidget
                 Stat::make('Approved MoUs', 0)
                     ->description('Error loading data'),
                 Stat::make('Unapproved MoUs', 0)
+                    ->description('Error loading data'),
+                Stat::make('Cancelled MoUs', 0)
                     ->description('Error loading data'),
             ];
         }
