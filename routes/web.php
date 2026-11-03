@@ -139,6 +139,18 @@ Route::get('/piutang-per-client/{id}/detail', [\App\Http\Controllers\PiutangDeta
     ->name('piutang-per-client.detail')
     ->middleware('auth');
 
+Route::get('/piutang-category-mou/{id}/detail', [\App\Http\Controllers\PiutangCategoryMouController::class, 'show'])
+    ->name('piutang-category-mou.detail')
+    ->middleware('auth');
+
+Route::get('/piutang-category-mou/{id}/export-detail', [\App\Http\Controllers\PiutangCategoryMouController::class, 'exportDetail'])
+    ->name('piutang-category-mou.export-detail')
+    ->middleware('auth');
+
+Route::get('/piutang-category-mou/export-summary', [\App\Http\Controllers\PiutangCategoryMouController::class, 'exportSummary'])
+    ->name('piutang-category-mou.export-summary')
+    ->middleware('auth');
+
 Route::post('/piutang-per-client/{id}/saldo-awal', [\App\Http\Controllers\PiutangDetailController::class, 'updateSaldoAwal'])
     ->name('piutang-per-client.saldo-awal.update')
     ->middleware('auth');
