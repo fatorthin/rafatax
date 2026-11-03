@@ -241,6 +241,8 @@ class MouInvoicesTable extends BaseWidget
                         $record->update([
                             'invoice_status' => 'paid',
                             'rek_transfer' => $data['rek_transfer'],
+                            'is_send_invoice' => 1,
+                            'send_invoice_date' => $record->send_invoice_date ?? now()->toDateString(),
                         ]);
 
                         // Create cash report entry per cost list invoice item (each has its own coa_id)

@@ -45,7 +45,16 @@ class InvoicesRelationManager extends RelationManager
                         'unpaid' => 'Unpaid',
                         'paid' => 'Paid',
                     ])
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        if ($state === 'paid') {
+                            $set('is_send_invoice', 1);
+                            if (empty($get('send_invoice_date'))) {
+                                $set('send_invoice_date', $get('tgl_transfer') ?: now()->toDateString());
+                            }
+                        }
+                    }),
                 Forms\Components\Select::make('invoice_type')
                     ->options([
                         'pt' => 'PT',

@@ -143,7 +143,16 @@ class InvoiceResource extends Resource
                     ->options([
                         'unpaid' => 'Unpaid',
                         'paid' => 'Paid',
-                    ]),
+                    ])
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                        if ($state === 'paid') {
+                            $set('is_send_invoice', 1);
+                            if (empty($get('send_invoice_date'))) {
+                                $set('send_invoice_date', $get('tgl_transfer') ?: now()->toDateString());
+                            }
+                        }
+                    }),
                 Forms\Components\Select::make('invoice_type')
                     ->options([
                         'pt' => 'PT',
@@ -185,7 +194,9 @@ class InvoiceResource extends Resource
                         1 => 'Sudah',
                         0 => 'Belum',
                     ])
-                    ->default(0),
+                    ->default(0)
+                    ->disabled(fn (Forms\Get $get) => $get('invoice_status') === 'paid')
+                    ->dehydrated(),
                 Forms\Components\DatePicker::make('send_invoice_date')
                     ->label('Tanggal Kirim Invoice')
                     ->native(false)
@@ -304,7 +315,8 @@ class InvoiceResource extends Resource
                     ->options([
                         '1' => 'Sudah',
                         '0' => 'Belum',
-                    ]),
+                    ])
+                    ->disabled(fn ($record) => $record?->invoice_status === 'paid'),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->alignEnd()
@@ -535,6 +547,8 @@ class InvoiceResource extends Resource
                             'invoice_status' => 'paid',
                             'rek_transfer' => $data['rek_transfer'],
                             'tgl_transfer' => $data['tgl_transfer'],
+                            'is_send_invoice' => 1,
+                            'send_invoice_date' => $record->send_invoice_date ?? $data['tgl_transfer'] ?? now()->toDateString(),
                         ]);
 
                         // Create cash report entry per cost list invoice item (each has its own coa_id)

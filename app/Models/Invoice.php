@@ -40,6 +40,13 @@ class Invoice extends Model
     protected static function booted()
     {
         static::saving(function ($invoice) {
+            if ($invoice->invoice_status === 'paid') {
+                $invoice->is_send_invoice = 1;
+                if (empty($invoice->send_invoice_date)) {
+                    $invoice->send_invoice_date = $invoice->tgl_transfer ?? $invoice->invoice_date ?? now()->toDateString();
+                }
+            }
+
             if ($invoice->mou_id) {
                 $invoice->memo_id = null;
             } elseif ($invoice->memo_id) {
