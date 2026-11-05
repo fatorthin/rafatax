@@ -59,6 +59,11 @@ class AdminPanelProvider extends PanelProvider
                 InvoiceStats::class,
                 MouStats::class,
                 ClientStats::class,
+                \App\Filament\Widgets\PiutangCategoryMouOverviewWidget::class,
+                \App\Filament\Widgets\FinancialKpiOverviewWidget::class,
+                \App\Filament\Widgets\FinancialComparisonChartWidget::class,
+                \App\Filament\Widgets\ExpenseStructureChartWidget::class,
+                \App\Filament\Widgets\FinancialTrendChartWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -88,6 +93,10 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Laporan Konsolidasi')
                     ->icon('heroicon-o-chart-bar-square')
                     ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Analisis Eksekutif')
+                    ->icon('heroicon-o-presentation-chart-line')
+                    ->collapsed(false),
                 NavigationGroup::make()
                     ->label('Bagian Keuangan')
                     ->icon('heroicon-o-currency-dollar')
