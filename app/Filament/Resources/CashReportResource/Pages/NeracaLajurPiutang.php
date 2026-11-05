@@ -107,7 +107,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                     $this->year   = (int) $parts[0];
                     $this->month  = (int) $parts[1];
                     $this->entity = $data['entity'] ?? 'all';
-                    $this->redirect(static::getResource()::getUrl('neraca-lajur-piutang', [
+                    $this->redirect(static::getUrl([
                         'month'  => $this->month,
                         'year'   => $this->year,
                         'entity' => $this->entity,

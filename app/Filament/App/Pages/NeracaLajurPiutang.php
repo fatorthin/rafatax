@@ -127,8 +127,9 @@ class NeracaLajurPiutang extends BaseNeracaLajurPiutang
                     $this->year  = (int) $parts[0];
                     $this->month = (int) $parts[1];
                     $this->redirect(static::getUrl([
-                        'month' => $this->month,
-                        'year'  => $this->year,
+                        'month'  => $this->month,
+                        'year'   => $this->year,
+                        'entity' => $this->entity,
                     ]));
                 }),
             Action::make('viewOld')
@@ -148,13 +149,13 @@ class NeracaLajurPiutang extends BaseNeracaLajurPiutang
                 ->label('Export Detail Jurnal Pendapatan')
                 ->icon('heroicon-o-document-magnifying-glass')
                 ->color('info')
-                ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year))
+                ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
                 ->openUrlInNewTab(false),
             Action::make('export')
                 ->label('Export Neraca Lajur')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year))
+                ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
                 ->openUrlInNewTab(false),
             Action::make('back')
                 ->label('Kembali')

@@ -26,15 +26,15 @@
             <div class="flex items-center gap-3">
                 <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pilihan Entitas:</span>
                 <div class="inline-flex rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-100 dark:bg-gray-900" role="group">
-                    <a href="{{ static::getResource()::getUrl('neraca-lajur-piutang', ['month' => $month, 'year' => $year, 'entity' => 'all']) }}"
+                    <a href="{{ static::getUrl(['month' => $month, 'year' => $year, 'entity' => 'all']) }}"
                         class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
                         Semua (Konsolidasi)
                     </a>
-                    <a href="{{ static::getResource()::getUrl('neraca-lajur-piutang', ['month' => $month, 'year' => $year, 'entity' => 'kkp']) }}"
+                    <a href="{{ static::getUrl(['month' => $month, 'year' => $year, 'entity' => 'kkp']) }}"
                         class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'kkp' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
                         🏛️ KKP
                     </a>
-                    <a href="{{ static::getResource()::getUrl('neraca-lajur-piutang', ['month' => $month, 'year' => $year, 'entity' => 'pt']) }}"
+                    <a href="{{ static::getUrl(['month' => $month, 'year' => $year, 'entity' => 'pt']) }}"
                         class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'pt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
                         🏢 PT
                     </a>
