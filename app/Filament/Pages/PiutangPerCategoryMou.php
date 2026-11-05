@@ -29,6 +29,18 @@ class PiutangPerCategoryMou extends Page implements HasTable
 
     protected static ?int $navigationSort = 6;
 
+    public function getHeaderWidgetsColumns(): int | string | array
+    {
+        return 1;
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\PiutangCategoryMouOverviewWidget::class,
+        ];
+    }
+
     public static function canAccess(array $parameters = []): bool
     {
         /** @var \App\Models\User|null $user */

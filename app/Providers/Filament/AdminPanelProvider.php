@@ -89,6 +89,10 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-chart-bar-square')
                     ->collapsed(),
                 NavigationGroup::make()
+                    ->label('Analisis Eksekutif')
+                    ->icon('heroicon-o-presentation-chart-line')
+                    ->collapsed(false),
+                NavigationGroup::make()
                     ->label('Bagian Keuangan')
                     ->icon('heroicon-o-currency-dollar')
                     ->collapsed(),
