@@ -55,7 +55,7 @@
         </div>
 
         {{-- 4 Executive KPI Cards via Dedicated Filament Widget --}}
-        <div>
+        <div class="financial-kpi-wrapper">
             @livewire(\App\Filament\Widgets\FinancialKpiOverviewWidget::class, [
                 'primaryMonth' => $this->primaryMonth,
                 'primaryYear' => $this->primaryYear,
@@ -67,41 +67,81 @@
 
         {{-- Chart Visualizations --}}
         @if ($activeTab === 'comparison')
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {{-- Chart 1: Bar Chart Komparasi 2 Periode (2/3 width) --}}
-                <div class="lg:col-span-2 p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
+            <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.5rem; align-items: stretch;">
+                {{-- Chart 1: Bar Chart Komparasi 2 Periode (60% width) --}}
+                <div style="flex: 3; min-width: 320px;" class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                         <div>
                             <h3 class="text-sm font-bold text-gray-900 dark:text-white">Perbandingan Finansial Periode</h3>
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ $p1['period_label'] }} vs {{ $p2['period_label'] }}</p>
                         </div>
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="inline-flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                                <span class="w-3 h-3 rounded bg-amber-500 inline-block"></span>
+                                {{ $p1['period_label'] }}
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                                <span class="w-3 h-3 rounded bg-slate-500 inline-block"></span>
+                                {{ $p2['period_label'] }}
+                            </span>
+                        </div>
                     </div>
-                    <div class="relative h-72 w-full">
+                    <div class="relative w-full" style="height: 320px;">
                         <canvas id="comparisonBarChart"></canvas>
                     </div>
                 </div>
 
-                {{-- Chart 2: Doughnut Chart Komposisi Beban Bulan Utama (1/3 width) --}}
-                <div class="p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
-                    <div class="mb-4">
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Struktur Beban (Cost Drivers)</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Komposisi Beban Terbesar pada {{ $p1['period_label'] }}</p>
+                {{-- Chart 2: Doughnut Chart Komposisi Beban Bulan Utama (40% width) --}}
+                <div style="flex: 2; min-width: 300px;" class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-start justify-between mb-3 gap-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Struktur Beban (Cost Drivers)</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Komposisi Beban Terbesar {{ $p1['period_label'] }}</p>
+                        </div>
+                        <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 flex-shrink-0">
+                            Total: Rp {{ number_format($p1['totalBeban'], 0, ',', '.') }}
+                        </span>
                     </div>
-                    <div class="relative h-72 w-full flex items-center justify-center">
+
+                    <div class="relative w-full flex items-center justify-center my-1" style="height: 190px;">
                         <canvas id="expenseDoughnutChart"></canvas>
+                    </div>
+
+                    {{-- Top Cost Drivers List --}}
+                    @php
+                        $donutColors = ['#f43f5e', '#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#94a3b8'];
+                        $totalBebanVal = $p1['totalBeban'] > 0 ? $p1['totalBeban'] : 1;
+                    @endphp
+                    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                        @foreach ($p1['expenseBreakdown'] as $idx => $exp)
+                            @php
+                                $c = $donutColors[$idx % count($donutColors)];
+                                $pct = round(($exp['amount'] / $totalBebanVal) * 100, 1);
+                            @endphp
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2 truncate pr-2">
+                                    <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: {{ $c }};"></span>
+                                    <span class="text-gray-700 dark:text-gray-300 truncate" title="{{ $exp['label'] }}">{{ $exp['label'] }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 flex-shrink-0 font-medium">
+                                    <span class="text-gray-400">{{ $pct }}%</span>
+                                    <span class="text-gray-900 dark:text-gray-200">Rp {{ number_format($exp['amount'], 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         @else
             {{-- Chart 3: Tren 12 Bulan (Full Year) --}}
-            <div class="p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
+            <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                     <div>
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white">Grafik Tren Finansial 12 Bulan (Tahun {{ $primaryYear }})</h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Pergerakan Pendapatan, Beban, dan Laba Bersih dari Januari hingga Desember</p>
                     </div>
                 </div>
-                <div class="relative h-80 w-full">
+                <div class="relative w-full" style="height: 360px;">
                     <canvas id="trend12MonthChart"></canvas>
                 </div>
             </div>
@@ -217,6 +257,15 @@
         </div>
     </div>
 
+    <style>
+        /* Memastikan 4 kartu KPI sejajar rapi di desktop dan responsif */
+        .financial-kpi-wrapper .fi-wi-stats-overview-stats-ctn {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+            gap: 1rem !important;
+        }
+    </style>
+
     {{-- Chart Initialization Scripts --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -265,16 +314,20 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        categoryPercentage: 0.55,
+                        barPercentage: 0.8,
+                        maxBarThickness: 42,
                         plugins: {
                             legend: {
-                                position: 'top',
-                                labels: { color: textColor, font: { family: 'inherit', size: 12 } }
+                                display: false, // Ditampilkan melalui pill header kustom di atas card
                             },
                             tooltip: {
+                                padding: 10,
+                                cornerRadius: 8,
                                 callbacks: {
                                     label: function (context) {
                                         let val = context.parsed.y || 0;
-                                        return context.dataset.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val);
+                                        return ' ' + context.dataset.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val);
                                     }
                                 }
                             }
@@ -282,7 +335,7 @@
                         scales: {
                             x: {
                                 grid: { display: false },
-                                ticks: { color: textColor }
+                                ticks: { color: textColor, font: { weight: '600' } }
                             },
                             y: {
                                 grid: { color: gridColor },
@@ -327,23 +380,23 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom',
-                                labels: {
-                                    boxWidth: 10,
-                                    color: textColor,
-                                    font: { size: 10 }
-                                }
+                                display: false, // Digantikan dengan rincian list terstruktur di bawah donut
                             },
                             tooltip: {
+                                padding: 10,
+                                cornerRadius: 8,
                                 callbacks: {
                                     label: function (context) {
-                                        let val = context.parsed || 0;
-                                        return context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val);
+                                        const dataset = context.dataset;
+                                        const total = dataset.data.reduce((acc, current) => acc + current, 0);
+                                        const val = context.parsed || 0;
+                                        const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                        return ' ' + context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val) + ' (' + pct + '%)';
                                     }
                                 }
                             }
                         },
-                        cutout: '65%'
+                        cutout: '70%'
                     }
                 });
             }
@@ -389,6 +442,9 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        categoryPercentage: 0.7,
+                        barPercentage: 0.85,
+                        maxBarThickness: 32,
                         interaction: {
                             mode: 'index',
                             intersect: false,

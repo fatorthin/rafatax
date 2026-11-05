@@ -59,6 +59,8 @@ class AdminPanelProvider extends PanelProvider
                 InvoiceStats::class,
                 MouStats::class,
                 ClientStats::class,
+                \App\Filament\Widgets\PiutangCategoryMouOverviewWidget::class,
+                \App\Filament\Widgets\FinancialKpiOverviewWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
