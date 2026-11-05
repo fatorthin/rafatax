@@ -67,9 +67,9 @@
 
         {{-- Chart Visualizations via Official Filament Chart Widgets --}}
         @if ($activeTab === 'comparison')
-            <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.5rem; align-items: stretch;">
+            <div class="financial-charts-row" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.5rem; align-items: stretch;">
                 {{-- Chart 1: Bar Chart Komparasi 2 Periode (60% width) --}}
-                <div style="flex: 3; min-width: 320px;">
+                <div class="chart-col-bar" style="flex: 3; min-width: 320px;">
                     @livewire(\App\Filament\Widgets\FinancialComparisonChartWidget::class, [
                         'primaryMonth' => $this->primaryMonth,
                         'primaryYear' => $this->primaryYear,
@@ -80,7 +80,7 @@
                 </div>
 
                 {{-- Chart 2: Doughnut Chart Komposisi Beban Bulan Utama (40% width) --}}
-                <div style="flex: 2; min-width: 300px;">
+                <div class="chart-col-donut" style="flex: 2; min-width: 300px;">
                     @livewire(\App\Filament\Widgets\ExpenseStructureChartWidget::class, [
                         'primaryMonth' => $this->primaryMonth,
                         'primaryYear' => $this->primaryYear,
@@ -214,6 +214,43 @@
             display: grid !important;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
             gap: 1rem !important;
+        }
+
+        /* Memastikan kedua widget chart memiliki tinggi yang sama persis (Equal Height) */
+        .financial-charts-row {
+            display: flex !important;
+            align-items: stretch !important;
+        }
+        .financial-charts-row > div {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .financial-charts-row > div > div,
+        .financial-charts-row .fi-wi-chart,
+        .financial-charts-row .fi-section {
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+        }
+        .financial-charts-row .fi-section-content-ctn {
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+        }
+        .financial-charts-row .fi-section-content {
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            flex: 1 1 auto !important;
+        }
+        .financial-charts-row .chart-col-bar .fi-section-content > div {
+            flex: 1 1 auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
         }
     </style>
 </x-filament-panels::page>

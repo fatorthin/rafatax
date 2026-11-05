@@ -12,7 +12,7 @@ class FinancialComparisonChartWidget extends ChartWidget
 
     protected static ?string $heading = 'Perbandingan Finansial Periode';
 
-    protected static ?string $maxHeight = '300px';
+    protected static ?string $maxHeight = '370px';
 
     public ?int $primaryMonth = null;
     public ?int $primaryYear = null;
