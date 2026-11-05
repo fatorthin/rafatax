@@ -1018,15 +1018,26 @@ class NeracaLajurPiutang extends Page implements HasTable
             $sumRow++;
         }
 
-        // ── Bagian 5: MoU Discounts (DR AO-420 & DR AO-208 / CR AO-103.x & CR AO-401.x) ──
+        // ── Bagian 5: MoU Discounts (Dinolkan pada konsep piutang berbasis invoice) ──
         $mouDiscountJP = $this->getMouDiscountForJP($startOfMonth, $endOfMonth);
         $discountDebits = $mouDiscountJP['debits'];
         $discountKredits = $mouDiscountJP['kredits'];
 
-        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 5: MoU Discounts (Diskon MoU) ───');
+        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 5: MoU Discounts (Diskon MoU) - Dinolkan (Piutang Berbasis Invoice) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
         $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
         $sumRow++;
+
+        if (empty($discountDebits) && empty($discountKredits)) {
+            $sheetSum->setCellValue('A' . $sumRow, '-');
+            $sheetSum->setCellValue('B' . $sumRow, 'Dinolkan (invoice diterbitkan sudah net diskon)');
+            $sheetSum->setCellValue('C' . $sumRow, 'MoU Discount');
+            $sheetSum->setCellValue('D' . $sumRow, 0);
+            $sheetSum->setCellValue('E' . $sumRow, 0);
+            $sheetSum->setCellValue('F' . $sumRow, 0);
+            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
+            $sumRow++;
+        }
 
         $discountTotalDebits = 0;
         foreach ($discountDebits as $coaId => $total) {

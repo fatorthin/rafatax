@@ -375,77 +375,19 @@ class JurnalPendapatanService
     }
 
     /**
-     * Sumber 5 — MoU discounts (discount_amount > 0 && tgl_discount jatuh pada bulan berjalan).
+     * Sumber 5 — MoU discounts.
+     *
+     * Catatan: Pada konsep piutang berbasis invoice, tagihan/invoice yang diterbitkan
+     * kepada klien sudah bernilai bersih (net of discount). Oleh karena itu, diskon MoU
+     * dinolkan (tidak dijurnal ke AO-420 / AO-103 / AO-208 / AO-401) untuk mencegah
+     * terjadinya double deduction pada piutang dan gross-up semu pada pendapatan.
      */
     public static function getMouDiscountForJP(string $startOfMonth, string $endOfMonth, string $entity = 'all'): array
     {
-        $query = DB::table('mous as m')
-            ->whereNull('m.deleted_at')
-            ->where('m.status', 'approved')
-            ->where('m.discount_amount', '>', 0)
-            ->whereNotNull('m.tgl_discount')
-            ->whereBetween('m.tgl_discount', [$startOfMonth, $endOfMonth]);
-
-        $ent = strtolower($entity);
-        if ($ent === 'pt') {
-            $query->where('m.type', 'pt');
-        } elseif ($ent === 'kkp') {
-            $query->where('m.type', 'kkp');
-        }
-
-        $mous = $query->select([
-                'm.id',
-                'm.discount_amount',
-                'm.category_mou_id'
-            ])
-            ->get();
-
-        $map = static::getPiutangToPendapatanMap();
-
-        $debits  = [];
-        $kredits = [];
-
-        foreach ($mous as $mou) {
-            $clCoa = DB::table('cost_list_mous')
-                ->where('mou_id', $mou->id)
-                ->whereNull('deleted_at')
-                ->whereIn('coa_id', array_keys($map))
-                ->value('coa_id');
-
-            if ($clCoa) {
-                $piutangCoaId = $clCoa;
-            } else {
-                $piutangCoaId = match ($mou->category_mou_id) {
-                    1, 2 => 182,
-                    3, 4 => 188,
-                    5    => 183,
-                    6    => 184,
-                    7    => 187,
-                    8    => 186,
-                    default => 188,
-                };
-            }
-
-            $belumDiterimaCoaId = static::getBelumDiterimaCoaId($piutangCoaId);
-            $pendapatanCoaId    = $map[$piutangCoaId] ?? 119;
-            $discountAmount     = (float) $mou->discount_amount;
-
-            // Debits:
-            // 1. AO-420 (Potongan Pendapatan: 190)
-            $debits[self::COA_POTONGAN_PENDAPATAN_ID] = ($debits[self::COA_POTONGAN_PENDAPATAN_ID] ?? 0) + $discountAmount;
-            // 2. AO-208.x (Pendapatan Yang Belum Diterima: $belumDiterimaCoaId)
-            $debits[$belumDiterimaCoaId] = ($debits[$belumDiterimaCoaId] ?? 0) + $discountAmount;
-
-            // Kredits:
-            // 1. AO-103.x (Piutang: $piutangCoaId)
-            $kredits[$piutangCoaId] = ($kredits[$piutangCoaId] ?? 0) + $discountAmount;
-            // 2. AO-401.x (Pendapatan: $pendapatanCoaId)
-            $kredits[$pendapatanCoaId] = ($kredits[$pendapatanCoaId] ?? 0) + $discountAmount;
-        }
-
+        // Dinolkan sesuai konsep piutang berbasis invoice
         return [
-            'debits'  => $debits,
-            'kredits' => $kredits
+            'debits'  => [],
+            'kredits' => [],
         ];
     }
 
@@ -733,13 +675,8 @@ class JurnalPendapatanService
             ->selectRaw('DISTINCT YEAR(transaction_date) as y, MONTH(transaction_date) as m')
             ->get();
 
-        $mouDiscountMonths = DB::table('mous')
-            ->whereNull('deleted_at')
-            ->where('status', 'approved')
-            ->where('discount_amount', '>', 0)
-            ->whereNotNull('tgl_discount')
-            ->selectRaw('DISTINCT YEAR(tgl_discount) as y, MONTH(tgl_discount) as m')
-            ->get();
+        // Diskon MoU dinolkan pada konsep piutang berbasis invoice
+        $mouDiscountMonths = collect();
 
         $mouCancelMonths = DB::table('mous')
             ->whereNull('deleted_at')
