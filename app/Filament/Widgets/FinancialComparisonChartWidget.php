@@ -15,9 +15,13 @@ class FinancialComparisonChartWidget extends ChartWidget
     protected static ?string $maxHeight = '370px';
 
     public ?int $primaryMonth = null;
+
     public ?int $primaryYear = null;
+
     public ?int $compareMonth = null;
+
     public ?int $compareYear = null;
+
     public string $entity = 'all';
 
     public static function canView(): bool
@@ -31,8 +35,8 @@ class FinancialComparisonChartWidget extends ChartWidget
     public function getDescription(): ?string
     {
         $months = FinancialAnalyticsService::getMonthNames();
-        $p1 = ($months[$this->primaryMonth ?? date('n')] ?? '') . ' ' . ($this->primaryYear ?? date('Y'));
-        $p2 = ($months[$this->compareMonth ?? (date('n') - 1 ?: 12)] ?? '') . ' ' . ($this->compareYear ?? date('Y'));
+        $p1 = ($months[$this->primaryMonth ?? date('n')] ?? '').' '.($this->primaryYear ?? date('Y'));
+        $p2 = ($months[$this->compareMonth ?? (date('n') - 1 ?: 12)] ?? '').' '.($this->compareYear ?? date('Y'));
 
         return "{$p1} vs {$p2}";
     }
