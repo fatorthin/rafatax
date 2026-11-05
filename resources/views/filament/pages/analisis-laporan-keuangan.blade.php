@@ -65,85 +65,36 @@
             ], key('financial-kpi-' . $this->primaryMonth . '-' . $this->primaryYear . '-' . $this->compareMonth . '-' . $this->compareYear . '-' . $this->entity))
         </div>
 
-        {{-- Chart Visualizations --}}
+        {{-- Chart Visualizations via Official Filament Chart Widgets --}}
         @if ($activeTab === 'comparison')
             <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 1.5rem; align-items: stretch;">
                 {{-- Chart 1: Bar Chart Komparasi 2 Periode (60% width) --}}
-                <div style="flex: 3; min-width: 320px;" class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Perbandingan Finansial Periode</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $p1['period_label'] }} vs {{ $p2['period_label'] }}</p>
-                        </div>
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="inline-flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
-                                <span class="w-3 h-3 rounded bg-amber-500 inline-block"></span>
-                                {{ $p1['period_label'] }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
-                                <span class="w-3 h-3 rounded bg-slate-500 inline-block"></span>
-                                {{ $p2['period_label'] }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="relative w-full" style="height: 320px;">
-                        <canvas id="comparisonBarChart"></canvas>
-                    </div>
+                <div style="flex: 3; min-width: 320px;">
+                    @livewire(\App\Filament\Widgets\FinancialComparisonChartWidget::class, [
+                        'primaryMonth' => $this->primaryMonth,
+                        'primaryYear' => $this->primaryYear,
+                        'compareMonth' => $this->compareMonth,
+                        'compareYear' => $this->compareYear,
+                        'entity' => $this->entity,
+                    ], key('fin-compare-chart-' . $this->primaryMonth . '-' . $this->primaryYear . '-' . $this->compareMonth . '-' . $this->compareYear . '-' . $this->entity))
                 </div>
 
                 {{-- Chart 2: Doughnut Chart Komposisi Beban Bulan Utama (40% width) --}}
-                <div style="flex: 2; min-width: 300px;" class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
-                    <div class="flex items-start justify-between mb-3 gap-2">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Struktur Beban (Cost Drivers)</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Komposisi Beban Terbesar {{ $p1['period_label'] }}</p>
-                        </div>
-                        <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 flex-shrink-0">
-                            Total: Rp {{ number_format($p1['totalBeban'], 0, ',', '.') }}
-                        </span>
-                    </div>
-
-                    <div class="relative w-full flex items-center justify-center my-1" style="height: 190px;">
-                        <canvas id="expenseDoughnutChart"></canvas>
-                    </div>
-
-                    {{-- Top Cost Drivers List --}}
-                    @php
-                        $donutColors = ['#f43f5e', '#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#94a3b8'];
-                        $totalBebanVal = $p1['totalBeban'] > 0 ? $p1['totalBeban'] : 1;
-                    @endphp
-                    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
-                        @foreach ($p1['expenseBreakdown'] as $idx => $exp)
-                            @php
-                                $c = $donutColors[$idx % count($donutColors)];
-                                $pct = round(($exp['amount'] / $totalBebanVal) * 100, 1);
-                            @endphp
-                            <div class="flex items-center justify-between text-xs">
-                                <div class="flex items-center gap-2 truncate pr-2">
-                                    <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: {{ $c }};"></span>
-                                    <span class="text-gray-700 dark:text-gray-300 truncate" title="{{ $exp['label'] }}">{{ $exp['label'] }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 flex-shrink-0 font-medium">
-                                    <span class="text-gray-400">{{ $pct }}%</span>
-                                    <span class="text-gray-900 dark:text-gray-200">Rp {{ number_format($exp['amount'], 0, ',', '.') }}</span>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+                <div style="flex: 2; min-width: 300px;">
+                    @livewire(\App\Filament\Widgets\ExpenseStructureChartWidget::class, [
+                        'primaryMonth' => $this->primaryMonth,
+                        'primaryYear' => $this->primaryYear,
+                        'entity' => $this->entity,
+                    ], key('fin-expense-chart-' . $this->primaryMonth . '-' . $this->primaryYear . '-' . $this->entity))
                 </div>
             </div>
         @else
             {{-- Chart 3: Tren 12 Bulan (Full Year) --}}
-            <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Grafik Tren Finansial 12 Bulan (Tahun {{ $primaryYear }})</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Pergerakan Pendapatan, Beban, dan Laba Bersih dari Januari hingga Desember</p>
-                    </div>
-                </div>
-                <div class="relative w-full" style="height: 360px;">
-                    <canvas id="trend12MonthChart"></canvas>
-                </div>
+            <div>
+                @livewire(\App\Filament\Widgets\FinancialTrendChartWidget::class, [
+                    'year' => $this->primaryYear,
+                    'entity' => $this->entity,
+                ], key('fin-trend-chart-' . $this->primaryYear . '-' . $this->entity))
             </div>
         @endif
 
@@ -265,223 +216,5 @@
             gap: 1rem !important;
         }
     </style>
-
-    {{-- Chart Initialization Scripts --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            initCharts();
-        });
-
-        document.addEventListener('livewire:navigated', function () {
-            initCharts();
-        });
-
-        function initCharts() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-            const textColor = isDark ? '#94a3b8' : '#64748b';
-
-            // 1. Comparison Bar Chart
-            const ctxComparison = document.getElementById('comparisonBarChart');
-            if (ctxComparison) {
-                new Chart(ctxComparison, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Total Pendapatan', 'Total Beban', 'Laba Bersih'],
-                        datasets: [
-                            {
-                                label: @js($p1['period_label']),
-                                data: [
-                                    @js(round($kpi['pendapatan']['current'])),
-                                    @js(round($kpi['beban']['current'])),
-                                    @js(round($kpi['laba_bersih']['current']))
-                                ],
-                                backgroundColor: '#f59e0b', // Amber
-                                borderRadius: 6,
-                            },
-                            {
-                                label: @js($p2['period_label']),
-                                data: [
-                                    @js(round($kpi['pendapatan']['previous'])),
-                                    @js(round($kpi['beban']['previous'])),
-                                    @js(round($kpi['laba_bersih']['previous']))
-                                ],
-                                backgroundColor: '#64748b', // Slate
-                                borderRadius: 6,
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        categoryPercentage: 0.55,
-                        barPercentage: 0.8,
-                        maxBarThickness: 42,
-                        plugins: {
-                            legend: {
-                                display: false, // Ditampilkan melalui pill header kustom di atas card
-                            },
-                            tooltip: {
-                                padding: 10,
-                                cornerRadius: 8,
-                                callbacks: {
-                                    label: function (context) {
-                                        let val = context.parsed.y || 0;
-                                        return ' ' + context.dataset.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val);
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: textColor, font: { weight: '600' } }
-                            },
-                            y: {
-                                grid: { color: gridColor },
-                                ticks: {
-                                    color: textColor,
-                                    callback: function (val) {
-                                        return 'Rp ' + (val / 1000000).toFixed(0) + ' Jt';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // 2. Expense Doughnut Chart
-            const ctxExpense = document.getElementById('expenseDoughnutChart');
-            if (ctxExpense) {
-                const breakdown = @js($p1['expenseBreakdown']);
-                const labels = breakdown.map(i => i.label);
-                const data = breakdown.map(i => i.amount);
-
-                new Chart(ctxExpense, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: [
-                                '#f43f5e', // Rose
-                                '#0ea5e9', // Sky
-                                '#10b981', // Emerald
-                                '#8b5cf6', // Violet
-                                '#f59e0b', // Amber
-                                '#94a3b8', // Gray
-                            ],
-                            borderWidth: 0,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false, // Digantikan dengan rincian list terstruktur di bawah donut
-                            },
-                            tooltip: {
-                                padding: 10,
-                                cornerRadius: 8,
-                                callbacks: {
-                                    label: function (context) {
-                                        const dataset = context.dataset;
-                                        const total = dataset.data.reduce((acc, current) => acc + current, 0);
-                                        const val = context.parsed || 0;
-                                        const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                                        return ' ' + context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val) + ' (' + pct + '%)';
-                                    }
-                                }
-                            }
-                        },
-                        cutout: '70%'
-                    }
-                });
-            }
-
-            // 3. 12-Month Trend Chart (If on trend tab)
-            const ctxTrend = document.getElementById('trend12MonthChart');
-            if (ctxTrend) {
-                const trend = @js($trend);
-                new Chart(ctxTrend, {
-                    type: 'bar',
-                    data: {
-                        labels: trend.labels,
-                        datasets: [
-                            {
-                                type: 'line',
-                                label: 'Laba Bersih',
-                                data: trend.laba,
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                borderWidth: 3,
-                                fill: false,
-                                tension: 0.3,
-                                yAxisID: 'y'
-                            },
-                            {
-                                type: 'bar',
-                                label: 'Pendapatan',
-                                data: trend.pendapatan,
-                                backgroundColor: '#f59e0b',
-                                borderRadius: 4,
-                                yAxisID: 'y'
-                            },
-                            {
-                                type: 'bar',
-                                label: 'Beban',
-                                data: trend.beban,
-                                backgroundColor: '#f43f5e',
-                                borderRadius: 4,
-                                yAxisID: 'y'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        categoryPercentage: 0.7,
-                        barPercentage: 0.85,
-                        maxBarThickness: 32,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: { color: textColor }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        let val = context.parsed.y || 0;
-                                        return context.dataset.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(val);
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: textColor }
-                            },
-                            y: {
-                                grid: { color: gridColor },
-                                ticks: {
-                                    color: textColor,
-                                    callback: function (val) {
-                                        return 'Rp ' + (val / 1000000).toFixed(0) + ' Jt';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-    </script>
 </x-filament-panels::page>
 
