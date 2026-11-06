@@ -32,3 +32,9 @@ Schedule::command('aktiva:generate-depreciation')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/depreciation-cron.log'));
 
+// Safety net: pengecekan cadangan tiap tanggal 1 jam 01:00 WIB jika akhir bulan terlewat
+Schedule::command('aktiva:generate-depreciation')
+    ->monthlyOn(1, '01:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/depreciation-cron.log'));
+

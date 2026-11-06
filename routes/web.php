@@ -272,7 +272,12 @@ Route::get('/run-generate-depreciation', function () {
     }
 
     try {
-        \Illuminate\Support\Facades\Artisan::call('aktiva:generate-depreciation');
+        $params = [];
+        if (request()->filled('periode')) {
+            $params['--periode'] = request('periode');
+        }
+
+        \Illuminate\Support\Facades\Artisan::call('aktiva:generate-depreciation', $params);
 
         return response()->json([
             'success' => true,

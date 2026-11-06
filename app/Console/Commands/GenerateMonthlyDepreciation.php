@@ -30,7 +30,13 @@ class GenerateMonthlyDepreciation extends Command
                 return self::FAILURE;
             }
         } else {
-            $date = Carbon::now()->endOfMonth();
+            $now = Carbon::now();
+            // Jika dieksekusi pada awal bulan (tgl 1-5), otomatis default ke penutupan bulan sebelumnya
+            if ($now->day <= 5) {
+                $date = $now->copy()->subMonth()->endOfMonth();
+            } else {
+                $date = $now->endOfMonth();
+            }
         }
 
         $this->info("🔄 Memproses depresiasi aktiva tetap untuk periode: {$date->format('F Y')}...");
