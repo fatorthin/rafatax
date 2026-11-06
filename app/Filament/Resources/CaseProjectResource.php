@@ -302,7 +302,7 @@ class CaseProjectResource extends Resource
                         }
                         return $data;
                     })
-                    ->mutateFormDataBeforeSave(function (array $data): array {
+                    ->mutateFormDataUsing(function (array $data): array {
                         if (($data['client_input_type'] ?? 'database') === 'manual') {
                             $data['client_id'] = null;
                         } else {

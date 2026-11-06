@@ -57,7 +57,7 @@ class ManageCaseProjects extends ManageRecords
                 ->icon('heroicon-o-plus')
                 ->modalHeading('Tambah Data')
                 ->modalWidth('2xl')
-                ->mutateFormDataBeforeCreate(function (array $data): array {
+                ->mutateFormDataUsing(function (array $data): array {
                     if (($data['client_input_type'] ?? 'database') === 'manual') {
                         $data['client_id'] = null;
                     } else {
