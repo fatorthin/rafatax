@@ -25,9 +25,9 @@ class ChecklistBuktiPotong extends Page implements HasTable
 
     protected static ?string $title = 'Checklist Bukti Potong';
 
-    public function getStats(): array
+    public static function getBaseQuery(): Builder
     {
-        $baseQuery = Invoice::query()
+        return Invoice::query()
             ->where(function (Builder $query) {
                 $query->whereHas('client', function (Builder $q) {
                     $q->where('type', 'pt');
@@ -35,6 +35,16 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     $q->where('type', 'pt');
                 });
             })
+            ->where(function (Builder $query) {
+                $query->whereYear('invoice_date', '!=', 2025)
+                    ->orWhereNull('invoice_date');
+            })
+            ->whereYear('created_at', '!=', 2025);
+    }
+
+    public function getStats(): array
+    {
+        $baseQuery = static::getBaseQuery()
             ->with('costListInvoices');
 
         $records = $baseQuery->get();
@@ -51,16 +61,7 @@ class ChecklistBuktiPotong extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                Invoice::query()
-                    ->where(function (Builder $query) {
-                        $query->whereHas('client', function (Builder $q) {
-                            $q->where('type', 'pt');
-                        })->orWhereHas('mou.client', function (Builder $q) {
-                            $q->where('type', 'pt');
-                        });
-                    })
-            )
+            ->query(static::getBaseQuery())
             ->columns([
                 TextColumn::make('invoice_date')
                     ->label('Tanggal Invoice')
