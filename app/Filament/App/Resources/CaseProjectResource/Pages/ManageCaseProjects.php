@@ -15,7 +15,16 @@ class ManageCaseProjects extends ManageRecords
         return [
             Actions\CreateAction::make()
                 ->label('Tambah Data')
-                ->icon('heroicon-o-plus'),
+                ->icon('heroicon-o-plus')
+                ->mutateFormDataBeforeCreate(function (array $data): array {
+                    if (($data['client_input_type'] ?? 'database') === 'manual') {
+                        $data['client_id'] = null;
+                    } else {
+                        $data['client_name'] = null;
+                    }
+                    unset($data['client_input_type']);
+                    return $data;
+                }),
         ];
     }
 }

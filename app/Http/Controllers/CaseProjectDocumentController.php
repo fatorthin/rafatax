@@ -51,11 +51,11 @@ class CaseProjectDocumentController extends Controller
                 'nomor_surat_kuasa' => $caseProject->power_of_attorney_number ?? '',
                 'tanggal_surat_kuasa' => $caseProject->power_of_attorney_date ?? now(),
                 'jenis_wp' => ($client?->jenis_wp === 'badan') ? 'BADAN' : 'ORANG PRIBADI',
-                'pemberi_nama' => $client?->owner_name ?? ($client?->company_name ?? ''),
+                'pemberi_nama' => $client?->owner_name ?? ($client?->company_name ?? ($caseProject->client_name ?? '')),
                 'pemberi_npwp' => $client?->npwp ?? '',
                 'pemberi_jabatan' => $client?->owner_role ?? 'Direktur',
                 'bertindak_selaku' => ($client?->jenis_wp === 'badan') ? 'wakil_wajib_pajak' : 'wajib_pajak',
-                'wp_badan_nama' => $client?->company_name ?? '',
+                'wp_badan_nama' => $client?->company_name ?? ($caseProject->client_name ?? ''),
                 'wp_badan_npwp' => $client?->npwp ?? '',
                 'kuasa_kategori' => 'konsultan_pajak',
                 'penerima_nama' => 'ANTIN OKFITASARI',
@@ -83,7 +83,7 @@ class CaseProjectDocumentController extends Controller
         ])->setPaper('a4', 'portrait')
             ->setOption(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
 
-        $safeClientName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $caseProject->client?->company_name ?? 'Client');
+        $safeClientName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $caseProject->client?->company_name ?? $caseProject->client_name ?? 'Client');
         $safeNumber = preg_replace('/[^A-Za-z0-9_\-]/', '-', $poa->nomor_surat_kuasa ?: 'Surat-Kuasa');
         $filename = "Dokumen-Kuasa-{$safeNumber}-{$safeClientName}.pdf";
 

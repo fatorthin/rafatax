@@ -138,7 +138,7 @@
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
                     <td>{{ $cpDetail->caseProject?->description ?? '-' }}</td>
-                    <td>{{ $cpDetail->caseProject?->client?->company_name ?? '-' }}</td>
+                    <td>{{ $cpDetail->caseProject?->client?->company_name ?? ($cpDetail->caseProject?->client_name ?? '-') }}</td>
                     <td>{{ $cpDetail->caseProject?->mou?->mou_number ?? '-' }}</td>
                     <td class="center">{{ $cpDetail->caseProject?->project_date ? \Carbon\Carbon::parse($cpDetail->caseProject->project_date)->format('d M Y') : '-' }}</td>
                     <td class="number">{{ number_format($cpDetail->bonus, 0, ',', '.') }}</td>

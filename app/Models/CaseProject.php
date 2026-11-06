@@ -17,6 +17,7 @@ class CaseProject extends Model
         'status',
         'staff_id',
         'client_id',
+        'client_name',
         'mou_id',
         'case_letter_number',
         'case_letter_date',
@@ -55,5 +56,19 @@ class CaseProject extends Model
     public function powerOfAttorney()
     {
         return $this->hasOne(CaseProjectPowerOfAttorney::class, 'case_project_id');
+    }
+
+    public function getClientDisplayNameAttribute(): string
+    {
+        return $this->client?->company_name ?? $this->client_name ?? '-';
+    }
+
+    protected static function booted()
+    {
+        static::saving(function (CaseProject $caseProject) {
+            if (!empty($caseProject->client_id)) {
+                $caseProject->client_name = null;
+            }
+        });
     }
 }

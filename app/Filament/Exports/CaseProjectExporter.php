@@ -102,8 +102,8 @@ class CaseProjectExporter
 
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, $item->description);
-            $sheet->setCellValue('C' . $row, $item->client?->code);
-            $sheet->setCellValue('D' . $row, $item->client?->company_name);
+            $sheet->setCellValue('C' . $row, $item->client?->code ?? '-');
+            $sheet->setCellValue('D' . $row, $item->client?->company_name ?? $item->client_name ?? '-');
             $sheet->setCellValue('E' . $row, strtoupper($item->case_type ?? ''));
             $sheet->setCellValue('F' . $row, $staffNames);
             $sheet->setCellValue('G' . $row, $item->mou?->mou_number);

@@ -31,13 +31,44 @@ class CaseProjectResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('description')
                     ->required(),
-                Forms\Components\Select::make('client_id')
-                    ->relationship('client', 'company_name')
-                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
-                    ->searchable(['company_name', 'code'])
-                    ->label('Nama Client')
-                    ->preload()
-                    ->required(),
+                Forms\Components\Group::make([
+                    Forms\Components\Radio::make('client_input_type')
+                        ->label('Opsi Nama Client')
+                        ->options([
+                            'database' => 'Pilih dari Data Client',
+                            'manual' => 'Mengisi Manual',
+                        ])
+                        ->default('database')
+                        ->inline()
+                        ->live()
+                        ->afterStateHydrated(function (Forms\Set $set, ?CaseProject $record) {
+                            if ($record && empty($record->client_id) && !empty($record->client_name)) {
+                                $set('client_input_type', 'manual');
+                            } else {
+                                $set('client_input_type', 'database');
+                            }
+                        })
+                        ->afterStateUpdated(function (Forms\Set $set, $state) {
+                            if ($state === 'manual') {
+                                $set('client_id', null);
+                            } else {
+                                $set('client_name', null);
+                            }
+                        }),
+                    Forms\Components\Select::make('client_id')
+                        ->relationship('client', 'company_name')
+                        ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
+                        ->searchable(['company_name', 'code'])
+                        ->label('Nama Client')
+                        ->preload()
+                        ->visible(fn(Forms\Get $get) => ($get('client_input_type') ?? 'database') === 'database')
+                        ->required(fn(Forms\Get $get) => ($get('client_input_type') ?? 'database') === 'database'),
+                    Forms\Components\TextInput::make('client_name')
+                        ->label('Nama Client')
+                        ->placeholder('Masukkan nama client')
+                        ->visible(fn(Forms\Get $get) => $get('client_input_type') === 'manual')
+                        ->required(fn(Forms\Get $get) => $get('client_input_type') === 'manual'),
+                ]),
                 Forms\Components\Select::make('case_type')
                     ->options([
                         'SPT' => 'SPT',
@@ -138,8 +169,25 @@ class CaseProjectResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('client.code')->label('Kode Client')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('client.company_name')->label('Nama Client')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('client.code')
+                    ->label('Kode Client')
+                    ->placeholder('-')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('client_name')
+                    ->label('Nama Client')
+                    ->getStateUsing(fn(CaseProject $record) => $record->client?->company_name ?? $record->client_name ?? '-')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->leftJoin('clients', 'case_projects.client_id', '=', 'clients.id')
+                            ->orderByRaw("COALESCE(clients.company_name, case_projects.client_name) {$direction}")
+                            ->select('case_projects.*');
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->whereHas('client', fn($cq) => $cq->where('company_name', 'like', "%{$search}%"))
+                                ->orWhere('case_projects.client_name', 'like', "%{$search}%");
+                        });
+                    }),
                 Tables\Columns\TextColumn::make('case_type')
                     ->label('Kategori')
                     ->sortable()
@@ -245,7 +293,24 @@ class CaseProjectResource extends Resource
                     ->action(function (CaseProject $record, array $data) {
                         $record->update(['link_drive' => $data['link_drive']]);
                     }),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->mutateRecordDataUsing(function (array $data, CaseProject $record): array {
+                        if (empty($record->client_id) && !empty($record->client_name)) {
+                            $data['client_input_type'] = 'manual';
+                        } else {
+                            $data['client_input_type'] = 'database';
+                        }
+                        return $data;
+                    })
+                    ->mutateFormDataBeforeSave(function (array $data): array {
+                        if (($data['client_input_type'] ?? 'database') === 'manual') {
+                            $data['client_id'] = null;
+                        } else {
+                            $data['client_name'] = null;
+                        }
+                        unset($data['client_input_type']);
+                        return $data;
+                    }),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
             ], position: ActionsPosition::BeforeColumns)

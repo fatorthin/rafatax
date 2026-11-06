@@ -42,13 +42,44 @@ class CaseProjectResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('description')
                     ->required(),
-                Forms\Components\Select::make('client_id')
-                    ->relationship('client', 'company_name')
-                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
-                    ->searchable(['company_name', 'code'])
-                    ->label('Nama Client')
-                    ->preload()
-                    ->required(),
+                Forms\Components\Group::make([
+                    Forms\Components\Radio::make('client_input_type')
+                        ->label('Opsi Nama Client')
+                        ->options([
+                            'database' => 'Pilih dari Data Client',
+                            'manual' => 'Mengisi Manual',
+                        ])
+                        ->default('database')
+                        ->inline()
+                        ->live()
+                        ->afterStateHydrated(function (Forms\Set $set, ?CaseProject $record) {
+                            if ($record && empty($record->client_id) && !empty($record->client_name)) {
+                                $set('client_input_type', 'manual');
+                            } else {
+                                $set('client_input_type', 'database');
+                            }
+                        })
+                        ->afterStateUpdated(function (Forms\Set $set, $state) {
+                            if ($state === 'manual') {
+                                $set('client_id', null);
+                            } else {
+                                $set('client_name', null);
+                            }
+                        }),
+                    Forms\Components\Select::make('client_id')
+                        ->relationship('client', 'company_name')
+                        ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} - {$record->company_name}")
+                        ->searchable(['company_name', 'code'])
+                        ->label('Nama Client')
+                        ->preload()
+                        ->visible(fn(Forms\Get $get) => ($get('client_input_type') ?? 'database') === 'database')
+                        ->required(fn(Forms\Get $get) => ($get('client_input_type') ?? 'database') === 'database'),
+                    Forms\Components\TextInput::make('client_name')
+                        ->label('Nama Client')
+                        ->placeholder('Masukkan nama client')
+                        ->visible(fn(Forms\Get $get) => $get('client_input_type') === 'manual')
+                        ->required(fn(Forms\Get $get) => $get('client_input_type') === 'manual'),
+                ]),
                 Forms\Components\Select::make('case_type')
                     ->options([
                         'SPT' => 'SPT',
@@ -202,8 +233,25 @@ class CaseProjectResource extends Resource
                     };
                 }),
 
-                Tables\Columns\TextColumn::make('client.code')->label('Kode Client')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('client.company_name')->label('Nama Client')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('client.code')
+                    ->label('Kode Client')
+                    ->placeholder('-')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('client_name')
+                    ->label('Nama Client')
+                    ->getStateUsing(fn(CaseProject $record) => $record->client?->company_name ?? $record->client_name ?? '-')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->leftJoin('clients', 'case_projects.client_id', '=', 'clients.id')
+                            ->orderByRaw("COALESCE(clients.company_name, case_projects.client_name) {$direction}")
+                            ->select('case_projects.*');
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->whereHas('client', fn($cq) => $cq->where('company_name', 'like', "%{$search}%"))
+                                ->orWhere('case_projects.client_name', 'like', "%{$search}%");
+                        });
+                    }),
                 Tables\Columns\TextColumn::make('case_type')
                     ->label('Kategori')
                     ->sortable()
@@ -300,7 +348,7 @@ class CaseProjectResource extends Resource
                         $phone = '6281359976015';
 
                         $staffNames = Staff::whereIn('id', $record->staff_id ?? [])->pluck('name')->join(', ');
-                        $clientName = $record->client->company_name ?? '-';
+                        $clientName = $record->client?->company_name ?? $record->client_name ?? '-';
                         $caseDate = $record->case_date ? \Carbon\Carbon::parse($record->case_date)->format('d-m-Y') : '-';
 
                         $message = "🔔 *NOTIFIKASI INVOICE & PAYROLL*\n\n";
@@ -409,11 +457,11 @@ class CaseProjectResource extends Resource
                                 'nomor_surat_kuasa' => $record->power_of_attorney_number ?? '',
                                 'tanggal_surat_kuasa' => $record->power_of_attorney_date ? \Carbon\Carbon::parse($record->power_of_attorney_date)->format('Y-m-d') : now()->format('Y-m-d'),
                                 'jenis_wp' => ($client?->jenis_wp === 'badan') ? 'BADAN' : 'ORANG PRIBADI',
-                                'pemberi_nama' => $client?->owner_name ?? ($client?->company_name ?? ''),
+                                'pemberi_nama' => $client?->owner_name ?? ($client?->company_name ?? ($record->client_name ?? '')),
                                 'pemberi_npwp' => $client?->npwp ?? '',
                                 'pemberi_jabatan' => $client?->owner_role ?? ($client?->jenis_wp === 'badan' ? 'Direktur' : '-'),
                                 'bertindak_selaku' => ($client?->jenis_wp === 'badan') ? 'wakil_wajib_pajak' : 'wajib_pajak',
-                                'wp_badan_nama' => $client?->company_name ?? '',
+                                'wp_badan_nama' => $client?->company_name ?? ($record->client_name ?? ''),
                                 'wp_badan_npwp' => $client?->npwp ?? '',
                                 'kuasa_kategori' => 'konsultan_pajak',
                                 'penerima_nama' => 'Antin Okfitasari',
@@ -651,7 +699,24 @@ class CaseProjectResource extends Resource
                     ->label('Surat Kuasa & Pernyataan')
                     ->icon('heroicon-o-document-duplicate')
                     ->color('primary'),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->mutateRecordDataUsing(function (array $data, CaseProject $record): array {
+                        if (empty($record->client_id) && !empty($record->client_name)) {
+                            $data['client_input_type'] = 'manual';
+                        } else {
+                            $data['client_input_type'] = 'database';
+                        }
+                        return $data;
+                    })
+                    ->mutateFormDataBeforeSave(function (array $data): array {
+                        if (($data['client_input_type'] ?? 'database') === 'manual') {
+                            $data['client_id'] = null;
+                        } else {
+                            $data['client_name'] = null;
+                        }
+                        unset($data['client_input_type']);
+                        return $data;
+                    }),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),

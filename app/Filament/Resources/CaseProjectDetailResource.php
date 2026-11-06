@@ -47,7 +47,11 @@ class CaseProjectDetailResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('caseProject.client.company_name')->label('Client')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('caseProject.client.company_name')
+                    ->label('Client')
+                    ->getStateUsing(fn($record) => $record->caseProject?->client?->company_name ?? $record->caseProject?->client_name ?? '-')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('caseProject.description')->label('Case Project')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('staff.name')->label('Staff')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('bonus')->formatStateUsing(fn($state) => 'Rp. ' . number_format($state, 0, ',', '.'))->alignEnd()->sortable(),
