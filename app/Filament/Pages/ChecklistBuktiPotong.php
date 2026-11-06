@@ -34,18 +34,19 @@ class ChecklistBuktiPotong extends Page implements HasTable
                 })->orWhereHas('mou.client', function (Builder $q) {
                     $q->where('type', 'pt');
                 });
-            })
-            ->where(function (Builder $query) {
-                $query->whereYear('invoice_date', '!=', 2025)
-                    ->orWhereNull('invoice_date');
-            })
-            ->whereYear('created_at', '!=', 2025);
+            });
     }
 
     public function getStats(): array
     {
+        $year = $this->tableFilters['year']['value'] ?? request('tableFilters.year.value', (string) date('Y'));
+
         $baseQuery = static::getBaseQuery()
             ->with('costListInvoices');
+
+        if (!empty($year) && $year !== 'all') {
+            $baseQuery->whereYear('invoice_date', (int) $year);
+        }
 
         $records = $baseQuery->get();
 
@@ -151,6 +152,32 @@ class ChecklistBuktiPotong extends Page implements HasTable
                     ->placeholder('-'),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('year')
+                    ->label('Tahun Invoice')
+                    ->options(function () {
+                        $years = Invoice::query()
+                            ->selectRaw('YEAR(invoice_date) as year')
+                            ->whereNotNull('invoice_date')
+                            ->distinct()
+                            ->orderBy('year', 'desc')
+                            ->pluck('year', 'year')
+                            ->toArray();
+
+                        $currentYear = (int) date('Y');
+                        if (!isset($years[$currentYear])) {
+                            $years[$currentYear] = (string) $currentYear;
+                            krsort($years);
+                        }
+
+                        return ['all' => 'Semua Tahun'] + $years;
+                    })
+                    ->default((string) date('Y'))
+                    ->query(function (Builder $query, array $data) {
+                        $year = $data['value'] ?? (string) date('Y');
+                        if (!empty($year) && $year !== 'all') {
+                            $query->whereYear('invoice_date', (int) $year);
+                        }
+                    }),
                 Tables\Filters\Filter::make('belum_checklist')
                     ->label('Belum Checklist')
                     ->query(fn(Builder $query) => $query->where('is_pph23_checked', false))
