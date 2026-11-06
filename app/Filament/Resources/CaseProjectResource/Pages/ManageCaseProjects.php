@@ -64,6 +64,14 @@ class ManageCaseProjects extends ManageRecords
                         $data['client_name'] = null;
                     }
                     unset($data['client_input_type']);
+
+                    if (($data['mou_reference_type'] ?? 'mou') === 'memo') {
+                        $data['mou_id'] = null;
+                    } else {
+                        $data['memo_id'] = null;
+                    }
+                    unset($data['mou_reference_type']);
+
                     return $data;
                 }),
         ];

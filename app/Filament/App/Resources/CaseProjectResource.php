@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources;
 
 use App\Models\MoU;
+use App\Models\Memo;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Staff;
@@ -132,13 +133,54 @@ class CaseProjectResource extends Resource
                             ->helperText('Tambahkan satu baris untuk setiap staff beserta nominal bonusnya.'),
                     ])
                     ->columnSpanFull(),
-                Forms\Components\Select::make('mou_id')
-                    ->label('No MoU')
-                    ->options(MoU::with('client')->get()->mapWithKeys(fn($record) => [
-                        $record->id => "{$record->mou_number} - {$record->client?->company_name} - {$record->description}"
-                    ]))
-                    ->searchable()
-                    ->preload(),
+                Forms\Components\Group::make([
+                    Forms\Components\Radio::make('mou_reference_type')
+                        ->label('Pilihan Dokumen')
+                        ->options([
+                            'mou' => 'Data MoU',
+                            'memo' => 'Data Memo',
+                        ])
+                        ->default('mou')
+                        ->inline()
+                        ->live()
+                        ->afterStateHydrated(function (Forms\Set $set, ?CaseProject $record) {
+                            if ($record?->memo_id) {
+                                $set('mou_reference_type', 'memo');
+                            } else {
+                                $set('mou_reference_type', 'mou');
+                            }
+                        })
+                        ->afterStateUpdated(function (Forms\Set $set, $state) {
+                            if ($state === 'memo') {
+                                $set('mou_id', null);
+                            } else {
+                                $set('memo_id', null);
+                            }
+                        })
+                        ->dehydrated(false),
+                    Forms\Components\Select::make('mou_id')
+                        ->label('No MoU')
+                        ->options(function () {
+                            return MoU::with('client')->get()->mapWithKeys(fn($record) => [
+                                $record->id => "{$record->mou_number} - {$record->client?->company_name} - {$record->description}"
+                            ]);
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->visible(fn(Forms\Get $get) => ($get('mou_reference_type') ?? 'mou') === 'mou'),
+                    Forms\Components\Select::make('memo_id')
+                        ->label('No Memo')
+                        ->options(function () {
+                            return Memo::query()->get()->mapWithKeys(function ($memo) {
+                                $client = trim($memo->nama_klien ?: $memo->instansi_klien ?: '');
+                                $label = $client ? "{$memo->no_memo} - {$client} - {$memo->description}" : "{$memo->no_memo} - {$memo->description}";
+                                return [$memo->id => $label];
+                            });
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->visible(fn(Forms\Get $get) => $get('mou_reference_type') === 'memo'),
+                ]),
                 Forms\Components\TextInput::make('case_letter_number')
                     ->label('No Surat Kasus'),
                 Forms\Components\DatePicker::make('case_letter_date')
@@ -296,7 +338,21 @@ class CaseProjectResource extends Resource
                         $user = \Illuminate\Support\Facades\Auth::user();
                         return $user?->hasRole('inventory-admin') ?? false;
                     }),
-                Tables\Columns\TextColumn::make('mou.mou_number')->label('No MoU')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('reference_number')
+                    ->label('No MoU / Memo')
+                    ->getStateUsing(fn(CaseProject $record) => $record->mou?->mou_number ?? $record->memo?->no_memo ?? '-')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->leftJoin('mous', 'case_projects.mou_id', '=', 'mous.id')
+                            ->leftJoin('memos', 'case_projects.memo_id', '=', 'memos.id')
+                            ->orderByRaw("COALESCE(mous.mou_number, memos.no_memo) {$direction}")
+                            ->select('case_projects.*');
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->whereHas('mou', fn($mq) => $mq->where('mou_number', 'like', "%{$search}%"))
+                                ->orWhereHas('memo', fn($memoQ) => $memoQ->where('no_memo', 'like', "%{$search}%"));
+                        });
+                    }),
                 Tables\Columns\TextColumn::make('case_letter_number')->label('No Surat Kasus')->sortable(),
                 Tables\Columns\TextColumn::make('case_letter_date')->label('Tanggal Surat Kasus')->date('d-m-Y')->sortable(),
                 Tables\Columns\TextColumn::make('power_of_attorney_number')->label('No Surat Kuasa')->sortable(),
@@ -706,6 +762,13 @@ class CaseProjectResource extends Resource
                         } else {
                             $data['client_input_type'] = 'database';
                         }
+
+                        if ($record->memo_id) {
+                            $data['mou_reference_type'] = 'memo';
+                        } else {
+                            $data['mou_reference_type'] = 'mou';
+                        }
+
                         return $data;
                     })
                     ->mutateFormDataUsing(function (array $data): array {
@@ -715,6 +778,14 @@ class CaseProjectResource extends Resource
                             $data['client_name'] = null;
                         }
                         unset($data['client_input_type']);
+
+                        if (($data['mou_reference_type'] ?? 'mou') === 'memo') {
+                            $data['mou_id'] = null;
+                        } else {
+                            $data['memo_id'] = null;
+                        }
+                        unset($data['mou_reference_type']);
+
                         return $data;
                     }),
                 Tables\Actions\DeleteAction::make(),

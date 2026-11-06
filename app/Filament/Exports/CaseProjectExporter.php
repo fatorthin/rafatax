@@ -14,7 +14,7 @@ class CaseProjectExporter
 {
     public static function export(?string $caseType = null, ?string $status = null)
     {
-        $query = CaseProject::with(['client', 'mou'])
+        $query = CaseProject::with(['client', 'mou', 'memo'])
             ->withoutTrashed();
 
         if ($caseType) {
@@ -43,7 +43,7 @@ class CaseProjectExporter
             'D1' => 'Nama Client',
             'E1' => 'Kategori',
             'F1' => 'Nama Pelaksana',
-            'G1' => 'No MoU',
+            'G1' => 'No MoU / Memo',
             'H1' => 'No Surat Kasus',
             'I1' => 'Tanggal Surat Kasus',
             'J1' => 'No Surat Kuasa',
@@ -106,7 +106,7 @@ class CaseProjectExporter
             $sheet->setCellValue('D' . $row, $item->client?->company_name ?? $item->client_name ?? '-');
             $sheet->setCellValue('E' . $row, strtoupper($item->case_type ?? ''));
             $sheet->setCellValue('F' . $row, $staffNames);
-            $sheet->setCellValue('G' . $row, $item->mou?->mou_number);
+            $sheet->setCellValue('G' . $row, $item->mou?->mou_number ?? $item->memo?->no_memo ?? '-');
             $sheet->setCellValue('H' . $row, $item->case_letter_number);
             $sheet->setCellValue('I' . $row, $item->case_letter_date ? \Carbon\Carbon::parse($item->case_letter_date)->format('d-m-Y') : '');
             $sheet->setCellValue('J' . $row, $item->power_of_attorney_number);

@@ -19,6 +19,7 @@ class CaseProject extends Model
         'client_id',
         'client_name',
         'mou_id',
+        'memo_id',
         'case_letter_number',
         'case_letter_date',
         'power_of_attorney_number',
@@ -48,6 +49,11 @@ class CaseProject extends Model
         return $this->belongsTo(MoU::class);
     }
 
+    public function memo()
+    {
+        return $this->belongsTo(Memo::class);
+    }
+
     public function details()
     {
         return $this->hasMany(CaseProjectDetail::class);
@@ -63,11 +69,19 @@ class CaseProject extends Model
         return $this->client?->company_name ?? $this->client_name ?? '-';
     }
 
+    public function getReferenceNumberAttribute(): ?string
+    {
+        return $this->mou?->mou_number ?? $this->memo?->no_memo;
+    }
+
     protected static function booted()
     {
         static::saving(function (CaseProject $caseProject) {
             if (!empty($caseProject->client_id)) {
                 $caseProject->client_name = null;
+            }
+            if (!empty($caseProject->memo_id)) {
+                $caseProject->mou_id = null;
             }
         });
     }
