@@ -146,8 +146,7 @@ class CaseProjectResource extends Resource
                             } else {
                                 $set('memo_id', null);
                             }
-                        })
-                        ->dehydrated(false),
+                        }),
                     Forms\Components\Select::make('mou_id')
                         ->label('No MoU')
                         ->options(function () {
@@ -207,7 +206,7 @@ class CaseProjectResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            ->modifyQueryUsing(fn(Builder $query) => $query->with('details'))
+            ->modifyQueryUsing(fn(Builder $query) => $query->with(['details', 'mou', 'memo', 'client']))
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('No')->rowIndex(),
                 Tables\Columns\TextColumn::make('description')->sortable()->searchable(),

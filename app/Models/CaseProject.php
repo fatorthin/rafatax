@@ -82,6 +82,8 @@ class CaseProject extends Model
             }
             if (!empty($caseProject->memo_id)) {
                 $caseProject->mou_id = null;
+            } elseif (!empty($caseProject->mou_id)) {
+                $caseProject->memo_id = null;
             }
         });
     }
