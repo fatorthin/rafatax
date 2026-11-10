@@ -470,13 +470,21 @@ class InvoiceResource extends Resource
                     ->label('Preview PDF')
                     ->icon('heroicon-o-document-text')
                     ->color('success')
-                    ->url(fn (Invoice $record): ?string => $record->memo_id ? null : route('invoices.preview', $record->id))
-                    ->openUrlInNewTab(fn (Invoice $record): bool => !$record->memo_id)
+                    ->url(function (Invoice $record): ?string {
+                        $record->loadMissing('memo');
+                        return (!$record->memo_id || $record->memo?->is_memo_talangan)
+                            ? route('invoices.preview', $record->id)
+                            : null;
+                    })
+                    ->openUrlInNewTab(function (Invoice $record): bool {
+                        $record->loadMissing('memo');
+                        return !$record->memo_id || (bool) ($record->memo?->is_memo_talangan);
+                    })
                     ->form(function (Invoice $record) {
-                        if (!$record->memo_id) {
+                        $record->loadMissing('memo');
+                        if (!$record->memo_id || $record->memo?->is_memo_talangan) {
                             return [];
                         }
-                        $record->loadMissing('memo');
                         $memo = $record->memo;
                         return [
                             Forms\Components\Radio::make('recipient_type')
@@ -492,6 +500,13 @@ class InvoiceResource extends Resource
                     ->modalHeading('Preview PDF Invoice')
                     ->modalSubmitActionLabel('Preview PDF')
                     ->action(function (Invoice $record, array $data, Tables\Actions\Action $action) {
+                        $record->loadMissing('memo');
+                        if (!$record->memo_id || $record->memo?->is_memo_talangan) {
+                            $url = route('invoices.preview', ['id' => $record->id]);
+                            $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                            return;
+                        }
+
                         $recipient = $data['recipient_type'] ?? 'nama_klien';
                         $url = route('invoices.preview', [
                             'id' => $record->id,

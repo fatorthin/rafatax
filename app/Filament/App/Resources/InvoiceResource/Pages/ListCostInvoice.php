@@ -275,13 +275,21 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Preview PDF')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->url(fn(): ?string => $this->invoice->memo_id ? null : route('invoices.preview', ['id' => $this->invoice->id]))
-                    ->openUrlInNewTab(fn(): bool => !$this->invoice->memo_id)
+                    ->url(function (): ?string {
+                        $this->invoice->loadMissing('memo');
+                        return (!$this->invoice->memo_id || $this->invoice->memo?->is_memo_talangan)
+                            ? route('invoices.preview', ['id' => $this->invoice->id])
+                            : null;
+                    })
+                    ->openUrlInNewTab(function (): bool {
+                        $this->invoice->loadMissing('memo');
+                        return !$this->invoice->memo_id || (bool) ($this->invoice->memo?->is_memo_talangan);
+                    })
                     ->form(function () {
-                        if (!$this->invoice->memo_id) {
+                        $this->invoice->loadMissing('memo');
+                        if (!$this->invoice->memo_id || $this->invoice->memo?->is_memo_talangan) {
                             return [];
                         }
-                        $this->invoice->loadMissing('memo');
                         $memo = $this->invoice->memo;
                         return [
                             \Filament\Forms\Components\Radio::make('recipient_type')
@@ -298,7 +306,8 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->modalSubmitActionLabel('Preview PDF')
                     ->action(function (array $data) {
                         $params = ['id' => $this->invoice->id];
-                        if ($this->invoice->memo_id) {
+                        $this->invoice->loadMissing('memo');
+                        if ($this->invoice->memo_id && !$this->invoice->memo?->is_memo_talangan) {
                             $params['recipient'] = $data['recipient_type'] ?? 'nama_klien';
                         }
                         $url = route('invoices.preview', $params);
@@ -309,13 +318,21 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->label('Download JPG')
                     ->icon('heroicon-o-photo')
                     ->color('secondary')
-                    ->url(fn(): ?string => $this->invoice->memo_id ? null : route('invoices.jpg', ['id' => $this->invoice->id]))
-                    ->openUrlInNewTab(fn(): bool => !$this->invoice->memo_id)
+                    ->url(function (): ?string {
+                        $this->invoice->loadMissing('memo');
+                        return (!$this->invoice->memo_id || $this->invoice->memo?->is_memo_talangan)
+                            ? route('invoices.jpg', ['id' => $this->invoice->id])
+                            : null;
+                    })
+                    ->openUrlInNewTab(function (): bool {
+                        $this->invoice->loadMissing('memo');
+                        return !$this->invoice->memo_id || (bool) ($this->invoice->memo?->is_memo_talangan);
+                    })
                     ->form(function () {
-                        if (!$this->invoice->memo_id) {
+                        $this->invoice->loadMissing('memo');
+                        if (!$this->invoice->memo_id || $this->invoice->memo?->is_memo_talangan) {
                             return [];
                         }
-                        $this->invoice->loadMissing('memo');
                         $memo = $this->invoice->memo;
                         return [
                             \Filament\Forms\Components\Radio::make('recipient_type')
@@ -332,7 +349,8 @@ class ListCostInvoice extends Page implements HasTable, HasForms, HasInfolists
                     ->modalSubmitActionLabel('Download JPG')
                     ->action(function (array $data) {
                         $params = ['id' => $this->invoice->id];
-                        if ($this->invoice->memo_id) {
+                        $this->invoice->loadMissing('memo');
+                        if ($this->invoice->memo_id && !$this->invoice->memo?->is_memo_talangan) {
                             $params['recipient'] = $data['recipient_type'] ?? 'nama_klien';
                         }
                         $url = route('invoices.jpg', $params);

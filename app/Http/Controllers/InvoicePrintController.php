@@ -194,6 +194,12 @@ class InvoicePrintController extends Controller
 
     public function resolveClientName(Invoice $invoice, ?string $recipient = null): string
     {
+        $invoice->loadMissing(['memo', 'client', 'mou.client']);
+
+        if ($invoice->memo?->is_memo_talangan || ($invoice->memo_id && $invoice->client_id)) {
+            return $invoice->client?->company_name ?? '';
+        }
+
         $recipient = $recipient ?? request()->query('recipient') ?? request()->query('kepada') ?? request()->query('recipient_name');
 
         if (!empty($recipient)) {

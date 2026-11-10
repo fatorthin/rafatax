@@ -415,8 +415,21 @@ class InvoiceMemoResource extends Resource
                 ->label('Preview PDF')
                 ->icon('heroicon-o-document-text')
                 ->color('success')
+                ->url(function (Invoice $record): ?string {
+                    $record->loadMissing('memo');
+                    return $record->memo?->is_memo_talangan
+                        ? route('invoices.preview', $record->id)
+                        : null;
+                })
+                ->openUrlInNewTab(function (Invoice $record): bool {
+                    $record->loadMissing('memo');
+                    return (bool) ($record->memo?->is_memo_talangan);
+                })
                 ->form(function (Invoice $record) {
                     $record->loadMissing('memo');
+                    if ($record->memo?->is_memo_talangan) {
+                        return [];
+                    }
                     $memo = $record->memo;
                     return [
                         Forms\Components\Radio::make('recipient_type')
@@ -432,6 +445,13 @@ class InvoiceMemoResource extends Resource
                 ->modalHeading('Preview PDF Invoice')
                 ->modalSubmitActionLabel('Preview PDF')
                 ->action(function (Invoice $record, array $data, Tables\Actions\Action $action) {
+                    $record->loadMissing('memo');
+                    if ($record->memo?->is_memo_talangan) {
+                        $url = route('invoices.preview', ['id' => $record->id]);
+                        $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                        return;
+                    }
+
                     $recipient = $data['recipient_type'] ?? 'nama_klien';
                     $url = route('invoices.preview', [
                         'id' => $record->id,

@@ -168,8 +168,30 @@ class InvoicesRelationManager extends RelationManager
                     ->label('Preview PDF')
                     ->icon('heroicon-o-document-magnifying-glass')
                     ->color('success')
-                    ->form(function ($record) {
+                    ->url(function ($record) {
+                        if (! $record) {
+                            return null;
+                        }
                         $record->loadMissing('memo');
+                        return $record->memo?->is_memo_talangan
+                            ? route('invoices.preview', ['id' => $record->id])
+                            : null;
+                    })
+                    ->openUrlInNewTab(function ($record) {
+                        if (! $record) {
+                            return false;
+                        }
+                        $record->loadMissing('memo');
+                        return (bool) ($record->memo?->is_memo_talangan);
+                    })
+                    ->form(function ($record) {
+                        if (! $record) {
+                            return [];
+                        }
+                        $record->loadMissing('memo');
+                        if ($record->memo?->is_memo_talangan) {
+                            return [];
+                        }
                         $memo = $record->memo;
                         return [
                             Forms\Components\Radio::make('recipient_type')
@@ -185,6 +207,16 @@ class InvoicesRelationManager extends RelationManager
                     ->modalHeading('Preview PDF Invoice')
                     ->modalSubmitActionLabel('Preview PDF')
                     ->action(function ($record, array $data, Tables\Actions\Action $action) {
+                        if (! $record) {
+                            return;
+                        }
+                        $record->loadMissing('memo');
+                        if ($record->memo?->is_memo_talangan) {
+                            $url = route('invoices.preview', ['id' => $record->id]);
+                            $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                            return;
+                        }
+
                         $recipient = $data['recipient_type'] ?? 'nama_klien';
                         $url = route('invoices.preview', [
                             'id' => $record->id,
@@ -196,8 +228,30 @@ class InvoicesRelationManager extends RelationManager
                     ->label('Download JPEG')
                     ->icon('heroicon-o-photo')
                     ->color('warning')
-                    ->form(function ($record) {
+                    ->url(function ($record) {
+                        if (! $record) {
+                            return null;
+                        }
                         $record->loadMissing('memo');
+                        return $record->memo?->is_memo_talangan
+                            ? route('invoices.jpg', ['id' => $record->id])
+                            : null;
+                    })
+                    ->openUrlInNewTab(function ($record) {
+                        if (! $record) {
+                            return false;
+                        }
+                        $record->loadMissing('memo');
+                        return (bool) ($record->memo?->is_memo_talangan);
+                    })
+                    ->form(function ($record) {
+                        if (! $record) {
+                            return [];
+                        }
+                        $record->loadMissing('memo');
+                        if ($record->memo?->is_memo_talangan) {
+                            return [];
+                        }
                         $memo = $record->memo;
                         return [
                             Forms\Components\Radio::make('recipient_type')
@@ -213,6 +267,16 @@ class InvoicesRelationManager extends RelationManager
                     ->modalHeading('Download JPEG Invoice')
                     ->modalSubmitActionLabel('Download JPEG')
                     ->action(function ($record, array $data, Tables\Actions\Action $action) {
+                        if (! $record) {
+                            return;
+                        }
+                        $record->loadMissing('memo');
+                        if ($record->memo?->is_memo_talangan) {
+                            $url = route('invoices.jpg', ['id' => $record->id]);
+                            $action->getLivewire()->js("window.open('{$url}', '_blank');");
+                            return;
+                        }
+
                         $recipient = $data['recipient_type'] ?? 'nama_klien';
                         $url = route('invoices.jpg', [
                             'id' => $record->id,
@@ -225,7 +289,7 @@ class InvoicesRelationManager extends RelationManager
                     ->icon('heroicon-o-paper-airplane')
                     ->color('success')
                     ->form(function ($record) {
-                        $record->loadMissing('memo');
+                        $record->loadMissing(['memo', 'client']);
                         $memo = $record->memo;
                         $defaultPhone = null;
                         if ($record->client && $record->client->phone) {
@@ -242,7 +306,8 @@ class InvoicesRelationManager extends RelationManager
                                     'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
                                 ])
                                 ->default('nama_klien')
-                                ->required(),
+                                ->visible(fn() => !$memo?->is_memo_talangan)
+                                ->required(fn() => !$memo?->is_memo_talangan),
                             Forms\Components\TextInput::make('phone_number')
                                 ->label('Nomor WhatsApp')
                                 ->required()
@@ -274,12 +339,16 @@ class InvoicesRelationManager extends RelationManager
                                 $phone = '62' . $phone;
                             }
 
-                            $recipientType = $data['recipient_type'] ?? 'nama_klien';
-                            $record->loadMissing('memo');
+                            $record->loadMissing(['memo', 'client']);
                             $memo = $record->memo;
-                            $recipientName = ($recipientType === 'instansi_klien')
-                                ? ($memo?->instansi_klien ?: $memo?->nama_klien)
-                                : ($memo?->nama_klien ?: $memo?->instansi_klien);
+                            if ($memo?->is_memo_talangan) {
+                                $recipientName = $record->client?->company_name ?? ($memo?->nama_klien ?: 'Klien');
+                            } else {
+                                $recipientType = $data['recipient_type'] ?? 'nama_klien';
+                                $recipientName = ($recipientType === 'instansi_klien')
+                                    ? ($memo?->instansi_klien ?: $memo?->nama_klien)
+                                    : ($memo?->nama_klien ?: $memo?->instansi_klien);
+                            }
 
                             // Dispatch background job for fast URL-based delivery
                             \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone, $recipientName);
