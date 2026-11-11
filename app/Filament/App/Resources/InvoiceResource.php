@@ -538,8 +538,8 @@ class InvoiceResource extends Resource
                                 'BCA 140' => 'BCA 140',
                                 'BCA 436' => 'BCA 436',
                                 'MANDIRI' => 'MANDIRI',
-                                'KAS BESAR' => 'KAS BESAR',
-                                'KAS KECIL' => 'KAS KECIL',
+                                'KAS BESAR KKP' => 'KAS BESAR KKP',
+                                'KAS KECIL KKP' => 'KAS KECIL KKP',
                                 'KAS KECIL PT' => 'KAS KECIL PT',
                                 'KAS BESAR PT' => 'KAS BESAR PT',
                             ])
@@ -552,8 +552,8 @@ class InvoiceResource extends Resource
                             'BCA 140' => 3,
                             'BCA 436' => 4,
                             'MANDIRI' => 5,
-                            'KAS BESAR' => 6,
-                            'KAS KECIL' => 7,
+                            'KAS BESAR KKP' => 6,
+                            'KAS KECIL KKP' => 7,
                             'KAS KECIL PT' => 9,
                             'KAS BESAR PT' => 10,
                         ];

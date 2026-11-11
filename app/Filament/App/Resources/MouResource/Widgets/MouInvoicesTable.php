@@ -226,8 +226,8 @@ class MouInvoicesTable extends BaseWidget
                                 'BCA BARU' => 'BCA BARU',
                                 'BCA LAMA' => 'BCA LAMA',
                                 'MANDIRI' => 'MANDIRI',
-                                'KAS BESAR' => 'KAS BESAR',
-                                'KAS KECIL' => 'KAS KECIL',
+                                'KAS BESAR KKP' => 'KAS BESAR KKP',
+                                'KAS KECIL KKP' => 'KAS KECIL KKP',
                                 'KAS KECIL PT' => 'KAS KECIL PT',
                                 'KAS BESAR PT' => 'KAS BESAR PT',
                             ])
@@ -239,8 +239,8 @@ class MouInvoicesTable extends BaseWidget
                             'BCA BARU' => 2,
                             'BCA LAMA' => 3,
                             'MANDIRI' => 5,
-                            'KAS BESAR' => 6,
-                            'KAS KECIL' => 7,
+                            'KAS BESAR KKP' => 6,
+                            'KAS KECIL KKP' => 7,
                             'KAS KECIL PT' => 9,
                             'KAS BESAR PT' => 10,
                         ];
