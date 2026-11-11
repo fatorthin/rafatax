@@ -2,16 +2,18 @@
 
 namespace App\Filament\App\Resources\MouResource\Widgets;
 
-use App\Models\CashReport;
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Invoice;
-use Filament\Tables\Table;
-use App\Models\CostListInvoice;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\App\Resources\InvoiceResource;
+use App\Jobs\SendInvoiceWhatsapp;
+use App\Models\CashReport;
+use App\Models\ChecklistMou;
+use App\Models\CostListInvoice;
+use App\Models\Invoice;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Tables;
+use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 
 class MouInvoicesTable extends BaseWidget
 {
@@ -19,7 +21,7 @@ class MouInvoicesTable extends BaseWidget
 
     protected $listeners = ['invoice-created' => '$refresh', 'invoice-deleted' => '$refresh', 'invoice-status-updated' => '$refresh'];
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?string $heading = 'Daftar Invoice MoU';
 
@@ -30,8 +32,8 @@ class MouInvoicesTable extends BaseWidget
     {
         $query = Invoice::query()->when(
             $this->mouId,
-            fn(Builder $query) => $query->where('mou_id', $this->mouId),
-            fn(Builder $query) => $query->whereNull('id')
+            fn (Builder $query) => $query->where('mou_id', $this->mouId),
+            fn (Builder $query) => $query->whereNull('id')
         );
 
         // Calculate total here for footer by using the invoices in the query
@@ -70,18 +72,18 @@ class MouInvoicesTable extends BaseWidget
                 Tables\Columns\TextColumn::make('invoice_status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'paid' => 'success',
                         'unpaid' => 'warning',
                         'overdue' => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state): string => ucfirst($state)),
+                    ->formatStateUsing(fn (string $state): string => ucfirst($state)),
                 Tables\Columns\TextColumn::make('rek_transfer')
                     ->label('Rekening Transfer'),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn(string $state): string => 'Rp ' . number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn (string $state): string => 'Rp '.number_format($state, 0, ',', '.'))
                     ->getStateUsing(function ($record) {
                         return $record->costListInvoices()->sum('amount');
                     })
@@ -89,7 +91,7 @@ class MouInvoicesTable extends BaseWidget
                         Tables\Columns\Summarizers\Summarizer::make()
                             ->label('Total Amount')
                             ->formatStateUsing(function ($state) {
-                                return 'Rp ' . number_format($state, 0, ',', '.');
+                                return 'Rp '.number_format($state, 0, ',', '.');
                             })
                             ->using(function ($query) {
                                 // Get all invoice IDs from the current query
@@ -106,20 +108,20 @@ class MouInvoicesTable extends BaseWidget
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->url(fn(Invoice $record): string => InvoiceResource::getUrl('edit', ['record' => $record]))
+                    ->url(fn (Invoice $record): string => InvoiceResource::getUrl('edit', ['record' => $record]))
                     ->label('Edit')
                     ->icon('heroicon-o-eye')
                     ->color('primary'),
                 Tables\Actions\ViewAction::make()
                     // ->url(fn(Invoice $record): string => InvoiceResource::getUrl('cost-list', ['record' => $record]))
-                    ->url(fn(Invoice $record): string => route('filament.app.resources.invoices.viewCostList', ['record' => $record->id]))
+                    ->url(fn (Invoice $record): string => route('filament.app.resources.invoices.viewCostList', ['record' => $record->id]))
                     ->label('View')
                     ->icon('heroicon-o-eye')
                     ->color('info'),
                 Tables\Actions\Action::make('previewPdf')
                     ->label('Preview')
                     ->icon('heroicon-o-printer')
-                    ->url(fn(Invoice $record): string => route('invoices.preview', ['id' => $record->id]))
+                    ->url(fn (Invoice $record): string => route('invoices.preview', ['id' => $record->id]))
                     ->color('success')
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('send_whatsapp')
@@ -138,6 +140,7 @@ class MouInvoicesTable extends BaseWidget
                                 if ($mou && $mou->client) {
                                     return $mou->client->phone;
                                 }
+
                                 return null;
                             })
                             ->helperText('Format: 08123456789 or 628123456789'),
@@ -155,24 +158,25 @@ class MouInvoicesTable extends BaseWidget
                                     ->body('Phone number is required!')
                                     ->danger()
                                     ->send();
+
                                 return;
                             }
 
                             // Clean phone number
                             $phone = preg_replace('/[^0-9]/', '', $phoneInput);
                             if (substr($phone, 0, 1) === '0') {
-                                $phone = '62' . substr($phone, 1);
+                                $phone = '62'.substr($phone, 1);
                             } elseif (substr($phone, 0, 2) !== '62') {
-                                $phone = '62' . $phone;
+                                $phone = '62'.$phone;
                             }
 
                             // Determine Client Name
                             $clientName = '-';
-                            if ($record->memo_id && !$record->client_id) {
+                            if ($record->memo_id && ! $record->client_id) {
                                 $clientName = $record->memo?->nama_klien ?? '-';
                             } elseif ($record->memo_id && $record->client_id) {
                                 $clientName = $record->client?->company_name ?? '-';
-                            } elseif ($record->mou_id && !$record->memo_id && !$record->client_id) {
+                            } elseif ($record->mou_id && ! $record->memo_id && ! $record->client_id) {
                                 $clientName = $record->mou?->client?->company_name ?? '-';
                             } elseif ($record->client_id) {
                                 $clientName = $record->client?->company_name ?? '-';
@@ -188,7 +192,7 @@ class MouInvoicesTable extends BaseWidget
                                 ?? optional($record->memo)->tipe_klien;
 
                             // Dispatch background job for fast URL-based delivery
-                            \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone);
+                            SendInvoiceWhatsapp::dispatch($record->id, $phone);
 
                             Notification::make()
                                 ->title('Pengiriman Dijadwalkan')
@@ -198,7 +202,7 @@ class MouInvoicesTable extends BaseWidget
                         } catch (\Exception $e) {
                             Notification::make()
                                 ->title('Error')
-                                ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                                ->body('Gagal mengirim WhatsApp: '.$e->getMessage())
                                 ->danger()
                                 ->send();
                         }
@@ -223,6 +227,9 @@ class MouInvoicesTable extends BaseWidget
                                 'BCA LAMA' => 'BCA LAMA',
                                 'MANDIRI' => 'MANDIRI',
                                 'KAS BESAR' => 'KAS BESAR',
+                                'KAS KECIL' => 'KAS KECIL',
+                                'KAS KECIL PT' => 'KAS KECIL PT',
+                                'KAS BESAR PT' => 'KAS BESAR PT',
                             ])
                             ->required(),
                     ])
@@ -233,6 +240,9 @@ class MouInvoicesTable extends BaseWidget
                             'BCA LAMA' => 3,
                             'MANDIRI' => 5,
                             'KAS BESAR' => 6,
+                            'KAS KECIL' => 7,
+                            'KAS KECIL PT' => 9,
+                            'KAS BESAR PT' => 10,
                         ];
 
                         $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
@@ -251,17 +261,18 @@ class MouInvoicesTable extends BaseWidget
                         foreach ($costListInvoices as $costItem) {
                             $cashReport = CashReport::create([
                                 'description' => (function () use ($record) {
-                                    if ($record->memo_id && !$record->client_id) {
+                                    if ($record->memo_id && ! $record->client_id) {
                                         return $record->memo?->nama_klien ?? '';
                                     }
                                     if ($record->memo_id && $record->client_id) {
                                         return $record->client?->company_name ?? '';
                                     }
-                                    if ($record->mou_id && !$record->memo_id && !$record->client_id) {
+                                    if ($record->mou_id && ! $record->memo_id && ! $record->client_id) {
                                         return $record->mou?->client?->company_name ?? '';
                                     }
+
                                     return '';
-                                })() . ' - ' . $costItem->description . ' - ' . $record->invoice_number,
+                                })().' - '.$costItem->description.' - '.$record->invoice_number,
                                 'cash_reference_id' => $cashReferenceId,
                                 'mou_id' => $record->mou_id,
                                 'coa_id' => $costItem->coa_id,
@@ -284,7 +295,7 @@ class MouInvoicesTable extends BaseWidget
                         }
 
                         // Update ChecklistMou status to complete for this invoice
-                        \App\Models\ChecklistMou::where('invoice_id', $record->id)
+                        ChecklistMou::where('invoice_id', $record->id)
                             ->update(['status' => 'completed']);
 
                         $this->dispatch('invoice-status-updated');
@@ -294,7 +305,7 @@ class MouInvoicesTable extends BaseWidget
                             ->success()
                             ->send();
                     })
-                    ->visible(fn(Invoice $record): bool => $record->invoice_status !== 'paid'),
+                    ->visible(fn (Invoice $record): bool => $record->invoice_status !== 'paid'),
                 Tables\Actions\DeleteAction::make()
                     ->label('Delete')
                     ->icon('heroicon-o-trash')
@@ -319,11 +330,11 @@ class MouInvoicesTable extends BaseWidget
 
     protected function optimizeImageHelper($path, $maxWidth)
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return '';
         }
 
-        list($width, $height, $type) = getimagesize($path);
+        [$width, $height, $type] = getimagesize($path);
 
         switch ($type) {
             case IMAGETYPE_JPEG:
@@ -333,7 +344,7 @@ class MouInvoicesTable extends BaseWidget
                 $source = imagecreatefrompng($path);
                 break;
             default:
-                return 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+                return 'data:image/png;base64,'.base64_encode(file_get_contents($path));
         }
 
         if ($width > $maxWidth) {
@@ -368,7 +379,7 @@ class MouInvoicesTable extends BaseWidget
         imagedestroy($source);
         imagedestroy($destination);
 
-        return 'data:' . $mime . ';base64,' . base64_encode($contents);
+        return 'data:'.$mime.';base64,'.base64_encode($contents);
     }
 
     public static function canView(): bool

@@ -472,26 +472,29 @@ class InvoiceResource extends Resource
                     ->color('success')
                     ->url(function (Invoice $record): ?string {
                         $record->loadMissing('memo');
-                        return (!$record->memo_id || $record->memo?->is_memo_talangan)
+
+                        return (! $record->memo_id || $record->memo?->is_memo_talangan)
                             ? route('invoices.preview', $record->id)
                             : null;
                     })
                     ->openUrlInNewTab(function (Invoice $record): bool {
                         $record->loadMissing('memo');
-                        return !$record->memo_id || (bool) ($record->memo?->is_memo_talangan);
+
+                        return ! $record->memo_id || (bool) ($record->memo?->is_memo_talangan);
                     })
                     ->form(function (Invoice $record) {
                         $record->loadMissing('memo');
-                        if (!$record->memo_id || $record->memo?->is_memo_talangan) {
+                        if (! $record->memo_id || $record->memo?->is_memo_talangan) {
                             return [];
                         }
                         $memo = $record->memo;
+
                         return [
                             Forms\Components\Radio::make('recipient_type')
                                 ->label('Pilih Nama Kepada:')
                                 ->options([
-                                    'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
-                                    'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                    'nama_klien' => 'Nama Klien: '.($memo?->nama_klien ?: '-'),
+                                    'instansi_klien' => 'Instansi Klien: '.($memo?->instansi_klien ?: '-'),
                                 ])
                                 ->default('nama_klien')
                                 ->required(),
@@ -501,9 +504,10 @@ class InvoiceResource extends Resource
                     ->modalSubmitActionLabel('Preview PDF')
                     ->action(function (Invoice $record, array $data, Tables\Actions\Action $action) {
                         $record->loadMissing('memo');
-                        if (!$record->memo_id || $record->memo?->is_memo_talangan) {
+                        if (! $record->memo_id || $record->memo?->is_memo_talangan) {
                             $url = route('invoices.preview', ['id' => $record->id]);
                             $action->getLivewire()->js("window.open('{$url}', '_blank');");
+
                             return;
                         }
 
@@ -536,6 +540,8 @@ class InvoiceResource extends Resource
                                 'MANDIRI' => 'MANDIRI',
                                 'KAS BESAR' => 'KAS BESAR',
                                 'KAS KECIL' => 'KAS KECIL',
+                                'KAS KECIL PT' => 'KAS KECIL PT',
+                                'KAS BESAR PT' => 'KAS BESAR PT',
                             ])
                             ->required(),
                     ])
@@ -548,6 +554,8 @@ class InvoiceResource extends Resource
                             'MANDIRI' => 5,
                             'KAS BESAR' => 6,
                             'KAS KECIL' => 7,
+                            'KAS KECIL PT' => 9,
+                            'KAS BESAR PT' => 10,
                         ];
 
                         $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];

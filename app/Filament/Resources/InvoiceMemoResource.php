@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\InvoiceMemoResource\Pages;
+use App\Jobs\SendInvoiceWhatsapp;
 use App\Models\CashReport;
 use App\Models\Coa;
 use App\Models\CostListInvoice;
@@ -13,6 +14,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
@@ -43,6 +45,7 @@ class InvoiceMemoResource extends Resource
                             ->get()
                             ->mapWithKeys(function ($memo) {
                                 $client = $memo->nama_klien ?? $memo->instansi_klien ?? '-';
+
                                 return [$memo->id => $memo->no_memo.' - '.$client.' - '.$memo->description];
                             });
                     })
@@ -208,7 +211,7 @@ class InvoiceMemoResource extends Resource
             ->columns(static::getTableColumns())
             ->filters(static::getTableFilters())
             ->filtersLayout(Tables\Enums\FiltersLayout::Modal)
-            ->filtersFormWidth(\Filament\Support\Enums\MaxWidth::FourExtraLarge)
+            ->filtersFormWidth(MaxWidth::FourExtraLarge)
             ->actions(static::getTableActions(), position: ActionsPosition::BeforeCells)
             ->bulkActions(static::getTableBulkActions())
             ->defaultSort('invoice_date', 'desc')
@@ -249,7 +252,7 @@ class InvoiceMemoResource extends Resource
                 ->searchable(query: function (Builder $query, string $search): Builder {
                     return $query->where(function (Builder $q) use ($search) {
                         $q->whereHas('memo', fn ($subQ) => $subQ->where('nama_klien', 'like', "%{$search}%")->orWhere('instansi_klien', 'like', "%{$search}%"))
-                          ->orWhereHas('client', fn ($subQ) => $subQ->where('company_name', 'like', "%{$search}%"));
+                            ->orWhereHas('client', fn ($subQ) => $subQ->where('company_name', 'like', "%{$search}%"));
                     });
                 }),
             Tables\Columns\TextColumn::make('type')
@@ -309,6 +312,7 @@ class InvoiceMemoResource extends Resource
                         ->label('Total')
                         ->using(function ($query) {
                             $invoiceIds = $query->pluck('id')->toArray();
+
                             return CostListInvoice::query()->whereIn('invoice_id', $invoiceIds)->sum('amount');
                         })
                         ->formatStateUsing(function ($state) {
@@ -377,6 +381,7 @@ class InvoiceMemoResource extends Resource
                     if ($data['year'] ?? null) {
                         $indicators[] = "Year: {$data['year']}";
                     }
+
                     return count($indicators) ? implode(' + ', $indicators) : null;
                 }),
             Tables\Filters\SelectFilter::make('invoice_type')
@@ -417,12 +422,14 @@ class InvoiceMemoResource extends Resource
                 ->color('success')
                 ->url(function (Invoice $record): ?string {
                     $record->loadMissing('memo');
+
                     return $record->memo?->is_memo_talangan
                         ? route('invoices.preview', $record->id)
                         : null;
                 })
                 ->openUrlInNewTab(function (Invoice $record): bool {
                     $record->loadMissing('memo');
+
                     return (bool) ($record->memo?->is_memo_talangan);
                 })
                 ->form(function (Invoice $record) {
@@ -431,12 +438,13 @@ class InvoiceMemoResource extends Resource
                         return [];
                     }
                     $memo = $record->memo;
+
                     return [
                         Forms\Components\Radio::make('recipient_type')
                             ->label('Pilih Nama Kepada:')
                             ->options([
-                                'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
-                                'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                'nama_klien' => 'Nama Klien: '.($memo?->nama_klien ?: '-'),
+                                'instansi_klien' => 'Instansi Klien: '.($memo?->instansi_klien ?: '-'),
                             ])
                             ->default('nama_klien')
                             ->required(),
@@ -449,6 +457,7 @@ class InvoiceMemoResource extends Resource
                     if ($record->memo?->is_memo_talangan) {
                         $url = route('invoices.preview', ['id' => $record->id]);
                         $action->getLivewire()->js("window.open('{$url}', '_blank');");
+
                         return;
                     }
 
@@ -466,12 +475,13 @@ class InvoiceMemoResource extends Resource
                 ->form(function (Invoice $record) {
                     $record->loadMissing('memo');
                     $memo = $record->memo;
+
                     return [
                         Forms\Components\Radio::make('recipient_type')
                             ->label('Pilih Nama Kepada:')
                             ->options([
-                                'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
-                                'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                'nama_klien' => 'Nama Klien: '.($memo?->nama_klien ?: '-'),
+                                'instansi_klien' => 'Instansi Klien: '.($memo?->instansi_klien ?: '-'),
                             ])
                             ->default('nama_klien')
                             ->required(),
@@ -497,7 +507,7 @@ class InvoiceMemoResource extends Resource
                     $defaultPhone = null;
                     if ($record->client && $record->client->phone) {
                         $defaultPhone = $record->client->phone;
-                    } elseif ($memo && !empty($memo->telepon_klien ?? null)) {
+                    } elseif ($memo && ! empty($memo->telepon_klien ?? null)) {
                         $defaultPhone = $memo->telepon_klien;
                     }
 
@@ -505,8 +515,8 @@ class InvoiceMemoResource extends Resource
                         Forms\Components\Radio::make('recipient_type')
                             ->label('Pilih Nama Kepada:')
                             ->options([
-                                'nama_klien' => 'Nama Klien: ' . ($memo?->nama_klien ?: '-'),
-                                'instansi_klien' => 'Instansi Klien: ' . ($memo?->instansi_klien ?: '-'),
+                                'nama_klien' => 'Nama Klien: '.($memo?->nama_klien ?: '-'),
+                                'instansi_klien' => 'Instansi Klien: '.($memo?->instansi_klien ?: '-'),
                             ])
                             ->default('nama_klien')
                             ->required(),
@@ -530,15 +540,16 @@ class InvoiceMemoResource extends Resource
                                 ->body('Nomor WhatsApp wajib diisi!')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
 
                         // Clean phone number
                         $phone = preg_replace('/[^0-9]/', '', $phoneInput);
                         if (substr($phone, 0, 1) === '0') {
-                            $phone = '62' . substr($phone, 1);
+                            $phone = '62'.substr($phone, 1);
                         } elseif (substr($phone, 0, 2) !== '62') {
-                            $phone = '62' . $phone;
+                            $phone = '62'.$phone;
                         }
 
                         $recipientType = $data['recipient_type'] ?? 'nama_klien';
@@ -549,7 +560,7 @@ class InvoiceMemoResource extends Resource
                             : ($memo?->nama_klien ?: $memo?->instansi_klien);
 
                         // Dispatch background job for fast URL-based delivery
-                        \App\Jobs\SendInvoiceWhatsapp::dispatch($record->id, $phone, $recipientName);
+                        SendInvoiceWhatsapp::dispatch($record->id, $phone, $recipientName);
 
                         Notification::make()
                             ->title('Pengiriman Dijadwalkan')
@@ -559,7 +570,7 @@ class InvoiceMemoResource extends Resource
                     } catch (\Exception $e) {
                         Notification::make()
                             ->title('Error')
-                            ->body('Gagal mengirim WhatsApp: ' . $e->getMessage())
+                            ->body('Gagal mengirim WhatsApp: '.$e->getMessage())
                             ->danger()
                             ->send();
                     }
@@ -586,6 +597,8 @@ class InvoiceMemoResource extends Resource
                             'MANDIRI' => 'MANDIRI',
                             'KAS BESAR' => 'KAS BESAR',
                             'KAS KECIL' => 'KAS KECIL',
+                            'KAS KECIL PT' => 'KAS KECIL PT',
+                            'KAS BESAR PT' => 'KAS BESAR PT',
                         ])
                         ->required(),
                 ])
@@ -598,6 +611,8 @@ class InvoiceMemoResource extends Resource
                         'MANDIRI' => 5,
                         'KAS BESAR' => 6,
                         'KAS KECIL' => 7,
+                        'KAS KECIL PT' => 9,
+                        'KAS BESAR PT' => 10,
                     ];
 
                     $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];
