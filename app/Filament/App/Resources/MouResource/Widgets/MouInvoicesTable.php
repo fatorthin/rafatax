@@ -223,8 +223,9 @@ class MouInvoicesTable extends BaseWidget
                             ->label('Rekening Transfer')
                             ->options([
                                 'BCA PT' => 'BCA PT',
-                                'BCA BARU' => 'BCA BARU',
-                                'BCA LAMA' => 'BCA LAMA',
+                                'BCA 425' => 'BCA 425',
+                                'BCA 140' => 'BCA 140',
+                                'BCA 436' => 'BCA 436',
                                 'MANDIRI' => 'MANDIRI',
                                 'KAS BESAR KKP' => 'KAS BESAR KKP',
                                 'KAS KECIL KKP' => 'KAS KECIL KKP',
@@ -236,8 +237,9 @@ class MouInvoicesTable extends BaseWidget
                     ->action(function (Invoice $record, array $data): void {
                         $rekTransferMapping = [
                             'BCA PT' => 1,
-                            'BCA BARU' => 2,
-                            'BCA LAMA' => 3,
+                            'BCA 425' => 2,
+                            'BCA 140' => 3,
+                            'BCA 436' => 4,
                             'MANDIRI' => 5,
                             'KAS BESAR KKP' => 6,
                             'KAS KECIL KKP' => 7,

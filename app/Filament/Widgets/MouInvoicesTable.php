@@ -125,22 +125,28 @@ class MouInvoicesTable extends BaseWidget
                             ->label('Rekening Transfer')
                             ->options([
                                 'BCA PT' => 'BCA PT',
-                                'BCA BARU' => 'BCA 425',
-                                'BCA LAMA' => 'BCA LAMA',
+                                'BCA 425' => 'BCA 425',
+                                'BCA 140' => 'BCA 140',
+                                'BCA 436' => 'BCA 436',
                                 'MANDIRI' => 'MANDIRI',
-                                'KAS BESAR' => 'KAS BESAR',
-                                'KAS KECIL' => 'KAS KECIL',
+                                'KAS BESAR KKP' => 'KAS BESAR KKP',
+                                'KAS KECIL KKP' => 'KAS KECIL KKP',
+                                'KAS KECIL PT' => 'KAS KECIL PT',
+                                'KAS BESAR PT' => 'KAS BESAR PT',
                             ])
                             ->required(),
                     ])
                     ->action(function (Invoice $record, array $data): void {
                         $rekTransferMapping = [
                             'BCA PT' => 1,
-                            'BCA BARU' => 2,
-                            'BCA LAMA' => 3,
+                            'BCA 425' => 2,
+                            'BCA 140' => 3,
+                            'BCA 436' => 4,
                             'MANDIRI' => 5,
-                            'KAS BESAR' => 6,
-                            'KAS KECIL' => 7,
+                            'KAS BESAR KKP' => 6,
+                            'KAS KECIL KKP' => 7,
+                            'KAS KECIL PT' => 9,
+                            'KAS BESAR PT' => 10,
                         ];
 
                         $cashReferenceId = $rekTransferMapping[$data['rek_transfer']];

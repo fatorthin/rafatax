@@ -186,6 +186,10 @@ class InvoiceResource extends Resource
                         'BCA 140' => 'BCA 140',
                         'BCA 436' => 'BCA 436',
                         'MANDIRI' => 'MANDIRI',
+                        'KAS BESAR KKP' => 'KAS BESAR KKP',
+                        'KAS KECIL KKP' => 'KAS KECIL KKP',
+                        'KAS KECIL PT' => 'KAS KECIL PT',
+                        'KAS BESAR PT' => 'KAS BESAR PT',
                     ]),
                 Forms\Components\DatePicker::make('tgl_transfer')
                     ->label('Tanggal Transfer'),

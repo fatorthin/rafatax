@@ -701,7 +701,11 @@ class ListCostMou extends Page implements HasTable, HasForms, HasInfolists
                     'BCA 425' => 'BCA 425',
                     'BCA 140' => 'BCA 140',
                     'BCA 436' => 'BCA 436',
-                    'MANDIRI' => 'MANDIRI'
+                    'MANDIRI' => 'MANDIRI',
+                    'KAS BESAR KKP' => 'KAS BESAR KKP',
+                    'KAS KECIL KKP' => 'KAS KECIL KKP',
+                    'KAS KECIL PT' => 'KAS KECIL PT',
+                    'KAS BESAR PT' => 'KAS BESAR PT',
                 ]),
             Checkbox::make('is_include_pph23')
                 ->label('Checklist Invoice PPH23')
