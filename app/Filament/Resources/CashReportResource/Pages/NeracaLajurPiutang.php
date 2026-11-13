@@ -160,6 +160,7 @@ class NeracaLajurPiutang extends Page implements HasTable
     private function getPiutangToPendapatanMap(): array
     {
         return [
+            180 => 181, // AO-103.5  -> AO-411   (Piutang Lama)
             188 => 119, // AO-103.6  -> AO-401   (Fee Bulanan)
             182 => 120, // AO-103.7  -> AO-401.1 (Fee SPT)
             183 => 121, // AO-103.8  -> AO-401.2 (Fee SP2DK)
@@ -176,6 +177,7 @@ class NeracaLajurPiutang extends Page implements HasTable
     private function getRevenueToPiutangMap(): array
     {
         return [
+            181 => 180, // AO-411   -> AO-103.5  (Piutang Lama)
             119 => 188, // AO-401   -> AO-103.6  (Fee Bulanan)
             120 => 182, // AO-401.1 -> AO-103.7  (Fee SPT)
             121 => 183, // AO-401.2 -> AO-103.8  (Fee SP2DK)
@@ -192,6 +194,7 @@ class NeracaLajurPiutang extends Page implements HasTable
     private function getPiutangToBelumDiterimaMap(): array
     {
         return [
+            180 => 207, // AO-103.5  -> AO-208.7 (Fee Piutang Lama)
             188 => 175, // AO-103.6  -> AO-208   (Fee Bulanan)
             182 => 193, // AO-103.7  -> AO-208.1 (Fee SPT)
             183 => 194, // AO-103.8  -> AO-208.2 (Fee SP2DK)
@@ -208,6 +211,7 @@ class NeracaLajurPiutang extends Page implements HasTable
     private function getRevenueToBelumDiterimaMap(): array
     {
         return [
+            181 => 207, // AO-411   -> AO-208.7 (Fee Piutang Lama)
             119 => 175, // AO-401   -> AO-208   (Fee Bulanan)
             120 => 193, // AO-401.1 -> AO-208.1 (Fee SPT)
             121 => 194, // AO-401.2 -> AO-208.2 (Fee SP2DK)
@@ -1312,6 +1316,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         $pphGrand = 0;
 
         $revenueToPiutangMap = [
+            181 => 180, // Fee Piutang Lama
             119 => 188, // Fee Bulanan
             120 => 182, // Fee SPT
             121 => 183, // Fee SP2DK
@@ -1436,6 +1441,7 @@ class NeracaLajurPiutang extends Page implements HasTable
         $cGrand = 0;
 
         $piutangToPendapatanMap = [
+            180 => 181, // AO-103.5  -> AO-411   (Fee Piutang Lama)
             188 => 119, // AO-103.6  -> AO-401   (Fee Bulanan)
             182 => 120, // AO-103.7  -> AO-401.1 (Fee SPT)
             183 => 121, // AO-103.8  -> AO-401.2 (Fee SP2DK)
