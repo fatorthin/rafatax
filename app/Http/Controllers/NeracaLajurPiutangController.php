@@ -40,6 +40,22 @@ class NeracaLajurPiutangController extends Controller
         $page->exportToExcel();
     }
 
+    public function saveCutOff(Request $request)
+    {
+        try {
+            $month      = (int) $request->get('month', now()->month);
+            $year       = (int) $request->get('year', now()->year);
+            $entity     = strtolower($request->get('entity', 'all'));
+            $targetMode = $request->get('target_mode');
+
+            $result = \App\Services\NeracaLajurCutOffService::cutOff($year, $month, $entity, $targetMode);
+
+            return redirect()->back()->with('success', $result['message']);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal cut off neraca: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Halaman Detail Transaksi Kas Bank (Opsi 2).
      */

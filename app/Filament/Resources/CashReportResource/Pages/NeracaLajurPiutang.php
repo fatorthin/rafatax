@@ -7,6 +7,7 @@ use App\Models\Coa;
 use Filament\Resources\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
@@ -130,6 +131,95 @@ class NeracaLajurPiutang extends Page implements HasTable
                     'month' => $this->month,
                     'year'  => $this->year,
                 ])),
+            Action::make('cutOffNeraca')
+                ->label(fn () => match ($this->entity) {
+                    'pt'    => 'Cut Off Neraca (PT)',
+                    'kkp'   => 'Cut Off Neraca (KKP)',
+                    default => 'Cut Off Neraca (Konsolidasi)',
+                })
+                ->icon('heroicon-o-lock-closed')
+                ->color('danger')
+                ->modalHeading(function () {
+                    $mNames = [
+                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                    ];
+                    $mName = $mNames[$this->month] ?? $this->month;
+                    $entLabel = match ($this->entity) {
+                        'pt'    => 'PT',
+                        'kkp'   => 'KKP',
+                        default => 'Konsolidasi',
+                    };
+                    return "Konfirmasi Cut Off Neraca {$entLabel} - {$mName} {$this->year}";
+                })
+                ->modalDescription(function () {
+                    $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+                    $status = \App\Services\NeracaLajurCutOffService::getCutOffStatus($this->year, $this->month, $this->entity);
+                    $statusText = $status['is_cutoff']
+                        ? "⚠️ PERHATIAN: Periode ini sudah pernah di-cut off ({$status['count']} akun). Melakukan cut off kembali akan memperbarui (overwrite) saldo tersebut."
+                        : "ℹ️ Periode ini belum pernah di-cut off.";
+
+                    if ($this->entity === 'pt') {
+                        return "Tindakan ini akan mengunci dan menyimpan saldo akhir Neraca PT ke dalam Jurnal Neraca Bulanan (journal_book_id = 3, kepemilikan PT). Saldo ini otomatis menjadi Neraca Awal PT pada bulan berikutnya.\n\n{$statusText}";
+                    } elseif ($this->entity === 'kkp') {
+                        return "Tindakan ini akan mengunci dan menyimpan saldo akhir Neraca KKP ke dalam Jurnal Neraca Bulanan (journal_book_id = 3, kepemilikan KKP). Saldo ini otomatis menjadi Neraca Awal KKP pada bulan berikutnya.\n\n{$statusText}";
+                    } elseif ($isSeparated) {
+                        return "Periode ini berada dalam pemisahan entitas aktif (PT & KKP). Cut Off Neraca Konsolidasi akan mengunci saldo akhir untuk kedua entitas sehingga masing-masing entitas dan neraca konsolidasi memiliki saldo awal yang akurat pada bulan berikutnya.\n\n{$statusText}";
+                    } else {
+                        return "Tindakan ini akan mengunci dan menyimpan saldo akhir Neraca Konsolidasi ke dalam Jurnal Neraca Bulanan (journal_book_id = 3). Saldo ini otomatis menjadi Neraca Awal pada bulan berikutnya.\n\n{$statusText}";
+                    }
+                })
+                ->form(function () {
+                    $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
+                    if ($this->entity === 'all' && $isSeparated) {
+                        return [
+                            Select::make('target_mode')
+                                ->label('Pilihan Pemrosesan Cut Off')
+                                ->options([
+                                    'both' => 'Kedua Entitas (PT & KKP) - Konsolidasi Lengkap (Direkomendasikan)',
+                                    'pt'   => 'Hanya Entitas PT',
+                                    'kkp'  => 'Hanya Entitas KKP',
+                                ])
+                                ->default('both')
+                                ->required()
+                                ->helperText('Pilih entitas yang ingin di-cut off. Memproses kedua entitas sekaligus akan memastikan Neraca Konsolidasi dan Neraca masing-masing entitas pada bulan berikutnya sinkron.'),
+                        ];
+                    }
+                    return [];
+                })
+                ->modalSubmitActionLabel('Ya, Jalankan Cut Off')
+                ->action(function (array $data = []): void {
+                    try {
+                        $targetMode = $data['target_mode'] ?? null;
+                        $result = \App\Services\NeracaLajurCutOffService::cutOff(
+                            $this->year,
+                            $this->month,
+                            $this->entity,
+                            $targetMode
+                        );
+
+                        Notification::make()
+                            ->success()
+                            ->title('Cut Off Neraca Berhasil!')
+                            ->body($result['message'])
+                            ->persistent()
+                            ->send();
+
+                        $this->redirect(static::getUrl([
+                            'month'  => $this->month,
+                            'year'   => $this->year,
+                            'entity' => $this->entity,
+                        ]));
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Gagal Melakukan Cut Off Neraca')
+                            ->body($e->getMessage())
+                            ->persistent()
+                            ->send();
+                    }
+                }),
             Action::make('exportDetailJP')
                 ->label('Export Detail Jurnal Pendapatan')
                 ->icon('heroicon-o-document-magnifying-glass')
@@ -343,7 +433,7 @@ class NeracaLajurPiutang extends Page implements HasTable
     // Data untuk laba rugi summary (header)
     // ──────────────────────────────────────────────────────────────────────────
 
-    protected function getLabaRugiData(): array
+    public function getLabaRugiData(): array
     {
         $data = $this->getTableData();
         $labaRugiData   = [];

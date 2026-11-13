@@ -71,9 +71,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/neraca-lajur/export', [NeracaLajurController::class, 'export'])->name('neraca-lajur.export');
     Route::get('/neraca-lajur/save-cutoff', [NeracaLajurController::class, 'saveCutOff'])->name('neraca-lajur.save-cutoff');
 
-    // Neraca Lajur Piutang Export & Detail Bank
+    // Neraca Lajur Piutang Export & Detail Bank & Cut-Off
     Route::get('/neraca-lajur-piutang/export-detail-jp', [NeracaLajurPiutangController::class, 'exportDetailJP'])->name('neraca-lajur-piutang.export-detail-jp');
     Route::get('/neraca-lajur-piutang/export', [NeracaLajurPiutangController::class, 'exportNeraca'])->name('neraca-lajur-piutang.export');
+    Route::get('/neraca-lajur-piutang/save-cutoff', [NeracaLajurPiutangController::class, 'saveCutOff'])->name('neraca-lajur-piutang.save-cutoff');
     Route::get('/neraca-lajur-piutang/detail-bank', [NeracaLajurPiutangController::class, 'detailBank'])->name('neraca-lajur-piutang.detail-bank');
     Route::get('/neraca-lajur-piutang/detail-bank/export', [NeracaLajurPiutangController::class, 'exportDetailBank'])->name('neraca-lajur-piutang.detail-bank.export');
 
