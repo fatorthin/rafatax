@@ -71,12 +71,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/neraca-lajur/export', [NeracaLajurController::class, 'export'])->name('neraca-lajur.export');
     Route::get('/neraca-lajur/save-cutoff', [NeracaLajurController::class, 'saveCutOff'])->name('neraca-lajur.save-cutoff');
 
-    // Neraca Lajur Piutang Export & Detail Bank & Cut-Off
+    // Neraca Lajur Piutang Export & Detail (Bank, Kas Besar, Kas Kecil, Jurnal Pendapatan) & Cut-Off
     Route::get('/neraca-lajur-piutang/export-detail-jp', [NeracaLajurPiutangController::class, 'exportDetailJP'])->name('neraca-lajur-piutang.export-detail-jp');
     Route::get('/neraca-lajur-piutang/export', [NeracaLajurPiutangController::class, 'exportNeraca'])->name('neraca-lajur-piutang.export');
     Route::get('/neraca-lajur-piutang/save-cutoff', [NeracaLajurPiutangController::class, 'saveCutOff'])->name('neraca-lajur-piutang.save-cutoff');
     Route::get('/neraca-lajur-piutang/detail-bank', [NeracaLajurPiutangController::class, 'detailBank'])->name('neraca-lajur-piutang.detail-bank');
     Route::get('/neraca-lajur-piutang/detail-bank/export', [NeracaLajurPiutangController::class, 'exportDetailBank'])->name('neraca-lajur-piutang.detail-bank.export');
+    Route::get('/neraca-lajur-piutang/detail-kas-besar', [NeracaLajurPiutangController::class, 'detailKasBesar'])->name('neraca-lajur-piutang.detail-kas-besar');
+    Route::get('/neraca-lajur-piutang/detail-kas-besar/export', [NeracaLajurPiutangController::class, 'exportDetailKasBesar'])->name('neraca-lajur-piutang.detail-kas-besar.export');
+    Route::get('/neraca-lajur-piutang/detail-kas-kecil', [NeracaLajurPiutangController::class, 'detailKasKecil'])->name('neraca-lajur-piutang.detail-kas-kecil');
+    Route::get('/neraca-lajur-piutang/detail-kas-kecil/export', [NeracaLajurPiutangController::class, 'exportDetailKasKecil'])->name('neraca-lajur-piutang.detail-kas-kecil.export');
+    Route::get('/neraca-lajur-piutang/detail-jurnal-pendapatan', [NeracaLajurPiutangController::class, 'detailJurnalPendapatan'])->name('neraca-lajur-piutang.detail-jurnal-pendapatan');
+    Route::get('/neraca-lajur-piutang/detail-jurnal-pendapatan/export', [NeracaLajurPiutangController::class, 'exportDetailJurnalPendapatan'])->name('neraca-lajur-piutang.detail-jurnal-pendapatan.export');
 
     // Neraca Export
     Route::get('/neraca/export', [\App\Http\Controllers\NeracaController::class, 'export'])->name('neraca.export');

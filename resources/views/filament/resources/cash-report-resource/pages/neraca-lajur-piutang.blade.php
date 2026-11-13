@@ -418,13 +418,53 @@
                             </td>
                             <td class="number-cell text-right">{{ number_format($totalNeracaAwalKredit, 0, ',', '.') }}
                             </td>
-                            <td class="number-cell text-right">{{ number_format($totalKasBesarDebit, 0, ',', '.') }}
+                            <td class="number-cell text-right">
+                                @if ($totalKasBesarDebit != 0)
+                                    <a href="{{ route('neraca-lajur-piutang.detail-kas-besar', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                       target="_blank"
+                                       class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
+                                       title="Klik untuk melihat seluruh transaksi Kas Besar (Debit)">
+                                        {{ number_format($totalKasBesarDebit, 0, ',', '.') }}
+                                    </a>
+                                @else
+                                    {{ number_format($totalKasBesarDebit, 0, ',', '.') }}
+                                @endif
                             </td>
-                            <td class="number-cell text-right">{{ number_format($totalKasBesarKredit, 0, ',', '.') }}
+                            <td class="number-cell text-right">
+                                @if ($totalKasBesarKredit != 0)
+                                    <a href="{{ route('neraca-lajur-piutang.detail-kas-besar', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                       target="_blank"
+                                       class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
+                                       title="Klik untuk melihat seluruh transaksi Kas Besar (Kredit)">
+                                        {{ number_format($totalKasBesarKredit, 0, ',', '.') }}
+                                    </a>
+                                @else
+                                    {{ number_format($totalKasBesarKredit, 0, ',', '.') }}
+                                @endif
                             </td>
-                            <td class="number-cell text-right">{{ number_format($totalKasKecilDebit, 0, ',', '.') }}
+                            <td class="number-cell text-right">
+                                @if ($totalKasKecilDebit != 0)
+                                    <a href="{{ route('neraca-lajur-piutang.detail-kas-kecil', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                       target="_blank"
+                                       class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
+                                       title="Klik untuk melihat seluruh transaksi Kas Kecil (Debit)">
+                                        {{ number_format($totalKasKecilDebit, 0, ',', '.') }}
+                                    </a>
+                                @else
+                                    {{ number_format($totalKasKecilDebit, 0, ',', '.') }}
+                                @endif
                             </td>
-                            <td class="number-cell text-right">{{ number_format($totalKasKecilKredit, 0, ',', '.') }}
+                            <td class="number-cell text-right">
+                                @if ($totalKasKecilKredit != 0)
+                                    <a href="{{ route('neraca-lajur-piutang.detail-kas-kecil', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                       target="_blank"
+                                       class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
+                                       title="Klik untuk melihat seluruh transaksi Kas Kecil (Kredit)">
+                                        {{ number_format($totalKasKecilKredit, 0, ',', '.') }}
+                                    </a>
+                                @else
+                                    {{ number_format($totalKasKecilKredit, 0, ',', '.') }}
+                                @endif
                             </td>
                             <td class="number-cell text-right">
                                 @if ($totalBankDebit != 0)
@@ -451,9 +491,29 @@
                                 @endif
                             </td>
                             <td class="number-cell text-right">
-                                {{ number_format($totalJurnalPendapatanDebit, 0, ',', '.') }}</td>
+                                @if ($totalJurnalPendapatanDebit != 0)
+                                    <a href="{{ route('neraca-lajur-piutang.detail-jurnal-pendapatan', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                       target="_blank"
+                                       class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
+                                       title="Klik untuk melihat seluruh transaksi Jurnal Pendapatan (Debit)">
+                                        {{ number_format($totalJurnalPendapatanDebit, 0, ',', '.') }}
+                                    </a>
+                                @else
+                                    {{ number_format($totalJurnalPendapatanDebit, 0, ',', '.') }}
+                                @endif
+                            </td>
                             <td class="number-cell text-right">
-                                {{ number_format($totalJurnalPendapatanKredit, 0, ',', '.') }}</td>
+                                @if ($totalJurnalPendapatanKredit != 0)
+                                    <a href="{{ route('neraca-lajur-piutang.detail-jurnal-pendapatan', ['coa_id' => 'all', 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                       target="_blank"
+                                       class="text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200 hover:underline font-bold transition-colors"
+                                       title="Klik untuk melihat seluruh transaksi Jurnal Pendapatan (Kredit)">
+                                        {{ number_format($totalJurnalPendapatanKredit, 0, ',', '.') }}
+                                    </a>
+                                @else
+                                    {{ number_format($totalJurnalPendapatanKredit, 0, ',', '.') }}
+                                @endif
+                            </td>
                             <td class="number-cell text-right">{{ number_format($totalJurnalUmumDebit, 0, ',', '.') }}
                             </td>
                             <td class="number-cell text-right">{{ number_format($totalJurnalUmumKredit, 0, ',', '.') }}
@@ -531,13 +591,53 @@
                                 <td class="number-cell text-right">
                                     {{ number_format($row->neraca_awal_kredit, 0, ',', '.') }}</td>
                                 <td class="number-cell text-right">
-                                    {{ number_format($row->kas_besar_debit, 0, ',', '.') }}</td>
+                                    @if ($row->kas_besar_debit != 0)
+                                        <a href="{{ route('neraca-lajur-piutang.detail-kas-besar', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
+                                           title="Klik untuk melihat detail transaksi Kas Besar (Debit)">
+                                            {{ number_format($row->kas_besar_debit, 0, ',', '.') }}
+                                        </a>
+                                    @else
+                                        {{ number_format($row->kas_besar_debit, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="number-cell text-right">
-                                    {{ number_format($row->kas_besar_kredit, 0, ',', '.') }}</td>
+                                    @if ($row->kas_besar_kredit != 0)
+                                        <a href="{{ route('neraca-lajur-piutang.detail-kas-besar', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
+                                           title="Klik untuk melihat detail transaksi Kas Besar (Kredit)">
+                                            {{ number_format($row->kas_besar_kredit, 0, ',', '.') }}
+                                        </a>
+                                    @else
+                                        {{ number_format($row->kas_besar_kredit, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="number-cell text-right">
-                                    {{ number_format($row->kas_kecil_debit, 0, ',', '.') }}</td>
+                                    @if ($row->kas_kecil_debit != 0)
+                                        <a href="{{ route('neraca-lajur-piutang.detail-kas-kecil', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
+                                           title="Klik untuk melihat detail transaksi Kas Kecil (Debit)">
+                                            {{ number_format($row->kas_kecil_debit, 0, ',', '.') }}
+                                        </a>
+                                    @else
+                                        {{ number_format($row->kas_kecil_debit, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="number-cell text-right">
-                                    {{ number_format($row->kas_kecil_kredit, 0, ',', '.') }}</td>
+                                    @if ($row->kas_kecil_kredit != 0)
+                                        <a href="{{ route('neraca-lajur-piutang.detail-kas-kecil', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
+                                           title="Klik untuk melihat detail transaksi Kas Kecil (Kredit)">
+                                            {{ number_format($row->kas_kecil_kredit, 0, ',', '.') }}
+                                        </a>
+                                    @else
+                                        {{ number_format($row->kas_kecil_kredit, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="number-cell text-right">
                                     @if ($row->bank_debit != 0)
                                         <a href="{{ route('neraca-lajur-piutang.detail-bank', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
@@ -563,9 +663,29 @@
                                     @endif
                                 </td>
                                 <td class="number-cell text-right jp-col">
-                                    {{ number_format($row->jurnal_pendapatan_debit, 0, ',', '.') }}</td>
+                                    @if ($row->jurnal_pendapatan_debit != 0)
+                                        <a href="{{ route('neraca-lajur-piutang.detail-jurnal-pendapatan', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'debit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
+                                           title="Klik untuk melihat detail transaksi Jurnal Pendapatan (Debit)">
+                                            {{ number_format($row->jurnal_pendapatan_debit, 0, ',', '.') }}
+                                        </a>
+                                    @else
+                                        {{ number_format($row->jurnal_pendapatan_debit, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="number-cell text-right jp-col">
-                                    {{ number_format($row->jurnal_pendapatan_kredit, 0, ',', '.') }}</td>
+                                    @if ($row->jurnal_pendapatan_kredit != 0)
+                                        <a href="{{ route('neraca-lajur-piutang.detail-jurnal-pendapatan', ['coa_id' => $row->id, 'month' => $this->month, 'year' => $this->year, 'type' => 'kredit', 'from' => request()->is('app/*') ? 'app' : 'admin', 'entity' => $this->entity]) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold transition-colors"
+                                           title="Klik untuk melihat detail transaksi Jurnal Pendapatan (Kredit)">
+                                            {{ number_format($row->jurnal_pendapatan_kredit, 0, ',', '.') }}
+                                        </a>
+                                    @else
+                                        {{ number_format($row->jurnal_pendapatan_kredit, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="number-cell text-right">
                                     {{ number_format($row->jurnal_umum_debit, 0, ',', '.') }}</td>
                                 <td class="number-cell text-right">
