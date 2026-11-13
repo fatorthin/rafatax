@@ -6,6 +6,7 @@ use App\Filament\Resources\CashReportResource;
 use App\Models\Coa;
 use Filament\Resources\Pages\Page;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -114,23 +115,6 @@ class NeracaLajurPiutang extends Page implements HasTable
                         'entity' => $this->entity,
                     ]));
                 }),
-            Action::make('kelolaSaldoAwal')
-                ->label('Kelola Saldo Awal Entitas')
-                ->icon('heroicon-o-scale')
-                ->color('warning')
-                ->url(fn() => static::getResource()::getUrl('kelola-saldo-awal', [
-                    'year'   => $this->year,
-                    'month'  => $this->month,
-                    'entity' => in_array($this->entity, ['pt', 'kkp'], true) ? $this->entity : 'pt',
-                ])),
-            Action::make('viewOld')
-                ->label('Lihat Neraca Lajur (Lama)')
-                ->icon('heroicon-o-arrow-left-circle')
-                ->color('gray')
-                ->url(fn() => static::getResource()::getUrl('neraca-lajur', [
-                    'month' => $this->month,
-                    'year'  => $this->year,
-                ])),
             Action::make('cutOffNeraca')
                 ->label(fn () => match ($this->entity) {
                     'pt'    => 'Cut Off Neraca (PT)',
@@ -220,18 +204,43 @@ class NeracaLajurPiutang extends Page implements HasTable
                             ->send();
                     }
                 }),
-            Action::make('exportDetailJP')
-                ->label('Export Detail Jurnal Pendapatan')
-                ->icon('heroicon-o-document-magnifying-glass')
-                ->color('info')
-                ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
-                ->openUrlInNewTab(false),
-            Action::make('export')
-                ->label('Export Neraca Lajur')
+            ActionGroup::make([
+                Action::make('export')
+                    ->label('Export Neraca Lajur')
+                    ->icon('heroicon-o-table-cells')
+                    ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
+                    ->openUrlInNewTab(false),
+                Action::make('exportDetailJP')
+                    ->label('Export Detail Jurnal Pendapatan')
+                    ->icon('heroicon-o-document-magnifying-glass')
+                    ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
+                    ->openUrlInNewTab(false),
+            ])
+                ->label('Export')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
-                ->openUrlInNewTab(false),
+                ->button(),
+            ActionGroup::make([
+                Action::make('kelolaSaldoAwal')
+                    ->label('Kelola Saldo Awal Entitas')
+                    ->icon('heroicon-o-scale')
+                    ->url(fn() => static::getResource()::getUrl('kelola-saldo-awal', [
+                        'year'   => $this->year,
+                        'month'  => $this->month,
+                        'entity' => in_array($this->entity, ['pt', 'kkp'], true) ? $this->entity : 'pt',
+                    ])),
+                Action::make('viewOld')
+                    ->label('Lihat Neraca Lajur (Lama)')
+                    ->icon('heroicon-o-arrow-left-circle')
+                    ->url(fn() => static::getResource()::getUrl('neraca-lajur', [
+                        'month' => $this->month,
+                        'year'  => $this->year,
+                    ])),
+            ])
+                ->label('Menu Lainnya')
+                ->icon('heroicon-o-ellipsis-horizontal')
+                ->color('gray')
+                ->button(),
             Action::make('back')
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')

@@ -4,6 +4,7 @@ namespace App\Filament\App\Pages;
 
 use App\Filament\Resources\CashReportResource\Pages\NeracaLajurPiutang as BaseNeracaLajurPiutang;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
@@ -133,19 +134,6 @@ class NeracaLajurPiutang extends BaseNeracaLajurPiutang
                         'entity' => $this->entity,
                     ]));
                 }),
-            Action::make('viewOld')
-                ->label('Lihat Neraca Lajur (Lama)')
-                ->icon('heroicon-o-arrow-left-circle')
-                ->color('gray')
-                ->url(function () {
-                    if (Route::has('filament.app.pages.neraca-lajur-bulanan')) {
-                        return route('filament.app.pages.neraca-lajur-bulanan', [
-                            'month' => $this->month,
-                            'year'  => $this->year,
-                        ]);
-                    }
-                    return null;
-                }),
             Action::make('cutOffNeraca')
                 ->label(fn () => match ($this->entity) {
                     'pt'    => 'Cut Off Neraca (PT)',
@@ -235,18 +223,40 @@ class NeracaLajurPiutang extends BaseNeracaLajurPiutang
                             ->send();
                     }
                 }),
-            Action::make('exportDetailJP')
-                ->label('Export Detail Jurnal Pendapatan')
-                ->icon('heroicon-o-document-magnifying-glass')
-                ->color('info')
-                ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
-                ->openUrlInNewTab(false),
-            Action::make('export')
-                ->label('Export Neraca Lajur')
+            ActionGroup::make([
+                Action::make('export')
+                    ->label('Export Neraca Lajur')
+                    ->icon('heroicon-o-table-cells')
+                    ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
+                    ->openUrlInNewTab(false),
+                Action::make('exportDetailJP')
+                    ->label('Export Detail Jurnal Pendapatan')
+                    ->icon('heroicon-o-document-magnifying-glass')
+                    ->url(fn() => url('/neraca-lajur-piutang/export-detail-jp?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
+                    ->openUrlInNewTab(false),
+            ])
+                ->label('Export')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->url(fn() => url('/neraca-lajur-piutang/export?month=' . $this->month . '&year=' . $this->year . '&entity=' . $this->entity))
-                ->openUrlInNewTab(false),
+                ->button(),
+            ActionGroup::make([
+                Action::make('viewOld')
+                    ->label('Lihat Neraca Lajur (Lama)')
+                    ->icon('heroicon-o-arrow-left-circle')
+                    ->url(function () {
+                        if (Route::has('filament.app.pages.neraca-lajur-bulanan')) {
+                            return route('filament.app.pages.neraca-lajur-bulanan', [
+                                'month' => $this->month,
+                                'year'  => $this->year,
+                            ]);
+                        }
+                        return null;
+                    }),
+            ])
+                ->label('Menu Lainnya')
+                ->icon('heroicon-o-ellipsis-horizontal')
+                ->color('gray')
+                ->button(),
             Action::make('back')
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')
