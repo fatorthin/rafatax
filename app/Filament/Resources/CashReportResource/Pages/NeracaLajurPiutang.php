@@ -287,16 +287,11 @@ class NeracaLajurPiutang extends Page implements HasTable
     }
 
     /**
-     * Sumber 3 — invoices (is_include_pph23 = true, dibuat pada bulan berjalan).
+     * Sumber 3 — Invoices PT PPh 23 (belum terchecklist / saat invoice dibuat).
      *
      * Entri JP yang dihasilkan:
-     *   JP DEBIT  : AO-103.x (piutang, disesuaikan) = nilai PPh23 per CoA
-     *   JP KREDIT : AO-208.x (Pendapatan Belum Diterima) = nilai PPh23 per CoA
-     *
-     * Return:
-     *   - by_piutang_coa        : [ piutang_coa_id => total ]        -> JP DEBIT
-     *   - by_belum_diterima_coa : [ belum_diterima_coa_id => total ] -> JP KREDIT AO-208.x
-     *   - total                 : grand total
+     *   JP DEBIT  : AO-108.1 (PPh 23)
+     *   JP KREDIT : AO-208.8 (Pendapatan Yang Belum Diterima/Fee PPh 23)
      */
     private function getInvoicePph23ForJP(string $startOfMonth, string $endOfMonth): array
     {
@@ -306,13 +301,11 @@ class NeracaLajurPiutang extends Page implements HasTable
     }
 
     /**
-     * Sumber 4 — invoices (is_pph23_checked = true, dibuat pada bulan berjalan).
+     * Sumber 4 — Invoices PT PPh 23 yang sudah terchecklist bukti potongnya.
      *
      * Entri JP yang dihasilkan:
-     *   JP DEBIT  : AO-208.x (Pendapatan Belum Diterima) = nilai PPh23 per case CoA
-     *   JP DEBIT  : AO-518.1 (Biaya PPH 23)           = total PPh23
-     *   JP KREDIT : AO-401.x (Pendapatan, disesuaikan) = nilai per CoA
-     *   JP KREDIT : AO-103.x (Piutang, disesuaikan)   = nilai per CoA
+     *   JP DEBIT  : AO-208.8 (Pendapatan Yang Belum Diterima/Fee PPh 23)
+     *   JP KREDIT : AO-108.1 (PPh 23)
      */
     private function getInvoicePphCheckedForJP(string $startOfMonth, string $endOfMonth): array
     {
@@ -441,32 +434,22 @@ class NeracaLajurPiutang extends Page implements HasTable
             $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
         }
 
-        // ── Sumber 3: PPh23 dari Invoice yang di-checklist is_include_pph23 ──
-        // JP DEBIT  AO-103.x = nilai PPh23 per CoA
-        // JP KREDIT AO-208.x = nilai PPh23 per sub-CoA Pendapatan Belum Diterima
+        // ── Sumber 3: PPh 23 Invoice PT (Belum Terchecklist) ──
+        // JP DEBIT  AO-108.1 = nilai PPh 23
+        // JP KREDIT AO-208.8 = nilai PPh 23
         $pph23JP = $this->getInvoicePph23ForJP($startOfCurrentMonth, $endOfCurrentMonth);
-        foreach ($pph23JP['by_piutang_coa'] as $coaId => $total) {
-            $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
-        }
-        foreach ($pph23JP['by_belum_diterima_coa'] as $coaId => $total) {
-            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
+        if (($pph23JP['total'] ?? 0) > 0) {
+            $jpDebits[91]   = ($jpDebits[91] ?? 0) + (float) $pph23JP['total'];
+            $jpKredits[220] = ($jpKredits[220] ?? 0) + (float) $pph23JP['total'];
         }
 
-        // ── Sumber 4: PPh23 dari Invoice yang di-checklist is_pph23_checked ──
-        // JP DEBIT  AO-208.x = nilai PPh23 per sub-CoA Pendapatan Belum Diterima
-        // JP DEBIT  AO-518.1 / AO-108.1 = total PPh23 (Biaya PPH 23)
-        // JP KREDIT AO-401.x = nilai PPh23 per Pendapatan CoA
-        // JP KREDIT AO-103.x = nilai PPh23 per Piutang CoA
+        // ── Sumber 4: PPh 23 Checklist (Sudah Terchecklist) ──
+        // JP DEBIT  AO-208.8 = nilai PPh 23 Checklist
+        // JP KREDIT AO-108.1 = nilai PPh 23 Checklist
         $pphCheckedJP = $this->getInvoicePphCheckedForJP($startOfCurrentMonth, $endOfCurrentMonth);
-        foreach ($pphCheckedJP['by_belum_diterima_coa'] as $coaId => $total) {
-            $jpDebits[$coaId] = ($jpDebits[$coaId] ?? 0) + $total;
-        }
-        $jpDebits[$biayaPph23Id] = ($jpDebits[$biayaPph23Id] ?? 0) + $pphCheckedJP['total'];
-        foreach ($pphCheckedJP['by_pendapatan_coa'] as $coaId => $total) {
-            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
-        }
-        foreach ($pphCheckedJP['by_piutang_coa'] as $coaId => $total) {
-            $jpKredits[$coaId] = ($jpKredits[$coaId] ?? 0) + $total;
+        if (($pphCheckedJP['total'] ?? 0) > 0) {
+            $jpDebits[220] = ($jpDebits[220] ?? 0) + (float) $pphCheckedJP['total'];
+            $jpKredits[91] = ($jpKredits[91] ?? 0) + (float) $pphCheckedJP['total'];
         }
 
         // ── Sumber 5: Diskon dari MoU ──
@@ -920,100 +903,70 @@ class NeracaLajurPiutang extends Page implements HasTable
             $sumRow++;
         }
 
-        // ── Bagian 3: PPh23 dari Invoice (DR AO-103.x / CR AO-208.x) ──
-        $pph23JP          = $this->getInvoicePph23ForJP($startOfMonth, $endOfMonth);
-        $byPph23Coa       = $pph23JP['by_piutang_coa'];
-        $byPph23BelumCoa  = $pph23JP['by_belum_diterima_coa'];
-        $pph23Total       = $pph23JP['total'];
+        // ── Bagian 3: PPh 23 Invoice PT (Belum Terchecklist) ──
+        $pph23JP    = $this->getInvoicePph23ForJP($startOfMonth, $endOfMonth);
+        $pph23Total = $pph23JP['total'] ?? 0;
 
-        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 3: PPh23 Invoice (Pengakuan PPh23) ───');
+        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 3: PPh 23 Invoice PT (Belum Terchecklist) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
         $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
         $sumRow++;
 
-        foreach ($byPph23Coa as $coaId => $total) {
-            $piutangCoa = $piutangCoaList->get($coaId) ?? DB::table('coa')->where('id', $coaId)->first();
-            // DR AO-103.x
-            $sheetSum->setCellValue('A' . $sumRow, $piutangCoa ? $piutangCoa->code : $coaId);
-            $sheetSum->setCellValue('B' . $sumRow, $piutangCoa ? $piutangCoa->name : '-');
-            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Invoice');
-            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
-            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
+        if ($pph23Total > 0) {
+            $coa108 = DB::table('coa')->where('id', 91)->first();
+            $coa208_8 = DB::table('coa')->where('id', 220)->first();
+
+            // DR AO-108.1 PPh 23
+            $sheetSum->setCellValue('A' . $sumRow, $coa108 ? $coa108->code : 'AO-108.1');
+            $sheetSum->setCellValue('B' . $sumRow, $coa108 ? $coa108->name : 'PPh 23');
+            $sheetSum->setCellValue('C' . $sumRow, 'PPh 23 Invoice PT (Belum Terchecklist)');
+            $sheetSum->setCellValue('D' . $sumRow, $pph23Total ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $pph23Total ?: ''); // Debit
             $sheetSum->setCellValue('F' . $sumRow, '');
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
-        }
-        // CR AO-208.x per case CoA
-        foreach ($byPph23BelumCoa as $coaId => $total) {
-            $bCoa = DB::table('coa')->where('id', $coaId)->first();
-            $sheetSum->setCellValue('A' . $sumRow, $bCoa ? $bCoa->code : 'AO-208');
-            $sheetSum->setCellValue('B' . $sumRow, $bCoa ? $bCoa->name : 'Pendapatan Yang Belum Diterima');
-            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Invoice');
-            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+
+            // CR AO-208.8 Pendapatan Yang Belum Diterima/Fee PPh 23
+            $sheetSum->setCellValue('A' . $sumRow, $coa208_8 ? $coa208_8->code : 'AO-208.8');
+            $sheetSum->setCellValue('B' . $sumRow, $coa208_8 ? $coa208_8->name : 'Pendapatan Yang Belum Diterima/Fee PPh 23');
+            $sheetSum->setCellValue('C' . $sumRow, 'PPh 23 Invoice PT (Belum Terchecklist)');
+            $sheetSum->setCellValue('D' . $sumRow, $pph23Total ?: '');
             $sheetSum->setCellValue('E' . $sumRow, '');
-            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
+            $sheetSum->setCellValue('F' . $sumRow, $pph23Total ?: ''); // Kredit
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
         }
 
-        // ── Bagian 4: PPh23 dari Invoice yang di-checklist (DR AO-208.x & DR AO-518.1 / CR AO-401.x & CR AO-103.x) ──
-        $pphCheckedJP           = $this->getInvoicePphCheckedForJP($startOfMonth, $endOfMonth);
-        $byPphCheckedPiutang    = $pphCheckedJP['by_piutang_coa'];
-        $byPphCheckedPendapatan = $pphCheckedJP['by_pendapatan_coa'];
-        $byPphCheckedBelumCoa   = $pphCheckedJP['by_belum_diterima_coa'];
-        $pphCheckedTotal        = $pphCheckedJP['total'];
+        // ── Bagian 4: PPh 23 Checklist (Sudah Terchecklist) ──
+        $pphCheckedJP    = $this->getInvoicePphCheckedForJP($startOfMonth, $endOfMonth);
+        $pphCheckedTotal = $pphCheckedJP['total'] ?? 0;
 
-        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 4: PPh23 Checklist (Biaya PPh23) ───');
+        $sheetSum->setCellValue('A' . $sumRow, '─── BAGIAN 4: PPh 23 Checklist (Sudah Terchecklist) ───');
         $sheetSum->mergeCells('A' . $sumRow . ':F' . $sumRow);
         $sheetSum->getStyle('A' . $sumRow . ':F' . $sumRow)->getFont()->setBold(true)->setItalic(true);
         $sumRow++;
 
-        // DR AO-208.x per case CoA
-        foreach ($byPphCheckedBelumCoa as $coaId => $total) {
-            $bCoa = DB::table('coa')->where('id', $coaId)->first();
-            $sheetSum->setCellValue('A' . $sumRow, $bCoa ? $bCoa->code : 'AO-208');
-            $sheetSum->setCellValue('B' . $sumRow, $bCoa ? $bCoa->name : 'Pendapatan Yang Belum Diterima');
-            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Checklist');
-            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
-            $sheetSum->setCellValue('E' . $sumRow, $total ?: ''); // Debit
+        if ($pphCheckedTotal > 0) {
+            $coa108 = DB::table('coa')->where('id', 91)->first();
+            $coa208_8 = DB::table('coa')->where('id', 220)->first();
+
+            // DR AO-208.8 Pendapatan Yang Belum Diterima/Fee PPh 23
+            $sheetSum->setCellValue('A' . $sumRow, $coa208_8 ? $coa208_8->code : 'AO-208.8');
+            $sheetSum->setCellValue('B' . $sumRow, $coa208_8 ? $coa208_8->name : 'Pendapatan Yang Belum Diterima/Fee PPh 23');
+            $sheetSum->setCellValue('C' . $sumRow, 'PPh 23 Checklist');
+            $sheetSum->setCellValue('D' . $sumRow, $pphCheckedTotal ?: '');
+            $sheetSum->setCellValue('E' . $sumRow, $pphCheckedTotal ?: ''); // Debit
             $sheetSum->setCellValue('F' . $sumRow, '');
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
-        }
 
-        // DR AO-108.1
-        $coaBiayaPph = DB::table('coa')->where('id', 91)->first();
-        $sheetSum->setCellValue('A' . $sumRow, $coaBiayaPph ? $coaBiayaPph->code : 'AO-108.1');
-        $sheetSum->setCellValue('B' . $sumRow, $coaBiayaPph ? $coaBiayaPph->name : 'PPh 23');
-        $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Checklist');
-        $sheetSum->setCellValue('D' . $sumRow, $pphCheckedTotal ?: '');
-        $sheetSum->setCellValue('E' . $sumRow, $pphCheckedTotal ?: ''); // Debit
-        $sheetSum->setCellValue('F' . $sumRow, '');
-        $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
-        $sumRow++;
-
-        // CR AO-401.x
-        foreach ($byPphCheckedPendapatan as $coaId => $total) {
-            $pCoa = DB::table('coa')->where('id', $coaId)->first();
-            $sheetSum->setCellValue('A' . $sumRow, $pCoa ? $pCoa->code : $coaId);
-            $sheetSum->setCellValue('B' . $sumRow, $pCoa ? $pCoa->name : '-');
-            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Checklist');
-            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
+            // CR AO-108.1 PPh 23
+            $sheetSum->setCellValue('A' . $sumRow, $coa108 ? $coa108->code : 'AO-108.1');
+            $sheetSum->setCellValue('B' . $sumRow, $coa108 ? $coa108->name : 'PPh 23');
+            $sheetSum->setCellValue('C' . $sumRow, 'PPh 23 Checklist');
+            $sheetSum->setCellValue('D' . $sumRow, $pphCheckedTotal ?: '');
             $sheetSum->setCellValue('E' . $sumRow, '');
-            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
-            $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
-            $sumRow++;
-        }
-
-        // CR AO-103.x
-        foreach ($byPphCheckedPiutang as $coaId => $total) {
-            $pCoa = $piutangCoaList->get($coaId) ?? DB::table('coa')->where('id', $coaId)->first();
-            $sheetSum->setCellValue('A' . $sumRow, $pCoa ? $pCoa->code : $coaId);
-            $sheetSum->setCellValue('B' . $sumRow, $pCoa ? $pCoa->name : '-');
-            $sheetSum->setCellValue('C' . $sumRow, 'PPh23 Checklist');
-            $sheetSum->setCellValue('D' . $sumRow, $total ?: '');
-            $sheetSum->setCellValue('E' . $sumRow, '');
-            $sheetSum->setCellValue('F' . $sumRow, $total ?: ''); // Kredit
+            $sheetSum->setCellValue('F' . $sumRow, $pphCheckedTotal ?: ''); // Kredit
             $sheetSum->getStyle('D' . $sumRow . ':F' . $sumRow)->getNumberFormat()->setFormatCode($numberFmt);
             $sumRow++;
         }
@@ -1106,8 +1059,8 @@ class NeracaLajurPiutang extends Page implements HasTable
         }
 
         // Baris Grand Total
-        $jpDebitTotal  = $invoiceTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalDebits + $cancelTotalDebits;
-        $jpKreditTotal = $invoiceTotal + $cashTotal + $pph23Total + ($pphCheckedTotal * 2) + $discountTotalKredits + $cancelTotalKredits;
+        $jpDebitTotal  = $invoiceTotal + $cashTotal + $pph23Total + $pphCheckedTotal + $discountTotalDebits + $cancelTotalDebits;
+        $jpKreditTotal = $invoiceTotal + $cashTotal + $pph23Total + $pphCheckedTotal + $discountTotalKredits + $cancelTotalKredits;
         $sheetSum->setCellValue('A' . $sumRow, 'TOTAL');
         $sheetSum->mergeCells('A' . $sumRow . ':C' . $sumRow);
         $sheetSum->setCellValue('D' . $sumRow, '');
@@ -1336,6 +1289,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('inv.is_include_pph23', true)
+            ->where('inv.invoice_type', 'pt')
             ->whereBetween('inv.invoice_date', [$startOfMonth, $endOfMonth])
             ->selectRaw('
                 inv.invoice_number,
@@ -1433,8 +1387,8 @@ class NeracaLajurPiutang extends Page implements HasTable
             'D3' => 'Deskripsi',
             'E3' => 'Nilai Invoice',
             'F3' => 'Nominal PPh23',
-            'G3' => 'Piutang CoA Terpetakan',
-            'H3' => 'Pendapatan CoA Terpetakan',
+            'G3' => 'Debit CoA',
+            'H3' => 'Kredit CoA',
         ];
         foreach ($pph_checked_headers as $cell => $label) {
             $sheetPphChecked->setCellValue($cell, $label);
@@ -1451,6 +1405,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->whereNull('inv.deleted_at')
             ->whereNull('cli.deleted_at')
             ->where('inv.is_pph23_checked', true)
+            ->where('inv.invoice_type', 'pt')
             ->whereBetween('inv.tanggal_bukti_potong_pph23', [$startOfMonth, $endOfMonth])
             // Tarik data invoice yang dicocokkan dengan tanggal bukti potong
             ->selectRaw('
@@ -1532,8 +1487,8 @@ class NeracaLajurPiutang extends Page implements HasTable
             $sheetPphChecked->setCellValue('D' . $cRow, $item->description);
             $sheetPphChecked->setCellValue('E' . $cRow, $item->item_amount ?: '');
             $sheetPphChecked->setCellValue('F' . $cRow, $pphAmount ?: '');
-            $sheetPphChecked->setCellValue('G' . $cRow, $piutangLabel);
-            $sheetPphChecked->setCellValue('H' . $cRow, $pendapatanLabel);
+            $sheetPphChecked->setCellValue('G' . $cRow, 'AO-208.8 - Pendapatan Yang Belum Diterima/Fee PPh 23');
+            $sheetPphChecked->setCellValue('H' . $cRow, 'AO-108.1 - PPh 23');
 
             $sheetPphChecked->getStyle('E' . $cRow . ':F' . $cRow)->getNumberFormat()->setFormatCode($numberFmt);
             $cGrand += $pphAmount;
