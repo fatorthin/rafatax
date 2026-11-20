@@ -103,13 +103,29 @@ class GeneralLedger extends Page
                         \Filament\Forms\Components\Select::make('coa_id')
                             ->label('CoA')
                             ->options(function () {
-                                return \App\Models\Coa::query()
+                                $ent = strtolower($this->entity ?? 'all');
+                                $tahun = (int) ($this->tahun ?? now()->year);
+                                $bulan = (int) ($this->bulan ?? now()->month);
+                                $isSeparated = ($tahun > 2026) || ($tahun == 2026 && $bulan >= 4);
+
+                                $query = \App\Models\Coa::query()
                                     ->whereNull('deleted_at')
-                                    ->where('code', '!=', 'AO-103')
-                                    ->orderBy('code')
+                                    ->where('code', '!=', 'AO-103');
+
+                                if ($ent === 'pt') {
+                                    $query->whereNotIn('code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
+                                } elseif ($ent === 'kkp') {
+                                    if ($isSeparated) {
+                                        $query->whereNotIn('code', ['AO-102.1', 'AO-102.2', 'AO-102.4', 'AO-102.5']);
+                                    } else {
+                                        $query->whereNotIn('code', ['AO-102.1', 'AO-102.4']);
+                                    }
+                                }
+
+                                return $query->orderBy('code')
                                     ->get()
-                                    ->mapWithKeys(function ($coa) {
-                                        $name = (strtolower($this->entity ?? 'all') === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name;
+                                    ->mapWithKeys(function ($coa) use ($ent) {
+                                        $name = ($ent === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name;
                                         return [$coa->id => $coa->code . ' - ' . $name];
                                     });
                             })
@@ -195,13 +211,29 @@ class GeneralLedger extends Page
                     \Filament\Forms\Components\Select::make('coa_id')
                         ->label('CoA')
                         ->options(function () {
-                            return \App\Models\Coa::query()
+                            $ent = strtolower($this->entity ?? 'all');
+                            $tahun = (int) ($this->tahun ?? now()->year);
+                            $bulan = (int) ($this->bulan ?? now()->month);
+                            $isSeparated = ($tahun > 2026) || ($tahun == 2026 && $bulan >= 4);
+
+                            $query = \App\Models\Coa::query()
                                 ->whereNull('deleted_at')
-                                ->where('code', '!=', 'AO-103')
-                                ->orderBy('code')
+                                ->where('code', '!=', 'AO-103');
+
+                            if ($ent === 'pt') {
+                                $query->whereNotIn('code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
+                            } elseif ($ent === 'kkp') {
+                                if ($isSeparated) {
+                                    $query->whereNotIn('code', ['AO-102.1', 'AO-102.2', 'AO-102.4', 'AO-102.5']);
+                                } else {
+                                    $query->whereNotIn('code', ['AO-102.1', 'AO-102.4']);
+                                }
+                            }
+
+                            return $query->orderBy('code')
                                 ->get()
-                                ->mapWithKeys(function ($coa) {
-                                    $name = (strtolower($this->entity ?? 'all') === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name;
+                                ->mapWithKeys(function ($coa) use ($ent) {
+                                    $name = ($ent === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name;
                                     return [$coa->id => $coa->code . ' - ' . $name];
                                 });
                         })

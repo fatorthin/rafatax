@@ -65,12 +65,22 @@ class KelolaSaldoAwalEntitas extends Page
         // Balance sheet groups (Aktiva, Kewajiban, Ekuitas)
         $balanceSheetGroupIds = [10, 11, 12, 20, 21, 30];
 
-        $coas = DB::table('coa')
+        $query = DB::table('coa')
             ->join('group_coas', 'group_coas.id', '=', 'coa.group_coa_id')
             ->whereIn('coa.group_coa_id', $balanceSheetGroupIds)
             ->whereNull('coa.deleted_at')
-            ->select('coa.id', 'coa.code', 'coa.name', 'coa.group_coa_id', 'group_coas.name as group_name')
-            ->orderBy('coa.group_coa_id')
+            ->select('coa.id', 'coa.code', 'coa.name', 'coa.group_coa_id', 'group_coas.name as group_name');
+
+        // Filter CoA Bank per entitas:
+        // PT: sembunyikan AO-102.2 (BCA 140), AO-102.3 (BCA 425), AO-102.5 (Mandiri)
+        // KKP: per April (cut-off), sembunyikan AO-102.1, AO-102.2, AO-102.4, AO-102.5 (hanya AO-102.3 BCA 425)
+        if ($this->entity === 'PT') {
+            $query->whereNotIn('coa.code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
+        } elseif ($this->entity === 'KKP') {
+            $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.2', 'AO-102.4', 'AO-102.5']);
+        }
+
+        $coas = $query->orderBy('coa.group_coa_id')
             ->orderBy('coa.code')
             ->get();
 

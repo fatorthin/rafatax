@@ -677,11 +677,15 @@ class NeracaLajurController extends Controller
 
         // Filter CoA Bank per entitas:
         // PT: sembunyikan AO-102.2 (BCA 140), AO-102.3 (BCA 425), AO-102.5 (Mandiri)
-        // KKP: sembunyikan AO-102.1 (BCA PT), AO-102.4 (BCA 436)
+        // KKP: per April (isSeparated), sembunyikan AO-102.1, AO-102.2, AO-102.4, AO-102.5 (hanya AO-102.3 BCA 425 yang ditampilkan)
         if ($ent === 'pt') {
             $query->whereNotIn('coa.code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
         } elseif ($ent === 'kkp') {
-            $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.4']);
+            if ($isSeparated) {
+                $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.2', 'AO-102.4', 'AO-102.5']);
+            } else {
+                $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.4']);
+            }
         }
 
         $query->orderBy('coa.id');

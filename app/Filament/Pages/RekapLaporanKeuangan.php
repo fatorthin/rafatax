@@ -1139,7 +1139,7 @@ class RekapLaporanKeuangan extends Page
         $labaRugiReport = $this->getLabaRugiReportFor2026($month, $entity);
         $sisaDanaTahunBerjalan = $labaRugiReport['labaRugiBersih'];
 
-        $data = \App\Models\Coa::query()
+        $dataQuery = \App\Models\Coa::query()
             ->select([
                 'coa.id',
                 'coa.code',
@@ -1333,8 +1333,22 @@ class RekapLaporanKeuangan extends Page
                 'aje_data.coa_id'
             )
             ->whereNull('coa.deleted_at')
-            ->where('coa.type', 'kkp')
-            ->orderBy('coa.group_coa_id')
+            ->where('coa.type', 'kkp');
+
+        // Filter CoA Bank per entitas:
+        // PT: sembunyikan AO-102.2 (BCA 140), AO-102.3 (BCA 425), AO-102.5 (Mandiri)
+        // KKP: per April (isSeparated), sembunyikan AO-102.1, AO-102.2, AO-102.4, AO-102.5 (hanya AO-102.3 BCA 425 yang ditampilkan)
+        if ($ent === 'pt') {
+            $dataQuery->whereNotIn('coa.code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
+        } elseif ($ent === 'kkp') {
+            if ($isSeparated) {
+                $dataQuery->whereNotIn('coa.code', ['AO-102.1', 'AO-102.2', 'AO-102.4', 'AO-102.5']);
+            } else {
+                $dataQuery->whereNotIn('coa.code', ['AO-102.1', 'AO-102.4']);
+            }
+        }
+
+        $data = $dataQuery->orderBy('coa.group_coa_id')
             ->orderBy('coa.code')
             ->get();
 

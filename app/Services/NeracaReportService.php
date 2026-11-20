@@ -34,7 +34,7 @@ class NeracaReportService
         $labaRugiData = $this->getLabaRugiCalculation($startOfCurrentMonthString, $endOfCurrentMonthString, $year, $month, $entity);
         $sisaDanaTahunBerjalan = $labaRugiData['labaRugiBersih'];
 
-        $data = Coa::query()
+        $query = Coa::query()
             ->select([
                 'coa.id',
                 'coa.code',
@@ -68,8 +68,22 @@ class NeracaReportService
             ->whereNull('coa.deleted_at')
             ->where('coa.type', 'kkp')
             ->whereNotIn('coa.id', [78, 118])
-            ->whereIn('coa.group_coa_id', self::NERACA_GROUP_IDS)
-            ->orderBy('group_coas.id')
+            ->whereIn('coa.group_coa_id', self::NERACA_GROUP_IDS);
+
+        // Filter CoA Bank per entitas:
+        // PT: sembunyikan AO-102.2 (BCA 140), AO-102.3 (BCA 425), AO-102.5 (Mandiri)
+        // KKP: per April (isSeparated), sembunyikan AO-102.1, AO-102.2, AO-102.4, AO-102.5 (hanya AO-102.3 BCA 425 yang ditampilkan)
+        if ($ent === 'pt') {
+            $query->whereNotIn('coa.code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
+        } elseif ($ent === 'kkp') {
+            if ($isSeparated) {
+                $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.2', 'AO-102.4', 'AO-102.5']);
+            } else {
+                $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.4']);
+            }
+        }
+
+        $data = $query->orderBy('group_coas.id')
             ->orderBy('coa.code')
             ->get();
 
