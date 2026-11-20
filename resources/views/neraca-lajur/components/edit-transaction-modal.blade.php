@@ -29,10 +29,10 @@
 
 <!-- Modal Edit Transaksi -->
 <div id="editTransactionModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all duration-200">
+    <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-all duration-200">
         
         <!-- Modal Header -->
-        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
+        <div class="px-6 py-4 rounded-t-2xl border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center {{ $themeClasses['badge'] }} border shadow-xs">
                     <i class="fa-solid fa-pen-to-square text-sm"></i>
@@ -115,23 +115,78 @@
                     </select>
                 </div>
 
-                <!-- Akun CoA -->
-                <div class="sm:col-span-2">
+                <!-- Akun CoA dengan Pencarian (Searchable Dropdown) -->
+                <div class="sm:col-span-2 relative" id="coaDropdownContainer">
                     <label for="edit_coa_id" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Chart of Account (CoA) <span class="text-rose-500">*</span>
                     </label>
-                    <select id="edit_coa_id" 
-                            name="coa_id" 
-                            required
-                            class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 {{ $themeClasses['focus'] }} transition-all shadow-xs">
-                        @if(isset($allCoas))
-                            @foreach($allCoas as $c)
-                                <option value="{{ $c->id }}">
-                                    {{ $c->code }} - {{ $c->name }}
-                                </option>
-                            @endforeach
-                        @endif
-                    </select>
+                    <input type="hidden" id="edit_coa_id" name="coa_id" required>
+
+                    <!-- Trigger Button -->
+                    <button type="button" 
+                            id="coaDropdownTrigger" 
+                            onclick="toggleCoaDropdown()"
+                            class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-between text-left focus:outline-none focus:ring-2 {{ $themeClasses['focus'] }} transition-all shadow-xs">
+                        <span id="selectedCoaText" class="truncate font-medium text-slate-700 dark:text-slate-200">
+                            Pilih Akun CoA...
+                        </span>
+                        <i id="coaDropdownChevron" class="fa-solid fa-chevron-down text-slate-400 text-[10px] ml-2 transition-transform duration-200"></i>
+                    </button>
+
+                    <!-- Dropdown Panel with Search -->
+                    <div id="coaDropdownPanel" 
+                         class="hidden absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
+                        
+                        <!-- Search Box -->
+                        <div class="p-2 border-b border-slate-100 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10">
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400 pointer-events-none"></i>
+                                <input type="text" 
+                                       id="coaSearchInput" 
+                                       oninput="filterCoaOptions()"
+                                       onkeydown="handleCoaKeydown(event)"
+                                       placeholder="Cari kode (AO-...) atau nama akun CoA..." 
+                                       autocomplete="off"
+                                       class="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 {{ $themeClasses['focus'] }}">
+                                <button type="button" 
+                                        id="clearCoaSearchBtn" 
+                                        onclick="clearCoaSearch()" 
+                                        class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                    <i class="fa-solid fa-circle-xmark text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Options List -->
+                        <div id="coaOptionsList" class="max-h-56 overflow-y-auto p-1 divide-y divide-slate-100/50 dark:divide-slate-700/30">
+                            @if(isset($allCoas))
+                                @foreach($allCoas as $c)
+                                    <div class="coa-option-item px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors flex items-center justify-between"
+                                         data-id="{{ $c->id }}"
+                                         data-code="{{ $c->code }}"
+                                         data-name="{{ $c->name }}"
+                                         data-search="{{ strtolower($c->code . ' ' . $c->name) }}"
+                                         onclick="selectCoa({{ $c->id }}, '{{ addslashes($c->code) }}', '{{ addslashes($c->name) }}')">
+                                        <div class="flex items-center gap-2 truncate pr-2">
+                                            <span class="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 flex-shrink-0">
+                                                {{ $c->code }}
+                                            </span>
+                                            <span class="text-slate-700 dark:text-slate-200 truncate">
+                                                {{ $c->name }}
+                                            </span>
+                                        </div>
+                                        <i class="coa-check fa-solid fa-check text-xs text-emerald-500 hidden flex-shrink-0"></i>
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
+
+                        <!-- Empty state -->
+                        <div id="coaNoResults" class="hidden p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                            <i class="fa-solid fa-magnifying-glass text-slate-300 dark:text-slate-600 block text-base mb-1"></i>
+                            Tidak ada akun CoA yang cocok.
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Debit -->
@@ -213,6 +268,151 @@
 
 <script>
     const fromPanel = "{{ $from ?? 'admin' }}";
+    let coaHighlightedIndex = -1;
+
+    function toggleCoaDropdown(forceClose = false) {
+        const panel = document.getElementById('coaDropdownPanel');
+        const chevron = document.getElementById('coaDropdownChevron');
+        if (!panel) return;
+        const isCurrentlyHidden = panel.classList.contains('hidden');
+
+        if (forceClose || !isCurrentlyHidden) {
+            panel.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+            coaHighlightedIndex = -1;
+        } else {
+            panel.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+            const searchInput = document.getElementById('coaSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                filterCoaOptions();
+                setTimeout(() => searchInput.focus(), 60);
+            }
+        }
+    }
+
+    function selectCoa(id, code, name, close = true) {
+        const input = document.getElementById('edit_coa_id');
+        const selectedText = document.getElementById('selectedCoaText');
+        if (input) input.value = id || '';
+
+        if (selectedText) {
+            if (id && (code || name)) {
+                selectedText.innerHTML = `
+                    <span class="inline-flex items-center gap-2 truncate">
+                        <span class="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 flex-shrink-0">${code || ''}</span>
+                        <span class="font-medium text-slate-800 dark:text-slate-100 truncate">${name || ''}</span>
+                    </span>
+                `;
+            } else {
+                selectedText.innerHTML = '<span class="text-slate-400">Pilih Akun CoA...</span>';
+            }
+        }
+
+        // Highlight selected item in list
+        document.querySelectorAll('.coa-option-item').forEach(item => {
+            const check = item.querySelector('.coa-check');
+            if (item.dataset.id == id) {
+                item.classList.add('bg-slate-100', 'dark:bg-slate-700/80');
+                if (check) check.classList.remove('hidden');
+            } else {
+                item.classList.remove('bg-slate-100', 'dark:bg-slate-700/80');
+                if (check) check.classList.add('hidden');
+            }
+        });
+
+        if (close) {
+            toggleCoaDropdown(true);
+        }
+    }
+
+    function filterCoaOptions() {
+        const searchInput = document.getElementById('coaSearchInput');
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        const items = document.querySelectorAll('.coa-option-item');
+        const noResults = document.getElementById('coaNoResults');
+        const clearBtn = document.getElementById('clearCoaSearchBtn');
+
+        if (clearBtn) {
+            if (query.length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+        }
+
+        let visibleCount = 0;
+        items.forEach(item => {
+            const searchStr = item.dataset.search || '';
+            if (searchStr.includes(query)) {
+                item.style.display = 'flex';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        if (noResults) {
+            if (visibleCount === 0) noResults.classList.remove('hidden');
+            else noResults.classList.add('hidden');
+        }
+
+        coaHighlightedIndex = -1;
+        updateHighlightedCoaOption();
+    }
+
+    function clearCoaSearch() {
+        const searchInput = document.getElementById('coaSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            filterCoaOptions();
+            searchInput.focus();
+        }
+    }
+
+    function handleCoaKeydown(e) {
+        const visibleItems = Array.from(document.querySelectorAll('.coa-option-item')).filter(el => el.style.display !== 'none');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (visibleItems.length === 0) return;
+            coaHighlightedIndex = (coaHighlightedIndex + 1) % visibleItems.length;
+            updateHighlightedCoaOption(visibleItems);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (visibleItems.length === 0) return;
+            coaHighlightedIndex = (coaHighlightedIndex - 1 + visibleItems.length) % visibleItems.length;
+            updateHighlightedCoaOption(visibleItems);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (visibleItems.length > 0 && coaHighlightedIndex >= 0 && coaHighlightedIndex < visibleItems.length) {
+                visibleItems[coaHighlightedIndex].click();
+            } else if (visibleItems.length === 1) {
+                visibleItems[0].click();
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            toggleCoaDropdown(true);
+        }
+    }
+
+    function updateHighlightedCoaOption(visibleItems) {
+        const items = visibleItems || Array.from(document.querySelectorAll('.coa-option-item')).filter(el => el.style.display !== 'none');
+        items.forEach((item, idx) => {
+            if (idx === coaHighlightedIndex) {
+                item.classList.add('ring-2', 'ring-primary-500', 'bg-slate-50', 'dark:bg-slate-700');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('ring-2', 'ring-primary-500');
+            }
+        });
+    }
+
+    // Close CoA dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('coaDropdownContainer');
+        if (container && !container.contains(e.target)) {
+            toggleCoaDropdown(true);
+        }
+    });
 
     function openEditModal(trx) {
         if (!trx) return;
@@ -227,10 +427,12 @@
         document.getElementById('modalTrxIdDisplay').textContent = trx.id;
         document.getElementById('edit_transaction_date').value = (trx.transaction_date || '').substring(0, 10);
         document.getElementById('edit_cash_reference_id').value = trx.cash_reference_id || '';
-        document.getElementById('edit_coa_id').value = trx.coa_id || '';
         document.getElementById('edit_debit_amount').value = trx.debit_amount !== undefined ? trx.debit_amount : 0;
         document.getElementById('edit_credit_amount').value = trx.credit_amount !== undefined ? trx.credit_amount : 0;
         document.getElementById('edit_description').value = trx.description || '';
+
+        // Select CoA in searchable dropdown
+        selectCoa(trx.coa_id, trx.coa_code, trx.coa_name, false);
 
         // Context invoice/client
         const contextDiv = document.getElementById('modalInvoiceContext');
@@ -256,6 +458,7 @@
     function closeEditModal() {
         const modal = document.getElementById('editTransactionModal');
         modal.classList.add('hidden');
+        toggleCoaDropdown(true);
     }
 
     // Close modal on click outside
