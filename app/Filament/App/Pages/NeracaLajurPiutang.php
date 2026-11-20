@@ -94,7 +94,8 @@ class NeracaLajurPiutang extends BaseNeracaLajurPiutang
     public function getBreadcrumbs(): array
     {
         return [
-            static::getUrl() => static::getTitle(),
+            'Keuangan',
+            'Neraca Lajur',
         ];
     }
 

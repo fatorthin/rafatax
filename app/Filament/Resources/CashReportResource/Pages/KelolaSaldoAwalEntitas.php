@@ -106,10 +106,15 @@ class KelolaSaldoAwalEntitas extends Page
             $debit  = (float) ($entityRows->get($coa->id)->debit ?? 0);
             $credit = (float) ($entityRows->get($coa->id)->credit ?? 0);
 
+            $coaName = $coa->name;
+            if ($this->entity === 'PT' && $coa->code === 'AO-303') {
+                $coaName = 'Saldo Laba Ditahan';
+            }
+
             $this->items[$coa->id] = [
                 'coa_id'     => $coa->id,
                 'code'       => $coa->code,
-                'name'       => $coa->name,
+                'name'       => $coaName,
                 'group_id'   => $coa->group_coa_id,
                 'group_name' => $coa->group_name,
                 'ref_debit'  => $refDebit,

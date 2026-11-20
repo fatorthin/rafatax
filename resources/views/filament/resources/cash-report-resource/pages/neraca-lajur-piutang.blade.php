@@ -1,54 +1,101 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
-        {{-- Info banner konsep piutang --}}
-        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-            <div class="flex items-start gap-3">
-                <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div class="text-sm text-blue-800 dark:text-blue-200">
-                    <p class="font-semibold">Konsep Baru: Jurnal Pendapatan berbasis Piutang</p>
-                    <ul class="mt-1 list-disc pl-4 space-y-0.5">
-                        <li><strong>Debit Piutang (AO-103) / Kredit AO-208 (Pendapatan Yang Belum Diterima)</strong>: Invoice dibuat pada bulan berjalan</li>
-                        <li><strong>Debit AO-208 / Kredit Piutang (AO-103)</strong>: Invoice KKP paid (realisasi bulan berjalan)</li>
-                        <li><strong>Debit Piutang (AO-103) / Kredit AO-208</strong>: Nilai nominal PPh23 (nilai invoice / 98 * 2) dari Invoice PT (include PPh23 = true) yang dibuat pada bulan berjalan. Dialokasikan ke CoA sesuai item invoice (untuk Bulanan/Tahunan dialokasikan ke AO-103.6)</li>
-                        <li><strong>Debit AO-208 & Debit AO-108.1 (PPh 23) / Kredit AO-401.x & Kredit AO-103.x</strong>: Nilai nominal PPh23 dari Invoice PT yang status is_pph23_checked = true berdasarkan tanggal bukti potong pada bulan berjalan. Dialokasikan sesuai jenis CoA (untuk Bulanan/Tahunan dialokasikan ke AO-401 & AO-103.6)</li>
-                        <li>Memo tidak dimasukkan ke dalam Jurnal Pendapatan karena langsung diakui sebagai pendapatan di kolom Kas & Bank berdasarkan invoice</li>
-                    </ul>
+    <style>
+        /* Perapian Header & Action Buttons */
+        .fi-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.875rem !important;
+        }
+        @media (min-width: 1400px) {
+            .fi-header {
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+            }
+        }
+        .fi-header > div:last-child {
+            flex-wrap: wrap !important;
+            gap: 0.5rem !important;
+        }
+        .fi-header-heading {
+            white-space: normal !important;
+            word-break: normal !important;
+            line-height: 1.25 !important;
+            font-size: 1.5rem !important;
+        }
+        @media (min-width: 640px) {
+            .fi-header-heading {
+                font-size: 1.75rem !important;
+            }
+        }
+    </style>
+
+    <div class="space-y-4">
+        {{-- Info banner konsep piutang (Collapsible Accordion) --}}
+        <div x-data="{ open: false }" class="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 dark:border-blue-900/50 dark:bg-blue-950/20 text-xs shadow-sm">
+            <button type="button" @click="open = !open" class="w-full flex items-center justify-between text-left text-blue-900 dark:text-blue-200 font-semibold focus:outline-none">
+                <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Konsep Jurnal Pendapatan Berbasis Piutang</span>
                 </div>
+                <span class="text-[11px] text-blue-600 dark:text-blue-400 font-medium hover:underline flex items-center gap-1">
+                    <span x-text="open ? 'Sembunyikan Panduan' : 'Lihat Panduan & Aturan Jurnal'"></span>
+                    <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </span>
+            </button>
+            <div x-show="open" x-collapse x-cloak class="mt-2.5 pt-2.5 border-t border-blue-200/80 dark:border-blue-900/50 text-blue-800 dark:text-blue-200">
+                <ul class="list-disc pl-4 space-y-1">
+                    <li><strong>Debit Piutang (AO-103) / Kredit AO-208 (Pendapatan Yang Belum Diterima)</strong>: Invoice dibuat pada bulan berjalan</li>
+                    <li><strong>Debit AO-208 / Kredit Piutang (AO-103)</strong>: Invoice KKP paid (realisasi bulan berjalan)</li>
+                    <li><strong>Debit Piutang (AO-103) / Kredit AO-208</strong>: Nilai nominal PPh23 (nilai invoice / 98 * 2) dari Invoice PT (include PPh23 = true) yang dibuat pada bulan berjalan. Dialokasikan ke CoA sesuai item invoice (untuk Bulanan/Tahunan dialokasikan ke AO-103.6)</li>
+                    <li><strong>Debit AO-208 & Debit AO-108.1 (PPh 23) / Kredit AO-401.x & Kredit AO-103.x</strong>: Nilai nominal PPh23 dari Invoice PT yang status is_pph23_checked = true berdasarkan tanggal bukti potong pada bulan berjalan. Dialokasikan sesuai jenis CoA (untuk Bulanan/Tahunan dialokasikan ke AO-401 & AO-103.6)</li>
+                    <li>Memo tidak dimasukkan ke dalam Jurnal Pendapatan karena langsung diakui sebagai pendapatan di kolom Kas & Bank berdasarkan invoice</li>
+                </ul>
             </div>
         </div>
 
         {{-- Entitas Switcher Bar --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div class="flex items-center gap-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex flex-wrap items-center gap-3">
                 <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pilihan Entitas:</span>
-                <div class="inline-flex rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-100 dark:bg-gray-900" role="group">
+                <div class="inline-flex rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-1 bg-gray-100 dark:bg-gray-900" role="group">
+                    @php
+                        $allActive = $entity === 'all';
+                        $kkpActive = $entity === 'kkp';
+                        $ptActive  = $entity === 'pt';
+                    @endphp
                     <a href="{{ static::getUrl(['month' => $month, 'year' => $year, 'entity' => 'all']) }}"
-                        class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
-                        Semua (Konsolidasi)
+                        class="px-4 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 {{ $allActive ? 'shadow-sm text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}"
+                        style="{{ $allActive ? 'background-color: #2563eb; color: #ffffff;' : '' }}">
+                        <span>Semua (Konsolidasi)</span>
                     </a>
                     <a href="{{ static::getUrl(['month' => $month, 'year' => $year, 'entity' => 'kkp']) }}"
-                        class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'kkp' ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
-                        🏛️ KKP
+                        class="px-4 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 {{ $kkpActive ? 'shadow-sm text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}"
+                        style="{{ $kkpActive ? 'background-color: #059669; color: #ffffff;' : '' }}">
+                        <span>🏛️ KKP</span>
                     </a>
                     <a href="{{ static::getUrl(['month' => $month, 'year' => $year, 'entity' => 'pt']) }}"
-                        class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all {{ $entity === 'pt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white' }}">
-                        🏢 PT
+                        class="px-4 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 {{ $ptActive ? 'shadow-sm text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}"
+                        style="{{ $ptActive ? 'background-color: #4f46e5; color: #ffffff;' : '' }}">
+                        <span>🏢 PT</span>
                     </a>
                 </div>
             </div>
 
             @if (($year > 2026) || ($year == 2026 && $month >= 4))
-                <div class="text-xs text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Pemisahan Entitas Aktif (Cut-Off per April 2026)</span>
+                <div class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border"
+                    style="background-color: #ecfdf5; color: #047857; border-color: #a7f3d0;">
+                    <span class="inline-block w-2 h-2 rounded-full" style="background-color: #10b981;"></span>
+                    <span>Pemisahan Entitas Aktif (Mulai April 2026)</span>
                 </div>
             @else
-                <div class="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800">
-                    <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                <div class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border"
+                    style="background-color: #fffbeb; color: #b45309; border-color: #fde68a;">
+                    <span class="inline-block w-2 h-2 rounded-full" style="background-color: #f59e0b;"></span>
                     <span>Periode Historis Konsolidasi (&lt; April 2026)</span>
                 </div>
             @endif

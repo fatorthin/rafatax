@@ -108,7 +108,10 @@ class GeneralLedger extends Page
                                     ->where('code', '!=', 'AO-103')
                                     ->orderBy('code')
                                     ->get()
-                                    ->mapWithKeys(fn ($coa) => [$coa->id => $coa->code . ' - ' . $coa->name]);
+                                    ->mapWithKeys(function ($coa) {
+                                        $name = (strtolower($this->entity ?? 'all') === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name;
+                                        return [$coa->id => $coa->code . ' - ' . $name];
+                                    });
                             })
                             ->searchable()
                             ->placeholder('Semua CoA')
@@ -197,7 +200,10 @@ class GeneralLedger extends Page
                                 ->where('code', '!=', 'AO-103')
                                 ->orderBy('code')
                                 ->get()
-                                ->mapWithKeys(fn ($coa) => [$coa->id => $coa->code . ' - ' . $coa->name]);
+                                ->mapWithKeys(function ($coa) {
+                                    $name = (strtolower($this->entity ?? 'all') === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name;
+                                    return [$coa->id => $coa->code . ' - ' . $name];
+                                });
                         })
                         ->searchable()
                         ->placeholder('Semua CoA'),
@@ -229,6 +235,14 @@ class GeneralLedger extends Page
                 ->action(function (array $data) {
                     $groupedTransactions = $this->getReports($data);
                     $coas = \App\Models\Coa::whereIn('id', $groupedTransactions->keys())->get()->keyBy('id');
+                    $ent = strtolower($data['entity'] ?? $this->entity ?? 'all');
+                    if ($ent === 'pt') {
+                        foreach ($coas as $c) {
+                            if ($c->code === 'AO-303') {
+                                $c->name = 'Saldo Laba Ditahan';
+                            }
+                        }
+                    }
 
                     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
                     $sheet = $spreadsheet->getActiveSheet();
@@ -498,6 +512,14 @@ class GeneralLedger extends Page
         $allTransactions = $allTransactions->reject(function ($t) {
             return ($t->coa_id == 179) || (($t->coa->code ?? '') === 'AO-103');
         });
+
+        if ($entity === 'pt') {
+            foreach ($allTransactions as $t) {
+                if ($t->coa && $t->coa->code === 'AO-303') {
+                    $t->coa->name = 'Saldo Laba Ditahan';
+                }
+            }
+        }
 
         return $allTransactions->groupBy('coa_id')->sortBy(function ($transactions) {
             return $transactions->first()->coa->code ?? '999999';
@@ -893,10 +915,19 @@ class GeneralLedger extends Page
     protected function getViewData(): array
     {
         $groupedTransactions = $this->getReports();
+        $coas = \App\Models\Coa::whereIn('id', $groupedTransactions->keys())->get()->keyBy('id');
+        $ent = strtolower($this->entity ?? 'all');
+        if ($ent === 'pt') {
+            foreach ($coas as $c) {
+                if ($c->code === 'AO-303') {
+                    $c->name = 'Saldo Laba Ditahan';
+                }
+            }
+        }
 
         return [
             'groupedTransactions' => $groupedTransactions,
-            'coas' => \App\Models\Coa::whereIn('id', $groupedTransactions->keys())->get()->keyBy('id'),
+            'coas' => $coas,
         ];
     }
 }

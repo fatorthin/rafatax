@@ -38,7 +38,9 @@ class NeracaReportService
             ->select([
                 'coa.id',
                 'coa.code',
-                'coa.name',
+                $ent === 'pt'
+                    ? DB::raw("CASE WHEN coa.code = 'AO-303' THEN 'Saldo Laba Ditahan' ELSE coa.name END as name")
+                    : 'coa.name',
                 'coa.type',
                 'coa.group_coa_id',
                 'group_coas.name as group_name',
@@ -125,7 +127,7 @@ class NeracaReportService
 
             $neracaData[$target][] = array_merge($defaultItemStructure, [
                 'code' => $row->code,
-                'name' => $row->name,
+                'name' => ($ent === 'pt' && $row->code === 'AO-303') ? 'Saldo Laba Ditahan' : $row->name,
                 'amount' => abs($amount),
                 'is_negative' => $amount < 0,
             ]);
@@ -207,7 +209,9 @@ class NeracaReportService
             ->select([
                 'coa.id',
                 'coa.code',
-                'coa.name',
+                $ent === 'pt'
+                    ? DB::raw("CASE WHEN coa.code = 'AO-303' THEN 'Saldo Laba Ditahan' ELSE coa.name END as name")
+                    : 'coa.name',
                 'coa.type',
                 'coa.group_coa_id',
                 DB::raw('COALESCE(journal_data.neraca_awal_debit, 0) as neraca_awal_debit'),

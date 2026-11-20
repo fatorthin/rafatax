@@ -494,7 +494,15 @@ class NeracaLajurPiutang extends Page implements HasTable
 
     public function getTableData()
     {
-        return $this->getTableQuery()->get();
+        $data = $this->getTableQuery()->get();
+        if ($this->entity === 'pt') {
+            foreach ($data as $item) {
+                if ($item->code === 'AO-303') {
+                    $item->name = 'Saldo Laba Ditahan';
+                }
+            }
+        }
+        return $data;
     }
 
     protected function getTableQuery(): Builder
@@ -626,7 +634,9 @@ class NeracaLajurPiutang extends Page implements HasTable
             ->select([
                 'coa.id',
                 'coa.code',
-                'coa.name',
+                $this->entity === 'pt'
+                    ? DB::raw("CASE WHEN coa.code = 'AO-303' THEN 'Saldo Laba Ditahan' ELSE coa.name END as name")
+                    : 'coa.name',
                 'coa.type',
                 'coa.group_coa_id',
                 DB::raw('COALESCE(journal_data.neraca_awal_debit, 0) as neraca_awal_debit'),
@@ -842,6 +852,25 @@ class NeracaLajurPiutang extends Page implements HasTable
         return $query;
     }
 
+    public function getBreadcrumbs(): array
+    {
+        return [
+            CashReportResource::getUrl('index') => 'Cash Report',
+            'Neraca Lajur',
+        ];
+    }
+
+    public function getHeading(): string
+    {
+        $monthName = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+        $m = $monthName[$this->month] ?? $this->month;
+        return "Neraca Lajur Bulanan - {$m} {$this->year}";
+    }
+
     public function getTitle(): string
     {
         $monthName = [
@@ -858,7 +887,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             11 => 'November',
             12 => 'Desember',
         ];
-        return 'Neraca Lajur Bulanan (Konsep Piutang) - ' . $monthName[$this->month] . ' ' . $this->year;
+        return 'Neraca Lajur Bulanan - ' . ($monthName[$this->month] ?? $this->month) . ' ' . $this->year;
     }
 
     // ──────────────────────────────────────────────────────────────────────────

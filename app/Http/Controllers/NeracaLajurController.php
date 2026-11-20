@@ -383,7 +383,9 @@ class NeracaLajurController extends Controller
             ->select([
                 'coa.id',
                 'coa.code',
-                'coa.name',
+                $ent === 'pt'
+                    ? DB::raw("CASE WHEN coa.code = 'AO-303' THEN 'Saldo Laba Ditahan' ELSE coa.name END as name")
+                    : 'coa.name',
                 'coa.type',
                 DB::raw('COALESCE(journal_data.neraca_awal_debit, 0) as neraca_awal_debit'),
                 DB::raw('COALESCE(journal_data.neraca_awal_kredit, 0) as neraca_awal_kredit'),

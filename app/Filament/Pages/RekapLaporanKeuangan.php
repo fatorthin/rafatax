@@ -442,6 +442,7 @@ class RekapLaporanKeuangan extends Page
         $totals = $data['totals'];
         $coas = $data['coas'];
         $groupCoas = $data['groupCoas'];
+        $ent = strtolower($this->entity);
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -482,7 +483,7 @@ class RekapLaporanKeuangan extends Page
             foreach ($coas as $coa) {
                 if ($coa->group_coa_id != $group->id) continue;
                 $code = $coa->code;
-                $sheet->setCellValue('A' . $row, $coa->name);
+                $sheet->setCellValue('A' . $row, ($ent === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name);
                 $totalRowVal = 0;
                 for ($m = 1; $m <= 12; $m++) {
                     $val = $matrix[$code]['months'][$m];
@@ -533,7 +534,7 @@ class RekapLaporanKeuangan extends Page
             foreach ($coas as $coa) {
                 if ($coa->group_coa_id != $group->id) continue;
                 $code = $coa->code;
-                $sheet->setCellValue('A' . $row, $coa->name);
+                $sheet->setCellValue('A' . $row, ($ent === 'pt' && $coa->code === 'AO-303') ? 'Saldo Laba Ditahan' : $coa->name);
                 $totalRowVal = 0;
                 for ($m = 1; $m <= 12; $m++) {
                     $val = $matrix[$code]['months'][$m];
@@ -975,7 +976,7 @@ class RekapLaporanKeuangan extends Page
 
             $items[] = [
                 'code' => $row->code,
-                'name' => $row->name,
+                'name' => ($ent === 'pt' && $row->code === 'AO-303') ? 'Saldo Laba Ditahan' : $row->name,
                 'amount' => $amount,
                 'category' => $category,
             ];
@@ -1407,7 +1408,7 @@ class RekapLaporanKeuangan extends Page
 
             $neracaData[$target][] = array_merge($defaultItemStructure, [
                 'code' => $row->code,
-                'name' => $row->name,
+                'name' => ($ent === 'pt' && $row->code === 'AO-303') ? 'Saldo Laba Ditahan' : $row->name,
                 'amount' => abs($amount),
                 'is_negative' => $amount < 0,
             ]);
