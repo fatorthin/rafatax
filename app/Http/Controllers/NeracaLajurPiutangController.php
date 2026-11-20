@@ -259,6 +259,7 @@ class NeracaLajurPiutangController extends Controller
                 'cash_reference_id' => $r->cash_reference_id,
                 'cash_name'         => trim($r->cashReference->name ?? 'Kas Besar'),
                 'status_kepemilikan'=> $r->cashReference->status_kepemilikan ?? '-',
+                'coa_id'            => $r->coa_id,
                 'coa_code'          => $r->coa->code ?? '-',
                 'coa_name'          => $r->coa->name ?? '-',
                 'description'       => $r->description,
@@ -295,16 +296,18 @@ class NeracaLajurPiutangController extends Controller
         ];
 
         return [
-            'coa'           => $coa,
-            'coaId'         => $coaId,
-            'month'         => $month,
-            'year'          => $year,
-            'monthName'     => $monthNames[$month] ?? "Bulan {$month}",
-            'type'          => $type,
-            'transactions'  => $transactions,
-            'summaryByCash' => $summaryByCash,
-            'totalAmount'   => $transactions->sum('amount'),
-            'totalCount'    => $transactions->count(),
+            'coa'               => $coa,
+            'coaId'             => $coaId,
+            'month'             => $month,
+            'year'              => $year,
+            'monthName'         => $monthNames[$month] ?? "Bulan {$month}",
+            'type'              => $type,
+            'transactions'      => $transactions,
+            'summaryByCash'     => $summaryByCash,
+            'totalAmount'       => $transactions->sum('amount'),
+            'totalCount'        => $transactions->count(),
+            'allCoas'           => \App\Models\Coa::orderBy('code')->get(['id', 'code', 'name']),
+            'allCashReferences' => \App\Models\CashReference::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'status_kepemilikan']),
         ];
     }
 
@@ -544,6 +547,7 @@ class NeracaLajurPiutangController extends Controller
                 'cash_reference_id' => $r->cash_reference_id,
                 'cash_name'         => trim($r->cashReference->name ?? 'Kas Kecil'),
                 'status_kepemilikan'=> $r->cashReference->status_kepemilikan ?? '-',
+                'coa_id'            => $r->coa_id,
                 'coa_code'          => $r->coa->code ?? '-',
                 'coa_name'          => $r->coa->name ?? '-',
                 'description'       => $r->description,
@@ -580,16 +584,18 @@ class NeracaLajurPiutangController extends Controller
         ];
 
         return [
-            'coa'           => $coa,
-            'coaId'         => $coaId,
-            'month'         => $month,
-            'year'          => $year,
-            'monthName'     => $monthNames[$month] ?? "Bulan {$month}",
-            'type'          => $type,
-            'transactions'  => $transactions,
-            'summaryByCash' => $summaryByCash,
-            'totalAmount'   => $transactions->sum('amount'),
-            'totalCount'    => $transactions->count(),
+            'coa'               => $coa,
+            'coaId'             => $coaId,
+            'month'             => $month,
+            'year'              => $year,
+            'monthName'         => $monthNames[$month] ?? "Bulan {$month}",
+            'type'              => $type,
+            'transactions'      => $transactions,
+            'summaryByCash'     => $summaryByCash,
+            'totalAmount'       => $transactions->sum('amount'),
+            'totalCount'        => $transactions->count(),
+            'allCoas'           => \App\Models\Coa::orderBy('code')->get(['id', 'code', 'name']),
+            'allCashReferences' => \App\Models\CashReference::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'status_kepemilikan']),
         ];
     }
 
@@ -838,7 +844,7 @@ class NeracaLajurPiutangController extends Controller
 
         // 2. Penerimaan Kas/Bank dari Piutang
         if ($isSeparated && $entity === 'pt') {
-            $cashReferenceIds = [1, 4, 9];
+            $cashReferenceIds = [1, 4, 9, 10];
         } elseif ($isSeparated && $entity === 'kkp') {
             $cashReferenceIds = [2, 6, 7];
         } else {
@@ -847,7 +853,7 @@ class NeracaLajurPiutangController extends Controller
             } elseif ($year < 2026) {
                 $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
             } else {
-                $cashReferenceIds = [1, 2, 4, 6, 7, 9];
+                $cashReferenceIds = [1, 2, 4, 6, 7, 9, 10];
             }
         }
 
@@ -1447,6 +1453,7 @@ class NeracaLajurPiutangController extends Controller
                 'cash_reference_id' => $r->cash_reference_id,
                 'bank_name'         => trim($r->cashReference->name ?? 'Bank'),
                 'status_kepemilikan'=> $r->cashReference->status_kepemilikan ?? '-',
+                'coa_id'            => $r->coa_id,
                 'coa_code'          => $r->coa->code ?? '-',
                 'coa_name'          => $r->coa->name ?? '-',
                 'description'       => $r->description,
@@ -1491,16 +1498,70 @@ class NeracaLajurPiutangController extends Controller
         ];
 
         return [
-            'coa'           => $coa,
-            'coaId'         => $coaId,
-            'month'         => $month,
-            'year'          => $year,
-            'monthName'     => $monthNames[$month] ?? "Bulan {$month}",
-            'type'          => $type,
-            'transactions'  => $transactions,
-            'summaryByBank' => $summaryByBank,
-            'totalAmount'   => $transactions->sum('amount'),
-            'totalCount'    => $transactions->count(),
+            'coa'               => $coa,
+            'coaId'             => $coaId,
+            'month'             => $month,
+            'year'              => $year,
+            'monthName'         => $monthNames[$month] ?? "Bulan {$month}",
+            'type'              => $type,
+            'transactions'      => $transactions,
+            'summaryByBank'     => $summaryByBank,
+            'totalAmount'       => $transactions->sum('amount'),
+            'totalCount'        => $transactions->count(),
+            'allCoas'           => \App\Models\Coa::orderBy('code')->get(['id', 'code', 'name']),
+            'allCashReferences' => \App\Models\CashReference::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'status_kepemilikan']),
         ];
+    }
+
+    /**
+     * Update transaksi cash report langsung dari modal detail Neraca Lajur (Kas Besar, Kas Kecil, Bank).
+     */
+    public function updateTransaction(Request $request)
+    {
+        $validated = $request->validate([
+            'id'                => 'required|exists:cash_reports,id',
+            'transaction_date'  => 'required|date',
+            'cash_reference_id' => 'required|exists:cash_references,id',
+            'coa_id'            => 'required|exists:coa,id',
+            'description'       => 'required|string|max:255',
+            'debit_amount'      => 'required|numeric|min:0',
+            'credit_amount'     => 'required|numeric|min:0',
+        ]);
+
+        $trx = \App\Models\CashReport::findOrFail($validated['id']);
+        $oldCashRefId = $trx->cash_reference_id;
+        $oldDate      = $trx->transaction_date;
+
+        $trx->update([
+            'transaction_date'  => $validated['transaction_date'],
+            'cash_reference_id' => $validated['cash_reference_id'],
+            'coa_id'            => $validated['coa_id'],
+            'description'       => $validated['description'],
+            'debit_amount'      => $validated['debit_amount'],
+            'credit_amount'     => $validated['credit_amount'],
+        ]);
+
+        if ($oldCashRefId != $trx->cash_reference_id || $oldDate != $trx->transaction_date) {
+            \App\Models\CashReport::reorder($oldCashRefId, $oldDate);
+            \App\Models\CashReport::reorder($trx->cash_reference_id, $trx->transaction_date);
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil diperbarui.',
+                'transaction' => [
+                    'id'                => $trx->id,
+                    'transaction_date'  => $trx->transaction_date,
+                    'cash_reference_id' => $trx->cash_reference_id,
+                    'coa_id'            => $trx->coa_id,
+                    'description'       => $trx->description,
+                    'debit_amount'      => $trx->debit_amount,
+                    'credit_amount'     => $trx->credit_amount,
+                ]
+            ]);
+        }
+
+        return back()->with('success', 'Transaksi berhasil diperbarui.');
     }
 }

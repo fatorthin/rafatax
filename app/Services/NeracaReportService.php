@@ -179,7 +179,7 @@ class NeracaReportService
 
         // Tentukan kondisi rekening Kas / Bank berdasarkan pemisahan entitas
         if ($isSeparated && $ent === 'pt') {
-            $kasBesarCondition = "cash_reference_id = 0";
+            $kasBesarCondition = "cash_reference_id = 10";
             $kasKecilCondition = "cash_reference_id = 9";
             $bankCondition     = "cash_reference_id IN (1, 4)";
         } elseif ($isSeparated && $ent === 'kkp') {
@@ -187,7 +187,7 @@ class NeracaReportService
             $kasKecilCondition = "cash_reference_id = 7";
             $bankCondition     = "cash_reference_id IN (2)";
         } else {
-            $kasBesarCondition = "cash_reference_id = 6";
+            $kasBesarCondition = $isSeparated ? "cash_reference_id IN (6, 10)" : "cash_reference_id = 6";
             $kasKecilCondition = "cash_reference_id IN (7, 9)";
             if ($year == 2026 && $month < 4) {
                 $bankCondition = "cash_reference_id IN (1, 2, 3, 4)";

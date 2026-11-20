@@ -634,8 +634,8 @@ class RekapLaporanKeuangan extends Page
 
         if ($isSeparated && $ent === 'pt') {
             $bankCashReferenceIds = [1, 4];
-            $jpCashRefIds         = [1, 4, 9];
-            $kasBesarCondition    = "cash_reference_id = 0";
+            $jpCashRefIds         = [1, 4, 9, 10];
+            $kasBesarCondition    = "cash_reference_id = 10";
             $kasKecilCondition    = "cash_reference_id = 9";
             $journalFilter        = "AND UPPER(kepemilikan) = 'PT'";
         } elseif ($isSeparated && $ent === 'kkp') {
@@ -648,11 +648,12 @@ class RekapLaporanKeuangan extends Page
             if ($month < 4) {
                 $bankCashReferenceIds = [1, 2, 3, 4];
                 $jpCashRefIds         = [1, 2, 3, 4, 6, 7, 9];
+                $kasBesarCondition    = "cash_reference_id = 6";
             } else {
                 $bankCashReferenceIds = [1, 2, 4];
-                $jpCashRefIds         = [1, 2, 4, 6, 7, 9];
+                $jpCashRefIds         = [1, 2, 4, 6, 7, 9, 10];
+                $kasBesarCondition    = "cash_reference_id IN (6, 10)";
             }
-            $kasBesarCondition = "cash_reference_id = 6";
             $kasKecilCondition = "cash_reference_id IN (7, 9)";
             $journalFilter     = "";
         }
@@ -1022,8 +1023,8 @@ class RekapLaporanKeuangan extends Page
 
         if ($isSeparated && $ent === 'pt') {
             $bankCashReferenceIds = [1, 4];
-            $jpCashRefIds         = [1, 4, 9];
-            $kasBesarCondition    = "cash_reference_id = 0";
+            $jpCashRefIds         = [1, 4, 9, 10];
+            $kasBesarCondition    = "cash_reference_id = 10";
             $kasKecilCondition    = "cash_reference_id = 9";
             $journalFilter        = "AND UPPER(kepemilikan) = 'PT'";
         } elseif ($isSeparated && $ent === 'kkp') {
@@ -1036,11 +1037,12 @@ class RekapLaporanKeuangan extends Page
             if ($month < 4) {
                 $bankCashReferenceIds = [1, 2, 3, 4];
                 $jpCashRefIds         = [1, 2, 3, 4, 6, 7, 9];
+                $kasBesarCondition    = "cash_reference_id = 6";
             } else {
                 $bankCashReferenceIds = [1, 2, 4];
-                $jpCashRefIds         = [1, 2, 4, 6, 7, 9];
+                $jpCashRefIds         = [1, 2, 4, 6, 7, 9, 10];
+                $kasBesarCondition    = "cash_reference_id IN (6, 10)";
             }
-            $kasBesarCondition = "cash_reference_id = 6";
             $kasKecilCondition = "cash_reference_id IN (7, 9)";
             $journalFilter     = "";
         }

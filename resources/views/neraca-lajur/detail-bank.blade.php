@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Detail Transaksi Bank: {{ $coa ? $coa->code . ' - ' . $coa->name : 'Semua Akun' }} ({{ $monthName }} {{ $year }})</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="shortcut icon" href="{{ asset('images/favicon.png') }}" type="image/png">
@@ -387,6 +388,7 @@
                             <th class="py-3 px-3 w-56">Klien / Perusahaan</th>
                             <th class="py-3 px-3">Keterangan / Deskripsi</th>
                             <th class="py-3 px-4 text-right w-40">Nominal (Rp)</th>
+                            <th class="py-3 px-3 text-center w-20">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="transactionTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-normal">
@@ -456,10 +458,19 @@
                                 <td class="py-2.5 px-4 text-right whitespace-nowrap font-mono font-bold text-slate-900 dark:text-white">
                                     Rp {{ number_format($trx['amount'], 0, ',', '.') }}
                                 </td>
+                                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                                    <button type="button" 
+                                            onclick='openEditModal(@json($trx))'
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-xs"
+                                            title="Edit Transaksi">
+                                        <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                                        <span>Edit</span>
+                                    </button>
+                                </td>
                             </tr>
                         @empty
                             <tr id="emptyInitialRow">
-                                <td colspan="7" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                                <td colspan="8" class="py-12 text-center text-slate-400 dark:text-slate-500">
                                     <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
                                     Tidak ada transaksi bank yang tercatat untuk akun ini pada periode {{ $monthName }} {{ $year }}.
                                 </td>
@@ -468,7 +479,7 @@
 
                         <!-- Empty state when filtered out -->
                         <tr id="noResultsRow" class="hidden">
-                            <td colspan="7" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                            <td colspan="8" class="py-12 text-center text-slate-400 dark:text-slate-500">
                                 <i class="fa-solid fa-magnifying-glass text-3xl mb-2 text-slate-300 dark:text-slate-600 block"></i>
                                 Tidak ditemukan transaksi yang cocok dengan kata kunci atau filter yang dipilih.
                                 <div class="mt-2">
@@ -489,6 +500,7 @@
                             <td id="footerTotal" class="py-3 px-4 text-right font-mono text-sm text-slate-900 dark:text-white font-extrabold whitespace-nowrap">
                                 Rp {{ number_format($totalAmount, 0, ',', '.') }}
                             </td>
+                            <td class="py-3 px-3"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -601,6 +613,8 @@
             }
         }
     </script>
+
+    @include('neraca-lajur.components.edit-transaction-modal', ['themeColor' => 'blue'])
 </body>
 
 </html>

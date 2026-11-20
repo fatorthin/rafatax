@@ -686,7 +686,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(debit_amount) as debit_amount,
                             SUM(credit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = " . ($isSeparated && $this->entity === 'pt' ? "0" : "6") . "
+                        WHERE " . ($isSeparated ? ($this->entity === 'pt' ? "cash_reference_id = 10" : ($this->entity === 'kkp' ? "cash_reference_id = 6" : "cash_reference_id IN (6, 10)")) : "cash_reference_id = 6") . "
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                         AND coa_id != 76
@@ -699,7 +699,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                             SUM(credit_amount) as debit_amount,
                             SUM(debit_amount) as credit_amount
                         FROM cash_reports
-                        WHERE cash_reference_id = " . ($isSeparated && $this->entity === 'pt' ? "0" : "6") . "
+                        WHERE " . ($isSeparated ? ($this->entity === 'pt' ? "cash_reference_id = 10" : ($this->entity === 'kkp' ? "cash_reference_id = 6" : "cash_reference_id IN (6, 10)")) : "cash_reference_id = 6") . "
                         AND transaction_date BETWEEN '{$startOfCurrentMonth}' AND '{$endOfCurrentMonth}'
                         AND deleted_at IS NULL
                     ) as combined_data
@@ -1324,7 +1324,7 @@ class NeracaLajurPiutang extends Page implements HasTable
 
         $isSeparated = ($this->year > 2026) || ($this->year == 2026 && $this->month >= 4);
         if ($isSeparated && $this->entity === 'pt') {
-            $detailCashReferenceIds = [1, 4, 9];
+            $detailCashReferenceIds = [1, 4, 9, 10];
         } elseif ($isSeparated && $this->entity === 'kkp') {
             $detailCashReferenceIds = [2, 6, 7];
         } else {
@@ -1333,7 +1333,7 @@ class NeracaLajurPiutang extends Page implements HasTable
             } elseif ($this->year < 2026) {
                 $detailCashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
             } else {
-                $detailCashReferenceIds = [1, 2, 4, 6, 7, 9];
+                $detailCashReferenceIds = [1, 2, 4, 6, 7, 9, 10];
             }
         }
 

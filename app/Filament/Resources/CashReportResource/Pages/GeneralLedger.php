@@ -386,14 +386,14 @@ class GeneralLedger extends Page
                 $cashQuery->where('cash_reports.cash_reference_id', $cashReferenceId);
             } else {
                 if ($isSeparated && $entity === 'pt') {
-                    $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 4, 9]);
+                    $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 4, 9, 10]);
                 } elseif ($isSeparated && $entity === 'kkp') {
                     $cashQuery->whereIn('cash_reports.cash_reference_id', [2, 6, 7]);
                 } else {
                     if ($tahun == 2026 && $bulan < 4) {
                         $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 2, 3, 4, 6, 7, 9]);
                     } elseif ($tahun >= 2026) {
-                        $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 2, 4, 6, 7, 9]);
+                        $cashQuery->whereIn('cash_reports.cash_reference_id', [1, 2, 4, 6, 7, 9, 10]);
                     }
                 }
             }
@@ -676,11 +676,11 @@ class GeneralLedger extends Page
 
         // ── 2. Dari cash_reports ──
         if ($isSeparated && $ent === 'pt') {
-            $cashReferenceIds = [1, 4, 9];
+            $cashReferenceIds = [1, 4, 9, 10];
         } elseif ($isSeparated && $ent === 'kkp') {
             $cashReferenceIds = [2, 6, 7];
         } else {
-            $cashReferenceIds = [1, 2, 4, 6, 7, 9];
+            $cashReferenceIds = [1, 2, 4, 6, 7, 9, 10];
             if ($startCarbon->year == 2026 && $startCarbon->month < 4) {
                 $cashReferenceIds = [1, 2, 3, 4, 6, 7, 9];
             } elseif ($startCarbon->year < 2026) {

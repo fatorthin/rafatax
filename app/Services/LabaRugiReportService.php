@@ -41,7 +41,7 @@ class LabaRugiReportService
 
         // Tentukan kondisi rekening Kas / Bank berdasarkan pemisahan entitas
         if ($isSeparated && $ent === 'pt') {
-            $kasBesarCondition = "cash_reference_id = 0"; // PT tidak memiliki kas besar
+            $kasBesarCondition = "cash_reference_id = 10"; // Kas Besar PT
             $kasKecilCondition = "cash_reference_id = 9"; // Kas Kecil PT
             $bankCondition     = "cash_reference_id IN (1, 4)"; // BCA PT & BCA 436
         } elseif ($isSeparated && $ent === 'kkp') {
@@ -49,7 +49,7 @@ class LabaRugiReportService
             $kasKecilCondition = "cash_reference_id = 7"; // Kas Kecil KKP
             $bankCondition     = "cash_reference_id IN (2)"; // BCA 425
         } else {
-            $kasBesarCondition = "cash_reference_id = 6";
+            $kasBesarCondition = $isSeparated ? "cash_reference_id IN (6, 10)" : "cash_reference_id = 6";
             $kasKecilCondition = "cash_reference_id IN (7, 9)";
             if ($year == 2026 && $month < 4) {
                 $bankCondition = "cash_reference_id IN (1, 2, 3, 4)";

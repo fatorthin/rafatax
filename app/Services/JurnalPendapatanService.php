@@ -192,7 +192,7 @@ class JurnalPendapatanService
         $ent = strtolower($entity);
 
         if ($ent === 'pt') {
-            $cashReferenceIds = [1, 4, 9]; // BCA PT, BCA 436, Kas Kecil PT
+            $cashReferenceIds = [1, 4, 9, 10]; // BCA PT, BCA 436, Kas Kecil PT, Kas Besar PT
         } elseif ($ent === 'kkp') {
             $cashReferenceIds = [2, 6, 7]; // BCA 425, Kas Besar, Kas Kecil KKP
         } else {
@@ -203,7 +203,7 @@ class JurnalPendapatanService
             } elseif ($startDate->year < 2026) {
                 $cashReferenceIds = [1, 2, 3, 4, 5, 6, 7, 9];
             } else {
-                $cashReferenceIds = [1, 2, 4, 6, 7, 9];
+                $cashReferenceIds = [1, 2, 4, 6, 7, 9, 10];
             }
         }
 

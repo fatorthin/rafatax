@@ -351,7 +351,7 @@ class NeracaLajurController extends Controller
 
         if ($isSeparated && $ent === 'pt') {
             $bankCashReferenceIds = [1, 4];
-            $kasBesarCondition    = "cash_reference_id = 0";
+            $kasBesarCondition    = "cash_reference_id = 10";
             $kasKecilCondition    = "cash_reference_id = 9";
             $journalFilter        = "AND UPPER(kepemilikan) = 'PT'";
         } elseif ($isSeparated && $ent === 'kkp') {
@@ -362,12 +362,14 @@ class NeracaLajurController extends Controller
         } else {
             if ($year == 2026 && $month < 4) {
                 $bankCashReferenceIds = [1, 2, 3, 4];
+                $kasBesarCondition    = "cash_reference_id = 6";
             } elseif ($year < 2026) {
                 $bankCashReferenceIds = [1, 2, 3, 4, 5];
+                $kasBesarCondition    = "cash_reference_id = 6";
             } else {
                 $bankCashReferenceIds = [1, 2, 4];
+                $kasBesarCondition    = "cash_reference_id IN (6, 10)";
             }
-            $kasBesarCondition = "cash_reference_id = 6";
             $kasKecilCondition = "cash_reference_id IN (7, 9)";
             $journalFilter     = "";
         }

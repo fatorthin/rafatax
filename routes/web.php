@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/neraca-lajur-piutang/detail-kas-kecil/export', [NeracaLajurPiutangController::class, 'exportDetailKasKecil'])->name('neraca-lajur-piutang.detail-kas-kecil.export');
     Route::get('/neraca-lajur-piutang/detail-jurnal-pendapatan', [NeracaLajurPiutangController::class, 'detailJurnalPendapatan'])->name('neraca-lajur-piutang.detail-jurnal-pendapatan');
     Route::get('/neraca-lajur-piutang/detail-jurnal-pendapatan/export', [NeracaLajurPiutangController::class, 'exportDetailJurnalPendapatan'])->name('neraca-lajur-piutang.detail-jurnal-pendapatan.export');
+    Route::post('/neraca-lajur-piutang/update-transaction', [NeracaLajurPiutangController::class, 'updateTransaction'])->name('neraca-lajur-piutang.update-transaction');
 
     // Neraca Export
     Route::get('/neraca/export', [\App\Http\Controllers\NeracaController::class, 'export'])->name('neraca.export');

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Detail Transaksi Kas Besar: {{ $coa ? $coa->code . ' - ' . $coa->name : 'Semua Akun' }} ({{ $monthName }} {{ $year }})</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="shortcut icon" href="{{ asset('images/favicon.png') }}" type="image/png">
@@ -365,6 +366,7 @@
                             <th class="py-3 px-3 w-56">Klien / Perusahaan</th>
                             <th class="py-3 px-3">Keterangan / Deskripsi</th>
                             <th class="py-3 px-4 text-right w-40">Nominal (Rp)</th>
+                            <th class="py-3 px-3 text-center w-20">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="transactionTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-normal">
@@ -398,7 +400,7 @@
                                         <i class="fa-solid fa-money-bill-wave text-[10px] text-amber-500"></i>
                                         {{ $trx['cash_name'] }}
                                         @if($trx['status_kepemilikan'] && $trx['status_kepemilikan'] !== '-')
-                                            <span class="text-[9px] font-bold px-1 rounded {{ $isPt ? 'bg-purple-200/80 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 'bg-emerald-200/80 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' }}">
+                                             <span class="text-[9px] font-bold px-1 rounded {{ $isPt ? 'bg-purple-200/80 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 'bg-emerald-200/80 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' }}">
                                                 {{ $trx['status_kepemilikan'] }}
                                             </span>
                                         @endif
@@ -431,10 +433,19 @@
                                 <td class="py-2.5 px-4 text-right whitespace-nowrap font-mono font-bold text-slate-900 dark:text-white">
                                     Rp {{ number_format($trx['amount'], 0, ',', '.') }}
                                 </td>
+                                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                                    <button type="button" 
+                                            onclick='openEditModal(@json($trx))'
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-xs"
+                                            title="Edit Transaksi">
+                                        <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                                        <span>Edit</span>
+                                    </button>
+                                </td>
                             </tr>
                         @empty
                             <tr id="emptyInitialRow">
-                                <td colspan="7" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                                <td colspan="8" class="py-12 text-center text-slate-400 dark:text-slate-500">
                                     <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
                                     Tidak ada transaksi kas besar yang tercatat untuk akun ini pada periode {{ $monthName }} {{ $year }}.
                                 </td>
@@ -443,7 +454,7 @@
 
                         <!-- Empty state when filtered out -->
                         <tr id="noResultsRow" class="hidden">
-                            <td colspan="7" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                            <td colspan="8" class="py-12 text-center text-slate-400 dark:text-slate-500">
                                 <i class="fa-solid fa-magnifying-glass text-3xl mb-2 text-slate-300 dark:text-slate-600 block"></i>
                                 Tidak ditemukan transaksi yang cocok dengan kata kunci atau filter yang dipilih.
                                 <div class="mt-2">
@@ -464,6 +475,7 @@
                             <td id="footerTotal" class="py-3 px-4 text-right font-mono text-sm text-slate-900 dark:text-white font-extrabold whitespace-nowrap">
                                 Rp {{ number_format($totalAmount, 0, ',', '.') }}
                             </td>
+                            <td class="py-3 px-3"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -572,6 +584,8 @@
             }
         }
     </script>
+
+    @include('neraca-lajur.components.edit-transaction-modal', ['themeColor' => 'amber'])
 </body>
 
 </html>

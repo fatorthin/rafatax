@@ -63,6 +63,14 @@ class CashReference extends Model implements Sortable
     }
 
     /**
+     * ID Kas Besar PT.
+     */
+    public static function getPtCashBigId(): int
+    {
+        return 10; // KAS BESAR PT
+    }
+
+    /**
      * ID Kas Kecil KKP.
      */
     public static function getKkpCashLittleId(): int
