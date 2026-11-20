@@ -845,8 +845,18 @@ class NeracaLajurPiutang extends Page implements HasTable
             )
             ->where('coa.deleted_at', null)
             ->where('coa.type', 'kkp')
-            ->where('coa.code', '!=', 'AO-103')
-            ->orderBy('coa.group_coa_id')
+            ->where('coa.code', '!=', 'AO-103');
+
+        // Filter CoA Bank per entitas:
+        // PT: sembunyikan AO-102.2 (BCA 140), AO-102.3 (BCA 425), AO-102.5 (Mandiri)
+        // KKP: sembunyikan AO-102.1 (BCA PT), AO-102.4 (BCA 436)
+        if ($this->entity === 'pt') {
+            $query->whereNotIn('coa.code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
+        } elseif ($this->entity === 'kkp') {
+            $query->whereNotIn('coa.code', ['AO-102.1', 'AO-102.4']);
+        }
+
+        $query->orderBy('coa.group_coa_id')
             ->orderBy('coa.sort_order');
 
         return $query;
