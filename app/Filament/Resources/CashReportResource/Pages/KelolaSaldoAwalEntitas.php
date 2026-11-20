@@ -198,7 +198,8 @@ class KelolaSaldoAwalEntitas extends Page
     public function save(): void
     {
         $selisih = abs($this->selisih);
-        if ($selisih > 0.01) {
+        // Toleransi selisih pecahan rupiah/sen (<= Rp 1) karena pembulatan desimal
+        if ($selisih > 1.0) {
             Notification::make()
                 ->danger()
                 ->title('Laporan Belum Seimbang (Tidak Balance)!')
