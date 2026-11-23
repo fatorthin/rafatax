@@ -98,19 +98,7 @@ class ClientResource extends Resource
                     ->numeric()
                     ->required(),
                 Forms\Components\Select::make('grade')
-                    ->options([
-                        'A' => 'A',
-                        'B' => 'B',
-                        'C1' => 'C1',
-                        'C2' => 'C2',
-                        'D1' => 'D1',
-                        'D2' => 'D2',
-                        'E' => 'E',
-                        'F' => 'F',
-                        'G' => 'G',
-                        'H' => 'H',
-                        'I' => 'I',
-                    ]),
+                    ->options(fn (?Client $record) => Client::getGradeOptions($record?->grade)),
                 Forms\Components\Select::make('jenis_wp')
                     ->label('Jenis WP')
                     ->options([
@@ -274,19 +262,7 @@ class ClientResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('grade')
-                    ->options([
-                        'A' => 'A',
-                        'B' => 'B',
-                        'C1' => 'C1',
-                        'C2' => 'C2',
-                        'D1' => 'D1',
-                        'D2' => 'D2',
-                        'E' => 'E',
-                        'F' => 'F',
-                        'G' => 'G',
-                        'H' => 'H',
-                        'I' => 'I',
-                    ]),
+                    ->options(fn () => Client::getFilterGradeOptions()),
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
                         'pt' => 'PT',

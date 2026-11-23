@@ -33,6 +33,49 @@ class Client extends Model
         'type',
     ];
 
+    public const GRADES = [
+        'E1' => 'E1',
+        'E2' => 'E2',
+        'E3' => 'E3',
+        'D' => 'D',
+        'C' => 'C',
+        'B1' => 'B1',
+        'B2' => 'B2',
+        'A1' => 'A1',
+        'A2' => 'A2',
+        'A3' => 'A3',
+        'A4' => 'A4',
+    ];
+
+    public static function getGradeOptions(?string $currentGrade = null): array
+    {
+        $grades = self::GRADES;
+
+        if ($currentGrade && !isset($grades[$currentGrade])) {
+            $grades[$currentGrade] = $currentGrade;
+        }
+
+        return $grades;
+    }
+
+    public static function getFilterGradeOptions(): array
+    {
+        $grades = self::GRADES;
+
+        try {
+            $existingGrades = self::query()
+                ->whereNotNull('grade')
+                ->where('grade', '!=', '')
+                ->distinct()
+                ->pluck('grade', 'grade')
+                ->toArray();
+
+            return array_merge($grades, $existingGrades);
+        } catch (\Throwable $e) {
+            return $grades;
+        }
+    }
+
     public function mous()
     {
         return $this->hasMany(MoU::class);
