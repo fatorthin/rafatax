@@ -156,12 +156,13 @@
             z-index: -1000;
             width: 40%;
         }
+        @include('format-mous.preview.partials.header-kkp-style')
     </style>
 </head>
 
 <body>
     <!-- Fixed Header -->
-    <header>
+    <header class="header-kkp">
         <img src="{{ public_path('images/header-kkp.jpg') }}" alt="Header">
     </header>
 

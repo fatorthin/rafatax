@@ -155,12 +155,13 @@
             z-index: -1000;
             width: 40%;
         }
+        @include('format-mous.preview.partials.header-kkp-style')
     </style>
 </head>
 
 <body>
     <!-- Fixed Header -->
-    <header>
+    <header @if ($mou->type !== 'pt') class="header-kkp" @endif>
         @if ($mou->type === 'pt')
             <img src="{{ public_path('images/header.png') }}" alt="Header">
         @else
