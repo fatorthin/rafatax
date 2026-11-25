@@ -53,6 +53,7 @@ class MouInvoicesTable extends BaseWidget
     {
         return $table
             ->query($this->getTableQuery())
+            ->defaultSort(fn (Builder $query): Builder => $query->orderByDesc('created_at')->orderByDesc('id'))
             ->heading('Daftar Invoice MoU')
             ->columns([
                 Tables\Columns\TextColumn::make('invoice_number')
