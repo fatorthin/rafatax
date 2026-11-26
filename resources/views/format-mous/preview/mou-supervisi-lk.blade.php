@@ -162,7 +162,7 @@
         @if ($mou->type === 'pt')
             <img src="{{ public_path('images/header.png') }}" alt="Header">
         @else
-            <img src="{{ public_path('images/header-kkp.jpg') }}" alt="Header">
+            @include('format-mous.preview.partials.header-kkp')
         @endif
     </header>
 
@@ -415,8 +415,13 @@
                             $img_path = public_path("images/footer-v3.png");
                         }
                     } else {
-                        // KKP
-                        $img_path = public_path("images/footer-kkp.svg");
+                        // KKP (PNG)
+                        $y_pos = $h - $img_h;
+                        if ($PAGE_NUM < $PAGE_COUNT) {
+                            $img_path = public_path("images/footer-kkp-v1.png");
+                        } else {
+                            $img_path = public_path("images/footer-kkp.png");
+                        }
                     }
                     
                     if (file_exists($img_path)) {

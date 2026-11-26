@@ -403,6 +403,7 @@
                 display: block;
             }
         }
+        @include('format-mous.partials.header-kkp-style')
     </style>
 
     @if (isset($printMode) && $printMode)
@@ -427,7 +428,7 @@
         <thead>
             <tr>
                 <td class="header-img-cell">
-                    <img src="{{ asset('images/header-kkp.jpg') }}" alt="Header">
+                    @include('format-mous.partials.header-kkp')
                 </td>
             </tr>
         </thead>

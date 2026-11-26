@@ -111,6 +111,7 @@
                 display: none !important;
             }
         }
+        @include('format-mous.partials.header-kkp-style')
     </style>
 </head>
 
@@ -123,7 +124,7 @@
 
     <div class="header-print">
         @if ($mou->type === 'kkp')
-            <img src="{{ asset('images/header-kkp.jpg') }}" alt="Header KKP">
+            @include('format-mous.partials.header-kkp')
         @else
             <img src="{{ asset('images/header.png') }}" alt="Header PT">
         @endif

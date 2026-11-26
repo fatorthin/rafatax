@@ -152,7 +152,7 @@
     <!-- Fixed Header -->
     <header @if ($mou->type !== 'pt') class="header-kkp" @endif>
         @if ($mou->type === 'kkp')
-            <img src="{{ public_path('images/header-kkp.jpg') }}" alt="Header KKP">
+            @include('format-mous.preview.partials.header-kkp')
         @else
             <img src="{{ public_path('images/header.png') }}" alt="Header PT">
         @endif
@@ -373,10 +373,21 @@
                     $img_h = 90;
                     $y_pos = $h - $img_h + 10;
                     
-                    if ($PAGE_NUM < $PAGE_COUNT) {
-                        $img_path = public_path("images/footer-v1.png");
+                    $mouType = "{{ $mou->type }}";
+
+                    if ($mouType === "pt") {
+                        if ($PAGE_NUM < $PAGE_COUNT) {
+                            $img_path = public_path("images/footer-v1.png");
+                        } else {
+                            $img_path = public_path("images/footer-v3.png");
+                        }
                     } else {
-                        $img_path = public_path("images/footer-v3.png");
+                        $y_pos = $h - $img_h;
+                        if ($PAGE_NUM < $PAGE_COUNT) {
+                            $img_path = public_path("images/footer-kkp-v1.png");
+                        } else {
+                            $img_path = public_path("images/footer-kkp.png");
+                        }
                     }
                     
                     if (file_exists($img_path)) {

@@ -162,7 +162,7 @@
 <body>
     <!-- Fixed Header -->
     <header class="header-kkp">
-        <img src="{{ public_path('images/header-kkp.jpg') }}" alt="Header">
+        @include('format-mous.preview.partials.header-kkp')
     </header>
 
     <!-- Watermark -->
@@ -437,10 +437,14 @@
                     
                     // Footer settings
                     $img_h = 90; // Height of footer image
-                    $y_pos = $h - $img_h + 10; // Position near bottom
+                    $y_pos = $h - $img_h; // Position at bottom without clipping address line
                     
-                    // KKP Footer
-                    $img_path = public_path("images/footer-kkp.svg");
+                    // KKP Footer (PNG)
+                    if ($PAGE_NUM < $PAGE_COUNT) {
+                        $img_path = public_path("images/footer-kkp-v1.png");
+                    } else {
+                        $img_path = public_path("images/footer-kkp.png");
+                    }
                     if (file_exists($img_path)) {
                         $pdf->image($img_path, 0, $y_pos, $w, $img_h);
                     }

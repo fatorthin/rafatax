@@ -164,7 +164,7 @@
 <body>
     <!-- Fixed Header -->
     <header class="header-kkp">
-        <img src="{{ public_path('images/header-kkp.jpg') }}" alt="Header">
+        @include('format-mous.preview.partials.header-kkp')
     </header>
 
     <!-- Watermark -->
@@ -448,7 +448,7 @@
                     
                     // Footer settings
                     $img_h = 90; // Height of footer image
-                    $y_pos = $h - $img_h + 10; // Position near bottom
+                    $y_pos = $h - $img_h; // Position at bottom without clipping address line
                     
                     if ($PAGE_NUM < $PAGE_COUNT) {
                         $img_path = public_path("images/footer-kkp-v1.png");
