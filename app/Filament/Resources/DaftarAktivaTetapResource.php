@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DaftarAktivaTetapResource\Pages;
 use Filament\Tables\Enums\ActionsPosition;
 use App\Services\DepreciationService;
+use App\Helpers\DaftarAktivaTetapExporter;
 
 class DaftarAktivaTetapResource extends Resource
 {
@@ -56,6 +57,7 @@ class DaftarAktivaTetapResource extends Resource
                         ->success()
                         ->send();
                 }),
+            DaftarAktivaTetapExporter::makeHeaderAction(),
         ];
     }
 
@@ -210,6 +212,7 @@ class DaftarAktivaTetapResource extends Resource
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    DaftarAktivaTetapExporter::makeBulkAction(),
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
