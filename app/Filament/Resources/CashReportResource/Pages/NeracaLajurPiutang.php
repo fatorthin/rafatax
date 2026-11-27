@@ -844,8 +844,7 @@ class NeracaLajurPiutang extends Page implements HasTable
                 'neraca_awal_bulan_depan.coa_id'
             )
             ->where('coa.deleted_at', null)
-            ->where('coa.type', 'kkp')
-            ->where('coa.code', '!=', 'AO-103');
+            ->where('coa.type', 'kkp');
 
         // Filter CoA Bank per entitas:
         // PT: sembunyikan AO-102.2 (BCA 140), AO-102.3 (BCA 425), AO-102.5 (Mandiri)

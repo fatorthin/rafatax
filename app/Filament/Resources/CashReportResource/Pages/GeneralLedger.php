@@ -109,8 +109,7 @@ class GeneralLedger extends Page
                                 $isSeparated = ($tahun > 2026) || ($tahun == 2026 && $bulan >= 4);
 
                                 $query = \App\Models\Coa::query()
-                                    ->whereNull('deleted_at')
-                                    ->where('code', '!=', 'AO-103');
+                                    ->whereNull('deleted_at');
 
                                 if ($ent === 'pt') {
                                     $query->whereNotIn('code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
@@ -217,8 +216,7 @@ class GeneralLedger extends Page
                             $isSeparated = ($tahun > 2026) || ($tahun == 2026 && $bulan >= 4);
 
                             $query = \App\Models\Coa::query()
-                                ->whereNull('deleted_at')
-                                ->where('code', '!=', 'AO-103');
+                                ->whereNull('deleted_at');
 
                             if ($ent === 'pt') {
                                 $query->whereNotIn('code', ['AO-102.2', 'AO-102.3', 'AO-102.5']);
@@ -539,11 +537,6 @@ class GeneralLedger extends Page
         if ($coaId) {
             $allTransactions = $allTransactions->where('coa_id', (int) $coaId);
         }
-
-        // Filter keluar AO-103 agar tidak dimunculkan di General Ledger
-        $allTransactions = $allTransactions->reject(function ($t) {
-            return ($t->coa_id == 179) || (($t->coa->code ?? '') === 'AO-103');
-        });
 
         if ($entity === 'pt') {
             foreach ($allTransactions as $t) {
