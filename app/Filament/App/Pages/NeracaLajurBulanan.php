@@ -182,11 +182,6 @@ class NeracaLajurBulanan extends Page implements HasTable
         $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
-        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', '=', $this->year, 'and')
-            ->whereMonth('tanggal_penyusutan', '=', $this->month, 'and')
-            ->sum('jumlah_penyusutan') ?? 0;
-
         $query = Coa::query()
             ->select([
                 'coa.id',
@@ -538,11 +533,6 @@ class NeracaLajurBulanan extends Page implements HasTable
         $endOfPreviousMonth = Carbon::create($this->year, $this->month, 1)->subMonth()->endOfMonth();
         $startOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth = Carbon::create($this->year, $this->month, 1)->endOfMonth();
-
-        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', '=', $this->year, 'and')
-            ->whereMonth('tanggal_penyusutan', '=', $this->month, 'and')
-            ->sum('jumlah_penyusutan') ?? 0;
 
         $journalData = DB::table('journal_book_reports')
             ->select('coa_id', DB::raw('SUM(debit_amount) as debit'), DB::raw('SUM(credit_amount) as credit'))

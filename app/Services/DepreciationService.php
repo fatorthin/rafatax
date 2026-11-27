@@ -77,66 +77,132 @@ class DepreciationService
             $count++;
         }
 
-        $totalDepreciationAll = DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', $date->year)
-            ->whereMonth('tanggal_penyusutan', $date->month)
-            ->sum('jumlah_penyusutan');
-
-        if ($totalDepreciationAll > 0) {
-            $month = $date->month;
-            $year = $date->year;
-            $transactionDate = $date->copy()->endOfMonth()->format('Y-m-d');
-            $descriptionDebit = "Beban Depresiasi Aktiva Tetap " . $date->format('M Y');
-            $descriptionKredit = "Akumulasi Depresiasi Aktiva Tetap " . $date->format('M Y');
-
-            // CoA 139 (Debit)
-            $journalDebit = JournalBookReport::where('coa_id', 139)
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->first();
-
-            if (!$journalDebit) {
-                JournalBookReport::create([
-                    'description' => $descriptionDebit,
-                    'journal_book_id' => 2, // AJE
-                    'debit_amount' => $totalDepreciationAll,
-                    'credit_amount' => 0,
-                    'coa_id' => 139,
-                    'transaction_date' => $transactionDate,
-                ]);
-            } elseif ($journalDebit->debit_amount != $totalDepreciationAll) {
-                $journalDebit->update([
-                    'debit_amount' => $totalDepreciationAll,
-                    'credit_amount' => 0,
-                ]);
-            }
-
-            // CoA 103 (Kredit)
-            $journalKredit = JournalBookReport::where('coa_id', 103)
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->first();
-
-            if (!$journalKredit) {
-                JournalBookReport::create([
-                    'description' => $descriptionKredit,
-                    'journal_book_id' => 2, // AJE
-                    'debit_amount' => 0,
-                    'credit_amount' => $totalDepreciationAll,
-                    'coa_id' => 103,
-                    'transaction_date' => $transactionDate,
-                ]);
-            } elseif ($journalKredit->credit_amount != $totalDepreciationAll) {
-                $journalKredit->update([
-                    'debit_amount' => 0,
-                    'credit_amount' => $totalDepreciationAll,
-                ]);
-            }
-        }
+        $totalDepreciationAll = $this->syncJournalForMonth($date);
 
         return [
             'count' => $count,
             'total' => $totalDepreciationAll,
         ];
+    }
+
+    /**
+     * Sinkronisasi jurnal AJE depresiasi ke journal_book_reports,
+     * dipisahkan berdasarkan kepemilikan (PT / KKP) mulai April 2026.
+     */
+    public function syncJournalForMonth(Carbon $date): float
+    {
+        $month = $date->month;
+        $year = $date->year;
+        $isSeparated = ($year > 2026) || ($year == 2026 && $month >= 4);
+
+        if ($isSeparated) {
+            $totalKkp = (float) DepresiasiAktivaTetap::query()
+                ->whereYear('tanggal_penyusutan', $year)
+                ->whereMonth('tanggal_penyusutan', $month)
+                ->whereHas('daftarAktivaTetap', function ($q) {
+                    $q->where('kepemilikan', 'KKP')->orWhereNull('kepemilikan');
+                })
+                ->sum('jumlah_penyusutan');
+
+            $totalPt = (float) DepresiasiAktivaTetap::query()
+                ->whereYear('tanggal_penyusutan', $year)
+                ->whereMonth('tanggal_penyusutan', $month)
+                ->whereHas('daftarAktivaTetap', function ($q) {
+                    $q->where('kepemilikan', 'PT');
+                })
+                ->sum('jumlah_penyusutan');
+
+            $this->upsertEntityAje($date, 'KKP', $totalKkp);
+            $this->upsertEntityAje($date, 'PT', $totalPt);
+
+            return $totalKkp + $totalPt;
+        }
+
+        $totalAll = (float) DepresiasiAktivaTetap::query()
+            ->whereYear('tanggal_penyusutan', $year)
+            ->whereMonth('tanggal_penyusutan', $month)
+            ->whereHas('daftarAktivaTetap')
+            ->sum('jumlah_penyusutan');
+
+        $this->upsertEntityAje($date, 'KKP', $totalAll);
+
+        return $totalAll;
+    }
+
+    private function upsertEntityAje(Carbon $date, string $kepemilikan, float $amount): void
+    {
+        $month = $date->month;
+        $year = $date->year;
+        $kepemilikan = strtoupper($kepemilikan);
+        $transactionDate = $date->copy()->endOfMonth()->format('Y-m-d');
+        $descriptionDebit = "Beban Depresiasi Aktiva Tetap " . $date->format('M Y') . " ({$kepemilikan})";
+        $descriptionKredit = "Akumulasi Depresiasi Aktiva Tetap " . $date->format('M Y') . " ({$kepemilikan})";
+
+        $scopeEntity = function ($query) use ($kepemilikan) {
+            if ($kepemilikan === 'PT') {
+                return $query->whereRaw('UPPER(kepemilikan) = ?', ['PT']);
+            }
+            return $query->whereRaw('(kepemilikan IS NULL OR UPPER(kepemilikan) = ?)', ['KKP']);
+        };
+
+        $journalDebit = $scopeEntity(
+            JournalBookReport::where('journal_book_id', 2)
+                ->where('coa_id', 139)
+                ->whereYear('transaction_date', $year)
+                ->whereMonth('transaction_date', $month)
+        )->first();
+
+        $journalKredit = $scopeEntity(
+            JournalBookReport::where('journal_book_id', 2)
+                ->where('coa_id', 103)
+                ->whereYear('transaction_date', $year)
+                ->whereMonth('transaction_date', $month)
+        )->first();
+
+        if ($amount <= 0) {
+            if ($journalDebit) {
+                $journalDebit->delete();
+            }
+            if ($journalKredit) {
+                $journalKredit->delete();
+            }
+            return;
+        }
+
+        if (!$journalDebit) {
+            JournalBookReport::create([
+                'description' => $descriptionDebit,
+                'journal_book_id' => 2, // AJE
+                'debit_amount' => $amount,
+                'credit_amount' => 0,
+                'coa_id' => 139,
+                'transaction_date' => $transactionDate,
+                'kepemilikan' => $kepemilikan,
+            ]);
+        } elseif ($journalDebit->debit_amount != $amount || strtoupper((string) $journalDebit->kepemilikan) !== $kepemilikan) {
+            $journalDebit->update([
+                'debit_amount' => $amount,
+                'credit_amount' => 0,
+                'kepemilikan' => $kepemilikan,
+            ]);
+        }
+
+        if (!$journalKredit) {
+            JournalBookReport::create([
+                'description' => $descriptionKredit,
+                'journal_book_id' => 2, // AJE
+                'debit_amount' => 0,
+                'credit_amount' => $amount,
+                'coa_id' => 103,
+                'transaction_date' => $transactionDate,
+                'kepemilikan' => $kepemilikan,
+            ]);
+        } elseif ($journalKredit->credit_amount != $amount || strtoupper((string) $journalKredit->kepemilikan) !== $kepemilikan) {
+            $journalKredit->update([
+                'debit_amount' => 0,
+                'credit_amount' => $amount,
+                'kepemilikan' => $kepemilikan,
+            ]);
+        }
     }
 }

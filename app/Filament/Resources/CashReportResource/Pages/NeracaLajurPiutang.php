@@ -512,11 +512,6 @@ class NeracaLajurPiutang extends Page implements HasTable
         $startOfCurrentMonth  = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfCurrentMonth    = Carbon::create($this->year, $this->month, 1)->endOfMonth();
 
-        $depresiasiTotal = \App\Models\DepresiasiAktivaTetap::query()
-            ->whereYear('tanggal_penyusutan', '=', $this->year, 'and')
-            ->whereMonth('tanggal_penyusutan', '=', $this->month, 'and')
-            ->sum('jumlah_penyusutan') ?? 0;
-
         $jpDebits = [];
         $jpKredits = [];
 
